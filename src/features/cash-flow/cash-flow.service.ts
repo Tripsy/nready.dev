@@ -4,7 +4,7 @@ import {BadRequestError, CustomError, NotFoundError} from '@/exceptions';
 import CashFlowEntity, {
 	CashFlowCategoryEnum,
 	CashFlowCategoryTypeEnum,
-	CashFlowDirectionEnum,
+	CashFlowDirectionEnum, CashFlowGatewayEnum, CashFlowMethodEnum,
 	CashFlowStatusEnum,
 	CURRENCY_DEFAULT,
 	CurrencyEnum,
@@ -14,6 +14,22 @@ import CashFlowEntity, {
 import {getCashFlowRepository} from '@/features/cash-flow/cash-flow.repository';
 import {type CashFlowValidator, paramsUpdateList,} from '@/features/cash-flow/cash-flow.validator';
 import type {ValidatorOutput} from '@/shared/abstracts/validator.abstract';
+import dataSource from "@/config/data-source.config";
+
+type CreateEntry = {
+	direction: CashFlowDirectionEnum,
+	category_type: CashFlowCategoryTypeEnum,
+	category: CashFlowCategoryEnum,
+	gateway: CashFlowGatewayEnum,
+	method: CashFlowMethodEnum,
+	amount: number,
+	vat_rate: number,
+	currency: CurrencyEnum,
+	exchange_rate: number,
+	external_reference?: string,
+	parent_id?: number,
+	notes?: string,
+};
 
 export class CashFlowService {
 	constructor(
@@ -52,6 +68,17 @@ export class CashFlowService {
 		}
 	}
 
+	private checkParentSelection(
+		parent_id: number | undefined,
+		category: CashFlowCategoryEnum,
+	) {
+		if (!parent_id && category === CashFlowCategoryEnum.REFUND) {
+			throw new BadRequestError(
+				lang('cash-flow.error.refund_parent_required'),
+			);
+		}
+	}
+
 	private checkAmount(
 		amount: number
 	) {
@@ -64,9 +91,10 @@ export class CashFlowService {
 
 	private async checkRefund(deps : {
 		category: CashFlowCategoryEnum,
-		parent_id: number,
 		amount: number,
-		currency: CurrencyEnum
+		currency: CurrencyEnum,
+		parentEntry: CashFlowEntity,
+		refundedAmount: number
 	}) {
 		if (deps.category !== CashFlowCategoryEnum.REFUND) {
 			throw new BadRequestError(
@@ -74,24 +102,7 @@ export class CashFlowService {
 			);
 		}
 
-		let parent: CashFlowEntity;
-
-		try {
-			parent = await this.findById(
-				deps.parent_id,
-				false,
-			);
-		} catch (error) {
-			if (error instanceof NotFoundError) {
-				throw new CustomError(409,
-					lang('cash-flow.error.parent_id_invalid'),
-				);
-			}
-
-			throw error;
-		}
-
-		if (!REFUNDABLE_STATUSES.includes(parent.status)) {
+		if (!REFUNDABLE_STATUSES.includes(deps.parentEntry.status)) {
 			throw new CustomError(409,
 				lang('cash-flow.error.refund_parent_status_invalid', {
 					status: parent.status
@@ -99,38 +110,36 @@ export class CashFlowService {
 			);
 		}
 
-		if (parent.currency !== deps.currency) {
+		if (deps.parentEntry.currency !== deps.currency) {
 			throw new CustomError(409,
 				lang('cash-flow.error.refund_parent_same_currency'),
 			);
 		}
 
-		if (parent.category_type === CashFlowCategoryTypeEnum.CORRECTION) {
+		if (deps.parentEntry.category_type === CashFlowCategoryTypeEnum.CORRECTION) {
 			throw new CustomError(409,
 				lang('cash-flow.error.refund_parent_category_type_invalid'),
 			);
 		}
 
-		if ([CashFlowCategoryEnum.EMPLOYEE_SALARY].includes(parent.category)) {
+		if ([CashFlowCategoryEnum.EMPLOYEE_SALARY].includes(deps.parentEntry.category)) {
 			throw new CustomError(409,
 				lang('cash-flow.error.refund_parent_category_invalid'),
 			);
 		}
 
-		if (parent.amount < deps.amount) {
+		if (deps.parentEntry.amount < deps.amount) {
 			throw new CustomError(409,
 				lang('cash-flow.error.refund_amount_mismatch', {
-					max_amount: (parent.amount / 100).toFixed(2).toString()
+					max_amount: (deps.parentEntry.amount / 100).toFixed(2).toString()
 				}),
 			);
 		}
 
-		const refundedAmountSum = await this.getRefundedAmountSum(deps.parent_id);
-
-		if (refundedAmountSum >= deps.amount) {
+		if (deps.refundedAmount >= deps.amount) {
 			throw new CustomError(409,
 				lang('cash-flow.error.refund_amount_mismatch', {
-					max_amount: ((parent.amount - refundedAmountSum) / 100).toFixed(2).toString()
+					max_amount: ((deps.parentEntry.amount - deps.refundedAmount) / 100).toFixed(2).toString()
 				}),
 			);
 		}
@@ -163,26 +172,10 @@ export class CashFlowService {
 	): Promise<CashFlowEntity> {
 		this.checkDirection(data.category_type, data.direction);
 		this.checkCategoryType(data.category_type, data.category);
+		this.checkParentSelection(data.parent_id, data.category);
 		this.checkAmount(data.amount);
 
-		if (data.parent_id) {
-			await this.checkRefund({
-				category: data.category,
-				parent_id: data.parent_id,
-				amount: data.amount,
-				currency: data.currency
-			});
-		} else {
-			if (data.category === CashFlowCategoryEnum.REFUND) {
-				throw new BadRequestError(
-					lang('cash-flow.error.refund_parent_required'),
-				);
-			}
-		}
-
-		use transaction and update parent entry status
-
-		const entry = {
+		const entry: CreateEntry = {
 			direction: data.direction,
 			category_type: data.category_type,
 			category: data.category,
@@ -197,7 +190,56 @@ export class CashFlowService {
 			notes: data.notes,
 		};
 
+		if (data.parent_id) {
+			this.processRefund(entry);
+		} else {
+			this.processCreate(entry);
+		}
+
+
+
+		return dataSource.transaction(async (manager) => {
+			if (entry.parent_id) {
+				const refundedAmountSum = await this.getRefundedAmountSum(entry.parent_id);
+			}
+
+			const repository = manager.getRepository(CashFlowEntity); // We use the manager -> `getCashFlowRepository` is not bound to the transaction
+
+			const parentEntry = {
+				id: entry.parent_id,
+				status:
+			}
+
+			return await repository.save(entry);
+		});
+	}
+
+	private processCreate(entry) {
 		return this.repository.save(entry);
+	}
+
+	private processRefund(data: ValidatorOutput<CashFlowValidator, 'create'>) {
+		if (!data.parent_id) {
+			throw new CustomError(
+				500,
+				lang('cash-flow.error.parent_id_invalid'),
+			);
+		}
+
+		const parentEntry = await this.findById(
+			data.parent_id,
+			false,
+		);
+
+		const refundedAmount = await this.getRefundedAmountSum(data.parent_id);
+
+		await this.checkRefund({
+			category: data.category,
+			amount: data.amount,
+			currency: data.currency,
+			parentEntry: parentEntry,
+			refundedAmount: refundedAmount
+		});
 	}
 
 	/**

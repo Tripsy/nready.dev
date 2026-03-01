@@ -22,7 +22,6 @@ export enum CashFlowDirectionEnum { // relative to company
 	OUT = 'out', // money sent
 }
 
-drop category type
 export enum CashFlowCategoryTypeEnum {
 	REVENUE = 'revenue',
 	EXPENSE = 'expense',
@@ -173,8 +172,8 @@ const ENTITY_TABLE_NAME = 'cash_flow';
   (
     -- Direction + amount consistency for originals
     (parent_id IS NULL AND 
-      ((category_type = 'revenue' AND direction = 'in' AND amount > 0) OR
-       (category_type = 'expense' AND direction = 'out' AND amount < 0))
+      ((category_type = 'revenue' AND direction = 'in') OR
+       (category_type = 'expense' AND direction = 'out'))
     )
 
     -- Refunds / corrections

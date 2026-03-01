@@ -93,7 +93,6 @@ export class CashFlowValidator extends BaseValidator {
 					.number({
 						message: lang('cash-flow.validation.parent_id_invalid'),
 					})
-					.nullable()
 					.optional(),
 				notes: this.nullableString(
 					lang('cash-flow.validation.notes_invalid'),
@@ -193,9 +192,9 @@ export class CashFlowValidator extends BaseValidator {
 				external_reference: this.validateString(
 					lang('cash-flow.validation.external_reference_invalid'),
 				).optional(),
-				notes: this.nullableString(
+				notes: this.validateString(
 					lang('cash-flow.validation.notes_invalid'),
-				),
+				).optional(),
 			})
 			.refine((data) => hasAtLeastOneValue(data), {
 				message: lang('shared.validation.params_at_least_one', {
