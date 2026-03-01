@@ -22,6 +22,7 @@ export enum CashFlowDirectionEnum { // relative to company
 	OUT = 'out', // money sent
 }
 
+drop category type
 export enum CashFlowCategoryTypeEnum {
 	REVENUE = 'revenue',
 	EXPENSE = 'expense',
@@ -39,7 +40,6 @@ export enum CashFlowCategoryEnum {
 
 	// Personnel
 	EMPLOYEE_SALARY = 'employee_salary',
-	EMPLOYEE_REIMBURSEMENT = 'employee_reimbursement',
 
 	// Business Expenses
 	VENDOR = 'vendor', // Third-party services
@@ -47,7 +47,9 @@ export enum CashFlowCategoryEnum {
 	TAXES = 'taxes',
 
 	// Correction
-	CORRECTION = 'correction', // Corrections, transfers, refunds
+	CORRECTION = 'correction',
+	REFUND = 'refund',
+	EMPLOYEE_REIMBURSEMENT = 'employee_reimbursement',
 }
 
 export const getExpectedCategoryType = (
@@ -59,12 +61,15 @@ export const getExpectedCategoryType = (
 		CashFlowCategoryEnum.MAINTENANCE,
 		CashFlowCategoryEnum.TOLLS,
 		CashFlowCategoryEnum.EMPLOYEE_SALARY,
-		CashFlowCategoryEnum.EMPLOYEE_REIMBURSEMENT,
 		CashFlowCategoryEnum.VENDOR,
 		CashFlowCategoryEnum.INSURANCE,
 		CashFlowCategoryEnum.TAXES,
 	];
-	const correctionCategories = [CashFlowCategoryEnum.CORRECTION];
+	const correctionCategories = [
+		CashFlowCategoryEnum.CORRECTION,
+		CashFlowCategoryEnum.REFUND,
+		CashFlowCategoryEnum.EMPLOYEE_REIMBURSEMENT,
+	];
 
 	if (revenueCategories.includes(category)) {
 		return CashFlowCategoryTypeEnum.REVENUE;
@@ -107,6 +112,20 @@ export enum CashFlowStatusEnum {
 	REQUIRES_ACTION = 'requires_action', // 3D Secure, etc.
 }
 
+// Only entries with specified statuses are available for update
+export const MUTABLE_STATUSES = [
+	CashFlowStatusEnum.PENDING,
+	CashFlowStatusEnum.AUTHORIZED,
+	CashFlowStatusEnum.REQUIRES_ACTION
+];
+
+// Only entries with specified statuses are eligible for refund
+export const REFUNDABLE_STATUSES = [
+	CashFlowStatusEnum.COMPLETED,
+	CashFlowStatusEnum.REFUNDED, // This means has been totally refunded so status listed here is somewhat redundant, but it allows clear error reporting with amount available for refund
+	CashFlowStatusEnum.PARTIALLY_REFUNDED
+];
+
 export enum CashFlowGatewayEnum {
 	DIRECT = 'direct',
 	STRIPE = 'stripe',
@@ -139,7 +158,10 @@ const ENTITY_TABLE_NAME = 'cash_flow';
 	comment: 'Tracks cash flows.',
 })
 @Index('IDX_cash_flow_created_at', ['created_at'])
-@Index('IDX_cash_flow_category_type_created_at', ['category_type', 'created_at'])
+@Index('IDX_cash_flow_category_type_created_at', [
+	'category_type',
+	'created_at',
+])
 @Index('IDX_cash_flow_category_created_at', ['category', 'created_at'])
 @Index('IDX_cash_flow_gateway_status', ['gateway', 'status'])
 @Index('IDX_cash_flow_gateway_transaction_id', ['gateway', 'transaction_id'], {
@@ -159,6 +181,7 @@ const ENTITY_TABLE_NAME = 'cash_flow';
     OR (parent_id IS NOT NULL AND category_type = 'correction')
   )
 `)
+@Check(`(amount > 0)`)
 export default class CashFlowEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
@@ -251,7 +274,7 @@ export default class CashFlowEntity extends EntityAbstract {
 	@Index('IDX_parent_id')
 	parent_id!: number | null;
 
-	// GATEWAY
+	// GATEWAY ( // TODO in the future move this to a separate entity)
 	@Column('varchar', {
 		nullable: true,
 		comment: 'Gateway transaction ID (e.g., Stripe charge id)',

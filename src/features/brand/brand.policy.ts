@@ -1,7 +1,7 @@
 import BrandEntity from '@/features/brand/brand.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class BrandPolicy extends PolicyAbstract {
+export class BrandPolicy extends PolicyAbstract {
 	constructor() {
 		const entity = BrandEntity.NAME;
 

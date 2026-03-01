@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
-import CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
-import { cashFlowPolicy } from '@/features/cash-flow/cash-flow.policy';
+import CashFlowEntity, {CashFlowCategoryEnum} from '@/features/cash-flow/cash-flow.entity';
+import {type CashFlowPolicy, cashFlowPolicy} from '@/features/cash-flow/cash-flow.policy';
 import {
 	type CashFlowService,
 	cashFlowService,
@@ -13,11 +13,13 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
+import {QueryFailedError} from "typeorm";
+import {getSystemLogger} from "@/providers/logger.provider";
+import {CustomError} from "@/exceptions";
 
 class CashFlowController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: CashFlowPolicy,
 		private validator: CashFlowValidator,
 		private cache: CacheProvider,
 		private cashFlowService: CashFlowService,
@@ -30,12 +32,30 @@ class CashFlowController extends BaseController {
 
 		const data = this.validate(this.validator.create(), req.body, res);
 
-		const entry = await this.cashFlowService.create(data);
+		if (data.category === CashFlowCategoryEnum.REFUND) {
+			this.policy.canRefund(res.locals.auth);
+		}
 
-		res.locals.output.data(entry);
-		res.locals.output.message(lang('cash-flow.success.create'));
+		try {
+			const entry = await this.cashFlowService.create(data);
 
-		res.status(201).json(res.locals.output);
+			res.locals.output.data(entry);
+			res.locals.output.message(lang('cash-flow.success.create'));
+
+			res.status(201).json(res.locals.output);
+		} catch (error) {
+			if (error instanceof QueryFailedError) {
+				// TODO the context for this error seems wrong => trigger by removing condition if (data.category === CashFlowCategoryEnum.REFUND) in cash-flow.service.ts
+
+				getSystemLogger().error(error, `QueryFailedError: ${error.message}`);
+
+				throw new CustomError(500,
+					lang('shared.error.server_error'),
+				);
+			}
+
+			throw error;
+		}
 	});
 
 	public read = asyncHandler(async (_req: Request, res: Response) => {
@@ -144,7 +164,7 @@ class CashFlowController extends BaseController {
 }
 
 export function createCashFlowController(deps: {
-	policy: PolicyAbstract;
+	policy: CashFlowPolicy;
 	validator: CashFlowValidator;
 	cache: CacheProvider;
 	cashFlowService: CashFlowService;

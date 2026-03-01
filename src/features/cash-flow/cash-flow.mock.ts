@@ -12,11 +12,13 @@ import {
 	type CashFlowValidator,
 	OrderByEnum,
 } from '@/features/cash-flow/cash-flow.validator';
-import {createPastDate, formatDate} from '@/helpers';
+import { createPastDate, formatDate } from '@/helpers';
 import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
-export function getCashFlowEntityMock(overrides?: Partial<CashFlowEntity>): CashFlowEntity {
+export function getCashFlowEntityMock(
+	overrides?: Partial<CashFlowEntity>,
+): CashFlowEntity {
 	return {
 		id: 1,
 		direction: CashFlowDirectionEnum.IN,
@@ -26,7 +28,7 @@ export function getCashFlowEntityMock(overrides?: Partial<CashFlowEntity>): Cash
 		method: CashFlowMethodEnum.CASH,
 		status: CashFlowStatusEnum.COMPLETED,
 		amount: 10000, // $100.00 in cents
-		vat_rate: 19.00,
+		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		exchange_rate: 1,
 		external_reference: 'REF-12345',
@@ -50,7 +52,9 @@ export function getCashFlowEntityMock(overrides?: Partial<CashFlowEntity>): Cash
 	};
 }
 
-export function getCashFlowRefundEntityMock(overrides?: Partial<CashFlowEntity>): CashFlowEntity {
+export function getCashFlowRefundEntityMock(
+	overrides?: Partial<CashFlowEntity>,
+): CashFlowEntity {
 	return {
 		id: 2,
 		direction: CashFlowDirectionEnum.OUT,
@@ -60,7 +64,7 @@ export function getCashFlowRefundEntityMock(overrides?: Partial<CashFlowEntity>)
 		method: CashFlowMethodEnum.BANK_TRANSFER,
 		status: CashFlowStatusEnum.COMPLETED,
 		amount: -5000, // -$50.00 in cents (refund)
-		vat_rate: 19.00,
+		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		exchange_rate: 1,
 		external_reference: 'REF-12345-REFUND',
@@ -95,7 +99,7 @@ export const cashFlowInputPayloads = createValidatorPayloads<
 		gateway: CashFlowGatewayEnum.DIRECT,
 		method: CashFlowMethodEnum.CASH,
 		amount: 10000,
-		vat_rate: 19.00,
+		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		exchange_rate: 1,
 		parent_id: null,
@@ -108,7 +112,7 @@ export const cashFlowInputPayloads = createValidatorPayloads<
 		gateway: CashFlowGatewayEnum.STRIPE,
 		method: CashFlowMethodEnum.CREDIT_CARD,
 		amount: 12000,
-		vat_rate: 19.00,
+		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		exchange_rate: 1,
 		notes: 'Updated cash flow entry',
@@ -146,7 +150,7 @@ export const cashFlowOutputPayloads = createValidatorPayloads<
 		gateway: CashFlowGatewayEnum.DIRECT,
 		method: CashFlowMethodEnum.CASH,
 		amount: 10000,
-		vat_rate: 19.00,
+		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		exchange_rate: 1,
 		parent_id: null,

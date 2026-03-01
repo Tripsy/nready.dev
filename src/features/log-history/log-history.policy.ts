@@ -1,7 +1,7 @@
 import LogHistoryEntity from '@/features/log-history/log-history.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class LogHistoryPolicy extends PolicyAbstract {
+export class LogHistoryPolicy extends PolicyAbstract {
 	constructor() {
 		const entity = LogHistoryEntity.NAME;
 

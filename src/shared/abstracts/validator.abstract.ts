@@ -60,6 +60,7 @@ export abstract class BaseValidator {
 		if (onlyPositive) {
 			schema = schema.positive({ message });
 		}
+
 		if (!allowDecimals) {
 			schema = schema.int({ message });
 		}

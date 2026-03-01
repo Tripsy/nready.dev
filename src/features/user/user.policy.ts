@@ -1,7 +1,7 @@
 import UserEntity from '@/features/user/user.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class UserPolicy extends PolicyAbstract {
+export class UserPolicy extends PolicyAbstract {
 	constructor() {
 		const entity = UserEntity.NAME;
 

@@ -1,4 +1,4 @@
-# Description
+# 📄 Description
 
 NReady is a production-ready **Node.js - Express / TypeScript** boilerplate designed for complex, secure REST APIs.
 
@@ -25,8 +25,8 @@ At this date (e.g.: 2026 January), all [dependencies](#Dependencies) are updated
 A ready-to-use Docker environment is provided for quick [setup](#Setup).
 
 This project is still a work in progress, and the next goals are:
- - Complete the test suite
- - Add new [features](#Features) such as articles, images, products, orders, invoices, payments, and subscriptions
+   - Add new [features](#Features) such as articles, images, products, orders, invoices,and subscriptions
+   - Create documentation
 
 Meanwhile, we're open to suggestions / feedback, and if you find this project useful, please consider giving it a star ⭐
 
@@ -35,7 +35,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 > an **Administration Dashboard** with some features already included: Users, Permissions, Template,
 > Logs for data, mail queue, entity operations
 
-# Tech Stack
+# 🚀 Tech Stack
 
 - Runtime: Node.js
 - Framework: Express.js
@@ -46,7 +46,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - Containerization: Docker
 - Testing: Jest, Supertest
 
-# Characteristics
+# ⚙️ Characteristics
 
 - [x] Ready-to-use boilerplate with a modular, feature-based architecture
 - [x] Best Practices: Clean architecture, TypeScript, error handling, async patterns, DRY, SOLID, KISS
@@ -74,7 +74,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - [x] Documentation provided for APIs endpoints
 - [x] Development environment available (Docker)
 
-# Features
+# ✨ Features
 
 ### Core features
 
@@ -94,7 +94,6 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - [x] brand: create, read, update, delete, restore, find
 - [x] carrier: create, read, update, delete, restore, find
 - [x] cash-flow: create, read, update, delete, restore, find, statusUpdate
-      * this module will be further enhanced
 - [x] category: create, read, update, delete, restore, find, statusUpdate
 - [x] client: create, read, update, delete, restore, find, statusUpdate
 - [x] discount: create, read, update, delete, restore, find
@@ -107,7 +106,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - [ ] subscription:
 - [ ] term:
 
-# Setup
+# 🛠 Setup
 
 ### 1. Add `hosts` record
 For configuration refer to this guide:  
@@ -167,9 +166,9 @@ $ pnpx tsx cli/feature.ts [feature] remove
 $ pnpx tsx cli/feature.ts [feature] upgrade
 ```
 
-# Commands
+# 🖥️ Commands
 
-> **Warning**
+> **⚠ Warning**
 > Always check the migrations before run it, sometimes columns are dropped
 
 ```bash
@@ -200,7 +199,7 @@ $ pnpm run madge
 
 ```
 
-# Structure
+# 📁 Structure
 
 ```
 ├── docker/
@@ -216,12 +215,12 @@ $ pnpm run madge
 │   │   │   ├── locales/
 │   │   │   │   └── en.json
 │   │   │   ├── tests/
-│   │   │   │   └── user.mock.ts
 │   │   │   │   └── user-controller.test.ts
 │   │   │   │   └── user-service.test.ts
 │   │   │   │   └── user-validator.test.ts
 │   │   │   ├── user.controller.ts
 │   │   │   ├── user.entity.ts
+│   │   │   ├── user.mock.ts
 │   │   │   ├── user.repository.ts
 │   │   │   ├── user.routes.ts
 │   │   │   ├── user.service.ts
@@ -247,14 +246,18 @@ $ pnpm run madge
 │   └── bootstrap.ts          
 │   └── server.ts          
 ├── .env
-├── docker-compose.yml
+├── .madgerc
 ├── biome.json
+├── docker-compose.yml
+├── package.json
+├── pnpm-lock.yaml
+├── jest.config.js
 └── tsconfig.json
 ```
 
-# TODO
+# 📌 TODO
 
-1. payment -> cash-flow
+1. cash-flow
   - review controller & service 
   - handle tests
   - do documentation  
@@ -299,7 +302,6 @@ $ pnpm run madge
         - order-product
     - order-shipping
         - order-shipping-product
-    - payment
     - product
         - product-attribute
         - product-category
@@ -310,13 +312,9 @@ $ pnpm run madge
     - term
 9. Go on FE #2 → carrier, discount,
 10. For reporting create separate DB table (in a new schema `reporting`). This new table can be updated via subscribers.
+11. cron hanging / delaying / semaphore 
 
-# Bugs & Issues & Ideas
-
-1. cron hanging / delaying / semaphore 
-2. CI/CD
-
-# Dependencies
+# 🔗 Dependencies
     
 - [Pino](https://github.com/pinojs/pino) — Fast, low-overhead Node.js logger
 - [Mysql2](https://github.com/sidorares/node-mysql2) — MySQL client for Node.js with TypeScript support

@@ -1,8 +1,11 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { cashFlowController } from '@/features/cash-flow/cash-flow.controller';
+import { CashFlowStatusEnum } from '@/features/cash-flow/cash-flow.entity';
 import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
-import {validateParamsWhenEnum, validateParamsWhenId} from '@/middleware/validate-params.middleware';
-import {CashFlowStatusEnum} from "@/features/cash-flow/cash-flow.entity";
+import {
+	validateParamsWhenEnum,
+	validateParamsWhenId,
+} from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof cashFlowController> = {
 	basePath: '/cash-flow',

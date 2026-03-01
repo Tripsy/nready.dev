@@ -8,7 +8,9 @@ import {
 	CashFlowGatewayEnum,
 	CashFlowMethodEnum,
 	CashFlowStatusEnum,
-	CurrencyEnum, getExpectedCategoryType, getExpectedDirection,
+	CurrencyEnum,
+	getExpectedCategoryType,
+	getExpectedDirection,
 } from '@/features/cash-flow/cash-flow.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
@@ -23,7 +25,7 @@ export const paramsUpdateList: string[] = [
 	'amount',
 	'vat_rate',
 	'currency',
-	'exchange_rate',
+	// 'exchange_rate',
 	'notes',
 ];
 
@@ -67,8 +69,8 @@ export class CashFlowValidator extends BaseValidator {
 				),
 				amount: this.validateNumber(
 					lang('cash-flow.validation.amount_invalid'),
-					false,
 					true,
+					false,
 				),
 				vat_rate: this.validateNumber(
 					lang('cash-flow.validation.amount_invalid'),
@@ -79,40 +81,53 @@ export class CashFlowValidator extends BaseValidator {
 					CurrencyEnum,
 					lang('cash-flow.validation.currency_invalid'),
 				),
-				exchange_rate: this.validateNumber(
-					lang('cash-flow.validation.exchange_rate_invalid'),
-					true,
-					true,
-				),
-				parent_id: z.number({
-					message: lang('cash-flow.validation.parent_id_invalid'),
-				}).nullable().optional(),
+				// exchange_rate: this.validateNumber(
+				// 	lang('cash-flow.validation.exchange_rate_invalid'),
+				// 	true,
+				// 	true,
+				// ),
+				external_reference: this.validateString(
+					lang('cash-flow.validation.external_reference_invalid'),
+				).optional(),
+				parent_id: z
+					.number({
+						message: lang('cash-flow.validation.parent_id_invalid'),
+					})
+					.nullable()
+					.optional(),
 				notes: this.nullableString(
 					lang('cash-flow.validation.notes_invalid'),
 				),
 			})
 			.superRefine((data, ctx) => {
-				const expectedCategoryType = getExpectedCategoryType(data.category);
+				const expectedCategoryType = getExpectedCategoryType(
+					data.category,
+				);
 
 				if (data.category_type !== expectedCategoryType) {
 					ctx.addIssue({
 						path: ['category_type'],
-						message: lang('cash-flow.error.category_type_mismatch', {
-							category: data.category,
-							category_type: expectedCategoryType
-						}),
+						message: lang(
+							'cash-flow.error.category_type_mismatch',
+							{
+								category: data.category,
+								category_type: expectedCategoryType,
+							},
+						),
 						code: 'custom',
 					});
 				}
 
-				const expectedDirection = getExpectedDirection(data.category_type);
+				const expectedDirection = getExpectedDirection(
+					data.category_type,
+				);
 
 				if (expectedDirection && data.direction !== expectedDirection) {
 					ctx.addIssue({
 						path: ['direction'],
 						message: lang('cash-flow.error.direction_mismatch', {
 							category: data.category,
-							direction: expectedDirection
+							direction: expectedDirection,
 						}),
 						code: 'custom',
 					});
@@ -120,10 +135,12 @@ export class CashFlowValidator extends BaseValidator {
 
 				// Validate refund rules
 				if (data.parent_id) {
-					if (data.category !== CashFlowCategoryEnum.CORRECTION) {
+					if (data.category !== CashFlowCategoryEnum.REFUND) {
 						ctx.addIssue({
 							path: ['category'],
-							message: lang('cash-flow.error.refund_category_invalid'),
+							message: lang(
+								'cash-flow.validation.category_invalid',
+							),
 							code: 'custom',
 						});
 					}
@@ -168,11 +185,14 @@ export class CashFlowValidator extends BaseValidator {
 					CurrencyEnum,
 					lang('cash-flow.validation.currency_invalid'),
 				),
-				exchange_rate: this.validateNumber(
-					lang('cash-flow.validation.exchange_rate_invalid'),
-					true,
-					true,
-				),
+				// exchange_rate: this.validateNumber(
+				// 	lang('cash-flow.validation.exchange_rate_invalid'),
+				// 	true,
+				// 	true,
+				// ),
+				external_reference: this.validateString(
+					lang('cash-flow.validation.external_reference_invalid'),
+				).optional(),
 				notes: this.nullableString(
 					lang('cash-flow.validation.notes_invalid'),
 				),
@@ -184,27 +204,34 @@ export class CashFlowValidator extends BaseValidator {
 				path: ['_global'],
 			})
 			.superRefine((data, ctx) => {
-				const expectedCategoryType = getExpectedCategoryType(data.category);
+				const expectedCategoryType = getExpectedCategoryType(
+					data.category,
+				);
 
 				if (data.category_type !== expectedCategoryType) {
 					ctx.addIssue({
 						path: ['category_type'],
-						message: lang('cash-flow.error.category_type_mismatch', {
-							category: data.category,
-							category_type: expectedCategoryType
-						}),
+						message: lang(
+							'cash-flow.error.category_type_mismatch',
+							{
+								category: data.category,
+								category_type: expectedCategoryType,
+							},
+						),
 						code: 'custom',
 					});
 				}
 
-				const expectedDirection = getExpectedDirection(data.category_type);
+				const expectedDirection = getExpectedDirection(
+					data.category_type,
+				);
 
 				if (expectedDirection && data.direction !== expectedDirection) {
 					ctx.addIssue({
 						path: ['direction'],
 						message: lang('cash-flow.error.direction_mismatch', {
 							category: data.category,
-							direction: expectedDirection
+							direction: expectedDirection,
 						}),
 						code: 'custom',
 					});

@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import UserEntity from '@/features/user/user.entity';
-import { userPolicy } from '@/features/user/user.policy';
+import { type UserPolicy, userPolicy } from '@/features/user/user.policy';
 import { type UserService, userService } from '@/features/user/user.service';
 import {
 	type UserValidator,
@@ -10,11 +10,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class UserController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: UserPolicy,
 		private validator: UserValidator,
 		private cache: CacheProvider,
 		private userService: UserService,
@@ -142,7 +141,7 @@ class UserController extends BaseController {
 }
 
 export function createUserController(deps: {
-	policy: PolicyAbstract;
+	policy: UserPolicy;
 	validator: UserValidator;
 	cache: CacheProvider;
 	userService: UserService;

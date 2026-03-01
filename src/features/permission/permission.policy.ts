@@ -1,7 +1,7 @@
 import PermissionEntity from '@/features/permission/permission.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class PermissionPolicy extends PolicyAbstract {
+export class PermissionPolicy extends PolicyAbstract {
 	constructor() {
 		const entity = PermissionEntity.NAME;
 

@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import DiscountEntity from '@/features/discount/discount.entity';
-import { discountPolicy } from '@/features/discount/discount.policy';
+import {type DiscountPolicy, discountPolicy} from '@/features/discount/discount.policy';
 import {
 	type DiscountService,
 	discountService,
@@ -13,11 +13,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class DiscountController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: DiscountPolicy,
 		private validator: DiscountValidator,
 		private cache: CacheProvider,
 		private discountService: DiscountService,
@@ -131,7 +130,7 @@ class DiscountController extends BaseController {
 }
 
 export function createDiscountController(deps: {
-	policy: PolicyAbstract;
+	policy: DiscountPolicy;
 	validator: DiscountValidator;
 	cache: CacheProvider;
 	discountService: DiscountService;

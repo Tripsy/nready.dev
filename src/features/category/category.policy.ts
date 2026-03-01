@@ -1,7 +1,7 @@
 import CategoryEntity from '@/features/category/category.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class CategoryPolicy extends PolicyAbstract {
+export class CategoryPolicy extends PolicyAbstract {
 	constructor() {
 		const entity = CategoryEntity.NAME;
 

@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import BrandEntity from '@/features/brand/brand.entity';
-import { brandPolicy } from '@/features/brand/brand.policy';
+import {type BrandPolicy, brandPolicy} from '@/features/brand/brand.policy';
 import {
 	type BrandService,
 	brandService,
@@ -13,11 +13,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class BrandController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: BrandPolicy,
 		private validator: BrandValidator,
 		private cache: CacheProvider,
 		private brandService: BrandService,
@@ -169,7 +168,7 @@ class BrandController extends BaseController {
 }
 
 export function createBrandController(deps: {
-	policy: PolicyAbstract;
+	policy: BrandPolicy;
 	validator: BrandValidator;
 	cache: CacheProvider;
 	brandService: BrandService;

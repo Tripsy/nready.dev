@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import LogDataEntity from '@/features/log-data/log-data.entity';
-import { logDataPolicy } from '@/features/log-data/log-data.policy';
+import {type LogDataPolicy, logDataPolicy} from '@/features/log-data/log-data.policy';
 import {
 	type LogDataService,
 	logDataService,
@@ -13,11 +13,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class LogDataController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: LogDataPolicy,
 		private validator: LogDataValidator,
 		private cache: CacheProvider,
 		private logDataService: LogDataService,
@@ -93,7 +92,7 @@ class LogDataController extends BaseController {
 }
 
 export function createLogDataController(deps: {
-	policy: PolicyAbstract;
+	policy: LogDataPolicy;
 	validator: LogDataValidator;
 	cache: CacheProvider;
 	logDataService: LogDataService;

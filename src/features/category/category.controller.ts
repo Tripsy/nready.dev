@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import CategoryEntity from '@/features/category/category.entity';
-import { categoryPolicy } from '@/features/category/category.policy';
+import {type CategoryPolicy, categoryPolicy} from '@/features/category/category.policy';
 import {
 	type CategoryService,
 	categoryService,
@@ -13,11 +13,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class CategoryController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: CategoryPolicy,
 		private validator: CategoryValidator,
 		private cache: CacheProvider,
 		private categoryService: CategoryService,
@@ -169,7 +168,7 @@ class CategoryController extends BaseController {
 }
 
 export function createCategoryController(deps: {
-	policy: PolicyAbstract;
+	policy: CategoryPolicy;
 	validator: CategoryValidator;
 	cache: CacheProvider;
 	categoryService: CategoryService;

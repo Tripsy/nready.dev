@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import CronHistoryEntity from '@/features/cron-history/cron-history.entity';
-import { cronHistoryPolicy } from '@/features/cron-history/cron-history.policy';
+import {type CronHistoryPolicy, cronHistoryPolicy} from '@/features/cron-history/cron-history.policy';
 import {
 	type CronHistoryService,
 	cronHistoryService,
@@ -13,11 +13,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class CronHistoryController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: CronHistoryPolicy,
 		private validator: CronHistoryValidator,
 		private cache: CacheProvider,
 		private cronHistoryService: CronHistoryService,
@@ -94,7 +93,7 @@ class CronHistoryController extends BaseController {
 }
 
 export function createCronHistoryController(deps: {
-	policy: PolicyAbstract;
+	policy: CronHistoryPolicy;
 	validator: CronHistoryValidator;
 	cache: CacheProvider;
 	cronHistoryService: CronHistoryService;
