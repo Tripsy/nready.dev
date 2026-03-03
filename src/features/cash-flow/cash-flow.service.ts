@@ -19,6 +19,7 @@ import {
 	type CashFlowValidator,
 	paramsUpdateList,
 } from '@/features/cash-flow/cash-flow.validator';
+import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class CashFlowService {
@@ -251,29 +252,6 @@ export class CashFlowService {
 		return this.update(updateData);
 	}
 
-	public assertValidStatusTransition(
-		currentStatus: CashFlowStatusEnum,
-		newStatus: CashFlowStatusEnum,
-	) {
-		if (currentStatus === newStatus) {
-			throw new BadRequestError(
-				lang('cash-flow.error.status_unchanged', { status: newStatus }),
-			);
-		}
-
-		const allowed = STATUS_TRANSITIONS[currentStatus] || [];
-
-		if (!allowed.includes(newStatus)) {
-			throw new CustomError(
-				409,
-				lang('cash-flow.error.status_update_not_allowed', {
-					currentStatus: currentStatus,
-					newStatus: newStatus,
-				}),
-			);
-		}
-	}
-
 	public async updateStatus(
 		id: number,
 		newStatus: CashFlowStatusEnum,
@@ -281,7 +259,11 @@ export class CashFlowService {
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);
 
-		this.assertValidStatusTransition(entry.status, newStatus);
+		assertValidStatusTransition(
+			STATUS_TRANSITIONS,
+			entry.status,
+			newStatus,
+		);
 
 		entry.status = newStatus;
 

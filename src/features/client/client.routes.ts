@@ -46,10 +46,7 @@ const routesModule: FeatureRoutesModule<typeof clientController> = {
 			handlers: [
 				validateParamsWhenId('id'),
 				validateParamsWhenEnum({
-					status: [
-						ClientStatusEnum.ACTIVE,
-						ClientStatusEnum.INACTIVE,
-					],
+					status: Object.values(ClientStatusEnum),
 				}),
 			],
 		},

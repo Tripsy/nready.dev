@@ -11,7 +11,9 @@
 		"db_restore_one": "Failed to restore just one entry; Based on filters multiple entries were found",
 		"db_delete_missing_filter": "Failed to delete entries; No filter were provided",
 		"db_restore_missing_filter": "Failed to restore entries; No filter were provided",
-		"db_select_count_while_using_groups": "Cannot use count while using groups"
+		"db_select_count_while_using_groups": "Cannot use count while using groups",
+		"status_unchanged": "Status unchanged (eg: {{status}})",
+		"status_update_not_allowed": "Invalid status transition from {{currentStatus}} to {{newStatus}}"
 	},
 	"validation": {
 		"invalid_id": "Invalid ID parameter (eg: {{name}})",

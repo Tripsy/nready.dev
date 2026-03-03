@@ -20,6 +20,7 @@ import {
 	testServiceFindByFilter,
 	testServiceFindById,
 	testServiceRestore,
+	testServiceUpdateStatus,
 } from '@/tests/jest-service.setup';
 
 function createMockRepositoryForBrand<
@@ -95,22 +96,19 @@ describe('BrandService', () => {
 		expect(result).toBe(entity);
 	});
 
-	it('should update status', async () => {
-		const entity = getBrandEntityMock();
-		entity.status = BrandStatusEnum.INACTIVE;
+	testServiceUpdateStatus<BrandEntity, BrandStatusEnum>(
+		serviceBrand,
+		mockBrand.repository,
+		{
+			good: {
+				from: BrandStatusEnum.INACTIVE,
+				to: BrandStatusEnum.ACTIVE,
+			},
+			bad: undefined,
+		},
+	);
 
-		jest.spyOn(serviceBrand, 'findById').mockResolvedValue(entity);
-
-		await serviceBrand.updateStatus(
-			entity.id,
-			BrandStatusEnum.ACTIVE,
-			true,
-		);
-
-		expect(mockBrand.repository.save).toHaveBeenCalled();
-	});
-
-	it('should update order', async () => {
+	it('updateOrder - success', async () => {
 		mockBrand.query.count.mockResolvedValue(2);
 
 		const { transaction, manager } = setupTransactionMock();

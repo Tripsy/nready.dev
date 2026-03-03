@@ -21,6 +21,7 @@ import {
 	createMockRepository,
 	testServiceFindByFilter,
 	testServiceFindById,
+	testServiceUpdateStatus,
 } from '@/tests/jest-service.setup';
 
 describe('CashFlowService', () => {
@@ -259,23 +260,20 @@ describe('CashFlowService', () => {
 		expect(updateSpy).toHaveBeenCalled();
 	});
 
-	it('assertValidStatusTransition - should throw when status is unchanged', async () => {
-		expect(() =>
-			serviceCashFlow.assertValidStatusTransition(
-				CashFlowStatusEnum.PENDING,
-				CashFlowStatusEnum.PENDING,
-			),
-		).toThrow('cash-flow.error.status_unchanged');
-	});
-
-	it('assertValidStatusTransition - should status transition is not followed', async () => {
-		expect(() =>
-			serviceCashFlow.assertValidStatusTransition(
-				CashFlowStatusEnum.COMPLETED,
-				CashFlowStatusEnum.PENDING,
-			),
-		).toThrow('cash-flow.error.status_update_not_allowed');
-	});
+	testServiceUpdateStatus<CashFlowEntity, CashFlowStatusEnum>(
+		serviceCashFlow,
+		mockCashFlow.repository,
+		{
+			good: {
+				from: CashFlowStatusEnum.PENDING,
+				to: CashFlowStatusEnum.AUTHORIZED,
+			},
+			bad: {
+				from: CashFlowStatusEnum.COMPLETED,
+				to: CashFlowStatusEnum.EXPIRED,
+			},
+		},
+	);
 
 	it('should update status with success', async () => {
 		const entity = getCashFlowEntityMock({

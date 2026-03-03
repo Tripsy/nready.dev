@@ -1,8 +1,6 @@
-import {
-	UserOperatorTypeEnum,
-	UserRoleEnum,
-} from '@/features/user/user.entity';
+import { UserOperatorTypeEnum } from '@/features/user/user.entity';
 import { OutputWrapper } from '@/middleware/output-handler.middleware';
+import { UserRoleEnum } from '@/shared/types/user-role.type';
 
 export type AuthContext = {
 	id: number;

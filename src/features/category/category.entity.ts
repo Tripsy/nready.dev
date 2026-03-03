@@ -13,12 +13,23 @@ import {
 	EntityAbstract,
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
+import type { StatusTransitions } from '@/shared/types/common.type';
 
 export enum CategoryStatusEnum {
 	ACTIVE = 'active',
 	PENDING = 'pending',
 	INACTIVE = 'inactive',
 }
+
+// Allowed status transition configuration
+export const STATUS_TRANSITIONS: StatusTransitions<CategoryStatusEnum> = {
+	[CategoryStatusEnum.ACTIVE]: [CategoryStatusEnum.INACTIVE],
+	[CategoryStatusEnum.INACTIVE]: [CategoryStatusEnum.ACTIVE],
+	[CategoryStatusEnum.PENDING]: [
+		CategoryStatusEnum.ACTIVE,
+		CategoryStatusEnum.INACTIVE,
+	],
+};
 
 export enum CategoryTypeEnum {
 	PRODUCT = 'product',

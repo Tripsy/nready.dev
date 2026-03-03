@@ -3,12 +3,12 @@ import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import {
 	UserOperatorTypeEnum,
-	UserRoleEnum,
 	UserStatusEnum,
 } from '@/features/user/user.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import { UserRoleEnum } from '@/shared/types/user-role.type';
 
 export const paramsUpdateList: string[] = [
 	'name',

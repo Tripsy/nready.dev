@@ -20,8 +20,7 @@
 	},
 	"error": {
 		"not_found": "Client not found",
-		"already_exists": "Client already exists",
-		"status_unchanged": "Status unchanged (eg: {{status}})"
+		"already_exists": "Client already exists"
 	},
 	"success": {
 		"create": "Client created successfully",

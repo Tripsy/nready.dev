@@ -1,5 +1,4 @@
 import { expect, jest } from '@jest/globals';
-import { BadRequestError } from '@/exceptions';
 import type AccountTokenEntity from '@/features/account/account-token.entity';
 import type { AccountTokenQuery } from '@/features/account/account-token.repository';
 import { AccountTokenService } from '@/features/account/account-token.service';
@@ -19,6 +18,7 @@ import {
 	testServiceFindById,
 	testServiceRestore,
 	testServiceUpdate,
+	testServiceUpdateStatus,
 } from '@/tests/jest-service.setup';
 
 describe('UserService', () => {
@@ -59,30 +59,19 @@ describe('UserService', () => {
 		getUserEntityMock(),
 	);
 
-	it('should fail when status is unchanged', async () => {
-		const entity = getUserEntityMock();
-		entity.status = UserStatusEnum.ACTIVE;
-
-		jest.spyOn(serviceUser, 'findById').mockResolvedValue(entity);
-
-		await expect(
-			serviceUser.updateStatus(entity.id, UserStatusEnum.ACTIVE, true),
-		).rejects.toThrow(BadRequestError);
-	});
-
-	it('should update status', async () => {
-		const entity = getUserEntityMock();
-		entity.status = UserStatusEnum.INACTIVE;
-
-		jest.spyOn(serviceUser, 'findById').mockResolvedValue(entity);
-
-		await serviceUser.updateStatus(entity.id, UserStatusEnum.ACTIVE, true);
-
-		expect(mockUser.repository.save).toHaveBeenCalled();
-	});
+	testServiceUpdateStatus<UserEntity, UserStatusEnum>(
+		serviceUser,
+		mockUser.repository,
+		{
+			good: { from: UserStatusEnum.INACTIVE, to: UserStatusEnum.ACTIVE },
+			bad: undefined,
+		},
+	);
 
 	testServiceDelete<UserEntity, UserQuery>(mockUser.query, serviceUser);
+
 	testServiceRestore<UserEntity, UserQuery>(mockUser.query, serviceUser);
+
 	testServiceFindById<UserEntity, UserQuery>(mockUser.query, serviceUser);
 
 	it('should find entity by email', async () => {

@@ -17,7 +17,6 @@
 		"has_descendants": "Category has active descendants",
 		"not_deleted": "Category is not marked as deleted",
 		"parent_not_active": "Parent category is not active",
-		"status_unchanged": "Category status is unchanged",
 		"has_active_descendants": "Category has active descendants"
 	},
 	"success": {

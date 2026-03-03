@@ -5,6 +5,7 @@ import { BadRequestError, CustomError } from '@/exceptions';
 import BrandEntity, {
 	type BrandStatusEnum,
 	type BrandTypeEnum,
+	STATUS_TRANSITIONS,
 } from '@/features/brand/brand.entity';
 import { getBrandRepository } from '@/features/brand/brand.repository';
 import {
@@ -12,6 +13,7 @@ import {
 	paramsUpdateList,
 } from '@/features/brand/brand.validator';
 import BrandContentRepository from '@/features/brand/brand-content.repository';
+import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class BrandService {
@@ -112,11 +114,11 @@ export class BrandService {
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);
 
-		if (entry.status === newStatus) {
-			throw new BadRequestError(
-				lang('brand.error.status_unchanged', { status: newStatus }),
-			);
-		}
+		assertValidStatusTransition(
+			STATUS_TRANSITIONS,
+			entry.status,
+			newStatus,
+		);
 
 		entry.status = newStatus;
 

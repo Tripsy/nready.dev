@@ -50,7 +50,7 @@ const routesModule: FeatureRoutesModule<typeof brandController> = {
 			handlers: [
 				validateParamsWhenId('id'),
 				validateParamsWhenEnum({
-					status: [BrandStatusEnum.ACTIVE, BrandStatusEnum.INACTIVE],
+					status: Object.values(BrandStatusEnum),
 				}),
 			],
 		},

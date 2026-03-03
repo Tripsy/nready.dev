@@ -1,18 +1,19 @@
 import type { DeepPartial } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
-import { BadRequestError, CustomError, NotFoundError } from '@/exceptions';
-import type ClientEntity from '@/features/client/client.entity';
-import {
+import { CustomError, NotFoundError } from '@/exceptions';
+import ClientEntity, {
 	type ClientIdentityData,
 	ClientStatusEnum,
 	ClientTypeEnum,
+	STATUS_TRANSITIONS,
 } from '@/features/client/client.entity';
 import { getClientRepository } from '@/features/client/client.repository';
 import {
 	type ClientValidator,
 	paramsUpdateList,
 } from '@/features/client/client.validator';
+import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class ClientService {
@@ -110,11 +111,11 @@ export class ClientService {
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);
 
-		if (entry.status === newStatus) {
-			throw new BadRequestError(
-				lang('client.error.status_unchanged', { status: newStatus }),
-			);
-		}
+		assertValidStatusTransition(
+			STATUS_TRANSITIONS,
+			entry.status,
+			newStatus,
+		);
 
 		entry.status = newStatus;
 

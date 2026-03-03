@@ -2,6 +2,7 @@ import { expect, jest } from '@jest/globals';
 import type { ObjectLiteral, Repository } from 'typeorm';
 import type ClientEntity from '@/features/client/client.entity';
 import type { ClientIdentityData } from '@/features/client/client.entity';
+import { ClientStatusEnum } from '@/features/client/client.entity';
 import {
 	clientOutputPayloads,
 	getClientEntityMock,
@@ -17,6 +18,7 @@ import {
 	testServiceFindById,
 	testServiceRestore,
 	testServiceUpdate,
+	testServiceUpdateStatus,
 } from '@/tests/jest-service.setup';
 
 function createMockRepositoryForClient<
@@ -77,6 +79,18 @@ describe('ClientService', () => {
 		serviceClient,
 		mockClient.repository,
 		getClientEntityMock(),
+	);
+
+	testServiceUpdateStatus<ClientEntity, ClientStatusEnum>(
+		serviceClient,
+		mockClient.repository,
+		{
+			good: {
+				from: ClientStatusEnum.INACTIVE,
+				to: ClientStatusEnum.ACTIVE,
+			},
+			bad: undefined,
+		},
 	);
 
 	testServiceFindById<ClientEntity, ClientQuery>(

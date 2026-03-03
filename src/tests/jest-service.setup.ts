@@ -131,6 +131,68 @@ export function testServiceUpdate<E extends ObjectLiteral>(
 	});
 }
 
+interface IUpdateStatusService<E, S> {
+	findById(id: number, withDeleted?: boolean): Promise<E>;
+	updateStatus(id: number, newStatus: S, withDeleted: boolean): Promise<void>;
+}
+
+export function testServiceUpdateStatus<
+	E extends ObjectLiteral,
+	S extends string,
+>(
+	service: IUpdateStatusService<E, S>,
+	repository: jest.Mocked<Repository<E>>,
+	statusTransitions: {
+		good: { from: S; to: S };
+		bad?: { from: S; to: S };
+	},
+) {
+	it('updateStatus - status_unchanged', async () => {
+		const entity = {
+			id: 1,
+			status: statusTransitions.good.from,
+		} as unknown as E;
+
+		jest.spyOn(service, 'findById').mockResolvedValue(entity);
+
+		await expect(
+			service.updateStatus(entity.id, statusTransitions.good.from, false),
+		).rejects.toThrow('shared.error.status_unchanged');
+	});
+
+	if (statusTransitions.bad !== undefined) {
+		const badTransition = statusTransitions.bad;
+
+		it('updateStatus - status_update_not_allowed', async () => {
+			const entity = {
+				id: 1,
+				status: badTransition.from,
+			} as unknown as E;
+
+			jest.spyOn(service, 'findById').mockResolvedValue(entity);
+
+			await expect(
+				service.updateStatus(entity.id, badTransition.to, false),
+			).rejects.toThrow('shared.error.status_update_not_allowed');
+		});
+	}
+
+	it('updateStatus - success', async () => {
+		const entity = {
+			id: 1,
+			status: statusTransitions.good.from,
+		} as unknown as E;
+
+		jest.spyOn(service, 'findById').mockResolvedValue(entity);
+
+		repository.save.mockResolvedValue(entity);
+
+		await service.updateStatus(entity.id, statusTransitions.good.to, false);
+
+		expect(repository.save).toHaveBeenCalled();
+	});
+}
+
 interface IDeleteService {
 	delete(id: number): Promise<void>;
 }
