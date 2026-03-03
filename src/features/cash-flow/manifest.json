@@ -1,8 +1,8 @@
 {
-	"name": "cashFlow",
+	"name": "cash-flow",
 	"version": "1.0.0",
-	"relativePath": "/cashFlow",
-	"entities": ["cashFlow"],
+	"relativePath": "/cash-flow",
+	"entities": ["cash-flow"],
 	"depends_on": [],
 	"depends_off": ["invoice"]
 }

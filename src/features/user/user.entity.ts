@@ -1,5 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import type { StatusTransitions } from '@/shared/types/common.type';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
 
 export enum UserStatusEnum {
@@ -8,7 +9,12 @@ export enum UserStatusEnum {
 	PENDING = 'pending',
 }
 
-export { UserRoleEnum };
+// Allowed status transition configuration
+export const STATUS_TRANSITIONS: StatusTransitions<UserStatusEnum> = {
+	[UserStatusEnum.ACTIVE]: [UserStatusEnum.INACTIVE],
+	[UserStatusEnum.INACTIVE]: [UserStatusEnum.ACTIVE],
+	[UserStatusEnum.PENDING]: [UserStatusEnum.ACTIVE, UserStatusEnum.INACTIVE],
+};
 
 export enum UserOperatorTypeEnum {
 	SELLER = 'seller',

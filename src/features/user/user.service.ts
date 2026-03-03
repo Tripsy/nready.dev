@@ -1,18 +1,22 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
-import { BadRequestError, CustomError } from '@/exceptions';
+import { CustomError } from '@/exceptions';
 import {
 	type AccountTokenService,
 	accountTokenService,
 } from '@/features/account/account-token.service';
-import type UserEntity from '@/features/user/user.entity';
-import { UserRoleEnum, type UserStatusEnum } from '@/features/user/user.entity';
+import UserEntity, {
+	STATUS_TRANSITIONS,
+	type UserStatusEnum,
+} from '@/features/user/user.entity';
 import { getUserRepository } from '@/features/user/user.repository';
 import {
 	paramsUpdateList,
 	type UserValidator,
 } from '@/features/user/user.validator';
+import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
+import { UserRoleEnum } from '@/shared/types/user-role.type';
 
 export class UserService {
 	constructor(
@@ -116,11 +120,11 @@ export class UserService {
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);
 
-		if (entry.status === newStatus) {
-			throw new BadRequestError(
-				lang('user.error.status_unchanged', { status: newStatus }),
-			);
-		}
+		assertValidStatusTransition(
+			STATUS_TRANSITIONS,
+			entry.status,
+			newStatus,
+		);
 
 		entry.status = newStatus;
 

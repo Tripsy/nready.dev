@@ -1,14 +1,16 @@
 import type { DeepPartial, EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
-import { BadRequestError, CustomError } from '@/exceptions';
+import { CustomError } from '@/exceptions';
 import CategoryEntity, {
 	CategoryStatusEnum,
+	STATUS_TRANSITIONS,
 } from '@/features/category/category.entity';
 import { getCategoryRepository } from '@/features/category/category.repository';
 import type { CategoryValidator } from '@/features/category/category.validator';
 import CategoryContentRepository from '@/features/category/category-content.repository';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
+import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class CategoryService {
@@ -186,26 +188,20 @@ export class CategoryService {
 				qCategory.withDeleted();
 			}
 
-			const category = await qCategory.getOneOrFail();
+			const entry = await qCategory.getOneOrFail();
 
-			if (category.status === newStatus) {
-				throw new BadRequestError(
-					lang('category.error.status_unchanged', {
-						status: newStatus,
-					}),
-				);
-			}
+			assertValidStatusTransition(
+				STATUS_TRANSITIONS,
+				entry.status,
+				newStatus,
+			);
 
 			if (newStatus === CategoryStatusEnum.INACTIVE) {
 				const treeRepository =
 					manager.getTreeRepository(CategoryEntity);
 
 				const activeDescendantsData = await treeRepository
-					.createDescendantsQueryBuilder(
-						'category',
-						'closure',
-						category,
-					)
+					.createDescendantsQueryBuilder('category', 'closure', entry)
 					.select('category.id', 'id')
 					.where('category.status = :status', {
 						status: CategoryStatusEnum.ACTIVE,
@@ -213,7 +209,7 @@ export class CategoryService {
 					.getRawMany<{ id: number }>();
 
 				const activeDescendants = activeDescendantsData.filter(
-					(d) => d.id !== category.id,
+					(d) => d.id !== entry.id,
 				);
 
 				if (activeDescendants.length > 0) {
@@ -235,9 +231,9 @@ export class CategoryService {
 				}
 			}
 
-			category.status = newStatus;
+			entry.status = newStatus;
 
-			await repository.save(category);
+			await repository.save(entry);
 		});
 	}
 

@@ -26,8 +26,7 @@
 		"refund_parent_category_invalid": "Cannot refund from selected payment",
 		"refund_amount_mismatch": "The refunded amount is bigger than the available amount for refund; Maximum amount available for refund is {{max_amount}}",
 		"cannot_delete_with_refunds": "This cash flow operation has refunds linked",
-		"update_not_allowed": "This cash flow operation is not available for update",
-		"status_update_not_allowed": "Invalid status transition from {{currentStatus}} to {{newStatus}}"
+		"update_not_allowed": "This cash flow operation is not available for update"
 	},
 	"success": {
 		"create": "Cash flow created successfully",

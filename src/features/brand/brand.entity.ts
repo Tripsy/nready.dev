@@ -4,11 +4,18 @@ import {
 	EntityAbstract,
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
+import type { StatusTransitions } from '@/shared/types/common.type';
 
 export enum BrandStatusEnum {
 	ACTIVE = 'active',
 	INACTIVE = 'inactive',
 }
+
+// Allowed status transition configuration
+export const STATUS_TRANSITIONS: StatusTransitions<BrandStatusEnum> = {
+	[BrandStatusEnum.ACTIVE]: [BrandStatusEnum.INACTIVE],
+	[BrandStatusEnum.INACTIVE]: [BrandStatusEnum.ACTIVE],
+};
 
 export enum BrandTypeEnum {
 	PRODUCT = 'product',

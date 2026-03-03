@@ -16,8 +16,7 @@
 	},
 	"error": {
 		"not_found": "User not found",
-		"email_already_used": "Email already used by another account",
-		"status_unchanged": "Status unchanged (eg: {{status}})"
+		"email_already_used": "Email already used by another account"
 	},
 	"success": {
 		"create": "User created successfully",

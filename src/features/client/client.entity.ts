@@ -1,12 +1,23 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type PlaceEntity from '@/features/place/place.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import type { StatusTransitions } from '@/shared/types/common.type';
 
 export enum ClientStatusEnum {
 	ACTIVE = 'active',
 	INACTIVE = 'inactive',
 	PENDING = 'pending',
 }
+
+// Allowed status transition configuration
+export const STATUS_TRANSITIONS: StatusTransitions<ClientStatusEnum> = {
+	[ClientStatusEnum.ACTIVE]: [ClientStatusEnum.INACTIVE],
+	[ClientStatusEnum.INACTIVE]: [ClientStatusEnum.ACTIVE],
+	[ClientStatusEnum.PENDING]: [
+		ClientStatusEnum.ACTIVE,
+		ClientStatusEnum.INACTIVE,
+	],
+};
 
 export enum ClientTypeEnum {
 	PERSON = 'person',

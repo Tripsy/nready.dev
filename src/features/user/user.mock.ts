@@ -1,5 +1,5 @@
 import type UserEntity from '@/features/user/user.entity';
-import { UserRoleEnum, UserStatusEnum } from '@/features/user/user.entity';
+import { UserStatusEnum } from '@/features/user/user.entity';
 import {
 	OrderByEnum,
 	type UserValidator,
@@ -7,6 +7,7 @@ import {
 import { createPastDate, formatDate } from '@/helpers';
 import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+import { UserRoleEnum } from '@/shared/types/user-role.type';
 
 export function getUserEntityMock(): UserEntity {
 	return {

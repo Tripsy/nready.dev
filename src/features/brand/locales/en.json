@@ -9,8 +9,7 @@
 	},
 	"error": {
 		"not_found": "Brand not found",
-		"already_exist": "Another brand already set with this name / type",
-		"status_unchanged": "Status unchanged (eg: {{status}})"
+		"already_exist": "Another brand already set with this name / type"
 	},
 	"success": {
 		"create": "Brand created successfully",
