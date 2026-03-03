@@ -1,7 +1,7 @@
 import PlaceEntity from '@/features/place/place.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class PlacePolicy extends PolicyAbstract {
+export class PlacePolicy extends PolicyAbstract {
 	constructor() {
 		const entity = PlaceEntity.NAME;
 

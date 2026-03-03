@@ -4,5 +4,5 @@
 	"relativePath": "/invoice",
 	"entities": ["invoice"],
 	"depends_on": ["client", "order", "discount"],
-	"depends_off": ["payment"]
+	"depends_off": ["cash-flow"]
 }

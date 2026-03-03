@@ -28,16 +28,6 @@ type AddressFields = {
 
 export abstract class BaseValidator {
 	/**
-	 * @description Make string nullable and optional
-	 */
-	protected nullableString(msg: string) {
-		return z.preprocess(
-			(v) => (v === '' ? null : v),
-			z.string({ message: msg }).trim().nullable().optional(),
-		);
-	}
-
-	/**
 	 * @description Used in validators to make string required
 	 */
 	protected validateString(message: string) {
@@ -60,6 +50,7 @@ export abstract class BaseValidator {
 		if (onlyPositive) {
 			schema = schema.positive({ message });
 		}
+
 		if (!allowDecimals) {
 			schema = schema.int({ message });
 		}

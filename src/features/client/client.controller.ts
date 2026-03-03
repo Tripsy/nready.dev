@@ -2,7 +2,10 @@ import type { Request, Response } from 'express';
 
 import { lang } from '@/config/i18n.setup';
 import ClientEntity from '@/features/client/client.entity';
-import { clientPolicy } from '@/features/client/client.policy';
+import {
+	type ClientPolicy,
+	clientPolicy,
+} from '@/features/client/client.policy';
 import {
 	type ClientService,
 	clientService,
@@ -14,11 +17,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class ClientController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: ClientPolicy,
 		private validator: ClientValidator,
 		private cache: CacheProvider,
 		private clientService: ClientService,
@@ -161,7 +163,7 @@ class ClientController extends BaseController {
 }
 
 export function createClientController(deps: {
-	policy: PolicyAbstract;
+	policy: ClientPolicy;
 	validator: ClientValidator;
 	cache: CacheProvider;
 	clientService: ClientService;

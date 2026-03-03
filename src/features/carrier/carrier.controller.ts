@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import CarrierEntity from '@/features/carrier/carrier.entity';
-import { carrierPolicy } from '@/features/carrier/carrier.policy';
+import {
+	type CarrierPolicy,
+	carrierPolicy,
+} from '@/features/carrier/carrier.policy';
 import {
 	type CarrierService,
 	carrierService,
@@ -13,11 +16,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class CarrierController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: CarrierPolicy,
 		private validator: CarrierValidator,
 		private cache: CacheProvider,
 		private carrierService: CarrierService,
@@ -130,7 +132,7 @@ class CarrierController extends BaseController {
 }
 
 export function createCarrierController(deps: {
-	policy: PolicyAbstract;
+	policy: CarrierPolicy;
 	validator: CarrierValidator;
 	cache: CacheProvider;
 	carrierService: CarrierService;

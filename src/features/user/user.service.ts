@@ -114,17 +114,17 @@ export class UserService {
 		newStatus: UserStatusEnum,
 		withDeleted: boolean,
 	): Promise<void> {
-		const user = await this.findById(id, withDeleted);
+		const entry = await this.findById(id, withDeleted);
 
-		if (user.status === newStatus) {
+		if (entry.status === newStatus) {
 			throw new BadRequestError(
 				lang('user.error.status_unchanged', { status: newStatus }),
 			);
 		}
 
-		user.status = newStatus;
+		entry.status = newStatus;
 
-		await this.repository.save(user);
+		await this.repository.save(entry);
 	}
 
 	public async delete(id: number) {

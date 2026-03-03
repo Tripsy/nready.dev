@@ -110,17 +110,17 @@ export class BrandService {
 		newStatus: BrandStatusEnum,
 		withDeleted: boolean,
 	): Promise<void> {
-		const brand = await this.findById(id, withDeleted);
+		const entry = await this.findById(id, withDeleted);
 
-		if (brand.status === newStatus) {
+		if (entry.status === newStatus) {
 			throw new BadRequestError(
 				lang('brand.error.status_unchanged', { status: newStatus }),
 			);
 		}
 
-		brand.status = newStatus;
+		entry.status = newStatus;
 
-		await this.repository.save(brand);
+		await this.repository.save(entry);
 	}
 
 	public async updateOrder(

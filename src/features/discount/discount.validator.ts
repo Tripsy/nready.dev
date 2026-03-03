@@ -61,9 +61,9 @@ export class DiscountValidator extends BaseValidator {
 					DiscountReasonEnum,
 					lang('discount.validation.reason_invalid'),
 				),
-				reference: this.nullableString(
+				reference: this.validateString(
 					lang('discount.validation.reference_invalid'),
-				),
+				).optional(),
 				type: this.validateEnum(
 					DiscountTypeEnum,
 					lang('discount.validation.type_invalid'),
@@ -82,9 +82,9 @@ export class DiscountValidator extends BaseValidator {
 					lang('shared.error.start_at_invalid'),
 				),
 				end_at: this.validateDate(lang('shared.error.end_at_invalid')),
-				notes: this.nullableString(
+				notes: this.validateString(
 					lang('discount.validation.notes_invalid'),
-				),
+				).optional(),
 			})
 			.superRefine((data, ctx) => {
 				if (
@@ -132,9 +132,9 @@ export class DiscountValidator extends BaseValidator {
 					DiscountReasonEnum,
 					lang('discount.validation.reason_invalid'),
 				).optional(),
-				reference: this.nullableString(
+				reference: this.validateString(
 					lang('discount.validation.reference_invalid'),
-				),
+				).optional(),
 				type: this.validateEnum(
 					DiscountTypeEnum,
 					lang('discount.validation.type_invalid'),
@@ -154,9 +154,9 @@ export class DiscountValidator extends BaseValidator {
 					lang('shared.error.start_at_invalid'),
 				),
 				end_at: this.validateDate(lang('shared.error.end_at_invalid')),
-				notes: this.nullableString(
+				notes: this.validateString(
 					lang('discount.validation.notes_invalid'),
-				),
+				).optional(),
 			})
 			.refine((data) => hasAtLeastOneValue(data), {
 				message: lang('shared.validation.params_at_least_one', {

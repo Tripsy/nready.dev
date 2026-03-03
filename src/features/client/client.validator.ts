@@ -79,9 +79,9 @@ export class ClientValidator extends BaseValidator {
 			address_postal_code: this.validateNumber(
 				lang('client.validation.address_postal_code_invalid'),
 			).optional(),
-			notes: this.nullableString(
+			notes: this.validateString(
 				lang('carrier.validation.notes_invalid'),
-			),
+			).optional(),
 		});
 
 		const ClientCreateCompanyValidator = ClientCreateBaseValidator.extend({
@@ -154,7 +154,9 @@ export class ClientValidator extends BaseValidator {
 			address_postal_code: this.validateString(
 				lang('client.validation.address_postal_code_invalid'),
 			).optional(),
-			notes: this.nullableString(lang('client.validation.notes_invalid')),
+			notes: this.validateString(
+				lang('client.validation.notes_invalid'),
+			).optional(),
 		});
 
 		const ClientUpdateCompanyValidator = ClientUpdateBaseValidator.extend({

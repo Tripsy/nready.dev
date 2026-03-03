@@ -1,6 +1,9 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
-import { logHistoryPolicy } from '@/features/log-history/log-history.policy';
+import {
+	type LogHistoryPolicy,
+	logHistoryPolicy,
+} from '@/features/log-history/log-history.policy';
 import {
 	type LogHistoryService,
 	logHistoryService,
@@ -11,11 +14,10 @@ import {
 } from '@/features/log-history/log-history.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class LogHistoryController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: LogHistoryPolicy,
 		private validator: LogHistoryValidator,
 		private logHistoryService: LogHistoryService,
 	) {
@@ -82,7 +84,7 @@ class LogHistoryController extends BaseController {
 }
 
 export function createLogHistoryController(deps: {
-	policy: PolicyAbstract;
+	policy: LogHistoryPolicy;
 	validator: LogHistoryValidator;
 	logHistoryService: LogHistoryService;
 }) {

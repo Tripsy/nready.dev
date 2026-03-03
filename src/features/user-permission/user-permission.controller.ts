@@ -1,6 +1,9 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
-import { permissionPolicy } from '@/features/permission/permission.policy';
+import {
+	type PermissionPolicy,
+	permissionPolicy,
+} from '@/features/permission/permission.policy';
 import {
 	type UserPermissionService,
 	userPermissionService,
@@ -11,11 +14,10 @@ import {
 } from '@/features/user-permission/user-permission.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class UserPermissionController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: PermissionPolicy,
 		private validator: UserPermissionValidator,
 		private userPermissionService: UserPermissionService,
 	) {
@@ -99,7 +101,7 @@ class UserPermissionController extends BaseController {
 }
 
 export function createUserPermissionController(deps: {
-	policy: PolicyAbstract;
+	policy: PermissionPolicy;
 	validator: UserPermissionValidator;
 	userPermissionService: UserPermissionService;
 }) {

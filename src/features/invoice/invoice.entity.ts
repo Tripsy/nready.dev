@@ -68,6 +68,8 @@ export type BillingDetailsCompany = {
 	contact_phone?: string | null;
 };
 
+// TODO should contain payment_id
+
 export type BillingDetails = BillingDetailsPerson | BillingDetailsCompany;
 
 const ENTITY_TABLE_NAME = 'invoice';

@@ -3,7 +3,10 @@ import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/i18n.setup';
 import { LogHistoryAction } from '@/features/log-history/log-history.entity';
 import MailQueueEntity from '@/features/mail-queue/mail-queue.entity';
-import { mailQueuePolicy } from '@/features/mail-queue/mail-queue.policy';
+import {
+	type MailQueuePolicy,
+	mailQueuePolicy,
+} from '@/features/mail-queue/mail-queue.policy';
 import {
 	type MailQueueService,
 	mailQueueService,
@@ -15,11 +18,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class MailQueueController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: MailQueuePolicy,
 		private validator: MailQueueValidator,
 		private cache: CacheProvider,
 		private mailQueueService: MailQueueService,
@@ -101,7 +103,7 @@ class MailQueueController extends BaseController {
 }
 
 export function createMailQueueController(deps: {
-	policy: PolicyAbstract;
+	policy: MailQueuePolicy;
 	validator: MailQueueValidator;
 	cache: CacheProvider;
 	mailQueueService: MailQueueService;

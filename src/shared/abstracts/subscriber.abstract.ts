@@ -20,10 +20,10 @@ type EntityWithTable<T> = {
 };
 
 export type SubscriberConfig = {
-	beforeRemove?: boolean;
-	afterSoftRemove?: boolean;
 	afterInsert?: boolean;
 	afterUpdate?: boolean;
+	beforeRemove?: boolean;
+	afterSoftRemove?: boolean;
 };
 
 abstract class SubscriberAbstract<T extends BaseEntity>
@@ -157,6 +157,20 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 				? LogHistoryAction.RESTORED
 				: LogHistoryAction.UPDATED,
 		);
+
+		// Log `status` change if exist
+		if (
+			event.entity &&
+			event.databaseEntity &&
+			'status' in event.entity &&
+			'status' in event.databaseEntity &&
+			event.entity.status !== event.databaseEntity.status
+		) {
+			this.logHistory(id, LogHistoryAction.STATUS, {
+				oldStatus: event.databaseEntity.status as string,
+				newStatus: event.entity.status as string,
+			});
+		}
 	}
 }
 

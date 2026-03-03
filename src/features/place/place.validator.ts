@@ -66,9 +66,9 @@ export class PlaceValidator extends BaseValidator {
 					PlaceTypeEnum,
 					lang('place.validation.type_invalid'),
 				).optional(),
-				code: this.nullableString(
+				code: this.validateString(
 					lang('place.validation.code_invalid'),
-				),
+				).optional(),
 				parent_id: z
 					.number({ message: lang('shared.error.invalid_parent_id') })
 					.optional(),

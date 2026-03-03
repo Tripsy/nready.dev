@@ -3,7 +3,10 @@ import { lang } from '@/config/i18n.setup';
 import TemplateEntity, {
 	TemplateTypeEnum,
 } from '@/features/template/template.entity';
-import { templatePolicy } from '@/features/template/template.policy';
+import {
+	type TemplatePolicy,
+	templatePolicy,
+} from '@/features/template/template.policy';
 import {
 	type TemplateService,
 	templateService,
@@ -15,11 +18,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class TemplateController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: TemplatePolicy,
 		private validator: TemplateValidator,
 		private cache: CacheProvider,
 		private templateService: TemplateService,
@@ -157,7 +159,7 @@ class TemplateController extends BaseController {
 }
 
 export function createTemplateController(deps: {
-	policy: PolicyAbstract;
+	policy: TemplatePolicy;
 	validator: TemplateValidator;
 	cache: CacheProvider;
 	templateService: TemplateService;

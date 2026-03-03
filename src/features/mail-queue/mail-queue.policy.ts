@@ -1,7 +1,7 @@
 import MailQueueEntity from '@/features/mail-queue/mail-queue.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class MailQueuePolicy extends PolicyAbstract {
+export class MailQueuePolicy extends PolicyAbstract {
 	constructor() {
 		const entity = MailQueueEntity.NAME;
 

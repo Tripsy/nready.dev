@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import PlaceEntity from '@/features/place/place.entity';
-import { placePolicy } from '@/features/place/place.policy';
+import { type PlacePolicy, placePolicy } from '@/features/place/place.policy';
 import {
 	type PlaceService,
 	placeService,
@@ -13,11 +13,10 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
 class PlaceController extends BaseController {
 	constructor(
-		private policy: PolicyAbstract,
+		private policy: PlacePolicy,
 		private validator: PlaceValidator,
 		private cache: CacheProvider,
 		private placeService: PlaceService,
@@ -139,7 +138,7 @@ class PlaceController extends BaseController {
 }
 
 export function createPlaceController(deps: {
-	policy: PolicyAbstract;
+	policy: PlacePolicy;
 	validator: PlaceValidator;
 	cache: CacheProvider;
 	placeService: PlaceService;

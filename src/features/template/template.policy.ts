@@ -1,7 +1,7 @@
 import TemplateEntity from '@/features/template/template.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class TemplatePolicy extends PolicyAbstract {
+export class TemplatePolicy extends PolicyAbstract {
 	constructor() {
 		const entity = TemplateEntity.NAME;
 

@@ -37,9 +37,9 @@ export class CarrierValidator extends BaseValidator {
 					.nullable()
 					.optional(),
 			),
-			phone: this.nullableString(
+			phone: this.validateString(
 				lang('carrier.validation.phone_invalid'),
-			),
+			).optional(),
 			email: z.preprocess(
 				(val) => (val === '' ? null : val),
 				z
@@ -49,9 +49,9 @@ export class CarrierValidator extends BaseValidator {
 					.nullable()
 					.optional(),
 			),
-			notes: this.nullableString(
+			notes: this.validateString(
 				lang('carrier.validation.notes_invalid'),
-			),
+			).optional(),
 		});
 	}
 
@@ -70,9 +70,9 @@ export class CarrierValidator extends BaseValidator {
 						.nullable()
 						.optional(),
 				),
-				phone: this.nullableString(
+				phone: this.validateString(
 					lang('carrier.validation.phone_invalid'),
-				),
+				).optional(),
 				email: z.preprocess(
 					(val) => (val === '' ? null : val),
 					z
@@ -82,9 +82,9 @@ export class CarrierValidator extends BaseValidator {
 						.nullable()
 						.optional(),
 				),
-				notes: this.nullableString(
+				notes: this.validateString(
 					lang('carrier.validation.notes_invalid'),
-				),
+				).optional(),
 			})
 			.refine((data) => hasAtLeastOneValue(data), {
 				message: lang('shared.validation.params_at_least_one', {

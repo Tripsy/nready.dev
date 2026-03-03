@@ -108,17 +108,17 @@ export class ClientService {
 		newStatus: ClientStatusEnum,
 		withDeleted: boolean,
 	): Promise<void> {
-		const client = await this.findById(id, withDeleted);
+		const entry = await this.findById(id, withDeleted);
 
-		if (client.status === newStatus) {
+		if (entry.status === newStatus) {
 			throw new BadRequestError(
 				lang('client.error.status_unchanged', { status: newStatus }),
 			);
 		}
 
-		client.status = newStatus;
+		entry.status = newStatus;
 
-		await this.repository.save(client);
+		await this.repository.save(entry);
 	}
 
 	public async delete(id: number) {

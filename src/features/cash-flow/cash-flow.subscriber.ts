@@ -1,10 +1,10 @@
 import { EventSubscriber } from 'typeorm';
-import CategoryEntity from '@/features/category/category.entity';
+import CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
 import SubscriberAbstract from '@/shared/abstracts/subscriber.abstract';
 
 @EventSubscriber()
-export class CategorySubscriber extends SubscriberAbstract<CategoryEntity> {
-	protected readonly Entity = CategoryEntity;
+export class CashFlowSubscriber extends SubscriberAbstract<CashFlowEntity> {
+	protected readonly Entity = CashFlowEntity;
 
 	constructor() {
 		super();

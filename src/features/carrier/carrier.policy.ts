@@ -1,7 +1,7 @@
 import CarrierEntity from '@/features/carrier/carrier.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
 
-class CarrierPolicy extends PolicyAbstract {
+export class CarrierPolicy extends PolicyAbstract {
 	constructor() {
 		const entity = CarrierEntity.NAME;
 
