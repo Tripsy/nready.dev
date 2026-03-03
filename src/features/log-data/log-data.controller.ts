@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import LogDataEntity from '@/features/log-data/log-data.entity';
-import {type LogDataPolicy, logDataPolicy} from '@/features/log-data/log-data.policy';
+import {
+	type LogDataPolicy,
+	logDataPolicy,
+} from '@/features/log-data/log-data.policy';
 import {
 	type LogDataService,
 	logDataService,

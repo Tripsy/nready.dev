@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import PermissionEntity from '@/features/permission/permission.entity';
-import {type PermissionPolicy, permissionPolicy} from '@/features/permission/permission.policy';
+import {
+	type PermissionPolicy,
+	permissionPolicy,
+} from '@/features/permission/permission.policy';
 import {
 	type PermissionService,
 	permissionService,

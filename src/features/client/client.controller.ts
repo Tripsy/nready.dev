@@ -2,7 +2,10 @@ import type { Request, Response } from 'express';
 
 import { lang } from '@/config/i18n.setup';
 import ClientEntity from '@/features/client/client.entity';
-import {type ClientPolicy, clientPolicy} from '@/features/client/client.policy';
+import {
+	type ClientPolicy,
+	clientPolicy,
+} from '@/features/client/client.policy';
 import {
 	type ClientService,
 	clientService,

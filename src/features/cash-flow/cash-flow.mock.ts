@@ -47,7 +47,7 @@ export function getCashFlowEntityMock(
 		updated_at: null,
 		deleted_at: null,
 		refunds: [],
-		parent_refunds: null,
+		parent: null,
 		...overrides,
 	};
 }
@@ -63,7 +63,7 @@ export function getCashFlowRefundEntityMock(
 		gateway: CashFlowGatewayEnum.DIRECT,
 		method: CashFlowMethodEnum.BANK_TRANSFER,
 		status: CashFlowStatusEnum.COMPLETED,
-		amount: -5000, // -$50.00 in cents (refund)
+		amount: 5000, // $50.00 in cents (refund)
 		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		exchange_rate: 1,
@@ -83,14 +83,14 @@ export function getCashFlowRefundEntityMock(
 		updated_at: null,
 		deleted_at: null,
 		refunds: [],
-		parent_refunds: null,
+		parent: null,
 		...overrides,
 	};
 }
 
 export const cashFlowInputPayloads = createValidatorPayloads<
 	CashFlowValidator,
-	'create' | 'update' | 'find'
+	'create' | 'update' | 'delete' | 'find'
 >({
 	create: {
 		direction: CashFlowDirectionEnum.IN,
@@ -101,8 +101,6 @@ export const cashFlowInputPayloads = createValidatorPayloads<
 		amount: 10000,
 		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
-		exchange_rate: 1,
-		parent_id: null,
 		notes: 'Test cash flow entry',
 	},
 	update: {
@@ -114,8 +112,10 @@ export const cashFlowInputPayloads = createValidatorPayloads<
 		amount: 12000,
 		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
-		exchange_rate: 1,
 		notes: 'Updated cash flow entry',
+	},
+	delete: {
+		force: false,
 	},
 	find: {
 		page: 1,
@@ -131,7 +131,7 @@ export const cashFlowInputPayloads = createValidatorPayloads<
 			method: CashFlowMethodEnum.CASH,
 			status: CashFlowStatusEnum.COMPLETED,
 			create_date_start: formatDate(createPastDate(30000)),
-			create_date_end: formatDate(createPastDate(0)),
+			create_date_end: formatDate(createPastDate(10000)),
 			term: 'test',
 			is_deleted: false,
 		},
@@ -140,7 +140,7 @@ export const cashFlowInputPayloads = createValidatorPayloads<
 
 export const cashFlowOutputPayloads = createValidatorPayloads<
 	CashFlowValidator,
-	'create' | 'find',
+	'create' | 'update' | 'find',
 	'output'
 >({
 	create: {
@@ -152,9 +152,18 @@ export const cashFlowOutputPayloads = createValidatorPayloads<
 		amount: 10000,
 		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
-		exchange_rate: 1,
-		parent_id: null,
 		notes: 'Test cash flow entry',
+	},
+	update: {
+		direction: CashFlowDirectionEnum.IN,
+		category_type: CashFlowCategoryTypeEnum.REVENUE,
+		category: CashFlowCategoryEnum.CUSTOMER,
+		gateway: CashFlowGatewayEnum.STRIPE,
+		method: CashFlowMethodEnum.CREDIT_CARD,
+		amount: 12000,
+		vat_rate: 19.0,
+		currency: CurrencyEnum.RON,
+		notes: 'Updated cash flow entry',
 	},
 	find: {
 		page: 1,
@@ -170,7 +179,7 @@ export const cashFlowOutputPayloads = createValidatorPayloads<
 			method: CashFlowMethodEnum.CASH,
 			status: CashFlowStatusEnum.COMPLETED,
 			create_date_start: createPastDate(30000),
-			create_date_end: createPastDate(0),
+			create_date_end: createPastDate(10000),
 			term: 'test',
 			is_deleted: false,
 		},
@@ -197,7 +206,7 @@ export const cashFlowMocks = {
 			category_type: CashFlowCategoryTypeEnum.EXPENSE,
 			category: CashFlowCategoryEnum.FUEL,
 			method: CashFlowMethodEnum.CREDIT_CARD,
-			amount: -7500, // -$75.00
+			amount: 7500, // $75.00
 			notes: 'Fuel for vehicle #5',
 			...overrides,
 		}),
@@ -208,7 +217,7 @@ export const cashFlowMocks = {
 			category_type: CashFlowCategoryTypeEnum.EXPENSE,
 			category: CashFlowCategoryEnum.MAINTENANCE,
 			method: CashFlowMethodEnum.BANK_TRANSFER,
-			amount: -25000, // -$250.00
+			amount: 25000, // $250.00
 			notes: 'Oil change and brake pads',
 			...overrides,
 		}),
@@ -219,7 +228,7 @@ export const cashFlowMocks = {
 			category_type: CashFlowCategoryTypeEnum.EXPENSE,
 			category: CashFlowCategoryEnum.TOLLS,
 			method: CashFlowMethodEnum.CREDIT_CARD,
-			amount: -500, // -$5.00
+			amount: 500, // $5.00
 			notes: 'Highway toll',
 			...overrides,
 		}),
@@ -231,7 +240,7 @@ export const cashFlowMocks = {
 			category_type: CashFlowCategoryTypeEnum.EXPENSE,
 			category: CashFlowCategoryEnum.EMPLOYEE_SALARY,
 			method: CashFlowMethodEnum.BANK_TRANSFER,
-			amount: -300000, // -$3,000.00
+			amount: 300000, // $3,000.00
 			notes: 'Monthly salary',
 			...overrides,
 		}),
@@ -242,7 +251,7 @@ export const cashFlowMocks = {
 			category_type: CashFlowCategoryTypeEnum.EXPENSE,
 			category: CashFlowCategoryEnum.EMPLOYEE_REIMBURSEMENT,
 			method: CashFlowMethodEnum.BANK_TRANSFER,
-			amount: -15000, // -$150.00
+			amount: 15000, // $150.00
 			notes: 'Travel expenses reimbursement',
 			...overrides,
 		}),
@@ -254,7 +263,7 @@ export const cashFlowMocks = {
 			category_type: CashFlowCategoryTypeEnum.EXPENSE,
 			category: CashFlowCategoryEnum.VENDOR,
 			method: CashFlowMethodEnum.BANK_TRANSFER,
-			amount: -45000, // -$450.00
+			amount: 45000, // $450.00
 			notes: 'Monthly invoice from vendor',
 			...overrides,
 		}),
@@ -265,7 +274,7 @@ export const cashFlowMocks = {
 			category_type: CashFlowCategoryTypeEnum.EXPENSE,
 			category: CashFlowCategoryEnum.INSURANCE,
 			method: CashFlowMethodEnum.BANK_TRANSFER,
-			amount: -120000, // -$1,200.00
+			amount: 120000, // $1,200.00
 			notes: 'Quarterly insurance premium',
 			...overrides,
 		}),
@@ -276,7 +285,7 @@ export const cashFlowMocks = {
 			category_type: CashFlowCategoryTypeEnum.EXPENSE,
 			category: CashFlowCategoryEnum.TAXES,
 			method: CashFlowMethodEnum.BANK_TRANSFER,
-			amount: -250000, // -$2,500.00
+			amount: 250000, // $2,500.00
 			notes: 'VAT payment',
 			...overrides,
 		}),

@@ -9,11 +9,11 @@ beforeEach(() => {
 
 type ValidatorMethod = keyof Pick<
 	typeof cashFlowValidator,
-	'create' | 'update' | 'find'
+	'create' | 'update' | 'delete' | 'find'
 >;
 
 const validator = 'CashFlowValidator';
-const listSchemas: ValidatorMethod[] = ['create', 'update', 'find'];
+const listSchemas: ValidatorMethod[] = ['create', 'update', 'delete', 'find'];
 
 describe(validator, () => {
 	listSchemas.forEach((n) => {

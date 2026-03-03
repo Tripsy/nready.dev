@@ -1,6 +1,9 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
-import {type LogHistoryPolicy, logHistoryPolicy} from '@/features/log-history/log-history.policy';
+import {
+	type LogHistoryPolicy,
+	logHistoryPolicy,
+} from '@/features/log-history/log-history.policy';
 import {
 	type LogHistoryService,
 	logHistoryService,

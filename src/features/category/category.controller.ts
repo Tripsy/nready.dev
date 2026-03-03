@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import CategoryEntity from '@/features/category/category.entity';
-import {type CategoryPolicy, categoryPolicy} from '@/features/category/category.policy';
+import {
+	type CategoryPolicy,
+	categoryPolicy,
+} from '@/features/category/category.policy';
 import {
 	type CategoryService,
 	categoryService,

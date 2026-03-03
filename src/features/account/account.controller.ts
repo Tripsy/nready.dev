@@ -8,7 +8,10 @@ import {
 	NotFoundError,
 	UnauthorizedError,
 } from '@/exceptions';
-import {type AccountPolicy, accountPolicy} from '@/features/account/account.policy';
+import {
+	type AccountPolicy,
+	accountPolicy,
+} from '@/features/account/account.policy';
 import {
 	type AccountService,
 	accountService,

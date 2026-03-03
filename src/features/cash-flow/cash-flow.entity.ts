@@ -9,13 +9,13 @@ import {
 } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export const CURRENCY_DEFAULT = 'RON';
-
 export enum CurrencyEnum {
 	RON = 'RON',
 	EUR = 'EUR',
 	USD = 'USD',
 }
+
+export const CURRENCY_DEFAULT = CurrencyEnum.RON;
 
 export enum CashFlowDirectionEnum { // relative to company
 	IN = 'in', // money received
@@ -104,8 +104,6 @@ export enum CashFlowStatusEnum {
 	AUTHORIZED = 'authorized', // CashFlow authorized but not captured
 	COMPLETED = 'completed', // Money captured
 	FAILED = 'failed',
-	REFUNDED = 'refunded',
-	PARTIALLY_REFUNDED = 'partially_refunded',
 	CANCELED = 'canceled', // User canceled before completion
 	EXPIRED = 'expired', // Authorization expired
 	REQUIRES_ACTION = 'requires_action', // 3D Secure, etc.
@@ -115,15 +113,46 @@ export enum CashFlowStatusEnum {
 export const MUTABLE_STATUSES = [
 	CashFlowStatusEnum.PENDING,
 	CashFlowStatusEnum.AUTHORIZED,
-	CashFlowStatusEnum.REQUIRES_ACTION
+	CashFlowStatusEnum.REQUIRES_ACTION,
 ];
 
 // Only entries with specified statuses are eligible for refund
-export const REFUNDABLE_STATUSES = [
-	CashFlowStatusEnum.COMPLETED,
-	CashFlowStatusEnum.REFUNDED, // This means has been totally refunded so status listed here is somewhat redundant, but it allows clear error reporting with amount available for refund
-	CashFlowStatusEnum.PARTIALLY_REFUNDED
-];
+export const REFUNDABLE_STATUSES = [CashFlowStatusEnum.COMPLETED];
+
+// Allowed status transition configuration
+export const STATUS_TRANSITIONS: Record<
+	CashFlowStatusEnum,
+	CashFlowStatusEnum[]
+> = {
+	[CashFlowStatusEnum.PENDING]: [
+		CashFlowStatusEnum.AUTHORIZED,
+		CashFlowStatusEnum.COMPLETED,
+		CashFlowStatusEnum.FAILED,
+		CashFlowStatusEnum.CANCELED,
+		CashFlowStatusEnum.EXPIRED,
+		CashFlowStatusEnum.REQUIRES_ACTION,
+	],
+
+	[CashFlowStatusEnum.AUTHORIZED]: [
+		CashFlowStatusEnum.COMPLETED,
+		CashFlowStatusEnum.CANCELED,
+		CashFlowStatusEnum.EXPIRED,
+	],
+
+	[CashFlowStatusEnum.REQUIRES_ACTION]: [
+		CashFlowStatusEnum.AUTHORIZED,
+		CashFlowStatusEnum.FAILED,
+		CashFlowStatusEnum.CANCELED,
+	],
+
+	[CashFlowStatusEnum.COMPLETED]: [
+		// maybe allow nothing
+	],
+
+	[CashFlowStatusEnum.FAILED]: [],
+	[CashFlowStatusEnum.CANCELED]: [],
+	[CashFlowStatusEnum.EXPIRED]: [],
+};
 
 export enum CashFlowGatewayEnum {
 	DIRECT = 'direct',
@@ -149,6 +178,15 @@ export enum CashFlowMethodEnum {
 	GIFT_CARD = 'gift_card',
 }
 
+/**
+ * Hard-rules:
+ * 	- Only MUTABLE_STATUSES can be updated (therefore REFUND, PARTIALLY_UPDATED cannot be updated)
+ * 	- Only REFUNDABLE_STATUSES are available for REFUND
+ * 	- Cash flow entries are marked as COMPLETED when added via controller
+ * 	- `restore` functionality should not be implemented
+ * 	- When entry with status REFUND or PARTIALLY_REFUND is deleted, entries having the entry as parent are deleted (if `force` is present)
+ * 	- Status update is controlled via STATUS_TRANSITIONS
+ */
 const ENTITY_TABLE_NAME = 'cash_flow';
 
 @Entity({
@@ -173,11 +211,12 @@ const ENTITY_TABLE_NAME = 'cash_flow';
     -- Direction + amount consistency for originals
     (parent_id IS NULL AND 
       ((category_type = 'revenue' AND direction = 'in') OR
-       (category_type = 'expense' AND direction = 'out'))
-    )
-
+       (category_type = 'expense' AND direction = 'out')))
+  )
+  OR 
+  (
     -- Refunds / corrections
-    OR (parent_id IS NOT NULL AND category_type = 'correction')
+    (parent_id IS NOT NULL AND category_type = 'correction')
   )
 `)
 @Check(`(amount > 0)`)
@@ -302,8 +341,8 @@ export default class CashFlowEntity extends EntityAbstract {
 
 	// RELATIONS
 	@OneToMany(
-		'CashFlowEntity',
-		(cashFlow: CashFlowEntity) => cashFlow.parent_id,
+		() => CashFlowEntity,
+		(cashFlow: CashFlowEntity) => cashFlow.parent,
 	)
 	refunds!: CashFlowEntity[];
 
@@ -316,5 +355,5 @@ export default class CashFlowEntity extends EntityAbstract {
 		},
 	)
 	@JoinColumn({ name: 'parent_id' })
-	parent_refunds!: CashFlowEntity | null;
+	parent!: CashFlowEntity | null;
 }

@@ -1,7 +1,7 @@
+import { NotAllowedError, UnauthorizedError } from '@/exceptions';
 import CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
 import PolicyAbstract from '@/shared/abstracts/policy.abstract';
-import type {AuthContext} from "@/shared/types/express";
-import {NotAllowedError, UnauthorizedError} from "@/exceptions";
+import type { AuthContext } from '@/shared/types/express';
 
 export class CashFlowPolicy extends PolicyAbstract {
 	constructor() {

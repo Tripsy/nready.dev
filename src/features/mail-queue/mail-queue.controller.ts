@@ -3,7 +3,10 @@ import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/i18n.setup';
 import { LogHistoryAction } from '@/features/log-history/log-history.entity';
 import MailQueueEntity from '@/features/mail-queue/mail-queue.entity';
-import {type MailQueuePolicy, mailQueuePolicy} from '@/features/mail-queue/mail-queue.policy';
+import {
+	type MailQueuePolicy,
+	mailQueuePolicy,
+} from '@/features/mail-queue/mail-queue.policy';
 import {
 	type MailQueueService,
 	mailQueueService,

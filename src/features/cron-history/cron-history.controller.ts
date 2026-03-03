@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import CronHistoryEntity from '@/features/cron-history/cron-history.entity';
-import {type CronHistoryPolicy, cronHistoryPolicy} from '@/features/cron-history/cron-history.policy';
+import {
+	type CronHistoryPolicy,
+	cronHistoryPolicy,
+} from '@/features/cron-history/cron-history.policy';
 import {
 	type CronHistoryService,
 	cronHistoryService,

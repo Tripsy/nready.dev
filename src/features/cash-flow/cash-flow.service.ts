@@ -1,42 +1,30 @@
-import {DeepPartial, QueryFailedError} from 'typeorm';
-import {lang} from '@/config/i18n.setup';
-import {BadRequestError, CustomError, NotFoundError} from '@/exceptions';
+import type { DeepPartial } from 'typeorm';
+import { lang } from '@/config/i18n.setup';
+import { BadRequestError, CustomError } from '@/exceptions';
 import CashFlowEntity, {
 	CashFlowCategoryEnum,
 	CashFlowCategoryTypeEnum,
-	CashFlowDirectionEnum, CashFlowGatewayEnum, CashFlowMethodEnum,
+	type CashFlowDirectionEnum,
 	CashFlowStatusEnum,
 	CURRENCY_DEFAULT,
-	CurrencyEnum,
+	type CurrencyEnum,
 	getExpectedCategoryType,
-	getExpectedDirection, REFUNDABLE_STATUSES
+	getExpectedDirection,
+	MUTABLE_STATUSES,
+	REFUNDABLE_STATUSES,
+	STATUS_TRANSITIONS,
 } from '@/features/cash-flow/cash-flow.entity';
-import {getCashFlowRepository} from '@/features/cash-flow/cash-flow.repository';
-import {type CashFlowValidator, paramsUpdateList,} from '@/features/cash-flow/cash-flow.validator';
-import type {ValidatorOutput} from '@/shared/abstracts/validator.abstract';
-import dataSource from "@/config/data-source.config";
-
-type CreateEntry = {
-	direction: CashFlowDirectionEnum,
-	category_type: CashFlowCategoryTypeEnum,
-	category: CashFlowCategoryEnum,
-	gateway: CashFlowGatewayEnum,
-	method: CashFlowMethodEnum,
-	amount: number,
-	vat_rate: number,
-	currency: CurrencyEnum,
-	exchange_rate: number,
-	external_reference?: string,
-	parent_id?: number,
-	notes?: string,
-};
+import { getCashFlowRepository } from '@/features/cash-flow/cash-flow.repository';
+import {
+	type CashFlowValidator,
+	paramsUpdateList,
+} from '@/features/cash-flow/cash-flow.validator';
+import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class CashFlowService {
-	constructor(
-		private repository: ReturnType<typeof getCashFlowRepository>
-	) {}
+	constructor(private repository: ReturnType<typeof getCashFlowRepository>) {}
 
-	private checkDirection(
+	public checkDirection(
 		category_type: CashFlowCategoryTypeEnum,
 		direction: CashFlowDirectionEnum,
 	) {
@@ -46,15 +34,15 @@ export class CashFlowService {
 			throw new BadRequestError(
 				lang('cash-flow.error.direction_expected_from_category_type', {
 					category_type: category_type,
-					direction: expectedDirection
+					direction: expectedDirection,
 				}),
 			);
 		}
 	}
 
-	private checkCategoryType(
+	public checkCategoryType(
 		category_type: CashFlowCategoryTypeEnum,
-		category: CashFlowCategoryEnum
+		category: CashFlowCategoryEnum,
 	) {
 		const expectedCategoryType = getExpectedCategoryType(category);
 
@@ -62,26 +50,21 @@ export class CashFlowService {
 			throw new BadRequestError(
 				lang('cash-flow.error.category_type_mismatch', {
 					category: category_type,
-					category_type: expectedCategoryType
+					category_type: expectedCategoryType,
 				}),
 			);
 		}
 	}
 
-	private checkParentSelection(
-		parent_id: number | undefined,
-		category: CashFlowCategoryEnum,
-	) {
-		if (!parent_id && category === CashFlowCategoryEnum.REFUND) {
+	public checkCategory(category: CashFlowCategoryEnum, parent_id?: number) {
+		if (category === CashFlowCategoryEnum.REFUND && !parent_id) {
 			throw new BadRequestError(
 				lang('cash-flow.error.refund_parent_required'),
 			);
 		}
 	}
 
-	private checkAmount(
-		amount: number
-	) {
+	public checkAmount(amount: number) {
 		if (amount <= 0) {
 			throw new BadRequestError(
 				lang('cash-flow.validation.amount_invalid'),
@@ -89,12 +72,12 @@ export class CashFlowService {
 		}
 	}
 
-	private async checkRefund(deps : {
-		category: CashFlowCategoryEnum,
-		amount: number,
-		currency: CurrencyEnum,
-		parentEntry: CashFlowEntity,
-		refundedAmount: number
+	public async checkRefund(deps: {
+		category: CashFlowCategoryEnum;
+		amount: number;
+		currency: CurrencyEnum;
+		parentEntry: CashFlowEntity;
+		refundedAmount: number;
 	}) {
 		if (deps.category !== CashFlowCategoryEnum.REFUND) {
 			throw new BadRequestError(
@@ -103,49 +86,69 @@ export class CashFlowService {
 		}
 
 		if (!REFUNDABLE_STATUSES.includes(deps.parentEntry.status)) {
-			throw new CustomError(409,
+			throw new CustomError(
+				409,
 				lang('cash-flow.error.refund_parent_status_invalid', {
-					status: parent.status
+					status: deps.parentEntry.status,
 				}),
 			);
 		}
 
 		if (deps.parentEntry.currency !== deps.currency) {
-			throw new CustomError(409,
+			throw new CustomError(
+				409,
 				lang('cash-flow.error.refund_parent_same_currency'),
 			);
 		}
 
-		if (deps.parentEntry.category_type === CashFlowCategoryTypeEnum.CORRECTION) {
-			throw new CustomError(409,
+		if (
+			deps.parentEntry.category_type ===
+			CashFlowCategoryTypeEnum.CORRECTION
+		) {
+			throw new CustomError(
+				409,
 				lang('cash-flow.error.refund_parent_category_type_invalid'),
 			);
 		}
 
-		if ([CashFlowCategoryEnum.EMPLOYEE_SALARY].includes(deps.parentEntry.category)) {
-			throw new CustomError(409,
+		if (
+			[CashFlowCategoryEnum.EMPLOYEE_SALARY].includes(
+				deps.parentEntry.category,
+			)
+		) {
+			throw new CustomError(
+				409,
 				lang('cash-flow.error.refund_parent_category_invalid'),
 			);
 		}
 
 		if (deps.parentEntry.amount < deps.amount) {
-			throw new CustomError(409,
+			throw new CustomError(
+				409,
 				lang('cash-flow.error.refund_amount_mismatch', {
-					max_amount: (deps.parentEntry.amount / 100).toFixed(2).toString()
+					max_amount: (deps.parentEntry.amount / 100)
+						.toFixed(2)
+						.toString(),
 				}),
 			);
 		}
 
-		if (deps.refundedAmount >= deps.amount) {
-			throw new CustomError(409,
+		if (deps.parentEntry.amount - deps.refundedAmount < deps.amount) {
+			throw new CustomError(
+				409,
 				lang('cash-flow.error.refund_amount_mismatch', {
-					max_amount: ((deps.parentEntry.amount - deps.refundedAmount) / 100).toFixed(2).toString()
+					max_amount: (
+						(deps.parentEntry.amount - deps.refundedAmount) /
+						100
+					)
+						.toFixed(2)
+						.toString(),
 				}),
 			);
 		}
 	}
 
-	private getExchangeRate(selectedCurrency: CurrencyEnum) {
+	public getExchangeRate(selectedCurrency: CurrencyEnum) {
 		if (selectedCurrency === CURRENCY_DEFAULT) {
 			return 1;
 		}
@@ -172,10 +175,26 @@ export class CashFlowService {
 	): Promise<CashFlowEntity> {
 		this.checkDirection(data.category_type, data.direction);
 		this.checkCategoryType(data.category_type, data.category);
-		this.checkParentSelection(data.parent_id, data.category);
+		this.checkCategory(data.category, data.parent_id);
 		this.checkAmount(data.amount);
 
-		const entry: CreateEntry = {
+		if (data.parent_id) {
+			const parentEntry = await this.findById(data.parent_id, false);
+
+			const refundedAmount = await this.getRefundedAmountSum(
+				data.parent_id,
+			);
+
+			await this.checkRefund({
+				category: data.category,
+				amount: data.amount,
+				currency: data.currency,
+				parentEntry: parentEntry,
+				refundedAmount: refundedAmount,
+			});
+		}
+
+		const entry = {
 			direction: data.direction,
 			category_type: data.category_type,
 			category: data.category,
@@ -188,58 +207,10 @@ export class CashFlowService {
 			external_reference: data.external_reference,
 			parent_id: data.parent_id,
 			notes: data.notes,
+			status: CashFlowStatusEnum.COMPLETED, // force `status` as COMPLETED when create runs via controller
 		};
 
-		if (data.parent_id) {
-			this.processRefund(entry);
-		} else {
-			this.processCreate(entry);
-		}
-
-
-
-		return dataSource.transaction(async (manager) => {
-			if (entry.parent_id) {
-				const refundedAmountSum = await this.getRefundedAmountSum(entry.parent_id);
-			}
-
-			const repository = manager.getRepository(CashFlowEntity); // We use the manager -> `getCashFlowRepository` is not bound to the transaction
-
-			const parentEntry = {
-				id: entry.parent_id,
-				status:
-			}
-
-			return await repository.save(entry);
-		});
-	}
-
-	private processCreate(entry) {
 		return this.repository.save(entry);
-	}
-
-	private processRefund(data: ValidatorOutput<CashFlowValidator, 'create'>) {
-		if (!data.parent_id) {
-			throw new CustomError(
-				500,
-				lang('cash-flow.error.parent_id_invalid'),
-			);
-		}
-
-		const parentEntry = await this.findById(
-			data.parent_id,
-			false,
-		);
-
-		const refundedAmount = await this.getRefundedAmountSum(data.parent_id);
-
-		await this.checkRefund({
-			category: data.category,
-			amount: data.amount,
-			currency: data.currency,
-			parentEntry: parentEntry,
-			refundedAmount: refundedAmount
-		});
 	}
 
 	/**
@@ -259,20 +230,13 @@ export class CashFlowService {
 		data: ValidatorOutput<CashFlowValidator, 'update'>,
 		withDeleted: boolean = true,
 	) {
-		// category refund not allowed
-		if (data.name) {
-			const existingCashFlow = await this.findByName(
-				data.name,
-				withDeleted,
-				id,
-			);
+		const entry = await this.findById(id, withDeleted);
 
-			if (existingCashFlow) {
-				throw new CustomError(
-					409,
-					lang('cash-flow.error.name_already_used'),
-				);
-			}
+		if (!MUTABLE_STATUSES.includes(entry.status)) {
+			throw new CustomError(
+				409,
+				lang('cash-flow.error.update_not_allowed'),
+			);
 		}
 
 		const updateData = {
@@ -287,6 +251,29 @@ export class CashFlowService {
 		return this.update(updateData);
 	}
 
+	public assertValidStatusTransition(
+		currentStatus: CashFlowStatusEnum,
+		newStatus: CashFlowStatusEnum,
+	) {
+		if (currentStatus === newStatus) {
+			throw new BadRequestError(
+				lang('cash-flow.error.status_unchanged', { status: newStatus }),
+			);
+		}
+
+		const allowed = STATUS_TRANSITIONS[currentStatus] || [];
+
+		if (!allowed.includes(newStatus)) {
+			throw new CustomError(
+				409,
+				lang('cash-flow.error.status_update_not_allowed', {
+					currentStatus: currentStatus,
+					newStatus: newStatus,
+				}),
+			);
+		}
+	}
+
 	public async updateStatus(
 		id: number,
 		newStatus: CashFlowStatusEnum,
@@ -294,23 +281,40 @@ export class CashFlowService {
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);
 
-		if (entry.status === newStatus) {
-			throw new BadRequestError(
-				lang('cash-flow.error.status_unchanged', { status: newStatus }),
-			);
-		}
+		this.assertValidStatusTransition(entry.status, newStatus);
 
 		entry.status = newStatus;
 
 		await this.repository.save(entry);
 	}
 
-	public async delete(id: number) {
-		await this.repository.createQuery().filterById(id).delete();
-	}
+	public async delete(id: number, force: boolean) {
+		const entry = await this.repository
+			.createQuery()
+			.joinAndSelect('cash_flow.refunds', 'refunds', 'LEFT')
+			.filterById(id)
+			.withDeleted(false)
+			.first();
 
-	public async restore(id: number) {
-		await this.repository.createQuery().filterById(id).restore();
+		if (!entry) {
+			return;
+		}
+
+		if (entry.refunds?.length) {
+			if (force) {
+				await this.repository
+					.createQuery()
+					.filterBy('parent_id', id)
+					.delete(true, true, true);
+			} else {
+				throw new CustomError(
+					409,
+					lang('cash-flow.error.cannot_delete_with_refunds'),
+				);
+			}
+		}
+
+		await this.repository.createQuery().filterById(id).delete();
 	}
 
 	public findById(id: number, withDeleted: boolean): Promise<CashFlowEntity> {
@@ -319,19 +323,6 @@ export class CashFlowService {
 			.filterById(id)
 			.withDeleted(withDeleted)
 			.firstOrFail();
-	}
-
-	public findByName(name: string, withDeleted: boolean, excludeId?: number) {
-		const q = this.repository
-			.createQuery()
-			.filterBy('name', name)
-			.withDeleted(withDeleted);
-
-		if (excludeId) {
-			q.filterBy('id', excludeId, '!=');
-		}
-
-		return q.first();
 	}
 
 	public findByFilter(

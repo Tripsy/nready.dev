@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import DiscountEntity from '@/features/discount/discount.entity';
-import {type DiscountPolicy, discountPolicy} from '@/features/discount/discount.policy';
+import {
+	type DiscountPolicy,
+	discountPolicy,
+} from '@/features/discount/discount.policy';
 import {
 	type DiscountService,
 	discountService,

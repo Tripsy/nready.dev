@@ -1,7 +1,14 @@
 import type { Request, Response } from 'express';
+import { QueryFailedError } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
-import CashFlowEntity, {CashFlowCategoryEnum} from '@/features/cash-flow/cash-flow.entity';
-import {type CashFlowPolicy, cashFlowPolicy} from '@/features/cash-flow/cash-flow.policy';
+import { CustomError } from '@/exceptions';
+import CashFlowEntity, {
+	CashFlowCategoryEnum,
+} from '@/features/cash-flow/cash-flow.entity';
+import {
+	type CashFlowPolicy,
+	cashFlowPolicy,
+} from '@/features/cash-flow/cash-flow.policy';
 import {
 	type CashFlowService,
 	cashFlowService,
@@ -12,10 +19,8 @@ import {
 } from '@/features/cash-flow/cash-flow.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
+import { getSystemLogger } from '@/providers/logger.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import {QueryFailedError} from "typeorm";
-import {getSystemLogger} from "@/providers/logger.provider";
-import {CustomError} from "@/exceptions";
 
 class CashFlowController extends BaseController {
 	constructor(
@@ -47,11 +52,12 @@ class CashFlowController extends BaseController {
 			if (error instanceof QueryFailedError) {
 				// TODO the context for this error seems wrong => trigger by removing condition if (data.category === CashFlowCategoryEnum.REFUND) in cash-flow.service.ts
 
-				getSystemLogger().error(error, `QueryFailedError: ${error.message}`);
-
-				throw new CustomError(500,
-					lang('shared.error.server_error'),
+				getSystemLogger().error(
+					error,
+					`QueryFailedError: ${error.message}`,
 				);
+
+				throw new CustomError(500, lang('shared.error.server_error'));
 			}
 
 			throw error;
@@ -96,22 +102,14 @@ class CashFlowController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.cashFlowService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete(), req.query, res);
+
+		await this.cashFlowService.delete(res.locals.validated.id, data.force);
 
 		res.locals.output.message(lang('cash-flow.success.delete'));
-
-		res.json(res.locals.output);
-	});
-
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
-		this.policy.canRestore(res.locals.auth);
-
-		await this.cashFlowService.restore(res.locals.validated.id);
-
-		res.locals.output.message(lang('cash-flow.success.restore'));
 
 		res.json(res.locals.output);
 	});

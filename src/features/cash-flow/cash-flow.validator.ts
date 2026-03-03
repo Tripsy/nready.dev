@@ -25,7 +25,7 @@ export const paramsUpdateList: string[] = [
 	'amount',
 	'vat_rate',
 	'currency',
-	// 'exchange_rate',
+	'external_reference',
 	'notes',
 ];
 
@@ -94,9 +94,9 @@ export class CashFlowValidator extends BaseValidator {
 						message: lang('cash-flow.validation.parent_id_invalid'),
 					})
 					.optional(),
-				notes: this.nullableString(
+				notes: this.validateString(
 					lang('cash-flow.validation.notes_invalid'),
-				),
+				).optional(),
 			})
 			.superRefine((data, ctx) => {
 				const expectedCategoryType = getExpectedCategoryType(
@@ -236,6 +236,12 @@ export class CashFlowValidator extends BaseValidator {
 					});
 				}
 			});
+	}
+
+	delete() {
+		return z.object({
+			force: this.validateBoolean().default(false), // Used to force deletion even when selected entry has refunds (which will also be deleted)
+		});
 	}
 
 	public find() {

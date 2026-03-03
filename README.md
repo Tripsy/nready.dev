@@ -93,7 +93,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - [ ] article: 
 - [x] brand: create, read, update, delete, restore, find
 - [x] carrier: create, read, update, delete, restore, find
-- [x] cash-flow: create, read, update, delete, restore, find, statusUpdate
+- [x] cash-flow: create, read, update, delete, find, statusUpdate
 - [x] category: create, read, update, delete, restore, find, statusUpdate
 - [x] client: create, read, update, delete, restore, find, statusUpdate
 - [x] discount: create, read, update, delete, restore, find
@@ -257,14 +257,10 @@ $ pnpm run madge
 
 # 📌 TODO
 
-1. cash-flow
-  - review controller & service 
-  - handle tests
-  - do documentation  
 1. Deploy on AWS
 2. API documentation
     > done for discounts
-    > do for: account, category, carrier, client, cron-history, log-history, mail-queue, permission, place, template, user-permission
+    > do for: account, category, carrier, cash-flow, client, cron-history, log-history, mail-queue, permission, place, template, user-permission
 3. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000

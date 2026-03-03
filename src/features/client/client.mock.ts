@@ -49,13 +49,11 @@ export const clientInputPayloads = createValidatorPayloads<
 		company_reg_com: 'J40/1',
 		contact_name: 'John',
 		contact_email: 'contact@acme.com',
-		notes: null,
 	},
 	update: {
 		client_type: ClientTypeEnum.COMPANY,
 		company_name: 'Acme Updated',
 		contact_email: 'updated@acme.com',
-		notes: null,
 	},
 	find: {
 		page: 1,
@@ -85,7 +83,6 @@ export const clientOutputPayloads = createValidatorPayloads<
 		company_reg_com: 'J40/1',
 		contact_name: 'John',
 		contact_email: 'contact@acme.com',
-		notes: null,
 	},
 	find: {
 		page: 1,

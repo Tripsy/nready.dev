@@ -30,11 +30,6 @@ const routesModule: FeatureRoutesModule<typeof cashFlowController> = {
 			method: 'delete',
 			handlers: [validateParamsWhenId('id')],
 		},
-		restore: {
-			path: '/:id/restore',
-			method: 'patch',
-			handlers: [validateParamsWhenId('id')],
-		},
 		find: {
 			path: '',
 			method: 'get',

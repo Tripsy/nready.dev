@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
 import CarrierEntity from '@/features/carrier/carrier.entity';
-import {type CarrierPolicy, carrierPolicy} from '@/features/carrier/carrier.policy';
+import {
+	type CarrierPolicy,
+	carrierPolicy,
+} from '@/features/carrier/carrier.policy';
 import {
 	type CarrierService,
 	carrierService,

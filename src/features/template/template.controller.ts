@@ -3,7 +3,10 @@ import { lang } from '@/config/i18n.setup';
 import TemplateEntity, {
 	TemplateTypeEnum,
 } from '@/features/template/template.entity';
-import { type TemplatePolicy, templatePolicy } from '@/features/template/template.policy';
+import {
+	type TemplatePolicy,
+	templatePolicy,
+} from '@/features/template/template.policy';
 import {
 	type TemplateService,
 	templateService,
