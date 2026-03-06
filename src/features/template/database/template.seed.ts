@@ -245,12 +245,10 @@ async function seedTemplates() {
 							`DELETE FROM "${schemaName}"."${tableName}"`,
 						);
 
-						// Clear using TypeORM repository
 						const repository =
 							transactionalEntityManager.getRepository(
 								TemplateEntity,
 							);
-						await repository.clear();
 
 						console.log('Inserting new templates...');
 

@@ -96,7 +96,7 @@ class PolicyAbstract {
 
 		const permission: string = this.permission('create', entity);
 
-		if (!this.isAdmin(auth) && !this.hasPermission(auth, permission)) {
+		if (!this.isAllowed(auth, permission)) {
 			throw new NotAllowedError();
 		}
 	}

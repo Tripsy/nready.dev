@@ -68,7 +68,6 @@ export class ClientService {
 	public async updateData(
 		id: number,
 		data: ValidatorOutput<ClientValidator, 'update'>,
-		_withDeleted: boolean = true,
 	) {
 		const identityData: ClientIdentityData =
 			data.client_type === ClientTypeEnum.COMPANY

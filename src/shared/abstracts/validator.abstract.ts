@@ -78,18 +78,63 @@ export abstract class BaseValidator {
 	}
 
 	/**
-	 * @description Validate date string and convert to `Date` object
+	 * @description Validate date string and convert to `Date` object with time validation
 	 */
 	protected validateDate(
 		message = lang('shared.validation.invalid_date'),
-		optional = true,
+		options?: {
+			requireTime?: boolean;
+			maxPastSeconds?: number; // Max `seconds` in the past
+			maxFutureSeconds?: number; // Max `seconds` in the future
+		},
 	) {
-		const schema = z
-			.string()
-			.refine((val) => isValidDate(val), { message })
-			.transform((val) => stringToDate(val));
+		let schema = z.string();
 
-		return optional ? schema.optional() : schema;
+		schema = schema.refine((val) => isValidDate(val), { message });
+
+		if (options?.requireTime) {
+			schema = schema.refine(
+				(val) =>
+					/^\d{4}-\d{2}-\d{2}[T\s](?:[01]\d|2[0-3]):[0-5]\d/.test(
+						val,
+					),
+				{
+					message:
+						'Date must include time (e.g., 2024-01-15 14:30 or 2024-01-15T14:30:00)',
+				},
+			);
+		}
+
+		if (options?.maxPastSeconds || options?.maxFutureSeconds) {
+			schema = schema.refine(
+				(val) => {
+					const date = new Date(val);
+					const now = new Date();
+					const diffSeconds = (now.getTime() - date.getTime()) / 1000;
+
+					if (
+						options?.maxPastSeconds &&
+						diffSeconds > options.maxPastSeconds
+					) {
+						return false;
+					}
+
+					if (
+						options?.maxFutureSeconds &&
+						diffSeconds < options.maxFutureSeconds
+					) {
+						return false;
+					}
+
+					return true;
+				},
+				{
+					message: 'Date is outside the allowed range',
+				},
+			);
+		}
+
+		return schema.transform((val) => stringToDate(val));
 	}
 
 	/**

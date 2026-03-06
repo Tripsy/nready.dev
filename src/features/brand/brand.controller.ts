@@ -66,7 +66,7 @@ class BrandController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.create(), req.body, res);
+		const data = this.validate(this.validator.update(), req.body, res);
 
 		const entry = await this.brandService.updateDataWithContent(
 			res.locals.validated.id,

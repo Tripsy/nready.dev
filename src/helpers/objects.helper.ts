@@ -74,10 +74,10 @@ export function setObjectValue(
 }
 
 /**
- * Check if an object has at least one value
+ * Check if an object has at least one not `undefined` value
  *
  * @param {unknown} obj - The object to check
- * @returns {boolean} - True if the object has at least one value, false otherwise
+ * @returns {boolean} - True if the object has at least one not `undefined` value, false otherwise
  */
 export function hasAtLeastOneValue(obj: unknown): boolean {
 	if (obj === null || obj === undefined) return false;

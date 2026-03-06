@@ -1,8 +1,9 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { type RequestHandler, Router } from 'express';
 import { apiRateLimiter } from '@/config/rate-limit.config';
 import { Configuration } from '@/config/settings.config';
-import { buildSrcPath, listDirectories } from '@/helpers';
+import { buildSrcPath } from '@/helpers';
 import { getSystemLogger } from '@/providers/logger.provider';
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
@@ -96,17 +97,42 @@ function pushRouteInfo<C>(feature: string, def: FeatureRoutesModule<C>) {
 	}
 }
 
+function findRouteFiles(featuresDirectory: string) {
+	const routeFiles: string[] = [];
+
+	function scanDirectory(directory: string) {
+		const files = fs.readdirSync(directory);
+
+		files.forEach((file) => {
+			const fullPath = path.join(directory, file);
+			const stat = fs.statSync(fullPath);
+
+			if (stat.isDirectory()) {
+				scanDirectory(fullPath);
+			} else if (
+				stat.isFile() &&
+				file.endsWith(`.routes.${Configuration.resolveExtension()}`)
+			) {
+				routeFiles.push(fullPath);
+			}
+		});
+	}
+
+	scanDirectory(featuresDirectory);
+
+	return routeFiles;
+}
+
 export const initRoutes = async (apiPrefix: string = ''): Promise<Router> => {
 	const router = Router();
 
 	const featuresPath = buildSrcPath(
 		Configuration.get('folder.features') as string,
 	);
+	const routeFiles = findRouteFiles(featuresPath);
 
-	const features = listDirectories(featuresPath);
-
-	for (const feature of features) {
-		await loadFeatureRoutes(router, feature, apiPrefix);
+	for (const routeFilePath of routeFiles) {
+		await loadRoutes(router, routeFilePath, apiPrefix);
 	}
 
 	getSystemLogger().debug('Routes initialized');
@@ -114,20 +140,19 @@ export const initRoutes = async (apiPrefix: string = ''): Promise<Router> => {
 	return router;
 };
 
-async function loadFeatureRoutes(
+async function loadRoutes(
 	router: Router,
-	feature: string,
+	routeFilePath: string,
 	apiPrefix: string,
 ): Promise<void> {
-	try {
-		const filePath = getRoutesFilePath(feature);
-		const filePathWithExtension = `${filePath}.${Configuration.resolveExtension()}`;
+	const feature = path.basename(routeFilePath).split('.')[0];
 
-		if (!fs.existsSync(filePathWithExtension)) {
+	try {
+		if (!fs.existsSync(routeFilePath)) {
 			return;
 		}
 
-		const module = await import(filePath);
+		const module = await import(routeFilePath);
 		const def = module.default;
 
 		if (!def) {

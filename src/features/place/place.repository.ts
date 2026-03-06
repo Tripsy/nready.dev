@@ -46,8 +46,8 @@ export const getPlaceRepository = () =>
 			const result = await this.createQuery()
 				.select(['type'])
 				.filterById(place_id)
-				.firstRaw();
+				.first();
 
-			return result?.place_type === type;
+			return result?.type === type;
 		},
 	});
