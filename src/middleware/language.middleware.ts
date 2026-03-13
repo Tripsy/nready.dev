@@ -14,19 +14,21 @@ async function languageMiddleware(
 	res: Response,
 	next: NextFunction,
 ) {
-	let lang: string = (req.query.lang as string) || '';
+	let language: string = (req.query.lang as string) || '';
 
-	if (!lang) {
-		lang = getLanguageFromHeaders(req.headers['accept-language']);
+	if (!language) {
+		language = getLanguageFromHeaders(req.headers['accept-language']);
 	}
 
 	// Attach lang value to the request object
 	if (
-		(Configuration.get('app.languageSupported') as string[]).includes(lang)
+		(Configuration.get('app.languageSupported') as string[]).includes(
+			language,
+		)
 	) {
-		res.locals.lang = lang;
+		res.locals.language = language;
 	} else {
-		res.locals.lang = Configuration.get('app.language') as string;
+		res.locals.language = Configuration.get('app.language') as string;
 	}
 
 	next();

@@ -84,8 +84,8 @@ export abstract class BaseValidator {
 		message = lang('shared.validation.invalid_date'),
 		options?: {
 			requireTime?: boolean;
-			maxPastSeconds?: number; // Max `seconds` in the past
-			maxFutureSeconds?: number; // Max `seconds` in the future
+			maxPastSeconds?: number;
+			maxFutureSeconds?: number;
 		},
 	) {
 		let schema = z.string();
@@ -105,25 +105,33 @@ export abstract class BaseValidator {
 			);
 		}
 
-		if (options?.maxPastSeconds || options?.maxFutureSeconds) {
+		if (
+			options?.maxPastSeconds !== undefined ||
+			options?.maxFutureSeconds !== undefined
+		) {
 			schema = schema.refine(
 				(val) => {
 					const date = new Date(val);
 					const now = new Date();
-					const diffSeconds = (now.getTime() - date.getTime()) / 1000;
 
+					const secondsDiff = (now.getTime() - date.getTime()) / 1000;
+
+					// Past date check
 					if (
-						options?.maxPastSeconds &&
-						diffSeconds > options.maxPastSeconds
+						secondsDiff > 0 &&
+						options?.maxPastSeconds !== undefined
 					) {
-						return false;
+						return secondsDiff <= options.maxPastSeconds;
 					}
 
+					// Future date check
 					if (
-						options?.maxFutureSeconds &&
-						diffSeconds < options.maxFutureSeconds
+						secondsDiff < 0 &&
+						options?.maxFutureSeconds !== undefined
 					) {
-						return false;
+						return (
+							Math.abs(secondsDiff) <= options.maxFutureSeconds
+						);
 					}
 
 					return true;

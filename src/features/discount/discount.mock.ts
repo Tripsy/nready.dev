@@ -51,8 +51,8 @@ export const discountInputPayloads = createValidatorPayloads<
 			applicable_countries: ['RO'],
 		},
 		value: 25,
-		start_at: formatDate(createFutureDate(14400)),
-		end_at: formatDate(createFutureDate(28800)),
+		start_at: formatDate(createFutureDate(14400)) as string,
+		end_at: formatDate(createFutureDate(28800)) as string,
 		notes: 'Applied to all orders during January',
 	},
 	update: {
@@ -67,8 +67,8 @@ export const discountInputPayloads = createValidatorPayloads<
 			eligible_categories: [1, 2, 5],
 			applicable_countries: ['RO'],
 		},
-		start_at: formatDate(createFutureDate(14400)),
-		end_at: formatDate(createFutureDate(28800)),
+		start_at: formatDate(createFutureDate(14400)) as string,
+		end_at: formatDate(createFutureDate(28800)) as string,
 		notes: 'Applied to all orders during January',
 	},
 	find: {

@@ -3,7 +3,18 @@ import type { AuthContext } from '@/shared/types/express';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
 
 class PolicyAbstract {
+	private allowed_auth_id: number[] = [];
+
 	constructor(readonly entity: string) {}
+
+	public pushAllowedAuthId(id: number | number[]) {
+		if (Array.isArray(id)) {
+			this.allowed_auth_id.push(...id);
+		} else {
+			this.allowed_auth_id.push(id);
+		}
+		return this;
+	}
 
 	public getId(auth: AuthContext): number | undefined {
 		return auth?.id;
@@ -52,13 +63,6 @@ class PolicyAbstract {
 	}
 
 	/**
-	 * Returns `true` if the user is the owner of the resource
-	 */
-	public isOwner(auth: AuthContext, user_id: number): boolean {
-		return this.getId(auth) === user_id;
-	}
-
-	/**
 	 * Returns `true` if the user is admin or has the `delete` permission on the selected entity.
 	 * This method is used to allow permission `view` of soft deleted resources
 	 */
@@ -74,7 +78,21 @@ class PolicyAbstract {
 	 * Returns `true` if the user is admin or the user is the owner of the resource or owns the permission
 	 */
 	public isAllowed(auth: AuthContext, permission: string): boolean {
-		return this.isAdmin(auth) || this.hasPermission(auth, permission);
+		if (this.isAdmin(auth)) {
+			return true;
+		}
+
+		if (this.hasPermission(auth, permission)) {
+			return true;
+		}
+
+		const auth_id = this.getId(auth);
+
+		if (auth_id && this.allowed_auth_id.includes(auth_id)) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public requiredAuth(auth: AuthContext): void {
