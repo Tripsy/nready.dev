@@ -71,7 +71,6 @@ export class PermissionService {
 	public async updateData(
 		id: number,
 		data: ValidatorOutput<PermissionValidator, 'manage'>,
-		_withDeleted: boolean = true,
 	) {
 		const existingPermission = await this.checkIfExist(
 			data.entity,

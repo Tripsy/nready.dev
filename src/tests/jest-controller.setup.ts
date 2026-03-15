@@ -4,14 +4,6 @@ import request, { type Response } from 'supertest';
 import type { z } from 'zod';
 import { createApp } from '@/app';
 
-// jest.mock('@/features/place/place.repository', () => ({
-// 	getPlaceRepository: jest.fn(() => ({
-// 		checkPlaceType: jest
-// 			.fn<() => Promise<boolean>>()
-// 			.mockResolvedValue(true),
-// 	})),
-// }));
-
 import { cacheProvider } from '@/providers/cache.provider';
 import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 import type {
@@ -62,7 +54,7 @@ export type CreateValidator = {
 };
 
 type CreateService<E, V extends CreateValidator> = {
-	create(data: ValidatorOutput<V, 'create'>): Promise<E>;
+	create(data: ValidatorOutput<V, 'create'>, relatedId?: number): Promise<E>;
 };
 
 type ControllerCreateType<E, V extends CreateValidator> = {
@@ -187,6 +179,7 @@ type UpdateService<E, V extends UpdateValidator> = {
 		id: number,
 		data: ValidatorOutput<V, 'update'>,
 		withDeleted: boolean,
+		relatedId?: number,
 	): Promise<Partial<E>>;
 };
 
@@ -372,7 +365,7 @@ export function testControllerDeleteMultiple<V extends DeleteValidator>(
 }
 
 type DeleteSingleService = {
-	delete(id: number): Promise<void>;
+	delete(id: number, relatedId?: number): Promise<void>;
 };
 
 type ControllerDeleteSingleType = {
@@ -418,7 +411,7 @@ export function testControllerDeleteSingle(config: ControllerDeleteSingleType) {
 
 // Controller test - Restore
 type RestoreSingleService = {
-	restore(id: number): Promise<void>;
+	restore(id: number, relatedId?: number): Promise<void>;
 };
 
 type ControllerRestoreSingleType = {

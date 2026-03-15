@@ -56,7 +56,6 @@ class ClientController extends BaseController {
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
 			this.clientService.getDataById(
 				res.locals.validated.id,
-				res.locals.lang,
 				this.policy.allowDeleted(res.locals.auth),
 			),
 		);

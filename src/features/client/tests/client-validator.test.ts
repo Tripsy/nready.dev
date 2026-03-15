@@ -1,15 +1,6 @@
-import { jest } from '@jest/globals';
 import { clientInputPayloads } from '@/features/client/client.mock';
 import { clientValidator } from '@/features/client/client.validator';
 import { withDebugValidated } from '@/tests/jest-validator.setup';
-
-jest.mock('@/features/place/place.repository', () => ({
-	getPlaceRepository: jest.fn(() => ({
-		checkPlaceType: jest
-			.fn<() => Promise<boolean>>()
-			.mockResolvedValue(true),
-	})),
-}));
 
 type ValidatorMethod = keyof Pick<
 	typeof clientValidator,

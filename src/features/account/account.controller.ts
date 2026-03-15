@@ -232,7 +232,7 @@ class AccountController extends BaseController {
 			void this.accountEmailService.sendEmailPasswordRecover(
 				{
 					...user,
-					language: user.language || res.locals.lang,
+					language: user.language || res.locals.language,
 				},
 				{
 					ident: ident,
@@ -318,7 +318,7 @@ class AccountController extends BaseController {
 
 			void this.accountEmailService.sendEmailPasswordChange({
 				...user,
-				language: user.language || res.locals.lang,
+				language: user.language || res.locals.language,
 			});
 
 			res.locals.output.message(lang('account.success.password_changed'));

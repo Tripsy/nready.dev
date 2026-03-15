@@ -1,28 +1,28 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
-import CarrierEntity from '@/features/carrier/carrier.entity';
+import ClientAddressEntity from '@/features/client-address/client-address.entity';
 import {
-	type CarrierPolicy,
-	carrierPolicy,
-} from '@/features/carrier/carrier.policy';
+	type ClientAddressPolicy,
+	clientAddressPolicy,
+} from '@/features/client-address/client-address.policy';
 import {
-	type CarrierService,
-	carrierService,
-} from '@/features/carrier/carrier.service';
+	type ClientAddressService,
+	clientAddressService,
+} from '@/features/client-address/client-address.service';
 import {
-	type CarrierValidator,
-	carrierValidator,
-} from '@/features/carrier/carrier.validator';
+	type ClientAddressValidator,
+	clientAddressValidator,
+} from '@/features/client-address/client-address.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
-class CarrierController extends BaseController {
+class ClientAddressController extends BaseController {
 	constructor(
-		private policy: CarrierPolicy,
-		private validator: CarrierValidator,
+		private policy: ClientAddressPolicy,
+		private validator: ClientAddressValidator,
 		private cache: CacheProvider,
-		private carrierService: CarrierService,
+		private clientAddressService: ClientAddressService,
 	) {
 		super();
 	}
@@ -32,10 +32,13 @@ class CarrierController extends BaseController {
 
 		const data = this.validate(this.validator.create(), req.body, res);
 
-		const entry = await this.carrierService.create(data);
+		const entry = await this.clientAddressService.create(
+			data,
+			res.locals.validated.client_id,
+		);
 
 		res.locals.output.data(entry);
-		res.locals.output.message(lang('carrier.success.create'));
+		res.locals.output.message(lang('client-address.success.create'));
 
 		res.status(201).json(res.locals.output);
 	});
@@ -44,15 +47,17 @@ class CarrierController extends BaseController {
 		this.policy.canRead(res.locals.auth);
 
 		const cacheKey = this.cache.buildKey(
-			CarrierEntity.NAME,
+			ClientAddressEntity.NAME,
 			res.locals.validated.id,
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.carrierService.findById(
+			this.clientAddressService.getDataById(
 				res.locals.validated.id,
+				res.locals.language,
 				this.policy.allowDeleted(res.locals.auth),
+				res.locals.validated.client_id,
 			),
 		);
 
@@ -67,13 +72,14 @@ class CarrierController extends BaseController {
 
 		const data = this.validate(this.validator.update(), req.body, res);
 
-		const entry = await this.carrierService.updateData(
+		const entry = await this.clientAddressService.updateData(
 			res.locals.validated.id,
 			data,
 			this.policy.allowDeleted(res.locals.auth),
+			res.locals.validated.client_id,
 		);
 
-		res.locals.output.message(lang('carrier.success.update'));
+		res.locals.output.message(lang('client-address.success.update'));
 		res.locals.output.data(entry);
 
 		res.json(res.locals.output);
@@ -82,9 +88,12 @@ class CarrierController extends BaseController {
 	public delete = asyncHandler(async (_req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.carrierService.delete(res.locals.validated.id);
+		await this.clientAddressService.delete(
+			res.locals.validated.id,
+			res.locals.validated.client_id,
+		);
 
-		res.locals.output.message(lang('carrier.success.delete'));
+		res.locals.output.message(lang('client-address.success.delete'));
 
 		res.json(res.locals.output);
 	});
@@ -92,9 +101,12 @@ class CarrierController extends BaseController {
 	public restore = asyncHandler(async (_req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.carrierService.restore(res.locals.validated.id);
+		await this.clientAddressService.restore(
+			res.locals.validated.id,
+			res.locals.validated.client_id,
+		);
 
-		res.locals.output.message(lang('carrier.success.restore'));
+		res.locals.output.message(lang('client-address.success.restore'));
 
 		res.json(res.locals.output);
 	});
@@ -113,7 +125,11 @@ class CarrierController extends BaseController {
 			res,
 		);
 
-		const [entries, total] = await this.carrierService.findByFilter(
+		if (!data.filter.language) {
+			data.filter.language = res.locals.language;
+		}
+
+		const [entries, total] = await this.clientAddressService.findByFilter(
 			data,
 			this.policy.allowDeleted(res.locals.auth),
 		);
@@ -132,23 +148,23 @@ class CarrierController extends BaseController {
 	});
 }
 
-export function createCarrierController(deps: {
-	policy: CarrierPolicy;
-	validator: CarrierValidator;
+export function createClientAddressController(deps: {
+	policy: ClientAddressPolicy;
+	validator: ClientAddressValidator;
 	cache: CacheProvider;
-	carrierService: CarrierService;
+	clientAddressService: ClientAddressService;
 }) {
-	return new CarrierController(
+	return new ClientAddressController(
 		deps.policy,
 		deps.validator,
 		deps.cache,
-		deps.carrierService,
+		deps.clientAddressService,
 	);
 }
 
-export const carrierController = createCarrierController({
-	policy: carrierPolicy,
-	validator: carrierValidator,
+export const clientAddressController = createClientAddressController({
+	policy: clientAddressPolicy,
+	validator: clientAddressValidator,
 	cache: cacheProvider,
-	carrierService: carrierService,
+	clientAddressService: clientAddressService,
 });
