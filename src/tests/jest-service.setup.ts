@@ -194,7 +194,7 @@ export function testServiceUpdateStatus<
 }
 
 interface IDeleteService {
-	delete(id: number): Promise<void>;
+	delete(id: number, relatedId?: number): Promise<void>;
 }
 
 export function testServiceDelete<
@@ -234,7 +234,7 @@ export function testServiceDeleteMultiple<
 }
 
 interface IRestoreService {
-	restore(id: number): Promise<void>;
+	restore(id: number, relatedId?: number): Promise<void>;
 }
 
 export function testServiceRestore<
@@ -252,7 +252,7 @@ export function testServiceRestore<
 }
 
 interface IFindByIdService<E extends ObjectLiteral> {
-	findById(id: number, withDeleted?: boolean): Promise<E>;
+	findById(id: number, withDeleted?: boolean, relatedId?: number): Promise<E>;
 }
 
 export function testServiceFindById<

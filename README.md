@@ -96,6 +96,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - [x] cash-flow: create, read, update, delete, find, statusUpdate
 - [x] category: create, read, update, delete, restore, find, statusUpdate
 - [x] client: create, read, update, delete, restore, find, statusUpdate
+- [x] client_address: create, read, update, delete, restore, find
 - [x] discount: create, read, update, delete, restore, find
 - [ ] image:
 - [ ] invoice:
@@ -111,6 +112,8 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 ### 1. Add `hosts` record
 For configuration refer to this guide:  
 [How to Edit the Host File on macOS](https://phoenixnap.com/kb/mac-hosts-file)
+
+sudo nano /private/etc/hosts
 
 ### 2. Initialize Docker container
 Start the Docker container using the following command:
@@ -257,11 +260,13 @@ $ pnpm run madge
 
 # 📌 TODO
 
-1. Deploy on AWS
-2. API documentation
+1. Go on FE → client, client_address, place, brand, cash-flow
+2. Go on FE → category
+3. Deploy on AWS
+4. API documentation
     > done for discounts
     > do for: account, category, carrier, cash-flow, client, cron-history, log-history, mail-queue, permission, place, template, user-permission
-3. create CLI script which should generate something like:
+5. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -283,32 +288,31 @@ $ pnpm run madge
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-4. Tests for account-recovery.service.ts are missing 
-5. feature - images  (image-content)
-6. Go on FE → category, place, brand, client
-7. Go on FE #3 → image (multer - File upload handling)
-8. wip entities:
-    - article
-        - article-category
-        - article-content
-        - article-tag  
-        - article-track
-    - invoice
-    - order
-        - order-product
-    - order-shipping
-        - order-shipping-product
-    - product
-        - product-attribute
-        - product-category
-        - product-tag
-        - product-content
-    - subscription
-        - subscription-evidence
-    - term
+6. Tests for account-recovery.service.ts are missing 
+7. feature - images  (image-content)
+8. Go on FE #3 → image (multer - File upload handling)
 9. Go on FE #2 → carrier, discount,
-10. For reporting create separate DB table (in a new schema `reporting`). This new table can be updated via subscribers.
-11. cron hanging / delaying / semaphore 
+10. wip entities:
+     - article
+         - article-category
+         - article-content
+         - article-tag  
+         - article-track
+     - invoice
+     - order
+         - order-product
+     - order-shipping
+         - order-shipping-product
+     - product
+         - product-attribute
+         - product-category
+         - product-tag
+         - product-content
+     - subscription
+         - subscription-evidence
+     - term
+11. For reporting create separate DB table (in a new schema `reporting`). This new table can be updated via subscribers.
+12. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

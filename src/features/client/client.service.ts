@@ -1,7 +1,6 @@
 import type { DeepPartial } from 'typeorm';
-import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
-import { CustomError, NotFoundError } from '@/exceptions';
+import { CustomError } from '@/exceptions';
 import ClientEntity, {
 	type ClientIdentityData,
 	ClientStatusEnum,
@@ -68,7 +67,6 @@ export class ClientService {
 	public async updateData(
 		id: number,
 		data: ValidatorOutput<ClientValidator, 'update'>,
-		_withDeleted: boolean = true,
 	) {
 		const identityData: ClientIdentityData =
 			data.client_type === ClientTypeEnum.COMPANY
@@ -138,66 +136,23 @@ export class ClientService {
 			.firstOrFail();
 	}
 
-	public async getDataById(
-		id: number,
-		language: string,
-		withDeleted: boolean,
-	) {
-		const clientEntryQuery = dataSource
-			.createQueryBuilder()
-			.select([
-				'c.*',
-				'pcoCountry.name AS address_country',
-				'preRegion.name AS address_region',
-				'pciCity.name AS address_city',
-			])
-			.from('client', 'c')
-			// Address country
-			.leftJoin('place', 'pco', 'pco.id = c.address_country')
-			.leftJoin(
-				'place_content',
-				'pcoCountry',
-				'pcoCountry.place_id = pco.id AND pcoCountry.language = :language',
-				{ language: language },
-			)
-			// Address region
-			.leftJoin('place', 'pre', 'pre.id = c.address_region')
-			.leftJoin(
-				'place_content',
-				'preRegion',
-				'preRegion.place_id = pre.id AND preRegion.language = :language',
-				{ language: language },
-			)
-			// Address city
-			.leftJoin('place', 'pci', 'pci.id = c.address_city')
-			.leftJoin(
-				'place_content',
-				'pciCity',
-				'pciCity.place_id = pci.id AND pciCity.language = :language',
-				{ language: language },
-			)
-			.where('c.id = :id', { id: id });
+	public async getDataById(id: number, withDeleted: boolean) {
+		const entry = await this.repository
+			.createQuery()
+			.filterById(id)
+			.withDeleted(withDeleted)
+			.firstOrFail();
 
-		if (withDeleted) {
-			clientEntryQuery.withDeleted();
-		}
-
-		const clientEntry = await clientEntryQuery.getRawOne();
-
-		if (!clientEntry) {
-			throw new NotFoundError(lang('client.error.not_found'));
-		}
-
-		if (clientEntry.client_type === ClientTypeEnum.COMPANY) {
-			delete clientEntry.person_name;
-			delete clientEntry.person_cnp;
+		if (entry.client_type === ClientTypeEnum.COMPANY) {
+			delete entry.person_name;
+			delete entry.person_cnp;
 		} else {
-			delete clientEntry.company_name;
-			delete clientEntry.company_cui;
-			delete clientEntry.company_reg_com;
+			delete entry.company_name;
+			delete entry.company_cui;
+			delete entry.company_reg_com;
 		}
 
-		return clientEntry;
+		return entry;
 	}
 
 	public findByFilter(

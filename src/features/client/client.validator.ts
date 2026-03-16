@@ -5,7 +5,6 @@ import {
 	ClientStatusEnum,
 	ClientTypeEnum,
 } from '@/features/client/client.entity';
-import { getPlaceRepository } from '@/features/place/place.repository';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
@@ -23,11 +22,6 @@ export const paramsUpdateList = [
 	'contact_name',
 	'contact_email',
 	'contact_phone',
-	'address_country',
-	'address_region',
-	'address_city',
-	'address_info',
-	'address_postal_code',
 	'notes',
 ];
 
@@ -64,21 +58,6 @@ export class ClientValidator extends BaseValidator {
 			contact_phone: this.validateString(
 				lang('client.validation.contact_phone_invalid'),
 			).optional(),
-			address_country: this.validateNumber(
-				lang('client.validation.address_country_invalid'),
-			).optional(),
-			address_region: this.validateNumber(
-				lang('client.validation.address_region_invalid'),
-			).optional(),
-			address_city: this.validateNumber(
-				lang('client.validation.address_city_invalid'),
-			).optional(),
-			address_info: this.validateString(
-				lang('client.validation.address_info_invalid'),
-			).optional(),
-			address_postal_code: this.validateNumber(
-				lang('client.validation.address_postal_code_invalid'),
-			).optional(),
 			notes: this.validateString(
 				lang('carrier.validation.notes_invalid'),
 			).optional(),
@@ -107,13 +86,10 @@ export class ClientValidator extends BaseValidator {
 			).optional(),
 		});
 
-		return z
-			.union([ClientCreateCompanyValidator, ClientCreatePersonValidator])
-			.superRefine(async (data, ctx) => {
-				await this.validateAddressPlaceTypes(data, ctx, (id, type) =>
-					getPlaceRepository().checkPlaceType(id, type),
-				);
-			});
+		return z.union([
+			ClientCreateCompanyValidator,
+			ClientCreatePersonValidator,
+		]);
 	}
 
 	update() {
@@ -138,21 +114,6 @@ export class ClientValidator extends BaseValidator {
 				.optional(),
 			contact_phone: this.validateString(
 				lang('client.validation.contact_phone_invalid'),
-			).optional(),
-			address_country: this.validateNumber(
-				lang('client.validation.address_country_invalid'),
-			).optional(),
-			address_region: this.validateNumber(
-				lang('client.validation.address_region_invalid'),
-			).optional(),
-			address_city: this.validateNumber(
-				lang('client.validation.address_city_invalid'),
-			).optional(),
-			address_info: this.validateString(
-				lang('client.validation.address_info_invalid'),
-			).optional(),
-			address_postal_code: this.validateString(
-				lang('client.validation.address_postal_code_invalid'),
 			).optional(),
 			notes: this.validateString(
 				lang('client.validation.notes_invalid'),
@@ -189,11 +150,6 @@ export class ClientValidator extends BaseValidator {
 					params: paramsUpdateList.join(', '),
 				}),
 				path: ['_global'],
-			})
-			.superRefine(async (data, ctx) => {
-				await this.validateAddressPlaceTypes(data, ctx, (id, type) =>
-					getPlaceRepository().checkPlaceType(id, type),
-				);
 			});
 	}
 

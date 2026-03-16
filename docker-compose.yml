@@ -1,6 +1,6 @@
 services:
     node:
-        container_name: nready.dev
+        container_name: nready.test
         ports:
             - "3000:3000"
         build:
@@ -10,6 +10,8 @@ services:
             - .:/var/www/html
         tty: true
         networks:
-            development:
+            - development
 networks:
     development:
+        external: true
+        name: development

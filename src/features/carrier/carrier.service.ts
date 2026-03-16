@@ -52,6 +52,8 @@ export class CarrierService {
 		data: ValidatorOutput<CarrierValidator, 'update'>,
 		withDeleted: boolean = true,
 	) {
+		await this.findById(id, withDeleted); // Returns 404 inside if entry is not found
+
 		if (data.name) {
 			const existingCarrier = await this.findByName(
 				data.name,

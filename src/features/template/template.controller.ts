@@ -67,7 +67,7 @@ class TemplateController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.create(), req.body, res);
+		const data = this.validate(this.validator.update(), req.body, res);
 
 		const entry = await this.templateService.updateData(
 			res.locals.validated.id,
@@ -137,7 +137,7 @@ class TemplateController extends BaseController {
 		const cacheKey = this.cache.buildKey(
 			TemplateEntity.NAME,
 			res.locals.validated.label,
-			res.locals.lang,
+			res.locals.language,
 			TemplateTypeEnum.PAGE,
 			'read',
 		);
@@ -145,7 +145,7 @@ class TemplateController extends BaseController {
 		const entry = await this.cache.get(cacheKey, async () =>
 			this.templateService.findByLabel(
 				res.locals.validated.label,
-				res.locals.lang,
+				res.locals.language,
 				TemplateTypeEnum.PAGE,
 				this.policy.allowDeleted(res.locals.auth),
 			),

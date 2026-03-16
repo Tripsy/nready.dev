@@ -70,6 +70,7 @@ class CarrierController extends BaseController {
 		const entry = await this.carrierService.updateData(
 			res.locals.validated.id,
 			data,
+			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('carrier.success.update'));

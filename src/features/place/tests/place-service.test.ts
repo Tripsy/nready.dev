@@ -2,7 +2,6 @@ import { expect, jest } from '@jest/globals';
 import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
 
 import type PlaceEntity from '@/features/place/place.entity';
-import type { PlaceTypeEnum } from '@/features/place/place.entity';
 import {
 	getPlaceEntityMock,
 	placeInputPayloads,
@@ -35,12 +34,8 @@ function createMockRepositoryForPlace<
 	const repository = {
 		createQuery: createQueryMock,
 		save: jest.fn(),
-		checkPlaceType: jest.fn(),
 	} as unknown as jest.Mocked<Repository<E>> & {
 		createQuery(): Q;
-		checkPlaceType: jest.MockedFunction<
-			(place_id: number, type: PlaceTypeEnum) => Promise<boolean>
-		>;
 	};
 
 	return {

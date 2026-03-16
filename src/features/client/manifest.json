@@ -3,6 +3,6 @@
 	"version": "1.0.0",
 	"relativePath": "/client",
 	"entities": ["client"],
-	"depends_on": ["place"],
+	"depends_on": [],
 	"depends_off": ["order"]
 }

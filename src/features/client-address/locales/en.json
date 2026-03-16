@@ -1,0 +1,26 @@
+{
+	"validation": {
+		"address_type_invalid": "Address type is invalid",
+		"address_city_id_invalid": "Invalid address city ID",
+		"address_info_invalid": "Invalid address info",
+		"address_postal_code_invalid": "Invalid address postal code",
+		"notes_invalid": "Notes is invalid"
+	},
+	"error": {
+		"not_found": "Client address not found",
+		"address_city_invalid_type": "Provided address ID is not a city"
+	},
+	"success": {
+		"create": "Client address added successfully",
+		"update": "Client address updated successfully",
+		"delete": "Client address deleted successfully",
+		"restore": "Client address restored successfully"
+	},
+	"history": {
+		"created": "Client address #{{entity_id}} created by user #{{auth_id}}",
+		"updated": "Client address #{{entity_id}} updated by user #{{auth_id}}",
+		"deleted": "Client address(s) {{entity_ids}} marked as deleted by user #{{auth_id}}",
+		"removed": "Client address(s) {{entity_ids}} removed by user #{{auth_id}}",
+		"restored": "Client address(s) {{entity_ids}} restored by user #{{auth_id}}"
+	}
+}

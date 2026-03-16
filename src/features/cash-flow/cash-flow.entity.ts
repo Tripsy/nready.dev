@@ -8,6 +8,7 @@ import {
 	OneToMany,
 } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import type { StatusTransitions } from '@/shared/types/common.type';
 
 export enum CurrencyEnum {
 	RON = 'RON',
@@ -120,10 +121,7 @@ export const MUTABLE_STATUSES = [
 export const REFUNDABLE_STATUSES = [CashFlowStatusEnum.COMPLETED];
 
 // Allowed status transition configuration
-export const STATUS_TRANSITIONS: Record<
-	CashFlowStatusEnum,
-	CashFlowStatusEnum[]
-> = {
+export const STATUS_TRANSITIONS: StatusTransitions<CashFlowStatusEnum> = {
 	[CashFlowStatusEnum.PENDING]: [
 		CashFlowStatusEnum.AUTHORIZED,
 		CashFlowStatusEnum.COMPLETED,
@@ -184,7 +182,7 @@ export enum CashFlowMethodEnum {
  * 	- Only REFUNDABLE_STATUSES are available for REFUND
  * 	- Cash flow entries are marked as COMPLETED when added via controller
  * 	- `restore` functionality should not be implemented
- * 	- When entry with status REFUND or PARTIALLY_REFUND is deleted, entries having the entry as parent are deleted (if `force` is present)
+ * 	- On `delete` if entry has refunds the operation is blocked unless `force` argument is present and then refunds are also deleted
  * 	- Status update is controlled via STATUS_TRANSITIONS
  */
 const ENTITY_TABLE_NAME = 'cash_flow';

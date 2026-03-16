@@ -1,8 +1,8 @@
 import type { EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
-import { BadRequestError } from '@/exceptions';
-import PlaceEntity from '@/features/place/place.entity';
+import { BadRequestError, CustomError } from '@/exceptions';
+import PlaceEntity, { PlaceTypeEnum } from '@/features/place/place.entity';
 import { getPlaceRepository } from '@/features/place/place.repository';
 import {
 	type PlaceValidator,
@@ -19,12 +19,62 @@ export class PlaceService {
 		) => Repository<PlaceEntity>,
 	) {}
 
+	public async checkParentId(type: PlaceTypeEnum, parent_id?: number) {
+		if (type === PlaceTypeEnum.COUNTRY) {
+			if (parent_id) {
+				throw new BadRequestError(
+					lang('place.validation.country_no_parent'),
+				);
+			}
+		} else {
+			if (parent_id) {
+				const parentEntry = await this.repository
+					.createQuery()
+					.filterById(parent_id)
+					.withDeleted(true)
+					.first();
+
+				if (!parentEntry) {
+					throw new CustomError(
+						409,
+						lang('place.error.parent_not_found'),
+					);
+				}
+
+				switch (type) {
+					case PlaceTypeEnum.REGION:
+						if (parentEntry.type !== PlaceTypeEnum.COUNTRY) {
+							throw new CustomError(
+								409,
+								lang('place.error.invalid_parent_type'),
+							);
+						}
+						break;
+					case PlaceTypeEnum.CITY:
+						if (parentEntry.type !== PlaceTypeEnum.REGION) {
+							throw new CustomError(
+								409,
+								lang('place.error.invalid_parent_type'),
+							);
+						}
+						break;
+				}
+			}
+		}
+
+		if (type !== PlaceTypeEnum.COUNTRY && !parent_id) {
+			throw new BadRequestError(lang('place.error.parent_required'));
+		}
+	}
+
 	/**
 	 * @description Used in `create` method from controller;
 	 */
 	public async create(
 		data: ValidatorOutput<PlaceValidator, 'create'>,
 	): Promise<PlaceEntity> {
+		await this.checkParentId(data.type, data.parent_id);
+
 		return dataSource.transaction(async (manager) => {
 			const repository = this.getScopedPlaceRepository(manager);
 
@@ -55,6 +105,10 @@ export class PlaceService {
 		withDeleted: boolean,
 	) {
 		const place = await this.findById(id, withDeleted);
+
+		if (data.parent_id) {
+			await this.checkParentId(data.type || place.type, data.parent_id);
+		}
 
 		const isTypeChange =
 			data.type !== undefined && data.type !== place.type;
@@ -138,20 +192,11 @@ export class PlaceService {
 					language: language,
 				},
 			)
-			.joinAndSelect('place.parent', 'parent', 'LEFT')
-			.joinAndSelect(
-				'parent.contents',
-				'parentContent',
-				'LEFT',
-				'parentContent.language = :language',
-				{
-					language: language,
-				},
-			)
 			.select([
 				'place.id',
 				'place.type',
 				'place.code',
+				'place.parent_id',
 				'place.created_at',
 				'place.updated_at',
 				'place.deleted_at',
@@ -159,13 +204,6 @@ export class PlaceService {
 				'content.language',
 				'content.name',
 				'content.type_label',
-
-				'parent.id',
-				'parent.type',
-				'parent.code',
-
-				'parentContent.name',
-				'parentContent.type_label',
 			])
 			.filterById(id)
 			.withDeleted(withDeleted)

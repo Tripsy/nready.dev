@@ -8,12 +8,15 @@
 		"type_label_invalid": "Invalid type label",
 		"address_country_invalid": "Invalid address country",
 		"address_region_invalid": "Invalid address region",
-		"address_city_invalid": "Invalid address city"
+		"address_city_invalid": "Invalid address city",
+		"country_no_parent": "Country cannot have a parent"
 	},
 	"error": {
 		"not_found": "Place not found",
 		"cannot_change_type_with_children": "Type cannot be changed. This place has children(s).",
-		"cannot_delete_with_children": "This place has children(s) and cannot be deleted."
+		"cannot_delete_with_children": "This place has children(s) and cannot be deleted.",
+		"parent_not_found": "Parent place not found",
+		"invalid_parent_type": "Invalid parent type"
 	},
 	"success": {
 		"create": "Place created successfully",

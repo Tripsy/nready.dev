@@ -1,12 +1,6 @@
 import { z } from 'zod';
 import { lang } from '@/config/i18n.setup';
 import { isValidDate, stringToDate } from '@/helpers';
-import { PlaceTypeEnum } from '@/shared/types/place.type';
-
-export type CheckPlaceTypeFn = (
-	id: number,
-	type: PlaceTypeEnum,
-) => Promise<boolean>;
 
 export type ValidatorInput<V, K extends keyof V> = V[K] extends (
 	...args: unknown[]
@@ -19,12 +13,6 @@ export type ValidatorOutput<V, K extends keyof V> = V[K] extends (
 ) => z.ZodTypeAny
 	? z.output<ReturnType<V[K]>>
 	: never;
-
-type AddressFields = {
-	address_country?: number;
-	address_region?: number;
-	address_city?: number;
-};
 
 export abstract class BaseValidator {
 	/**
@@ -78,18 +66,71 @@ export abstract class BaseValidator {
 	}
 
 	/**
-	 * @description Validate date string and convert to `Date` object
+	 * @description Validate date string and convert to `Date` object with time validation
 	 */
 	protected validateDate(
 		message = lang('shared.validation.invalid_date'),
-		optional = true,
+		options?: {
+			requireTime?: boolean;
+			maxPastSeconds?: number;
+			maxFutureSeconds?: number;
+		},
 	) {
-		const schema = z
-			.string()
-			.refine((val) => isValidDate(val), { message })
-			.transform((val) => stringToDate(val));
+		let schema = z.string();
 
-		return optional ? schema.optional() : schema;
+		schema = schema.refine((val) => isValidDate(val), { message });
+
+		if (options?.requireTime) {
+			schema = schema.refine(
+				(val) =>
+					/^\d{4}-\d{2}-\d{2}[T\s](?:[01]\d|2[0-3]):[0-5]\d/.test(
+						val,
+					),
+				{
+					message:
+						'Date must include time (e.g., 2024-01-15 14:30 or 2024-01-15T14:30:00)',
+				},
+			);
+		}
+
+		if (
+			options?.maxPastSeconds !== undefined ||
+			options?.maxFutureSeconds !== undefined
+		) {
+			schema = schema.refine(
+				(val) => {
+					const date = new Date(val);
+					const now = new Date();
+
+					const secondsDiff = (now.getTime() - date.getTime()) / 1000;
+
+					// Past date check
+					if (
+						secondsDiff > 0 &&
+						options?.maxPastSeconds !== undefined
+					) {
+						return secondsDiff <= options.maxPastSeconds;
+					}
+
+					// Future date check
+					if (
+						secondsDiff < 0 &&
+						options?.maxFutureSeconds !== undefined
+					) {
+						return (
+							Math.abs(secondsDiff) <= options.maxFutureSeconds
+						);
+					}
+
+					return true;
+				},
+				{
+					message: 'Date is outside the allowed range',
+				},
+			);
+		}
+
+		return schema.transform((val) => stringToDate(val));
 	}
 
 	/**
@@ -164,56 +205,6 @@ export abstract class BaseValidator {
 			// filter: this.makeJsonFilterSchema(filterShape),
 			filter: z.object(filterShape).partial(),
 		});
-	}
-
-	/**
-	 * Validates that address place IDs match the expected place types (country/region/city).
-	 * Requires a checker function so shared code does not depend on the place feature.
-	 */
-	protected async validateAddressPlaceTypes(
-		data: AddressFields,
-		ctx: z.RefinementCtx,
-		checkPlaceType: CheckPlaceTypeFn,
-	) {
-		const checks: Array<{
-			field: keyof AddressFields;
-			type: PlaceTypeEnum;
-			error: string;
-		}> = [
-			{
-				field: 'address_country',
-				type: PlaceTypeEnum.COUNTRY,
-				error: lang('place.validation.address_country_invalid'),
-			},
-			{
-				field: 'address_region',
-				type: PlaceTypeEnum.REGION,
-				error: lang('place.validation.address_region_invalid'),
-			},
-			{
-				field: 'address_city',
-				type: PlaceTypeEnum.CITY,
-				error: lang('place.validation.address_city_invalid'),
-			},
-		];
-
-		for (const check of checks) {
-			const id = data[check.field];
-
-			if (!id) {
-				continue;
-			}
-
-			const isValid = await checkPlaceType(id, check.type);
-
-			if (!isValid) {
-				ctx.addIssue({
-					path: [check.field],
-					code: 'custom',
-					message: check.error,
-				});
-			}
-		}
 	}
 
 	protected validateMeta() {

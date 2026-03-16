@@ -10,7 +10,7 @@ function loadSettings(): Settings {
 		app: {
 			environment: process.env.APP_ENV || 'development',
 			debug: process.env.APP_DEBUG === 'true',
-			url: process.env.APP_URL || 'http://nready.dev',
+			url: process.env.APP_URL || 'http://nready.test',
 			port: parseInt(process.env.APP_PORT || '3000', 10),
 			port_while_testing: parseInt(
 				process.env.APP_PORT_WHILE_TESTING || '3001',

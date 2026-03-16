@@ -1,5 +1,4 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import type PlaceEntity from '@/features/place/place.entity';
+import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
@@ -112,42 +111,7 @@ export default class ClientEntity extends EntityAbstract {
 	@Column('varchar', { nullable: true })
 	contact_phone!: string | null;
 
-	// ADDRESS
-	@Column('int', { nullable: true })
-	address_country!: number | null;
-
-	@Column('int', { nullable: true })
-	address_region!: number | null;
-
-	@Column('int', { nullable: true })
-	address_city!: number | null;
-
-	@Column('text', { nullable: true })
-	address_info!: string | null;
-
-	@Column('varchar', { nullable: true })
-	address_postal_code!: number | null;
-
 	// OTHER
 	@Column('text', { nullable: true })
 	notes!: string | null;
-
-	// RELATIONS
-	@ManyToOne('PlaceEntity', {
-		onDelete: 'SET NULL',
-	})
-	@JoinColumn({ name: 'address_country' })
-	country?: PlaceEntity | null;
-
-	@ManyToOne('PlaceEntity', {
-		onDelete: 'SET NULL',
-	})
-	@JoinColumn({ name: 'address_region' })
-	county?: PlaceEntity | null;
-
-	@ManyToOne('PlaceEntity', {
-		onDelete: 'SET NULL',
-	})
-	@JoinColumn({ name: 'address_city' })
-	city?: PlaceEntity | null;
 }

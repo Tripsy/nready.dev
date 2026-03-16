@@ -12,7 +12,7 @@ export function requestContextMiddleware(
 			performed_by: res.locals.auth?.name || 'unknown',
 			request_id: res.locals.request_id,
 			source: RequestContextSource.API,
-			language: res.locals.lang,
+			language: res.locals.language,
 		},
 		() => next(),
 	);

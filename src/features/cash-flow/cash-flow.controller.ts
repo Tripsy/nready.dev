@@ -94,6 +94,7 @@ class CashFlowController extends BaseController {
 		const entry = await this.cashFlowService.updateData(
 			res.locals.validated.id,
 			data,
+			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('cash-flow.success.update'));

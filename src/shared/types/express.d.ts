@@ -19,7 +19,7 @@ declare global {
 			request_id: string;
 			auth: AuthContext;
 			output: OutputWrapper;
-			lang: string;
+			language: string;
 		}
 	}
 }
