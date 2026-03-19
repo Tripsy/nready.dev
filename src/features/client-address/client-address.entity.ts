@@ -38,7 +38,7 @@ export default class ClientAddressEntity extends EntityAbstract {
 	address_info!: string;
 
 	@Column('varchar', { nullable: true })
-	address_postal_code!: number | null;
+	address_postal_code!: string | null;
 
 	// OTHER
 	@Column('text', { nullable: true })

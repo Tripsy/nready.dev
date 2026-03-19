@@ -1,6 +1,10 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
 import { CustomError } from '@/exceptions';
+import {
+	type ClientService,
+	clientService,
+} from '@/features/client/client.service';
 import type ClientAddressEntity from '@/features/client-address/client-address.entity';
 import { getClientAddressRepository } from '@/features/client-address/client-address.repository';
 import {
@@ -17,6 +21,7 @@ import { PlaceTypeEnum } from '@/shared/types/place.type';
 export class ClientAddressService {
 	constructor(
 		private repository: ReturnType<typeof getClientAddressRepository>,
+		private clientService: ClientService,
 		private placeService: PlaceService,
 	) {}
 
@@ -138,6 +143,11 @@ export class ClientAddressService {
 			.withDeleted(withDeleted)
 			.firstOrFail();
 
+		const client = await this.clientService.getDataById(
+			entry.client_id,
+			withDeleted,
+		);
+
 		const address_city = await this.placeService.getDataById(
 			entry.address_city_id,
 			language,
@@ -160,6 +170,7 @@ export class ClientAddressService {
 
 		return {
 			...entry,
+			client: client,
 			address_country: address_country,
 			address_region: address_region,
 			address_city: address_city,
@@ -172,29 +183,7 @@ export class ClientAddressService {
 	) {
 		return this.repository
 			.createQuery()
-
-			.joinAndSelect('client_address.country', 'country', 'LEFT')
-			.joinAndSelect(
-				'country.contents',
-				'countryContent',
-				'LEFT',
-				'countryContent.language = :language',
-				{
-					language: data.filter.language,
-				},
-			)
-
-			.joinAndSelect('client_address.region', 'region', 'LEFT')
-			.joinAndSelect(
-				'region.contents',
-				'regionContent',
-				'LEFT',
-				'regionContent.language = :language',
-				{
-					language: data.filter.language,
-				},
-			)
-
+			.joinAndSelect('client_address.client', 'client', 'INNER')
 			.joinAndSelect('client_address.city', 'city', 'LEFT')
 			.joinAndSelect(
 				'city.contents',
@@ -205,26 +194,6 @@ export class ClientAddressService {
 					language: data.filter.language,
 				},
 			)
-
-			.select([
-				'client_address.id',
-				'client_address.address_type',
-				'client_address.address_info',
-				'client_address.address_postal_code',
-				'client_address.notes',
-				'client_address.created_at',
-				'client_address.updated_at',
-				'client_address.deleted_at',
-
-				'client_address.address_country_id',
-				'countryContent.name AS address_country',
-
-				'client_address.address_region_id',
-				'regionContent.name AS address_region',
-
-				'client_address.address_city_id',
-				'cityContent.name AS address_city',
-			])
 			.filterById(data.filter.id)
 			.filterBy('client_address.client_id', data.filter.client_id)
 			.filterByTerm(data.filter.term)
@@ -237,5 +206,6 @@ export class ClientAddressService {
 
 export const clientAddressService = new ClientAddressService(
 	getClientAddressRepository(),
+	clientService,
 	placeService,
 );

@@ -50,34 +50,28 @@ export class UserValidator extends BaseValidator {
 				email: z.email({
 					message: lang('user.validation.email_invalid'),
 				}),
-				password: z
-					.string({
-						message: lang('user.validation.password_invalid'),
-					})
-					.min(this.passwordMinLength, {
-						message: lang('user.validation.password_min', {
+				password: this.validatePassword(
+					{
+						password_invalid: lang(
+							'user.validation.password_invalid',
+						),
+						password_min: lang('user.validation.password_min', {
 							min: this.passwordMinLength.toString(),
 						}),
-					})
-					.refine((value) => /[A-Z]/.test(value), {
-						message: lang(
+						password_condition_capital_letter: lang(
 							'user.validation.password_condition_capital_letter',
 						),
-					})
-					.refine((value) => /[0-9]/.test(value), {
-						message: lang(
+						password_condition_number: lang(
 							'user.validation.password_condition_number',
 						),
-					})
-					.refine(
-						(value) =>
-							/[!@#$%^&*()_+{}[\]:;<>,.?~\\/-]/.test(value),
-						{
-							message: lang(
-								'user.validation.password_condition_special_character',
-							),
-						},
-					),
+						password_condition_special_character: lang(
+							'user.validation.password_condition_special_character',
+						),
+					},
+					{
+						minLength: this.passwordMinLength,
+					},
+				),
 				password_confirm: z.string({
 					message: lang('user.validation.password_confirm_required'),
 				}),
@@ -141,37 +135,49 @@ export class UserValidator extends BaseValidator {
 					.email({ message: lang('user.validation.email_invalid') })
 					.optional(),
 				password: z
-					.string({
-						message: lang('user.validation.password_invalid'),
-					})
-					.min(this.passwordMinLength, {
-						message: lang('user.validation.password_min', {
-							min: this.passwordMinLength.toString(),
-						}),
-					})
-					.refine((value) => /[A-Z]/.test(value), {
-						message: lang(
-							'user.validation.password_condition_capital_letter',
-						),
-					})
-					.refine((value) => /[0-9]/.test(value), {
-						message: lang(
-							'user.validation.password_condition_number',
-						),
-					})
+					.string()
+					.nullable()
+					.optional()
 					.refine(
-						(value) =>
-							/[!@#$%^&*()_+{}[\]:;<>,.?~\\/-]/.test(value),
-						{
-							message: lang(
-								'user.validation.password_condition_special_character',
-							),
+						(val) => {
+							if (!val) {
+								return true;
+							}
+
+							return this.validatePassword(
+								{
+									password_invalid: lang(
+										'user.validation.password_invalid',
+									),
+									password_min: lang(
+										'user.validation.password_min',
+										{
+											min: this.passwordMinLength.toString(),
+										},
+									),
+									password_condition_capital_letter: lang(
+										'user.validation.password_condition_capital_letter',
+									),
+									password_condition_number: lang(
+										'user.validation.password_condition_number',
+									),
+									password_condition_special_character: lang(
+										'user.validation.password_condition_special_character',
+									),
+								},
+								{
+									minLength: this.passwordMinLength,
+								},
+							).safeParse(val).success;
 						},
-					)
+						{
+							message: lang('user.validation.password_invalid'),
+						},
+					),
+				password_confirm: z
+					.string(lang('user.validation.password_confirm_required'))
+					.nullable()
 					.optional(),
-				password_confirm: this.validateString(
-					lang('user.validation.password_confirm_required'),
-				).optional(),
 				language: this.validateLanguage().optional(),
 				role: z.enum(UserRoleEnum).optional(),
 				operator_type: z

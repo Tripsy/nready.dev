@@ -9,27 +9,27 @@ export const EXPECTED_RUN_TIME = 3; // seconds
 // Check if there are cron jobs starting at the same time in the last 24 hours
 const cronTimeCheck = async () => {
 	const querySql = `
-        SELECT
-            ch.id, ch.label, ch.start_at
-        FROM cron_history ch
-                 INNER JOIN (
-            SELECT
-                DATE(start_at) AS day,
-                TIME_FORMAT(start_at, '%H:%i') AS hour_min,
-                COUNT(id) AS count
-            FROM cron_history
-            WHERE
-                start_at >= ? AND start_at < ?
-            GROUP BY
-                DATE(start_at),
-                TIME_FORMAT(start_at, '%H:%i')
-            HAVING count > 1
-        ) dup ON DATE(ch.start_at) = dup.day
-            AND TIME_FORMAT(ch.start_at, '%H:%i') = dup.hour_min
-        WHERE
-            ch.start_at >= ? AND ch.start_at < ?
-        ORDER BY
-            ch.start_at
+		SELECT
+			ch.id, ch.label, ch.start_at
+		FROM cron_history ch
+		INNER JOIN (
+			SELECT
+				DATE(start_at) AS day,
+				TO_CHAR(start_at, 'HH24:MI') AS hour_min,
+				COUNT(id) AS count
+			FROM cron_history
+			WHERE
+				start_at >= $1 AND start_at < $2
+			GROUP BY
+				DATE(start_at),
+				TO_CHAR(start_at, 'HH24:MI')
+			HAVING COUNT(id) > 1
+		) dup ON DATE(ch.start_at) = dup.day
+			AND TO_CHAR(ch.start_at, 'HH24:MI') = dup.hour_min
+		WHERE
+			ch.start_at >= $1 AND ch.start_at < $2
+		ORDER BY
+			ch.start_at
     `;
 
 	const endDate = new Date().toISOString();

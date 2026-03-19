@@ -31,12 +31,9 @@ export const paramsUpdateList: string[] = [
 
 export enum OrderByEnum {
 	ID = 'id',
-	GATEWAY = 'gateway',
 	CATEGORY = 'category',
-	CATEGORY_TYPE = 'category_type',
 	METHOD = 'method',
 	CREATED_AT = 'created_at',
-	UPDATED_AT = 'updated_at',
 }
 
 export class CashFlowValidator extends BaseValidator {

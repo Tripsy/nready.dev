@@ -27,7 +27,7 @@ export class ClientAddressValidator extends BaseValidator {
 		return z.object({
 			address_type: this.validateEnum(
 				ClientAddressTypeEnum,
-				lang('client.validation.address_type_invalid'),
+				lang('client-address.validation.address_type_invalid'),
 			),
 			address_city_id: this.validateNumber(
 				lang('client-address.validation.address_city_id_invalid'),
@@ -35,9 +35,15 @@ export class ClientAddressValidator extends BaseValidator {
 			address_info: this.validateString(
 				lang('client-address.validation.address_info_invalid'),
 			),
-			address_postal_code: this.validateNumber(
-				lang('client-address.validation.address_postal_code_invalid'),
-			).optional(),
+			address_postal_code: z
+				.string()
+				.regex(
+					/^\d{6}$/,
+					lang(
+						'client-address.validation.address_postal_code_invalid',
+					),
+				)
+				.optional(),
 			notes: this.validateString(
 				lang('client-address.validation.notes_invalid'),
 			).optional(),
@@ -49,7 +55,7 @@ export class ClientAddressValidator extends BaseValidator {
 			.object({
 				address_type: this.validateEnum(
 					ClientAddressTypeEnum,
-					lang('client.validation.address_type_invalid'),
+					lang('client-address.validation.address_type_invalid'),
 				).optional(),
 				address_city_id: this.validateNumber(
 					lang('client-address.validation.address_city_id_invalid'),
@@ -57,11 +63,15 @@ export class ClientAddressValidator extends BaseValidator {
 				address_info: this.validateString(
 					lang('client-address.validation.address_info_invalid'),
 				),
-				address_postal_code: this.validateNumber(
-					lang(
-						'client-address.validation.address_postal_code_invalid',
-					),
-				).optional(),
+				address_postal_code: z
+					.string()
+					.regex(
+						/^\d{6}$/,
+						lang(
+							'client-address.validation.address_postal_code_invalid',
+						),
+					)
+					.optional(),
 				notes: this.validateString(
 					lang('client-address.validation.notes_invalid'),
 				).optional(),

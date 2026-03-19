@@ -19,7 +19,7 @@ export abstract class BaseValidator {
 	 * @description Used in validators to make string required
 	 */
 	protected validateString(message: string) {
-		return z.string().trim().nonempty({ message });
+		return z.string({ message }).trim().nonempty({ message });
 	}
 
 	/**
@@ -225,5 +225,57 @@ export abstract class BaseValidator {
 		return z.string().length(2, {
 			message: lang('shared.validation.language_invalid'),
 		});
+	}
+
+	protected validatePassword(
+		messages: {
+			password_invalid: string;
+			password_min: string;
+			password_condition_capital_letter: string;
+			password_condition_number: string;
+			password_condition_special_character: string;
+		},
+		options: {
+			minLength: number;
+			requireUppercase?: boolean;
+			requireNumber?: boolean;
+			requireSpecial?: boolean;
+		} = {
+			minLength: 8,
+			requireUppercase: true,
+			requireNumber: true,
+			requireSpecial: true,
+		},
+	) {
+		// Start with base string validation
+		let schema = z
+			.string(messages.password_invalid)
+			.min(options.minLength, {
+				message: messages.password_min,
+			});
+
+		// Add refinements based on requirements
+		if (options.requireUppercase) {
+			schema = schema.refine((value) => /[A-Z]/.test(value), {
+				message: messages.password_condition_capital_letter,
+			});
+		}
+
+		if (options.requireNumber) {
+			schema = schema.refine((value) => /[0-9]/.test(value), {
+				message: messages.password_condition_number,
+			});
+		}
+
+		if (options.requireSpecial) {
+			schema = schema.refine(
+				(value) => /[!@#$%^&*()_+{}[\]:;<>,.?~\\/-]/.test(value),
+				{
+					message: messages.password_condition_special_character,
+				},
+			);
+		}
+
+		return schema;
 	}
 }
