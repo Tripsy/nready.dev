@@ -1,11 +1,7 @@
 import type UserEntity from '@/features/user/user.entity';
 import { UserStatusEnum } from '@/features/user/user.entity';
-import {
-	OrderByEnum,
-	type UserValidator,
-} from '@/features/user/user.validator';
+import { OrderByEnum, userValidator } from '@/features/user/user.validator';
 import { createPastDate, formatDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
 
@@ -27,10 +23,7 @@ export function getUserEntityMock(): UserEntity {
 	};
 }
 
-export const userInputPayloads = createValidatorPayloads<
-	UserValidator,
-	'create' | 'update' | 'find'
->({
+export const userInputPayloads = {
 	create: {
 		name: 'John Doe',
 		email: 'john.doe@example.com',
@@ -44,7 +37,12 @@ export const userInputPayloads = createValidatorPayloads<
 	update: {
 		name: 'Updated User',
 		email: 'updated.user@example.com',
+		password: 'Secure@123',
+		password_confirm: 'Secure@123',
 		language: 'en',
+		status: UserStatusEnum.PENDING, // optional, default anyway
+		role: UserRoleEnum.MEMBER, // optional, default anyway
+		operator_type: null, // correct for non-operator
 	},
 	find: {
 		page: 1,
@@ -60,35 +58,10 @@ export const userInputPayloads = createValidatorPayloads<
 			is_deleted: true,
 		},
 	},
-});
+};
 
-export const userOutputPayloads = createValidatorPayloads<
-	UserValidator,
-	'find' | 'create',
-	'output'
->({
-	create: {
-		name: 'John Doe',
-		email: 'john.doe@example.com',
-		password: 'Secure@123',
-		password_confirm: 'Secure@123',
-		language: 'en',
-		status: UserStatusEnum.PENDING, // optional, default anyway
-		role: UserRoleEnum.MEMBER, // optional, default anyway
-		operator_type: null, // correct for non-operator
-	},
-	find: {
-		page: 1,
-		limit: 10,
-		order_by: OrderByEnum.ID,
-		direction: OrderDirectionEnum.DESC,
-		filter: {
-			term: 'test',
-			status: UserStatusEnum.ACTIVE,
-			role: UserRoleEnum.MEMBER,
-			create_date_start: createPastDate(14400),
-			create_date_end: createPastDate(7200),
-			is_deleted: true,
-		},
-	},
-});
+export const userOutputPayloads = {
+	create: userValidator.create.parse(userInputPayloads.create),
+	update: userValidator.update.parse(userInputPayloads.update),
+	find: userValidator.find.parse(userInputPayloads.find),
+};

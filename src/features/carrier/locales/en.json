@@ -1,10 +1,10 @@
 {
 	"validation": {
-		"name_invalid": "Name is invalid",
+		"invalid_name": "Name is invalid",
 		"website_invalid": "Website URL is invalid",
 		"phone_invalid": "Phone is invalid",
-		"email_invalid": "Email is invalid",
-		"notes_invalid": "Notes is invalid"
+		"invalid_email": "Email is invalid",
+		"invalid_notes": "Notes is invalid"
 	},
 	"error": {
 		"not_found": "Carrier not found",

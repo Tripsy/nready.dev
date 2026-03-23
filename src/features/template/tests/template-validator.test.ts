@@ -18,8 +18,8 @@ const listSchemas: ValidatorMethod[] = ['create', 'update', 'find'];
 describe(validator, () => {
 	listSchemas.forEach((n) => {
 		it(`${n}() accepts valid payload`, () => {
-			const schema = templateValidator[n]();
-			const payload = templateInputPayloads.get(n);
+			const schema = templateValidator[n];
+			const payload = templateInputPayloads[n];
 			const validated = schema.safeParse(payload);
 
 			withDebugValidated(() => {

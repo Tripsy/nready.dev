@@ -41,5 +41,5 @@ testControllerFind<LogDataEntity, LogDataValidator>({
 	entityMock: getLogDataEntityMock(),
 	policy: logDataPolicy,
 	service: logDataService,
-	findData: logDataInputPayloads.get('find'),
+	findData: logDataInputPayloads.find,
 });

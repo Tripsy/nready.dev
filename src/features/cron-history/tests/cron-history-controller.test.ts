@@ -41,5 +41,5 @@ testControllerFind<CronHistoryEntity, CronHistoryValidator>({
 	entityMock: getCronHistoryEntityMock(),
 	policy: cronHistoryPolicy,
 	service: cronHistoryService,
-	findData: cronHistoryInputPayloads.get('find'),
+	findData: cronHistoryInputPayloads.find,
 });

@@ -30,7 +30,7 @@ testControllerCreate<TemplateEntity, TemplateValidator>({
 	entityMock: getTemplateEntityMock(),
 	policy: templatePolicy,
 	service: templateService,
-	createData: templateInputPayloads.get('create'),
+	createData: templateInputPayloads.create,
 });
 
 testControllerUpdate<TemplateEntity, TemplateValidator>({
@@ -39,7 +39,7 @@ testControllerUpdate<TemplateEntity, TemplateValidator>({
 	entityMock: getTemplateEntityMock(),
 	policy: templatePolicy,
 	service: templateService,
-	updateData: templateInputPayloads.get('update'),
+	updateData: templateInputPayloads.update,
 });
 
 testControllerRead<TemplateEntity>({
@@ -69,5 +69,5 @@ testControllerFind<TemplateEntity, TemplateValidator>({
 	entityMock: getTemplateEntityMock(),
 	policy: templatePolicy,
 	service: templateService,
-	findData: templateInputPayloads.get('find'),
+	findData: templateInputPayloads.find,
 });

@@ -1,9 +1,10 @@
 {
 	"validation": {
-		"label_invalid": "Invalid label",
-		"slug_invalid": "Invalid slug",
-		"type_invalid": "Select type",
-		"invalid_parent_id": "Invalid parent id value"
+		"invalid_label": "Invalid label",
+		"invalid_slug": "Invalid slug",
+		"invalid_description": "Invalid description",
+		"invalid_type": "Select type",
+		"invalid_parent_id": "Invalid parent ID"
 	},
 	"error": {
 		"not_found": "Category not found",
@@ -11,7 +12,7 @@
 		"parent_not_found": "Parent category not found",
 		"parent_deleted": "Parent category is marked as deleted",
 		"parent_same": "Cannot move category under itself",
-		"parent_type_invalid": "New parent category type doesn't match category type (e.g.: {{type}})",
+		"invalid_parent_type": "New parent category type doesn't match category type (e.g.: {{type}})",
 		"parent_descendant": "Cannot move category under its own descendant",
 		"already_deleted": "Category is already marked as deleted",
 		"has_descendants": "Category has active descendants",

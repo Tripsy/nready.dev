@@ -31,7 +31,7 @@ testControllerCreate<UserEntity, UserValidator>({
 	entityMock: getUserEntityMock(),
 	policy: userPolicy,
 	service: userService,
-	createData: userInputPayloads.get('create'),
+	createData: userInputPayloads.create,
 });
 
 testControllerUpdate<UserEntity, UserValidator>({
@@ -40,7 +40,7 @@ testControllerUpdate<UserEntity, UserValidator>({
 	entityMock: getUserEntityMock(),
 	policy: userPolicy,
 	service: userService,
-	updateData: userInputPayloads.get('update'),
+	updateData: userInputPayloads.update,
 });
 
 testControllerRead<UserEntity>({
@@ -70,7 +70,7 @@ testControllerFind<UserEntity, UserValidator>({
 	entityMock: getUserEntityMock(),
 	policy: userPolicy,
 	service: userService,
-	findData: userInputPayloads.get('find'),
+	findData: userInputPayloads.find,
 });
 
 testControllerStatusUpdate<UserEntity>({

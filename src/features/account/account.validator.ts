@@ -3,241 +3,216 @@ import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export class AccountValidator extends BaseValidator {
-	private readonly nameMinLength = Configuration.get(
-		'user.nameMinLength',
-	) as number;
-	private readonly passwordMinLength = Configuration.get(
-		'user.passwordMinLength',
-	) as number;
+const validatorMessages = {
+	invalid_name: lang('account.validation.invalid_name'),
+	name_min: lang('account.validation.name_min', {
+		min: Configuration.get('user.nameMinChars') as string,
+	}),
+	invalid_email: lang('account.validation.invalid_email'),
+	invalid_password: lang('account.validation.invalid_password'),
+	password_min: lang('account.validation.password_min', {
+		min: Configuration.get('user.passwordMinChars') as string,
+	}),
+	password_condition_capital_letter: lang(
+		'account.validation.password_condition_capital_letter',
+	),
+	password_condition_number: lang(
+		'account.validation.password_condition_number',
+	),
+	password_condition_special_character: lang(
+		'account.validation.password_condition_special_character',
+	),
+	password_confirm_required: lang(
+		'account.validation.password_confirm_required',
+	),
+	password_confirm_mismatch: lang(
+		'account.validation.password_confirm_mismatch',
+	),
+	invalid_language: lang('account.validation.invalid_language'),
+	invalid_password_current: lang(
+		'account.validation.invalid_password_current',
+	),
+	invalid_ident: lang('account.validation.invalid_ident'),
+};
 
-	public register() {
-		return z
-			.object({
-				name: this.validateStringMin(
-					lang('account.validation.name_invalid'),
-					this.nameMinLength,
-					lang('account.validation.name_min', {
-						min: this.nameMinLength.toString(),
-					}),
-				),
-				email: z.email({
-					message: lang('account.validation.email_invalid'),
-				}),
-				password: z
-					.string({
-						message: lang('account.validation.password_invalid'),
-					})
-					.min(this.passwordMinLength, {
-						message: lang('account.validation.password_min', {
-							min: this.passwordMinLength.toString(),
-						}),
-					})
-					.refine((value) => /[A-Z]/.test(value), {
-						message: lang(
-							'account.validation.password_condition_capital_letter',
-						),
-					})
-					.refine((value) => /[0-9]/.test(value), {
-						message: lang(
-							'account.validation.password_condition_number',
-						),
-					})
-					.refine(
-						(value) =>
-							/[!@#$%^&*()_+{}[\]:;<>,.?~\\/-]/.test(value),
-						{
-							message: lang(
-								'account.validation.password_condition_special_character',
-							),
-						},
-					),
-				password_confirm: z.string({
-					message: lang(
-						'account.validation.password_confirm_required',
-					),
-				}),
-				language: this.validateLanguage().optional(),
-			})
-			.superRefine(({ password, password_confirm }, ctx) => {
-				if (password !== password_confirm) {
-					ctx.addIssue({
-						path: ['password_confirm'],
-						message: lang(
-							'account.validation.password_confirm_mismatch',
-						),
-						code: 'custom',
-					});
-				}
-			});
-	}
+type AccountValidatorMessages = typeof validatorMessages;
 
-	public login() {
-		return z.object({
-			email: z.email({
-				message: lang('account.validation.email_invalid'),
-			}),
-			password: z.string({
-				message: lang('account.validation.password_invalid'),
-			}),
-		});
-	}
-
-	public passwordRecover() {
-		return z.object({
-			email: z.email({
-				message: lang('account.validation.email_invalid'),
-			}),
-		});
-	}
-
-	public passwordRecoverChange() {
-		return z
-			.object({
-				password: z
-					.string({
-						message: lang('account.validation.password_invalid'),
-					})
-					.min(this.passwordMinLength, {
-						message: lang('account.validation.password_min', {
-							min: this.passwordMinLength.toString(),
-						}),
-					})
-					.refine((value) => /[A-Z]/.test(value), {
-						message: lang(
-							'account.validation.password_condition_capital_letter',
-						),
-					})
-					.refine((value) => /[0-9]/.test(value), {
-						message: lang(
-							'account.validation.password_condition_number',
-						),
-					})
-					.refine(
-						(value) =>
-							/[!@#$%^&*()_+{}[\]:;<>,.?~\\/-]/.test(value),
-						{
-							message: lang(
-								'account.validation.password_condition_special_character',
-							),
-						},
-					),
-				password_confirm: z.string({
-					message: lang(
-						'account.validation.password_confirm_required',
-					),
-				}),
-			})
-			.superRefine(({ password, password_confirm }, ctx) => {
-				if (password !== password_confirm) {
-					ctx.addIssue({
-						path: ['password_confirm'],
-						message: lang(
-							'account.validation.password_confirm_mismatch',
-						),
-						code: 'custom',
-					});
-				}
-			});
-	}
-
-	public passwordUpdate() {
-		return z
-			.object({
-				password_current: this.validateString(
-					lang('account.validation.password_invalid'),
-				),
-				password_new: z
-					.string({
-						message: lang('account.validation.password_invalid'),
-					})
-					.min(this.passwordMinLength, {
-						message: lang('account.validation.password_min', {
-							min: this.passwordMinLength.toString(),
-						}),
-					})
-					.refine((value) => /[A-Z]/.test(value), {
-						message: lang(
-							'account.validation.password_condition_capital_letter',
-						),
-					})
-					.refine((value) => /[0-9]/.test(value), {
-						message: lang(
-							'account.validation.password_condition_number',
-						),
-					})
-					.refine(
-						(value) =>
-							/[!@#$%^&*()_+{}[\]:;<>,.?~\\/-]/.test(value),
-						{
-							message: lang(
-								'account.validation.password_condition_special_character',
-							),
-						},
-					),
-				password_confirm: z.string({
-					message: lang(
-						'account.validation.password_confirm_required',
-					),
-				}),
-			})
-			.superRefine(({ password_new, password_confirm }, ctx) => {
-				if (password_new !== password_confirm) {
-					ctx.addIssue({
-						path: ['password_confirm'],
-						message: lang(
-							'account.validation.password_confirm_mismatch',
-						),
-						code: 'custom',
-					});
-				}
-			});
-	}
-
-	public emailConfirmSend() {
-		return z.object({
-			email: z.email({
-				message: lang('account.validation.email_invalid'),
-			}),
-		});
-	}
-
-	public emailUpdate() {
-		return z.object({
-			email_new: z.email({
-				message: lang('account.validation.email_invalid'),
-			}),
-		});
-	}
-
-	public removeToken() {
-		return z.object({
-			ident: z.uuid({
-				message: lang('account.validation.ident_invalid'),
-			}),
-		});
-	}
-
-	public meEdit() {
-		return z.object({
-			name: this.validateStringMin(
-				lang('account.validation.name_invalid'),
-				this.nameMinLength,
-				lang('account.validation.name_min', {
-					min: this.nameMinLength.toString(),
-				}),
+export class AccountValidator extends BaseValidator<AccountValidatorMessages> {
+	readonly register = z
+		.object({
+			name: this.validateString(
+				{
+					invalid: this.useMessage('invalid_name'),
+					min_chars: this.useMessage('name_min'),
+				},
+				{
+					required: true,
+					minChars: Configuration.get('user.nameMinChars') as number,
+				},
 			),
-			language: this.validateLanguage(),
+			email: this.validateEmail(this.useMessage('invalid_email')),
+			password: this.validatePassword(
+				{
+					invalid_password: this.useMessage('invalid_password'),
+					password_min: this.useMessage('password_min'),
+					password_condition_capital_letter: this.useMessage(
+						'password_condition_capital_letter',
+					),
+					password_condition_number: this.useMessage(
+						'password_condition_number',
+					),
+					password_condition_special_character: this.useMessage(
+						'password_condition_special_character',
+					),
+				},
+				{
+					required: true,
+					minLength: Configuration.get(
+						'user.passwordMinChars',
+					) as number,
+				},
+			),
+			password_confirm: this.validateString(
+				this.useMessage('password_confirm_required'),
+			),
+			language: this.validateLanguage(
+				this.useMessage('invalid_language'),
+				{
+					required: false,
+				},
+			),
+		})
+		.superRefine(({ password, password_confirm }, ctx) => {
+			if (password !== password_confirm) {
+				ctx.addIssue({
+					path: ['password_confirm'],
+					message: this.useMessage('password_confirm_mismatch'),
+					code: 'custom',
+				});
+			}
 		});
-	}
 
-	public meDelete() {
-		return z.object({
+	readonly login = z.object({
+		email: this.validateEmail(this.useMessage('invalid_email')),
+		password: this.validateString(this.useMessage('invalid_password')),
+	});
+
+	readonly passwordRecover = z.object({
+		email: this.validateEmail(this.useMessage('invalid_email')),
+	});
+
+	readonly passwordRecoverChange = z
+		.object({
+			password: this.validatePassword(
+				{
+					invalid_password: this.useMessage('invalid_password'),
+					password_min: this.useMessage('password_min'),
+					password_condition_capital_letter: this.useMessage(
+						'password_condition_capital_letter',
+					),
+					password_condition_number: this.useMessage(
+						'password_condition_number',
+					),
+					password_condition_special_character: this.useMessage(
+						'password_condition_special_character',
+					),
+				},
+				{
+					required: true,
+					minLength: Configuration.get(
+						'user.passwordMinChars',
+					) as number,
+				},
+			),
+			password_confirm: this.validateString(
+				this.useMessage('password_confirm_required'),
+			),
+		})
+		.superRefine(({ password, password_confirm }, ctx) => {
+			if (password !== password_confirm) {
+				ctx.addIssue({
+					path: ['password_confirm'],
+					message: this.useMessage('password_confirm_mismatch'),
+					code: 'custom',
+				});
+			}
+		});
+
+	readonly passwordUpdate = z
+		.object({
 			password_current: this.validateString(
-				lang('account.validation.password_invalid'),
+				this.useMessage('invalid_password_current'),
 			),
+			password_new: this.validatePassword(
+				{
+					invalid_password: this.useMessage('invalid_password'),
+					password_min: this.useMessage('password_min'),
+					password_condition_capital_letter: this.useMessage(
+						'password_condition_capital_letter',
+					),
+					password_condition_number: this.useMessage(
+						'password_condition_number',
+					),
+					password_condition_special_character: this.useMessage(
+						'password_condition_special_character',
+					),
+				},
+				{
+					required: true,
+					minLength: Configuration.get(
+						'user.passwordMinChars',
+					) as number,
+				},
+			),
+			password_confirm: this.validateString(
+				this.useMessage('password_confirm_required'),
+			),
+		})
+		.superRefine(({ password_new, password_confirm }, ctx) => {
+			if (password_new !== password_confirm) {
+				ctx.addIssue({
+					path: ['password_confirm'],
+					message: this.useMessage('password_confirm_mismatch'),
+					code: 'custom',
+				});
+			}
 		});
-	}
+
+	readonly emailConfirmSend = z.object({
+		email: this.validateEmail(this.useMessage('invalid_email')),
+	});
+
+	readonly emailUpdate = z.object({
+		email_new: this.validateEmail(this.useMessage('invalid_email')),
+	});
+
+	readonly removeToken = z.object({
+		ident: z.uuid({
+			message: this.useMessage('invalid_ident'),
+		}),
+	});
+
+	readonly meEdit = z.object({
+		name: this.validateString(
+			{
+				invalid: this.useMessage('invalid_name'),
+				min_chars: this.useMessage('name_min'),
+			},
+			{
+				required: true,
+				minChars: Configuration.get('user.nameMinChars') as number,
+			},
+		),
+		language: this.validateLanguage(this.useMessage('invalid_language'), {
+			required: false,
+		}),
+	});
+
+	readonly meDelete = z.object({
+		password_current: this.validateString(
+			this.useMessage('invalid_password_current'),
+		),
+	});
 }
 
-export const accountValidator = new AccountValidator();
+export const accountValidator = new AccountValidator(validatorMessages);

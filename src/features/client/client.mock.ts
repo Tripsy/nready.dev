@@ -1,15 +1,21 @@
+import type { z } from 'zod';
 import type ClientEntity from '@/features/client/client.entity';
 import {
 	ClientStatusEnum,
 	ClientTypeEnum,
 } from '@/features/client/client.entity';
 import {
-	type ClientValidator,
+	clientValidator,
 	OrderByEnum,
 } from '@/features/client/client.validator';
 import { createPastDate, formatDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+type CreateInput = z.input<typeof clientValidator.create>;
+type CreateCompanyInput = Extract<
+	CreateInput,
+	{ client_type: ClientTypeEnum.COMPANY }
+>;
 
 export function getClientEntityMock(): ClientEntity {
 	return {
@@ -20,7 +26,7 @@ export function getClientEntityMock(): ClientEntity {
 		company_cui: 'RO123',
 		company_reg_com: 'J40/1',
 		person_name: null,
-		person_cnp: null,
+		person_identification_number: null,
 		iban: null,
 		bank_name: null,
 		contact_name: 'John',
@@ -33,18 +39,19 @@ export function getClientEntityMock(): ClientEntity {
 	};
 }
 
-export const clientInputPayloads = createValidatorPayloads<
-	ClientValidator,
-	'create' | 'update' | 'find'
->({
+export const clientInputPayloads = {
 	create: {
 		client_type: ClientTypeEnum.COMPANY,
 		company_name: 'Acme Corp',
 		company_cui: 'RO123',
 		company_reg_com: 'J40/1',
+		iban: null,
+		bank_name: null,
 		contact_name: 'John',
 		contact_email: 'contact@acme.com',
-	},
+		contact_phone: null,
+		notes: null,
+	} as CreateCompanyInput,
 	update: {
 		client_type: ClientTypeEnum.COMPANY,
 		company_name: 'Acme Updated',
@@ -64,33 +71,10 @@ export const clientInputPayloads = createValidatorPayloads<
 			is_deleted: false,
 		},
 	},
-});
+};
 
-export const clientOutputPayloads = createValidatorPayloads<
-	ClientValidator,
-	'find' | 'create',
-	'output'
->({
-	create: {
-		client_type: ClientTypeEnum.COMPANY,
-		company_name: 'Acme Corp',
-		company_cui: 'RO123',
-		company_reg_com: 'J40/1',
-		contact_name: 'John',
-		contact_email: 'contact@acme.com',
-	},
-	find: {
-		page: 1,
-		limit: 10,
-		order_by: OrderByEnum.ID,
-		direction: OrderDirectionEnum.DESC,
-		filter: {
-			term: 'acme',
-			client_type: ClientTypeEnum.COMPANY,
-			status: ClientStatusEnum.ACTIVE,
-			create_date_start: createPastDate(14400),
-			create_date_end: createPastDate(7200),
-			is_deleted: false,
-		},
-	},
-});
+export const clientOutputPayloads = {
+	create: clientValidator.create.parse(clientInputPayloads.create),
+	update: clientValidator.update.parse(clientInputPayloads.update),
+	find: clientValidator.find.parse(clientInputPayloads.find),
+};

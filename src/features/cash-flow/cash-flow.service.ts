@@ -19,8 +19,8 @@ import {
 	type CashFlowValidator,
 	paramsUpdateList,
 } from '@/features/cash-flow/cash-flow.validator';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class CashFlowService {
 	constructor(private repository: ReturnType<typeof getCashFlowRepository>) {}
@@ -68,7 +68,7 @@ export class CashFlowService {
 	public checkAmount(amount: number) {
 		if (amount <= 0) {
 			throw new BadRequestError(
-				lang('cash-flow.validation.amount_invalid'),
+				lang('cash-flow.validation.invalid_amount'),
 			);
 		}
 	}
@@ -82,7 +82,7 @@ export class CashFlowService {
 	}) {
 		if (deps.category !== CashFlowCategoryEnum.REFUND) {
 			throw new BadRequestError(
-				lang('cash-flow.validation.category_invalid'),
+				lang('cash-flow.validation.invalid_category'),
 			);
 		}
 
@@ -108,7 +108,7 @@ export class CashFlowService {
 		) {
 			throw new CustomError(
 				409,
-				lang('cash-flow.error.refund_parent_category_type_invalid'),
+				lang('cash-flow.error.refund_parent_invalid_category_type'),
 			);
 		}
 
@@ -119,7 +119,7 @@ export class CashFlowService {
 		) {
 			throw new CustomError(
 				409,
-				lang('cash-flow.error.refund_parent_category_invalid'),
+				lang('cash-flow.error.refund_parent_invalid_category'),
 			);
 		}
 
@@ -238,6 +238,50 @@ export class CashFlowService {
 				409,
 				lang('cash-flow.error.update_not_allowed'),
 			);
+		}
+
+		if (data.category_type || entry.direction) {
+			this.checkDirection(
+				data.category_type || entry.category_type,
+				data.direction || entry.direction,
+			);
+		}
+
+		if (data.category_type || data.direction) {
+			this.checkCategoryType(
+				data.category_type || entry.category_type,
+				data.category || entry.category,
+			);
+		}
+
+		if (data.category) {
+			this.checkCategory(
+				data.category || entry.category,
+				entry.parent_id || undefined,
+			);
+		}
+
+		if (data.amount) {
+			this.checkAmount(data.amount);
+		}
+
+		if (
+			entry.parent_id &&
+			(data.category || data.amount || data.currency)
+		) {
+			const parentEntry = await this.findById(entry.parent_id, false);
+
+			const refundedAmount = await this.getRefundedAmountSum(
+				entry.parent_id,
+			);
+
+			await this.checkRefund({
+				category: data.category || entry.category,
+				amount: data.amount || entry.amount,
+				currency: data.currency || entry.currency,
+				parentEntry: parentEntry,
+				refundedAmount: refundedAmount,
+			});
 		}
 
 		const updateData = {

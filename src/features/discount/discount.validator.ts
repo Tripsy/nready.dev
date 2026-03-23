@@ -33,12 +33,38 @@ export enum OrderByEnum {
 	UPDATED_AT = 'updated_at',
 }
 
-export class DiscountValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_label: lang('discount.validation.invalid_label'),
+	invalid_scope: lang('discount.validation.invalid_scope'),
+	invalid_reason: lang('discount.validation.invalid_reason'),
+	invalid_reference: lang('discount.validation.invalid_reference'),
+	invalid_type: lang('discount.validation.invalid_type'),
+	invalid_rules: lang('discount.validation.invalid_rules'),
+	invalid_value: lang('discount.validation.invalid_value'),
+	invalid_start_at: lang('discount.validation.invalid_start_at'),
+	invalid_end_at: lang('discount.validation.invalid_end_at'),
+	invalid_notes: lang('shared.validation.invalid_notes'),
+	end_at_must_be_after_start_at: lang(
+		'discount.validation.end_at_must_be_after_start_at',
+	),
+	percent_must_be_between_0_and_100: lang(
+		'discount.validation.percent_must_be_between_0_and_100',
+	),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+	invalid_status: lang('cash-flow.validation.invalid_status'),
+	invalid_date: lang('shared.validation.invalid_date'),
+	invalid_date_format: lang('shared.validation.invalid_date_format'),
+	invalid_past_date: lang('shared.validation.invalid_past_date'),
+	invalid_future_date: lang('shared.validation.invalid_future_date'),
+	invalid_date_range: lang('shared.validation.invalid_date_range'),
+};
 
-	discountRulesSchema: z.ZodType<DiscountRules> = z.record(
+type DiscountValidatorMessages = typeof validatorMessages;
+
+export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> {
+	rulesSchema: z.ZodType<DiscountRules> = z.record(
 		z.string(), // Keys are strings
 		z.union([
 			z.number(), // Single number
@@ -47,199 +73,212 @@ export class DiscountValidator extends BaseValidator {
 		]),
 	);
 
-	create() {
-		return z
-			.object({
-				label: this.validateString(
-					lang('discount.validation.label_invalid'),
-				),
-				scope: this.validateEnum(
-					DiscountScopeEnum,
-					lang('discount.validation.scope_invalid'),
-				),
-				reason: this.validateEnum(
-					DiscountReasonEnum,
-					lang('discount.validation.reason_invalid'),
-				),
-				reference: this.validateString(
-					lang('discount.validation.reference_invalid'),
-				).optional(),
-				type: this.validateEnum(
-					DiscountTypeEnum,
-					lang('discount.validation.type_invalid'),
-				),
-				rules: this.discountRulesSchema.optional(),
-				value: z.coerce
-					.number({
-						message: lang('discount.validation.value_invalid'),
-					})
-					.positive({
-						message: lang(
-							'discount.validation.value_must_be_positive',
-						),
-					}),
-				start_at: this.validateDate(
-					lang('shared.error.start_at_invalid'),
-				),
-				end_at: this.validateDate(lang('shared.error.end_at_invalid')),
-				notes: this.validateString(
-					lang('discount.validation.notes_invalid'),
-				).optional(),
-			})
-			.superRefine((data, ctx) => {
-				if (
-					data.end_at &&
-					data.start_at &&
-					data.end_at <= data.start_at
-				) {
-					ctx.addIssue({
-						path: ['end_at'],
-						message: lang(
-							'discount.validation.end_at_must_be_after_start_at',
-						),
-						code: 'custom',
-					});
-				}
+	readonly create = z
+		.object({
+			label: this.validateString(this.useMessage('invalid_label')),
+			scope: this.validateEnum(
+				DiscountScopeEnum,
+				this.useMessage('invalid_scope'),
+			),
+			reason: this.validateEnum(
+				DiscountReasonEnum,
+				this.useMessage('invalid_reason'),
+			),
+			reference: this.validateString(
+				this.useMessage('invalid_reference'),
+			),
+			type: this.validateEnum(
+				DiscountTypeEnum,
+				this.useMessage('invalid_type'),
+			),
+			rules: this.rulesSchema.optional(),
+			value: this.validateNumber(this.useMessage('invalid_number'), {
+				required: true,
+				onlyPositive: true,
+				allowDecimals: true,
+			}),
+			start_at: this.validateDate(this.useMessage('invalid_start_at'), {
+				required: false,
+				maxPastSeconds: 0,
+			}),
+			end_at: this.validateDate(this.useMessage('invalid_end_at'), {
+				required: false,
+				maxPastSeconds: 0,
+			}),
+			notes: this.validateString(this.useMessage('invalid_notes'), {
+				required: false,
+			}),
+		})
+		.superRefine((data, ctx) => {
+			if (data.end_at && data.start_at && data.end_at <= data.start_at) {
+				ctx.addIssue({
+					path: ['end_at'],
+					message: this.useMessage('end_at_must_be_after_start_at'),
+					code: 'custom',
+				});
+			}
 
-				// Validate that percent discounts are between 0 and 100
-				if (
-					data.type === DiscountTypeEnum.PERCENT &&
-					data.value !== undefined &&
-					(data.value < 0 || data.value > 100)
-				) {
-					ctx.addIssue({
-						path: ['value'],
-						message: lang(
-							'discount.validation.percent_must_be_between_0_and_100',
-						),
-						code: 'custom',
-					});
-				}
-			});
-	}
-
-	update() {
-		return z
-			.object({
-				label: this.validateString(
-					lang('discount.validation.label_invalid'),
-				).optional(),
-				scope: this.validateEnum(
-					DiscountScopeEnum,
-					lang('discount.validation.scope_invalid'),
-				).optional(),
-				reason: this.validateEnum(
-					DiscountReasonEnum,
-					lang('discount.validation.reason_invalid'),
-				).optional(),
-				reference: this.validateString(
-					lang('discount.validation.reference_invalid'),
-				).optional(),
-				type: this.validateEnum(
-					DiscountTypeEnum,
-					lang('discount.validation.type_invalid'),
-				).optional(),
-				rules: this.discountRulesSchema.optional(),
-				value: z.coerce
-					.number({
-						message: lang('discount.validation.value_invalid'),
-					})
-					.positive({
-						message: lang(
-							'discount.validation.value_must_be_positive',
-						),
-					})
-					.optional(),
-				start_at: this.validateDate(
-					lang('shared.error.start_at_invalid'),
-				),
-				end_at: this.validateDate(lang('shared.error.end_at_invalid')),
-				notes: this.validateString(
-					lang('discount.validation.notes_invalid'),
-				).optional(),
-			})
-			.refine((data) => hasAtLeastOneValue(data), {
-				message: lang('shared.validation.params_at_least_one', {
-					params: paramsUpdateList.join(', '),
-				}),
-				path: ['_global'],
-			})
-			.superRefine((data, ctx) => {
-				if (
-					data.end_at &&
-					data.start_at &&
-					data.end_at <= data.start_at
-				) {
-					ctx.addIssue({
-						path: ['end_at'],
-						message: lang(
-							'discount.validation.end_at_must_be_after_start_at',
-						),
-						code: 'custom',
-					});
-				}
-
-				// Validate percent discount if type and value are provided
-				if (
-					data.type === DiscountTypeEnum.PERCENT &&
-					data.value !== undefined &&
-					(data.value < 0 || data.value > 100)
-				) {
-					ctx.addIssue({
-						path: ['value'],
-						message: lang(
-							'discount.validation.percent_must_be_between_0_and_100',
-						),
-						code: 'custom',
-					});
-				}
-			});
-	}
-
-	find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
-
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
-
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				scope: z.enum(DiscountScopeEnum).optional(),
-				reason: z.enum(DiscountReasonEnum).optional(),
-				type: z.enum(DiscountTypeEnum).optional(),
-				reference: z.string().optional(),
-				start_at_start: this.validateDate(),
-				start_at_end: this.validateDate(),
-				is_deleted: this.validateBoolean().default(false),
-			},
-		}).superRefine((data, ctx) => {
+			// Validate that percent discounts are between 0 and 100
 			if (
-				data.filter.start_at_start &&
-				data.filter.start_at_end &&
-				data.filter.start_at_start > data.filter.start_at_end
+				data.type === DiscountTypeEnum.PERCENT &&
+				data.value !== undefined &&
+				(data.value < 0 || data.value > 100)
 			) {
 				ctx.addIssue({
-					path: ['filter', 'start_at_start'],
-					message: lang('shared.validation.invalid_date_range'),
+					path: ['value'],
+					message: this.useMessage(
+						'percent_must_be_between_0_and_100',
+					),
 					code: 'custom',
 				});
 			}
 		});
-	}
+
+	readonly update = z
+		.object({
+			label: this.validateString(this.useMessage('invalid_label'), {
+				required: false,
+			}),
+			scope: this.validateEnum(
+				DiscountScopeEnum,
+				this.useMessage('invalid_scope'),
+				{ required: false },
+			),
+			reason: this.validateEnum(
+				DiscountReasonEnum,
+				this.useMessage('invalid_reason'),
+				{ required: false },
+			),
+			reference: this.validateString(
+				this.useMessage('invalid_reference'),
+				{ required: false },
+			),
+			type: this.validateEnum(
+				DiscountTypeEnum,
+				this.useMessage('invalid_type'),
+				{ required: false },
+			),
+			rules: this.rulesSchema.optional(),
+			value: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+				onlyPositive: true,
+				allowDecimals: true,
+			}),
+			start_at: this.validateDate(this.useMessage('invalid_start_at'), {
+				required: false,
+				maxPastSeconds: 0,
+			}),
+			end_at: this.validateDate(this.useMessage('invalid_end_at'), {
+				required: false,
+				maxPastSeconds: 0,
+			}),
+			notes: this.validateString(this.useMessage('invalid_notes'), {
+				required: false,
+			}),
+		})
+		.refine((data) => hasAtLeastOneValue(data), {
+			message: lang('shared.validation.params_at_least_one', {
+				params: paramsUpdateList.join(', '),
+			}),
+			path: ['_global'],
+		})
+		.superRefine((data, ctx) => {
+			if (data.end_at && data.start_at && data.end_at <= data.start_at) {
+				ctx.addIssue({
+					path: ['end_at'],
+					message: this.useMessage('end_at_must_be_after_start_at'),
+					code: 'custom',
+				});
+			}
+
+			// Validate percent discount if type and value are provided
+			if (
+				data.type === DiscountTypeEnum.PERCENT &&
+				data.value !== undefined &&
+				(data.value < 0 || data.value > 100)
+			) {
+				ctx.addIssue({
+					path: ['value'],
+					message: this.useMessage(
+						'percent_must_be_between_0_and_100',
+					),
+					code: 'custom',
+				});
+			}
+		});
+
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
+
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			scope: this.validateEnum(
+				DiscountScopeEnum,
+				this.useMessage('invalid_scope'),
+				{ required: false },
+			),
+			reason: this.validateEnum(
+				DiscountReasonEnum,
+				this.useMessage('invalid_reason'),
+				{ required: false },
+			),
+			type: this.validateEnum(
+				DiscountTypeEnum,
+				this.useMessage('invalid_type'),
+				{ required: false },
+			),
+			reference: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+			}),
+			start_at_start: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			start_at_end: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	}).superRefine((data, ctx) => {
+		if (
+			data.filter.start_at_start &&
+			data.filter.start_at_end &&
+			data.filter.start_at_start > data.filter.start_at_end
+		) {
+			ctx.addIssue({
+				path: ['filter', 'start_at_start'],
+				message: this.useMessage('invalid_date_range'),
+				code: 'custom',
+			});
+		}
+	});
 }
 
-export const discountValidator = new DiscountValidator();
+export const discountValidator = new DiscountValidator(validatorMessages);

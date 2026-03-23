@@ -41,5 +41,5 @@ testControllerFind<MailQueueEntity, MailQueueValidator>({
 	entityMock: getMailQueueEntityMock(),
 	policy: mailQueuePolicy,
 	service: mailQueueService,
-	findData: mailQueueInputPayloads.get('find'),
+	findData: mailQueueInputPayloads.find,
 });

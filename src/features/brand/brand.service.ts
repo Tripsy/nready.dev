@@ -13,8 +13,8 @@ import {
 	paramsUpdateList,
 } from '@/features/brand/brand.validator';
 import BrandContentRepository from '@/features/brand/brand-content.repository';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class BrandService {
 	constructor(

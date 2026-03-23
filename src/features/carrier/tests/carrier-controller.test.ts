@@ -30,7 +30,7 @@ testControllerCreate<CarrierEntity, CarrierValidator>({
 	entityMock: getCarrierEntityMock(),
 	policy: carrierPolicy,
 	service: carrierService,
-	createData: carrierInputPayloads.get('create'),
+	createData: carrierInputPayloads.create,
 });
 
 testControllerUpdate<CarrierEntity, CarrierValidator>({
@@ -39,7 +39,7 @@ testControllerUpdate<CarrierEntity, CarrierValidator>({
 	entityMock: getCarrierEntityMock(),
 	policy: carrierPolicy,
 	service: carrierService,
-	updateData: carrierInputPayloads.get('update'),
+	updateData: carrierInputPayloads.update,
 });
 
 testControllerRead<CarrierEntity>({
@@ -69,5 +69,5 @@ testControllerFind<CarrierEntity, CarrierValidator>({
 	entityMock: getCarrierEntityMock(),
 	policy: carrierPolicy,
 	service: carrierService,
-	findData: carrierInputPayloads.get('find'),
+	findData: carrierInputPayloads.find,
 });

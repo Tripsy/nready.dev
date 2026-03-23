@@ -1,6 +1,6 @@
 import type { EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import type { PlaceContentInput } from '@/features/place/place.entity';
+import type { PlaceContentType } from '@/features/place/place.entity';
 import PlaceContentEntity from '@/features/place/place-content.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
@@ -19,7 +19,7 @@ export const PlaceContentRepository = dataSource
 
 		async saveContent(
 			manager: EntityManager,
-			contents: PlaceContentInput[],
+			contents: PlaceContentType[],
 			place_id: number,
 		) {
 			if (!contents.length) {

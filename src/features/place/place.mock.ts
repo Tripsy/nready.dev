@@ -1,17 +1,13 @@
 import type PlaceEntity from '@/features/place/place.entity';
 import { PlaceTypeEnum } from '@/features/place/place.entity';
-import {
-	OrderByEnum,
-	type PlaceValidator,
-} from '@/features/place/place.validator';
+import { OrderByEnum, placeValidator } from '@/features/place/place.validator';
 import { createPastDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 export function getPlaceEntityMock(): PlaceEntity {
 	return {
 		id: 1,
-		type: PlaceTypeEnum.COUNTRY,
+		place_type: PlaceTypeEnum.COUNTRY,
 		parent_id: undefined,
 		code: 'RO',
 		created_at: createPastDate(86400),
@@ -22,13 +18,11 @@ export function getPlaceEntityMock(): PlaceEntity {
 	};
 }
 
-export const placeInputPayloads = createValidatorPayloads<
-	PlaceValidator,
-	'create' | 'update' | 'find'
->({
+export const placeInputPayloads = {
 	create: {
-		type: PlaceTypeEnum.COUNTRY,
+		place_type: PlaceTypeEnum.COUNTRY,
 		code: 'RO',
+		parent_id: undefined,
 		content: [
 			{
 				language: 'en',
@@ -38,8 +32,9 @@ export const placeInputPayloads = createValidatorPayloads<
 		],
 	},
 	update: {
-		type: PlaceTypeEnum.COUNTRY,
+		place_type: PlaceTypeEnum.COUNTRY,
 		code: 'RO',
+		parent_id: undefined,
 		content: [
 			{
 				language: 'en',
@@ -55,49 +50,15 @@ export const placeInputPayloads = createValidatorPayloads<
 		direction: OrderDirectionEnum.DESC,
 		filter: {
 			term: 'roma',
-			type: PlaceTypeEnum.COUNTRY,
+			place_type: PlaceTypeEnum.COUNTRY,
 			language: 'en',
 			is_deleted: false,
 		},
 	},
-});
+};
 
-export const placeOutputPayloads = createValidatorPayloads<
-	PlaceValidator,
-	'create' | 'update' | 'find'
->({
-	create: {
-		type: PlaceTypeEnum.COUNTRY,
-		code: 'RO',
-		content: [
-			{
-				language: 'en',
-				name: 'Romania',
-				type_label: 'Country',
-			},
-		],
-	},
-	update: {
-		type: PlaceTypeEnum.COUNTRY,
-		code: 'RO',
-		content: [
-			{
-				language: 'en',
-				name: 'Romania',
-				type_label: 'Country',
-			},
-		],
-	},
-	find: {
-		page: 1,
-		limit: 10,
-		order_by: OrderByEnum.ID,
-		direction: OrderDirectionEnum.DESC,
-		filter: {
-			term: 'roma',
-			type: PlaceTypeEnum.COUNTRY,
-			language: 'en',
-			is_deleted: false,
-		},
-	},
-});
+export const placeOutputPayloads = {
+	create: placeValidator.create.parse(placeInputPayloads.create),
+	update: placeValidator.update.parse(placeInputPayloads.update),
+	find: placeValidator.find.parse(placeInputPayloads.find),
+};

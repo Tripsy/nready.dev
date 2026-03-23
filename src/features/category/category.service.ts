@@ -9,9 +9,9 @@ import CategoryEntity, {
 import { getCategoryRepository } from '@/features/category/category.repository';
 import type { CategoryValidator } from '@/features/category/category.validator';
 import CategoryContentRepository from '@/features/category/category-content.repository';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class CategoryService {
 	constructor(
@@ -47,7 +47,7 @@ export class CategoryService {
 					if (data.type !== parent.type) {
 						throw new CustomError(
 							400,
-							lang('category.error.parent_type_invalid'),
+							lang('category.error.invalid_parent_type'),
 						);
 					}
 
@@ -117,7 +117,7 @@ export class CategoryService {
 			if (category.type !== newParent.type) {
 				throw new CustomError(
 					400,
-					lang('category.error.parent_type_invalid', {
+					lang('category.error.invalid_parent_type', {
 						type: category.type,
 					}),
 				);

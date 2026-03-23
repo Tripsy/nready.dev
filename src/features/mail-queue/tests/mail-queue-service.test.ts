@@ -38,5 +38,5 @@ describe('MailQueueService', () => {
 		MailQueueEntity,
 		MailQueueQuery,
 		MailQueueValidator
-	>(query, serviceMailQueue, mailQueueOutputPayloads.get('find'));
+	>(query, serviceMailQueue, mailQueueOutputPayloads.find);
 });

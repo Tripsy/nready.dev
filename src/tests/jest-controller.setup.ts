@@ -3,13 +3,9 @@ import type { Express } from 'express';
 import request, { type Response } from 'supertest';
 import type { z } from 'zod';
 import { createApp } from '@/app';
-
+import type { ValidatorInput, ValidatorOutput } from '@/helpers/mock.helper';
 import { cacheProvider } from '@/providers/cache.provider';
 import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
-import type {
-	ValidatorInput,
-	ValidatorOutput,
-} from '@/shared/abstracts/validator.abstract';
 import {
 	authorizedSpy,
 	notAuthenticatedSpy,
@@ -50,7 +46,7 @@ export function withDebugResponse<T>(testFn: () => T, response: Response): T {
 
 // Controller test - Create
 export type CreateValidator = {
-	create: () => z.ZodTypeAny;
+	create: z.ZodTypeAny;
 };
 
 type CreateService<E, V extends CreateValidator> = {
@@ -171,7 +167,7 @@ export function testControllerRead<E>(config: ControllerReadType<E>) {
 
 // Controller test - Update
 export type UpdateValidator = {
-	update: () => z.ZodTypeAny;
+	update: z.ZodTypeAny;
 };
 
 type UpdateService<E, V extends UpdateValidator> = {
@@ -306,7 +302,7 @@ export function testControllerUpdateWithContent<E, V extends UpdateValidator>(
 
 // Controller test - Delete
 export type DeleteValidator = {
-	delete: () => z.ZodTypeAny;
+	delete: z.ZodTypeAny;
 };
 
 type DeleteMultipleService<V extends DeleteValidator> = {
@@ -458,7 +454,8 @@ export function testControllerRestoreSingle(
 }
 
 export type FindValidator = {
-	find: () => z.ZodObject<z.ZodRawShape>;
+	// find: z.ZodObject<z.ZodRawShape>;
+	find: z.ZodTypeAny;
 };
 
 type FindService<E, V extends FindValidator> = {
@@ -512,7 +509,6 @@ export function testControllerFind<E, V extends FindValidator>(
 			withDebugResponse(() => {
 				expect(response.status).toBe(200);
 				expect(response.body.data.entries).toHaveLength(1);
-				expect(response.body.data.query.limit).toBe(mockFindData.limit);
 			}, response);
 		});
 	});

@@ -32,13 +32,13 @@ export default class ClientAddressEntity extends EntityAbstract {
 	address_type!: ClientAddressTypeEnum;
 
 	@Column('int', { nullable: true })
-	address_city_id!: number | null;
+	city_id!: number | null;
 
 	@Column('text')
-	address_info!: string;
+	details!: string;
 
 	@Column('varchar', { nullable: true })
-	address_postal_code!: string | null;
+	postal_code!: string | null;
 
 	// OTHER
 	@Column('text', { nullable: true })
@@ -54,6 +54,6 @@ export default class ClientAddressEntity extends EntityAbstract {
 	@ManyToOne('PlaceEntity', {
 		onDelete: 'SET NULL',
 	})
-	@JoinColumn({ name: 'address_city_id' })
+	@JoinColumn({ name: 'city_id' })
 	city?: PlaceEntity | null;
 }

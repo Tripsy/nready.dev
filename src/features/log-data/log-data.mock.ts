@@ -1,11 +1,10 @@
 import type LogDataEntity from '@/features/log-data/log-data.entity';
 import { LogDataCategoryEnum } from '@/features/log-data/log-data.entity';
 import {
-	type LogDataValidator,
+	logDataValidator,
 	OrderByEnum,
 } from '@/features/log-data/log-data.validator';
 import { createPastDate, formatDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { LogDataLevelEnum } from '@/shared/types/log-data.type';
 
@@ -22,10 +21,7 @@ export function getLogDataEntityMock(): LogDataEntity {
 	};
 }
 
-export const logDataInputPayloads = createValidatorPayloads<
-	LogDataValidator,
-	'find' | 'delete'
->({
+export const logDataInputPayloads = {
 	find: {
 		page: 1,
 		limit: 10,
@@ -41,24 +37,8 @@ export const logDataInputPayloads = createValidatorPayloads<
 		},
 	},
 	delete: { ids: [1, 2, 3] },
-});
+};
 
-export const logDataOutputPayloads = createValidatorPayloads<
-	LogDataValidator,
-	'find',
-	'output'
->({
-	find: {
-		page: 1,
-		limit: 10,
-		order_by: OrderByEnum.ID,
-		direction: OrderDirectionEnum.DESC,
-		filter: {
-			category: LogDataCategoryEnum.SYSTEM,
-			level: LogDataLevelEnum.ERROR,
-			create_date_start: createPastDate(14400),
-			create_date_end: createPastDate(7200),
-			term: 'timeout',
-		},
-	},
-});
+export const logDataOutputPayloads = {
+	find: logDataValidator.find.parse(logDataInputPayloads.find),
+};

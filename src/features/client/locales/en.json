@@ -2,15 +2,15 @@
 	"validation": {
 		"client_invalid": "Client type is invalid",
 		"iban_invalid": "Invalid iban number",
-		"bank_name_invalid": "Invalid bank name",
-		"contact_name_invalid": "Invalid contact name",
-		"contact_email_invalid": "Invalid contact email",
+		"bank_invalid_name": "Invalid bank name",
+		"contact_invalid_name": "Invalid contact name",
+		"contact_invalid_email": "Invalid contact email",
 		"contact_phone_invalid": "Invalid contact phone number",
-		"company_name_invalid": "Invalid company name",
+		"company_invalid_name": "Invalid company name",
 		"company_cui_invalid": "Invalid company CUI",
 		"company_reg_com_invalid": "Invalid company registration number",
-		"person_name_invalid": "Invalid person name",
-		"person_cnp_invalid": "Invalid person CNP",
+		"person_invalid_name": "Invalid person name",
+		"person_identification_number_invalid": "Invalid person CNP",
 		"person_phone_invalid": "Invalid person phone number"
 	},
 	"error": {

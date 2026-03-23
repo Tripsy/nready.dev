@@ -3,11 +3,11 @@ import type PermissionEntity from '@/features/permission/permission.entity';
 import {
 	getPermissionEntityMock,
 	permissionInputPayloads,
+	permissionOutputPayloads,
 } from '@/features/permission/permission.mock';
 import type { PermissionQuery } from '@/features/permission/permission.repository';
 import { PermissionService } from '@/features/permission/permission.service';
 import type { PermissionValidator } from '@/features/permission/permission.validator';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 import {
 	createMockRepository,
 	testServiceDelete,
@@ -30,7 +30,7 @@ describe('PermissionService', () => {
 
 	it('should create entry', async () => {
 		const entity = getPermissionEntityMock();
-		const createData = permissionInputPayloads.get('manage');
+		const createData = permissionOutputPayloads.manage;
 
 		mockPermission.query.first.mockResolvedValue(null);
 		mockPermission.repository.save.mockResolvedValue(entity);
@@ -46,13 +46,12 @@ describe('PermissionService', () => {
 			...getPermissionEntityMock(),
 			deleted_at: new Date(),
 		};
+		const createData = permissionOutputPayloads.manage;
+
 		mockPermission.query.first.mockResolvedValue(entity);
 		mockPermission.query.restore.mockReturnThis();
 
-		const result = await servicePermission.create(
-			true,
-			permissionInputPayloads.get('manage'),
-		);
+		const result = await servicePermission.create(true, createData);
 
 		expect(result.action).toBe('restore');
 		expect(mockPermission.query.restore).toHaveBeenCalled();
@@ -60,13 +59,12 @@ describe('PermissionService', () => {
 
 	it('should updateData', async () => {
 		const entity = getPermissionEntityMock();
+		const updateData = permissionOutputPayloads.manage;
+
 		mockPermission.query.first.mockResolvedValue(null);
 		mockPermission.repository.save.mockResolvedValue(entity);
 
-		const result = await servicePermission.updateData(
-			1,
-			permissionInputPayloads.get('manage'),
-		);
+		const result = await servicePermission.updateData(1, updateData);
 
 		expect(mockPermission.repository.save).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -87,14 +85,7 @@ describe('PermissionService', () => {
 		PermissionEntity,
 		PermissionQuery,
 		PermissionValidator
-	>(
-		mockPermission.query,
-		servicePermission,
-		permissionInputPayloads.get('find') as ValidatorOutput<
-			PermissionValidator,
-			'find'
-		>,
-	);
+	>(mockPermission.query, servicePermission, permissionInputPayloads.find);
 
 	testServiceDelete<PermissionEntity, PermissionQuery>(
 		mockPermission.query,

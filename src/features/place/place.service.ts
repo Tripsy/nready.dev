@@ -9,7 +9,7 @@ import {
 	paramsUpdateList,
 } from '@/features/place/place.validator';
 import PlaceContentRepository from '@/features/place/place-content.repository';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 
 export class PlaceService {
 	constructor(
@@ -19,8 +19,8 @@ export class PlaceService {
 		) => Repository<PlaceEntity>,
 	) {}
 
-	public async checkParentId(type: PlaceTypeEnum, parent_id?: number) {
-		if (type === PlaceTypeEnum.COUNTRY) {
+	public async checkParentId(place_type: PlaceTypeEnum, parent_id?: number) {
+		if (place_type === PlaceTypeEnum.COUNTRY) {
 			if (parent_id) {
 				throw new BadRequestError(
 					lang('place.validation.country_no_parent'),
@@ -41,9 +41,9 @@ export class PlaceService {
 					);
 				}
 
-				switch (type) {
+				switch (place_type) {
 					case PlaceTypeEnum.REGION:
-						if (parentEntry.type !== PlaceTypeEnum.COUNTRY) {
+						if (parentEntry.place_type !== PlaceTypeEnum.COUNTRY) {
 							throw new CustomError(
 								409,
 								lang('place.error.invalid_parent_type'),
@@ -51,7 +51,7 @@ export class PlaceService {
 						}
 						break;
 					case PlaceTypeEnum.CITY:
-						if (parentEntry.type !== PlaceTypeEnum.REGION) {
+						if (parentEntry.place_type !== PlaceTypeEnum.REGION) {
 							throw new CustomError(
 								409,
 								lang('place.error.invalid_parent_type'),
@@ -62,7 +62,7 @@ export class PlaceService {
 			}
 		}
 
-		if (type !== PlaceTypeEnum.COUNTRY && !parent_id) {
+		if (place_type !== PlaceTypeEnum.COUNTRY && !parent_id) {
 			throw new BadRequestError(lang('place.error.parent_required'));
 		}
 	}
@@ -73,13 +73,13 @@ export class PlaceService {
 	public async create(
 		data: ValidatorOutput<PlaceValidator, 'create'>,
 	): Promise<PlaceEntity> {
-		await this.checkParentId(data.type, data.parent_id);
+		await this.checkParentId(data.place_type, data.parent_id);
 
 		return dataSource.transaction(async (manager) => {
 			const repository = this.getScopedPlaceRepository(manager);
 
 			const entry = {
-				type: data.type,
+				place_type: data.place_type,
 				code: data.code,
 				parent_id: data.parent_id,
 			};
@@ -107,11 +107,15 @@ export class PlaceService {
 		const place = await this.findById(id, withDeleted);
 
 		if (data.parent_id) {
-			await this.checkParentId(data.type || place.type, data.parent_id);
+			await this.checkParentId(
+				data.place_type || place.place_type,
+				data.parent_id,
+			);
 		}
 
 		const isTypeChange =
-			data.type !== undefined && data.type !== place.type;
+			data.place_type !== undefined &&
+			data.place_type !== place.place_type;
 
 		if (isTypeChange) {
 			const hasChildren = await this.hasChildren(place.id);
@@ -194,7 +198,7 @@ export class PlaceService {
 			)
 			.select([
 				'place.id',
-				'place.type',
+				'place.place_type',
 				'place.code',
 				'place.parent_id',
 				'place.created_at',
@@ -263,7 +267,7 @@ export class PlaceService {
 			.filterById(data.filter.id)
 			.filterBy('content.language', data.filter.language)
 			.filterByTerm(data.filter.term)
-			.filterBy('place.type', data.filter.type)
+			.filterBy('place.type', data.filter.place_type)
 			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit)

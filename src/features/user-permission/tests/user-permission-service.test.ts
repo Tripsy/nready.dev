@@ -60,7 +60,7 @@ describe('UserPermissionService', () => {
 		);
 
 		const result = await serviceUserPermission.create(
-			userPermissionOutputPayloads.get('create'),
+			userPermissionOutputPayloads.create,
 			1,
 		);
 
@@ -79,9 +79,7 @@ describe('UserPermissionService', () => {
 		mockUserPermission.repository.restore = jest.fn();
 
 		const result = await serviceUserPermission.create(
-			userPermissionInputPayloads.get('create') as {
-				permission_ids: number[];
-			},
+			userPermissionInputPayloads.create,
 			1,
 		);
 
@@ -126,9 +124,7 @@ describe('UserPermissionService', () => {
 		mockUserPermission.query.all.mockResolvedValue([[], 0]);
 
 		const result = await serviceUserPermission.findByFilter(
-			userPermissionInputPayloads.get('find') as Parameters<
-				UserPermissionService['findByFilter']
-			>[0],
+			userPermissionInputPayloads.find,
 			1,
 			false,
 		);

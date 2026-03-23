@@ -27,7 +27,7 @@ class PlaceController extends BaseController {
 	public create = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canCreate(res.locals.auth);
 
-		const data = this.validate(this.validator.create(), req.body, res);
+		const data = this.validate(this.validator.create, req.body, res);
 
 		const entry = await this.placeService.create(data);
 
@@ -66,7 +66,7 @@ class PlaceController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update(), req.body, res);
+		const data = this.validate(this.validator.update, req.body, res);
 
 		const entry = await this.placeService.updateDataWithContent(
 			res.locals.validated.id,
@@ -104,7 +104,7 @@ class PlaceController extends BaseController {
 		this.policy.canFind(res.locals.auth);
 
 		const data = this.validate(
-			this.validator.find(),
+			this.validator.find,
 			{
 				...req.query,
 				...(res.locals.filter !== undefined && {

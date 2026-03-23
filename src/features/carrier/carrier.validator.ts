@@ -20,106 +20,85 @@ export enum OrderByEnum {
 	UPDATED_AT = 'updated_at',
 }
 
-export class CarrierValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_name: lang('carrier.validation.website_invalid'),
+	invalid_website: lang('carrier.validation.invalid_website'),
+	invalid_phone: lang('carrier.validation.invalid_phone'),
+	invalid_email: lang('carrier.validation.invalid_email'),
+	invalid_notes: lang('carrier.validation.invalid_notes'),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+};
 
-	public create() {
-		return z.object({
-			name: this.validateString(lang('carrier.validation.name_invalid')),
-			website: z.preprocess(
-				(val) => (val === '' ? null : val),
-				z
-					.url({
-						message: lang('carrier.validation.website_invalid'),
-					})
-					.nullable()
-					.optional(),
-			),
-			phone: this.validateString(
-				lang('carrier.validation.phone_invalid'),
-			).optional(),
-			email: z.preprocess(
-				(val) => (val === '' ? null : val),
-				z
-					.email({
-						message: lang('carrier.validation.email_invalid'),
-					})
-					.nullable()
-					.optional(),
-			),
-			notes: this.validateString(
-				lang('carrier.validation.notes_invalid'),
-			).optional(),
+type CarrierValidatorMessages = typeof validatorMessages;
+
+export class CarrierValidator extends BaseValidator<CarrierValidatorMessages> {
+	readonly create = z.object({
+		name: this.validateString(this.useMessage('invalid_name')),
+		website: this.validateString(this.useMessage('invalid_website'), {
+			required: false,
+		}),
+		phone: this.validatePhone(this.useMessage('invalid_phone'), {
+			required: false,
+		}),
+		email: this.validateEmail(this.useMessage('invalid_email'), {
+			required: false,
+		}),
+		notes: this.validateString(this.useMessage('invalid_notes'), {
+			required: false,
+		}),
+	});
+
+	readonly update = z
+		.object({
+			name: this.validateString(this.useMessage('invalid_name'), {
+				required: false,
+			}),
+			website: this.validateString(this.useMessage('invalid_website'), {
+				required: false,
+			}),
+			phone: this.validatePhone(this.useMessage('invalid_phone'), {
+				required: false,
+			}),
+			email: this.validateEmail(this.useMessage('invalid_email'), {
+				required: false,
+			}),
+			notes: this.validateString(this.useMessage('invalid_notes'), {
+				required: false,
+			}),
+		})
+		.refine((data) => hasAtLeastOneValue(data), {
+			message: lang('shared.validation.params_at_least_one', {
+				params: paramsUpdateList.join(', '),
+			}),
+			path: ['_global'],
 		});
-	}
 
-	public update() {
-		return z
-			.object({
-				name: this.validateString(
-					lang('carrier.validation.name_invalid'),
-				).optional(),
-				website: z.preprocess(
-					(val) => (val === '' ? null : val),
-					z
-						.url({
-							message: lang('carrier.validation.website_invalid'),
-						})
-						.nullable()
-						.optional(),
-				),
-				phone: this.validateString(
-					lang('carrier.validation.phone_invalid'),
-				).optional(),
-				email: z.preprocess(
-					(val) => (val === '' ? null : val),
-					z
-						.email({
-							message: lang('carrier.validation.email_invalid'),
-						})
-						.nullable()
-						.optional(),
-				),
-				notes: this.validateString(
-					lang('carrier.validation.notes_invalid'),
-				).optional(),
-			})
-			.refine((data) => hasAtLeastOneValue(data), {
-				message: lang('shared.validation.params_at_least_one', {
-					params: paramsUpdateList.join(', '),
-				}),
-				path: ['_global'],
-			});
-	}
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
 
-	public find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
 
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
 
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				is_deleted: this.validateBoolean().default(false),
-			},
-		});
-	}
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	});
 }
 
-export const carrierValidator = new CarrierValidator();
+export const carrierValidator = new CarrierValidator(validatorMessages);

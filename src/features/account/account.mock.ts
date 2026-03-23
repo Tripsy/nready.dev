@@ -1,10 +1,8 @@
 import type { ConfirmationTokenPayload } from '@/features/account/account.service';
-import type { AccountValidator } from '@/features/account/account.validator';
 import type AccountRecoveryEntity from '@/features/account/account-recovery.entity';
 import type AccountTokenEntity from '@/features/account/account-token.entity';
 import type { AuthValidToken } from '@/features/account/account-token.service';
 import { createFutureDate, createPastDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { mockUuid } from '@/tests/mocks/helpers.mock';
 
 export function getAccountTokenMock(): AccountTokenEntity {
@@ -57,19 +55,7 @@ export function getConfirmationTokenPayloadMock(): ConfirmationTokenPayload {
 	};
 }
 
-export const accountInputPayloads = createValidatorPayloads<
-	AccountValidator,
-	| 'register'
-	| 'login'
-	| 'passwordRecover'
-	| 'passwordRecoverChange'
-	| 'passwordUpdate'
-	| 'emailConfirmSend'
-	| 'emailUpdate'
-	| 'removeToken'
-	| 'meEdit'
-	| 'meDelete'
->({
+export const accountInputPayloads = {
 	register: {
 		name: 'John Doe',
 		email: 'john.doe@example.com',
@@ -109,4 +95,4 @@ export const accountInputPayloads = createValidatorPayloads<
 	meDelete: {
 		password_current: 'Secure@123',
 	},
-});
+};

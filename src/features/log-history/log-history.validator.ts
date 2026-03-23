@@ -12,77 +12,98 @@ export enum OrderByEnum {
 	RECORDED_AT = 'recorded_at',
 }
 
-export class LogHistoryValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_source: lang('log_history.validation.invalid_source'),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+	invalid_date: lang('shared.validation.invalid_date'),
+	invalid_date_format: lang('shared.validation.invalid_date_format'),
+	invalid_past_date: lang('shared.validation.invalid_past_date'),
+	invalid_future_date: lang('shared.validation.invalid_future_date'),
+	invalid_date_range: lang('shared.validation.invalid_date_range'),
+};
 
-	public delete() {
-		return z.object({
-			ids: z.array(
-				z.coerce
-					.number({
-						message: lang('shared.validation.invalid_ids', {
-							name: 'ids',
-						}),
-					})
-					.positive(),
-				{
+type LogHistoryValidatorMessages = typeof validatorMessages;
+
+export class LogHistoryValidator extends BaseValidator<LogHistoryValidatorMessages> {
+	readonly delete = z.object({
+		ids: z.array(
+			z.coerce
+				.number({
 					message: lang('shared.validation.invalid_ids', {
 						name: 'ids',
 					}),
-				},
-			),
-		});
-	}
-
-	find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
-
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
-
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				entity: this.validateString(
-					lang('shared.validation.invalid_string'),
-				).optional(),
-				entity_id: this.validateNumber(
-					lang('shared.validation.invalid_number'),
-				).optional(),
-				action: this.validateString(
-					lang('shared.validation.invalid_string'),
-				).optional(),
-				request_id: this.validateString(
-					lang('shared.validation.invalid_string'),
-				).optional(),
-				source: z
-					.enum(
-						RequestContextSource,
-						lang('shared.error.invalid_source'),
-					)
-					.optional(),
-				recorded_at_start: this.validateDate(),
-				recorded_at_end: this.validateDate(),
+				})
+				.positive(),
+			{
+				message: lang('shared.validation.invalid_ids', {
+					name: 'ids',
+				}),
 			},
-		}).superRefine((data, ctx) => {
-			if (
-				data.filter.recorded_at_start &&
-				data.filter.recorded_at_end &&
-				data.filter.recorded_at_start > data.filter.recorded_at_end
-			) {
-				ctx.addIssue({
-					path: ['filter', 'recorded_at_start'],
-					message: lang('shared.validation.invalid_date_range'),
-					code: 'custom',
-				});
-			}
-		});
-	}
+		),
+	});
+
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
+
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterShape: {
+			entity: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+			}),
+			entity_id: this.validateId(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			action: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+			}),
+			request_id: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+			}),
+			source: this.validateEnum(
+				RequestContextSource,
+				this.useMessage('invalid_source'),
+				{ required: false },
+			),
+			recorded_at_start: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			recorded_at_end: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+		},
+	}).superRefine((data, ctx) => {
+		if (
+			data.filter.recorded_at_start &&
+			data.filter.recorded_at_end &&
+			data.filter.recorded_at_start > data.filter.recorded_at_end
+		) {
+			ctx.addIssue({
+				path: ['filter', 'recorded_at_start'],
+				message: this.useMessage('invalid_date_range'),
+				code: 'custom',
+			});
+		}
+	});
 }
 
-export const logHistoryValidator = new LogHistoryValidator();
+export const logHistoryValidator = new LogHistoryValidator(validatorMessages);

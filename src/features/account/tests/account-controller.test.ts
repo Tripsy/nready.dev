@@ -434,7 +434,7 @@ describe(`${controller} - passwordUpdate`, () => {
 		}, response);
 	});
 
-	it('should return error - password_invalid', async () => {
+	it('should return error - invalid_password', async () => {
 		isAuthenticatedSpy(accountPolicy);
 
 		jest.spyOn(accountPolicy, 'getId').mockReturnValue(

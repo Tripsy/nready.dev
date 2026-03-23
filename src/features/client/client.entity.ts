@@ -32,7 +32,7 @@ export type ClientIdentityData =
 	  }
 	| {
 			client_type: ClientTypeEnum.PERSON;
-			person_cnp?: string | null;
+			person_identification_number?: string | null;
 	  };
 
 const ENTITY_TABLE_NAME = 'client';
@@ -54,9 +54,9 @@ const ENTITY_TABLE_NAME = 'client';
 	unique: true,
 	where: "company_reg_com IS NOT NULL AND client_type = 'company'",
 })
-@Index('IDX_client_cnp_unique', ['person_cnp'], {
+@Index('IDX_client_cnp_unique', ['person_identification_number'], {
 	unique: true,
-	where: "person_cnp IS NOT NULL AND client_type = 'person'",
+	where: "person_identification_number IS NOT NULL AND client_type = 'person'",
 })
 export default class ClientEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
@@ -92,7 +92,7 @@ export default class ClientEntity extends EntityAbstract {
 	person_name!: string | null;
 
 	@Column('varchar', { nullable: true, select: false })
-	person_cnp!: string | null;
+	person_identification_number!: string | null;
 
 	// FINANCIAL FIELDS
 	@Column('varchar', { nullable: true })

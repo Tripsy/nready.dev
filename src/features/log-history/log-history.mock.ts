@@ -2,11 +2,10 @@ import { RequestContextSource } from '@/config/request.context';
 import type LogHistoryEntity from '@/features/log-history/log-history.entity';
 import { LogHistoryAction } from '@/features/log-history/log-history.entity';
 import {
-	type LogHistoryValidator,
+	logHistoryValidator,
 	OrderByEnum,
 } from '@/features/log-history/log-history.validator';
 import { createPastDate, formatDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 export function getLogHistoryEntityMock(): LogHistoryEntity {
@@ -23,10 +22,7 @@ export function getLogHistoryEntityMock(): LogHistoryEntity {
 	};
 }
 
-export const logHistoryInputPayloads = createValidatorPayloads<
-	LogHistoryValidator,
-	'find' | 'delete'
->({
+export const logHistoryInputPayloads = {
 	find: {
 		page: 1,
 		limit: 10,
@@ -43,26 +39,8 @@ export const logHistoryInputPayloads = createValidatorPayloads<
 		},
 	},
 	delete: { ids: [1, 2, 3] },
-});
+};
 
-export const logHistoryOutputPayloads = createValidatorPayloads<
-	LogHistoryValidator,
-	'find',
-	'output'
->({
-	find: {
-		page: 1,
-		limit: 10,
-		order_by: OrderByEnum.ID,
-		direction: OrderDirectionEnum.DESC,
-		filter: {
-			entity: 'test',
-			entity_id: 1,
-			action: 'create',
-			request_id: 'xxx',
-			source: RequestContextSource.API,
-			recorded_at_start: createPastDate(14400),
-			recorded_at_end: createPastDate(7200),
-		},
-	},
-});
+export const logHistoryOutputPayloads = {
+	find: logHistoryValidator.find.parse(logHistoryInputPayloads.find),
+};

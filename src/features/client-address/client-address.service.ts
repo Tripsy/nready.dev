@@ -15,7 +15,7 @@ import {
 	type PlaceService,
 	placeService,
 } from '@/features/place/place.service';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 import { PlaceTypeEnum } from '@/shared/types/place.type';
 
 export class ClientAddressService {
@@ -25,14 +25,14 @@ export class ClientAddressService {
 		private placeService: PlaceService,
 	) {}
 
-	public async checkAddressCityId(address_city_id?: number) {
-		if (address_city_id) {
+	public async checkCityId(city_id?: number) {
+		if (city_id) {
 			const address_city = await this.placeService.findById(
-				address_city_id,
+				city_id,
 				true,
 			);
 
-			if (address_city.type !== PlaceTypeEnum.CITY) {
+			if (address_city.place_type !== PlaceTypeEnum.CITY) {
 				throw new CustomError(
 					409,
 					lang('client-address.error.address_city_invalid_type'),
@@ -48,14 +48,14 @@ export class ClientAddressService {
 		data: ValidatorOutput<ClientAddressValidator, 'create'>,
 		client_id: number,
 	): Promise<ClientAddressEntity> {
-		await this.checkAddressCityId(data.address_city_id);
+		await this.checkCityId(data.city_id);
 
 		const entry = {
 			client_id: client_id,
 			address_type: data.address_type,
-			address_city_id: data.address_city_id,
-			address_info: data.address_info,
-			address_postal_code: data.address_postal_code,
+			city_id: data.city_id,
+			details: data.details,
+			postal_code: data.postal_code,
 			notes: data.notes,
 		};
 
@@ -82,8 +82,8 @@ export class ClientAddressService {
 	) {
 		await this.findById(id, withDeleted, client_id); // Returns 404 inside if entry is not found
 
-		if (data.address_city_id) {
-			await this.checkAddressCityId(data.address_city_id);
+		if (data.city_id) {
+			await this.checkCityId(data.city_id);
 		}
 
 		const updateData = {
@@ -149,7 +149,7 @@ export class ClientAddressService {
 		);
 
 		const address_city = await this.placeService.getDataById(
-			entry.address_city_id,
+			entry.city_id,
 			language,
 			withDeleted,
 		);

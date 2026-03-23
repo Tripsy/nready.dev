@@ -5,11 +5,10 @@ import {
 	DiscountTypeEnum,
 } from '@/features/discount/discount.entity';
 import {
-	type DiscountValidator,
+	discountValidator,
 	OrderByEnum,
 } from '@/features/discount/discount.validator';
 import { createFutureDate, createPastDate, formatDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 export function getDiscountEntityMock(): DiscountEntity {
@@ -35,10 +34,7 @@ export function getDiscountEntityMock(): DiscountEntity {
 	};
 }
 
-export const discountInputPayloads = createValidatorPayloads<
-	DiscountValidator,
-	'create' | 'update' | 'find'
->({
+export const discountInputPayloads = {
 	create: {
 		label: 'Black Friday Discount',
 		scope: DiscountScopeEnum.ORDER,
@@ -87,44 +83,10 @@ export const discountInputPayloads = createValidatorPayloads<
 			is_deleted: true,
 		},
 	},
-});
+};
 
-export const discountOutputPayloads = createValidatorPayloads<
-	DiscountValidator,
-	'find' | 'create',
-	'output'
->({
-	create: {
-		label: 'Black Friday Discount',
-		scope: DiscountScopeEnum.ORDER,
-		reason: DiscountReasonEnum.BIRTHDAY_DISCOUNT,
-		reference: 'BF-2025',
-		type: DiscountTypeEnum.AMOUNT,
-		rules: {
-			min_order_value: 101,
-			eligible_categories: [1, 2, 5],
-			applicable_countries: ['RO'],
-		},
-		value: 25,
-		start_at: createFutureDate(14400),
-		end_at: createFutureDate(28800),
-		notes: 'Applied to all orders during January',
-	},
-	find: {
-		page: 1,
-		limit: 10,
-		order_by: OrderByEnum.ID,
-		direction: OrderDirectionEnum.DESC,
-		filter: {
-			id: 1,
-			term: 'test',
-			scope: DiscountScopeEnum.CATEGORY,
-			reason: DiscountReasonEnum.BIRTHDAY_DISCOUNT,
-			type: DiscountTypeEnum.PERCENT,
-			reference: 'test',
-			start_at_start: createPastDate(14400),
-			start_at_end: createPastDate(7200),
-			is_deleted: true,
-		},
-	},
-});
+export const discountOutputPayloads = {
+	create: discountValidator.create.parse(discountInputPayloads.create),
+	update: discountValidator.update.parse(discountInputPayloads.update),
+	find: discountValidator.find.parse(discountInputPayloads.find),
+};

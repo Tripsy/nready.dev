@@ -11,17 +11,18 @@ export enum UserPermissionOrderByEnum {
 	OPERATION = 'permission.operation',
 }
 
-export class UserPermissionValidator extends BaseValidator {
-	private readonly termMinLength = Configuration.get(
-		'filter.termMinLength',
-	) as number;
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+};
 
-	public create() {
-		return z.object({
-			permission_ids: z.array(
+type UserPermissionValidatorMessages = typeof validatorMessages;
+
+export class UserPermissionValidator extends BaseValidator<UserPermissionValidatorMessages> {
+	readonly create = z.object({
+		permission_ids: z
+			.array(
 				z
 					.number({
 						message: lang('shared.validation.invalid_ids', {
@@ -29,50 +30,45 @@ export class UserPermissionValidator extends BaseValidator {
 						}),
 					})
 					.positive(),
-				{
-					message: lang('shared.validation.invalid_ids', {
-						name: 'ids',
-					}),
-				},
-			),
-		});
-	}
+			)
+			.min(1, {
+				message: lang('shared.validation.array_min', {
+					name: 'permission_ids',
+					length: '1',
+				}),
+			}),
+	});
 
-	find() {
-		return this.makeFindValidator({
-			orderByEnum: UserPermissionOrderByEnum,
-			defaultOrderBy: UserPermissionOrderByEnum.ID,
+	readonly find = this.validateFind({
+		orderByEnum: UserPermissionOrderByEnum,
+		defaultOrderBy: UserPermissionOrderByEnum.ID,
 
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
 
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
 
-			filterShape: {
-				user_id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				entity: this.validateStringMin(
-					lang('shared.validation.invalid_string'),
-					this.termMinLength,
-					lang('shared.validation.string_min', {
-						min: this.termMinLength.toString(),
-					}),
-				).optional(),
-				operation: this.validateStringMin(
-					lang('shared.validation.invalid_string'),
-					this.termMinLength,
-					lang('shared.validation.string_min', {
-						min: this.termMinLength.toString(),
-					}),
-				).optional(),
-				is_deleted: this.validateBoolean().default(false),
-			},
-		});
-	}
+		filterShape: {
+			user_id: this.validateId(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			entity: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			operation: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	});
 }
 
-export const userPermissionValidator = new UserPermissionValidator();
+export const userPermissionValidator = new UserPermissionValidator(
+	validatorMessages,
+);

@@ -37,7 +37,7 @@ class LogHistoryController extends BaseController {
 	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		const data = this.validate(this.validator.delete(), req.body, res);
+		const data = this.validate(this.validator.delete, req.body, res);
 
 		const countDelete = await this.logHistoryService.delete(data);
 
@@ -56,7 +56,7 @@ class LogHistoryController extends BaseController {
 		this.policy.canFind(res.locals.auth);
 
 		const data = this.validate(
-			this.validator.find(),
+			this.validator.find,
 			{
 				...req.query,
 				...(res.locals.filter !== undefined && {

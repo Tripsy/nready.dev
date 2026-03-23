@@ -15,8 +15,8 @@ const listSchemas: ValidatorMethod[] = ['find'];
 describe(validator, () => {
 	listSchemas.forEach((n) => {
 		it(`${n}() accepts valid payload`, () => {
-			const schema = logDataValidator[n]();
-			const payload = logDataInputPayloads.get(n);
+			const schema = logDataValidator[n];
+			const payload = logDataInputPayloads[n];
 			const validated = schema.safeParse(payload);
 
 			withDebugValidated(() => {

@@ -15,8 +15,8 @@ const listSchemas: ValidatorMethod[] = ['find'];
 describe(validator, () => {
 	listSchemas.forEach((n) => {
 		it(`${n}() accepts valid payload`, () => {
-			const schema = mailQueueValidator[n]();
-			const payload = mailQueueInputPayloads.get(n);
+			const schema = mailQueueValidator[n];
+			const payload = mailQueueInputPayloads[n];
 			const validated = schema.safeParse(payload);
 
 			withDebugValidated(() => {

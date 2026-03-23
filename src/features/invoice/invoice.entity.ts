@@ -24,7 +24,7 @@ export type BillingDetailsPerson = {
 
 	// Person
 	person_name: string;
-	person_cnp?: string | null;
+	person_identification_number?: string | null;
 
 	// Financial
 	iban?: string | null;
@@ -34,8 +34,8 @@ export type BillingDetailsPerson = {
 	address_country: string;
 	address_region?: string | null;
 	address_city?: string | null;
-	address_info?: string | null;
-	address_postal_code?: string | null;
+	details?: string | null;
+	postal_code?: string | null;
 
 	// Contact
 	contact_name?: string | null;
@@ -59,8 +59,8 @@ export type BillingDetailsCompany = {
 	address_country: string;
 	address_region?: string | null;
 	address_city?: string | null;
-	address_info?: string | null;
-	address_postal_code?: string | null;
+	details?: string | null;
+	postal_code?: string | null;
 
 	// Contact
 	contact_name?: string | null;

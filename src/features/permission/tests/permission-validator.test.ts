@@ -18,8 +18,8 @@ const listSchemas: ValidatorMethod[] = ['manage', 'find'];
 describe(validator, () => {
 	listSchemas.forEach((n) => {
 		it(`${n}() accepts valid payload`, () => {
-			const schema = permissionValidator[n]();
-			const payload = permissionInputPayloads.get(n);
+			const schema = permissionValidator[n];
+			const payload = permissionInputPayloads[n];
 			const validated = schema.safeParse(payload);
 
 			withDebugValidated(() => {

@@ -34,18 +34,19 @@
 	},
 	"validation": {
 		"ident_required": "Ident is required",
-		"ident_invalid": "Ident is invalid",
-		"name_invalid": "Name is invalid",
+		"invalid_ident": "Ident is invalid",
+		"invalid_name": "Name is invalid",
 		"name_min": "Name must be at least {{min}} characters long",
 		"email_required": "Email is required",
-		"email_invalid": "Email is invalid",
+		"invalid_email": "Email is invalid",
 		"password_required": "Password required",
-		"password_invalid": "Invalid password",
+		"invalid_password": "Invalid password",
 		"password_min": "Password must be at least {{min}} characters long",
 		"password_condition_capital_letter": "Password must contain at least one capital letter",
 		"password_condition_number": "Password must contain at least one number",
 		"password_condition_special_character": "Password must contain at least one special character",
 		"password_confirm_required": "Password confirmation is required",
-		"password_confirm_mismatch": "Passwords does not match"
+		"password_confirm_mismatch": "Passwords does not match",
+		"invalid_password_current": "Invalid current password"
 	}
 }

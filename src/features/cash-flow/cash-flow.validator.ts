@@ -9,8 +9,6 @@ import {
 	CashFlowMethodEnum,
 	CashFlowStatusEnum,
 	CurrencyEnum,
-	getExpectedCategoryType,
-	getExpectedDirection,
 } from '@/features/cash-flow/cash-flow.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
@@ -36,245 +34,207 @@ export enum OrderByEnum {
 	CREATED_AT = 'created_at',
 }
 
-export class CashFlowValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_direction: lang('cash-flow.validation.invalid_direction'),
+	invalid_category_type: lang('cash-flow.validation.invalid_category_type'),
+	invalid_category: lang('cash-flow.validation.invalid_category'),
+	invalid_gateway: lang('cash-flow.validation.invalid_gateway'),
+	invalid_method: lang('cash-flow.validation.invalid_method'),
+	invalid_amount: lang('cash-flow.validation.invalid_amount'),
+	invalid_vat_rate: lang('cash-flow.validation.invalid_vat_rate'),
+	invalid_currency: lang('cash-flow.validation.invalid_currency'),
+	invalid_exchange_rate: lang('cash-flow.validation.invalid_exchange_rate'),
+	invalid_external_reference: lang(
+		'cash-flow.validation.invalid_external_reference',
+	),
+	invalid_parent_id: lang('cash-flow.validation.invalid_parent_id'),
+	invalid_notes: lang('shared.validation.invalid_notes'),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+	invalid_status: lang('cash-flow.validation.invalid_status'),
+	invalid_date: lang('shared.validation.invalid_date'),
+	invalid_date_format: lang('shared.validation.invalid_date_format'),
+	invalid_past_date: lang('shared.validation.invalid_past_date'),
+	invalid_future_date: lang('shared.validation.invalid_future_date'),
+};
 
-	public create() {
-		return z
-			.object({
-				direction: this.validateEnum(
-					CashFlowDirectionEnum,
-					lang('cash-flow.validation.direction_invalid'),
-				),
-				category_type: this.validateEnum(
-					CashFlowCategoryTypeEnum,
-					lang('cash-flow.validation.category_type_invalid'),
-				),
-				category: this.validateEnum(
-					CashFlowCategoryEnum,
-					lang('cash-flow.validation.category_invalid'),
-				),
-				gateway: this.validateEnum(
-					CashFlowGatewayEnum,
-					lang('cash-flow.validation.gateway_invalid'),
-				),
-				method: this.validateEnum(
-					CashFlowMethodEnum,
-					lang('cash-flow.validation.method_invalid'),
-				),
-				amount: this.validateNumber(
-					lang('cash-flow.validation.amount_invalid'),
-					true,
-					false,
-				),
-				vat_rate: this.validateNumber(
-					lang('cash-flow.validation.amount_invalid'),
-					true,
-					true,
-				),
-				currency: this.validateEnum(
-					CurrencyEnum,
-					lang('cash-flow.validation.currency_invalid'),
-				),
-				// exchange_rate: this.validateNumber(
-				// 	lang('cash-flow.validation.exchange_rate_invalid'),
-				// 	true,
-				// 	true,
-				// ),
-				external_reference: this.validateString(
-					lang('cash-flow.validation.external_reference_invalid'),
-				).optional(),
-				parent_id: z
-					.number({
-						message: lang('cash-flow.validation.parent_id_invalid'),
-					})
-					.optional(),
-				notes: this.validateString(
-					lang('cash-flow.validation.notes_invalid'),
-				).optional(),
-			})
-			.superRefine((data, ctx) => {
-				const expectedCategoryType = getExpectedCategoryType(
-					data.category,
-				);
+type CashFlowValidatorMessages = typeof validatorMessages;
 
-				if (data.category_type !== expectedCategoryType) {
-					ctx.addIssue({
-						path: ['category_type'],
-						message: lang(
-							'cash-flow.error.category_type_mismatch',
-							{
-								category: data.category,
-								category_type: expectedCategoryType,
-							},
-						),
-						code: 'custom',
-					});
-				}
+export class CashFlowValidator extends BaseValidator<CashFlowValidatorMessages> {
+	readonly create = z.object({
+		direction: this.validateEnum(
+			CashFlowDirectionEnum,
+			this.useMessage('invalid_direction'),
+		),
+		category_type: this.validateEnum(
+			CashFlowCategoryTypeEnum,
+			this.useMessage('invalid_category_type'),
+		),
+		category: this.validateEnum(
+			CashFlowCategoryEnum,
+			this.useMessage('invalid_category'),
+		),
+		gateway: this.validateEnum(
+			CashFlowGatewayEnum,
+			this.useMessage('invalid_gateway'),
+		),
+		method: this.validateEnum(
+			CashFlowMethodEnum,
+			this.useMessage('invalid_method'),
+		),
+		amount: this.validateNumber(this.useMessage('invalid_amount')),
+		vat_rate: this.validateNumber(this.useMessage('invalid_vat_rate'), {
+			required: true,
+			onlyPositive: true,
+			allowDecimals: true,
+		}),
+		currency: this.validateEnum(
+			CurrencyEnum,
+			this.useMessage('invalid_currency'),
+		),
+		external_reference: this.validateString(
+			this.useMessage('invalid_external_reference'),
+			{ required: false },
+		),
+		parent_id: this.validateId(this.useMessage('invalid_parent_id'), {
+			required: false,
+		}),
+		notes: this.validateString(this.useMessage('invalid_notes'), {
+			required: false,
+		}),
+	});
 
-				const expectedDirection = getExpectedDirection(
-					data.category_type,
-				);
-
-				if (expectedDirection && data.direction !== expectedDirection) {
-					ctx.addIssue({
-						path: ['direction'],
-						message: lang('cash-flow.error.direction_mismatch', {
-							category: data.category,
-							direction: expectedDirection,
-						}),
-						code: 'custom',
-					});
-				}
-
-				// Validate refund rules
-				if (data.parent_id) {
-					if (data.category !== CashFlowCategoryEnum.REFUND) {
-						ctx.addIssue({
-							path: ['category'],
-							message: lang(
-								'cash-flow.validation.category_invalid',
-							),
-							code: 'custom',
-						});
-					}
-				}
-			});
-	}
-
-	public update() {
-		return z
-			.object({
-				direction: this.validateEnum(
-					CashFlowDirectionEnum,
-					lang('cash-flow.validation.direction_invalid'),
-				),
-				category_type: this.validateEnum(
-					CashFlowCategoryTypeEnum,
-					lang('cash-flow.validation.category_type_invalid'),
-				),
-				category: this.validateEnum(
-					CashFlowCategoryEnum,
-					lang('cash-flow.validation.category_invalid'),
-				),
-				gateway: this.validateEnum(
-					CashFlowGatewayEnum,
-					lang('cash-flow.validation.gateway_invalid'),
-				),
-				method: this.validateEnum(
-					CashFlowMethodEnum,
-					lang('cash-flow.validation.method_invalid'),
-				),
-				amount: this.validateNumber(
-					lang('cash-flow.validation.amount_invalid'),
-					false,
-					true,
-				),
-				vat_rate: this.validateNumber(
-					lang('cash-flow.validation.vat_rate_invalid'),
-					true,
-					true,
-				),
-				currency: this.validateEnum(
-					CurrencyEnum,
-					lang('cash-flow.validation.currency_invalid'),
-				),
-				// exchange_rate: this.validateNumber(
-				// 	lang('cash-flow.validation.exchange_rate_invalid'),
-				// 	true,
-				// 	true,
-				// ),
-				external_reference: this.validateString(
-					lang('cash-flow.validation.external_reference_invalid'),
-				).optional(),
-				notes: this.validateString(
-					lang('cash-flow.validation.notes_invalid'),
-				).optional(),
-			})
-			.refine((data) => hasAtLeastOneValue(data), {
-				message: lang('shared.validation.params_at_least_one', {
-					params: paramsUpdateList.join(', '),
-				}),
-				path: ['_global'],
-			})
-			.superRefine((data, ctx) => {
-				const expectedCategoryType = getExpectedCategoryType(
-					data.category,
-				);
-
-				if (data.category_type !== expectedCategoryType) {
-					ctx.addIssue({
-						path: ['category_type'],
-						message: lang(
-							'cash-flow.error.category_type_mismatch',
-							{
-								category: data.category,
-								category_type: expectedCategoryType,
-							},
-						),
-						code: 'custom',
-					});
-				}
-
-				const expectedDirection = getExpectedDirection(
-					data.category_type,
-				);
-
-				if (expectedDirection && data.direction !== expectedDirection) {
-					ctx.addIssue({
-						path: ['direction'],
-						message: lang('cash-flow.error.direction_mismatch', {
-							category: data.category,
-							direction: expectedDirection,
-						}),
-						code: 'custom',
-					});
-				}
-			});
-	}
-
-	delete() {
-		return z.object({
-			force: this.validateBoolean().default(false), // Used to force deletion even when selected entry has refunds (which will also be deleted)
+	readonly update = z
+		.object({
+			direction: this.validateEnum(
+				CashFlowDirectionEnum,
+				this.useMessage('invalid_direction'),
+				{ required: false },
+			),
+			category_type: this.validateEnum(
+				CashFlowCategoryTypeEnum,
+				this.useMessage('invalid_category_type'),
+				{ required: false },
+			),
+			category: this.validateEnum(
+				CashFlowCategoryEnum,
+				this.useMessage('invalid_category'),
+				{ required: false },
+			),
+			gateway: this.validateEnum(
+				CashFlowGatewayEnum,
+				this.useMessage('invalid_gateway'),
+				{ required: false },
+			),
+			method: this.validateEnum(
+				CashFlowMethodEnum,
+				this.useMessage('invalid_method'),
+				{ required: false },
+			),
+			amount: this.validateNumber(this.useMessage('invalid_amount')),
+			vat_rate: this.validateNumber(this.useMessage('invalid_vat_rate'), {
+				required: false,
+				onlyPositive: true,
+				allowDecimals: true,
+			}),
+			currency: this.validateEnum(
+				CurrencyEnum,
+				this.useMessage('invalid_currency'),
+				{ required: false },
+			),
+			external_reference: this.validateString(
+				this.useMessage('invalid_external_reference'),
+				{ required: false },
+			),
+			notes: this.validateString(this.useMessage('invalid_notes'), {
+				required: false,
+			}),
+		})
+		.refine((data) => hasAtLeastOneValue(data), {
+			message: lang('shared.validation.params_at_least_one', {
+				params: paramsUpdateList.join(', '),
+			}),
+			path: ['_global'],
 		});
-	}
 
-	public find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
+	readonly delete = z.object({
+		// Used to force deletion even when selected entry has refunds (which will also be deleted)
+		force: this.validateBoolean().default(false),
+	});
 
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
 
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
 
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				direction: z.enum(CashFlowDirectionEnum).optional(),
-				category_type: z.enum(CashFlowCategoryTypeEnum).optional(),
-				category: z.enum(CashFlowCategoryEnum).optional(),
-				gateway: z.enum(CashFlowGatewayEnum).optional(),
-				method: z.enum(CashFlowMethodEnum).optional(),
-				status: z.enum(CashFlowStatusEnum).optional(),
-				create_date_start: this.validateDate(),
-				create_date_end: this.validateDate(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				is_deleted: this.validateBoolean().default(false),
-			},
-		});
-	}
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			direction: this.validateEnum(
+				CashFlowDirectionEnum,
+				this.useMessage('invalid_direction'),
+				{ required: false },
+			),
+			category_type: this.validateEnum(
+				CashFlowCategoryTypeEnum,
+				this.useMessage('invalid_category_type'),
+				{ required: false },
+			),
+			category: this.validateEnum(
+				CashFlowCategoryEnum,
+				this.useMessage('invalid_category'),
+				{ required: false },
+			),
+			gateway: this.validateEnum(
+				CashFlowGatewayEnum,
+				this.useMessage('invalid_gateway'),
+				{ required: false },
+			),
+			method: this.validateEnum(
+				CashFlowMethodEnum,
+				this.useMessage('invalid_method'),
+				{ required: false },
+			),
+			status: this.validateEnum(
+				CashFlowStatusEnum,
+				this.useMessage('invalid_status'),
+				{ required: false },
+			),
+			create_date_start: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			create_date_end: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	});
 }
 
-export const cashFlowValidator = new CashFlowValidator();
+export const cashFlowValidator = new CashFlowValidator(validatorMessages);

@@ -1,11 +1,11 @@
 {
 	"validation": {
-		"type_invalid": "Invalid type",
+		"invalid_place_type": "Invalid type",
 		"code_invalid": "Invalid code",
 		"invalid_parent_id": "Invalid parent ID",
 		"required_parent_id": "Parent ID required for region & city types",
-		"name_invalid": "Invalid place name",
-		"type_label_invalid": "Invalid type label",
+		"invalid_name": "Invalid place name",
+		"invalid_type_label": "Invalid type label",
 		"address_country_invalid": "Invalid address country",
 		"address_region_invalid": "Invalid address region",
 		"address_city_invalid": "Invalid address city",

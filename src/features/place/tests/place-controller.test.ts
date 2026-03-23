@@ -30,7 +30,7 @@ testControllerCreate<PlaceEntity, PlaceValidator>({
 	entityMock: getPlaceEntityMock(),
 	policy: placePolicy,
 	service: placeService,
-	createData: placeInputPayloads.get('create'),
+	createData: placeInputPayloads.create,
 });
 
 testControllerUpdateWithContent<PlaceEntity, PlaceValidator>({
@@ -39,7 +39,7 @@ testControllerUpdateWithContent<PlaceEntity, PlaceValidator>({
 	entityMock: getPlaceEntityMock(),
 	policy: placePolicy,
 	service: placeService,
-	updateData: placeInputPayloads.get('update'),
+	updateData: placeInputPayloads.update,
 });
 
 testControllerRead<PlaceEntity>({
@@ -69,5 +69,5 @@ testControllerFind<PlaceEntity, PlaceValidator>({
 	entityMock: getPlaceEntityMock(),
 	policy: placePolicy,
 	service: placeService,
-	findData: placeInputPayloads.get('find'),
+	findData: placeInputPayloads.find,
 });

@@ -93,7 +93,7 @@ describe('CashFlowService', () => {
 				parentEntry: getCashFlowEntityMock(),
 				refundedAmount: 10000,
 			}),
-		).rejects.toThrow('cash-flow.validation.category_invalid');
+		).rejects.toThrow('cash-flow.validation.invalid_category');
 	});
 
 	it('checkRefund - should throw when parent status is not appropriate', async () => {
@@ -136,7 +136,7 @@ describe('CashFlowService', () => {
 				refundedAmount: 10000,
 			}),
 		).rejects.toThrow(
-			'cash-flow.error.refund_parent_category_type_invalid',
+			'cash-flow.error.refund_parent_invalid_category_type',
 		);
 	});
 
@@ -151,7 +151,7 @@ describe('CashFlowService', () => {
 				}),
 				refundedAmount: 10000,
 			}),
-		).rejects.toThrow('cash-flow.error.refund_parent_category_invalid');
+		).rejects.toThrow('cash-flow.error.refund_parent_invalid_category');
 	});
 
 	it('checkRefund - should throw when parent amount is smaller than amount', async () => {
@@ -194,7 +194,7 @@ describe('CashFlowService', () => {
 			parent_id: 1,
 		});
 
-		const createData = cashFlowOutputPayloads.get('create');
+		const createData = cashFlowOutputPayloads.create;
 
 		jest.spyOn(serviceCashFlow, 'checkDirection').mockImplementationOnce(
 			() => null,
@@ -235,10 +235,7 @@ describe('CashFlowService', () => {
 		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entity);
 
 		await expect(
-			serviceCashFlow.updateData(
-				entity.id,
-				cashFlowInputPayloads.get('update'),
-			),
+			serviceCashFlow.updateData(entity.id, cashFlowInputPayloads.update),
 		).rejects.toThrow('cash-flow.error.update_not_allowed');
 	});
 
@@ -247,7 +244,7 @@ describe('CashFlowService', () => {
 			status: CashFlowStatusEnum.PENDING,
 		});
 
-		const payload = cashFlowInputPayloads.get('update');
+		const payload = cashFlowInputPayloads.update;
 
 		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entity);
 
@@ -314,6 +311,6 @@ describe('CashFlowService', () => {
 	testServiceFindByFilter<CashFlowEntity, CashFlowQuery, CashFlowValidator>(
 		mockCashFlow.query,
 		serviceCashFlow,
-		cashFlowOutputPayloads.get('find'),
+		cashFlowOutputPayloads.find,
 	);
 });

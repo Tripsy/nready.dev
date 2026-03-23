@@ -1,5 +1,5 @@
 import { expect, jest } from '@jest/globals';
-import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
+import type { EntityManager, Repository } from 'typeorm';
 import type BrandEntity from '@/features/brand/brand.entity';
 import { BrandStatusEnum, BrandTypeEnum } from '@/features/brand/brand.entity';
 import {
@@ -11,10 +11,8 @@ import type { BrandQuery } from '@/features/brand/brand.repository';
 import { BrandService } from '@/features/brand/brand.service';
 import type { BrandValidator } from '@/features/brand/brand.validator';
 import { BrandContentRepository } from '@/features/brand/brand-content.repository';
-import type RepositoryAbstract from '@/shared/abstracts/repository.abstract';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 import {
-	createMockQuery,
+	createMockRepository,
 	setupTransactionMock,
 	testServiceDelete,
 	testServiceFindByFilter,
@@ -23,46 +21,16 @@ import {
 	testServiceUpdateStatus,
 } from '@/tests/jest-service.setup';
 
-function createMockRepositoryForBrand<
-	E extends ObjectLiteral,
-	Q extends RepositoryAbstract<E>,
->() {
-	const query = createMockQuery() as unknown as jest.Mocked<Q>;
-
-	const createQueryMock = jest.fn(() => {
-		return query;
-	});
-
-	const repository = {
-		createQuery: createQueryMock,
-		save: jest.fn(),
-	} as unknown as jest.Mocked<Repository<E>> & {
-		createQuery(): Q;
-	};
-
-	return {
-		query,
-		repository,
-	};
-}
-
 describe('BrandService', () => {
 	beforeEach(() => {
 		jest.restoreAllMocks();
 	});
 
-	const mockBrand = createMockRepositoryForBrand<BrandEntity, BrandQuery>();
-
-	const mockScopedRepository = createMockRepositoryForBrand<
-		BrandEntity,
-		BrandQuery
-	>();
+	const mockBrand = createMockRepository<BrandEntity, BrandQuery>();
 
 	const getScopedBrandRepository = jest
 		.fn()
-		.mockReturnValue(
-			mockScopedRepository.repository,
-		) as jest.MockedFunction<
+		.mockReturnValue(mockBrand.repository) as jest.MockedFunction<
 		(manager?: EntityManager) => Repository<BrandEntity>
 	>;
 
@@ -73,11 +41,11 @@ describe('BrandService', () => {
 
 	it('should create entry inside transaction and save content', async () => {
 		const entity = getBrandEntityMock();
-		const createData = brandOutputPayloads.get('create');
+		const createData = brandOutputPayloads.create;
 
 		const { transaction } = setupTransactionMock();
 
-		mockScopedRepository.repository.save.mockResolvedValue(entity);
+		mockBrand.repository.save.mockResolvedValue(entity);
 
 		jest.spyOn(BrandContentRepository, 'saveContent').mockResolvedValue(
 			undefined,
@@ -87,7 +55,7 @@ describe('BrandService', () => {
 
 		expect(transaction).toHaveBeenCalled();
 
-		expect(mockScopedRepository.repository.save).toHaveBeenCalledWith({
+		expect(mockBrand.repository.save).toHaveBeenCalledWith({
 			name: createData.name,
 			slug: createData.slug,
 			type: createData.type,
@@ -139,10 +107,7 @@ describe('BrandService', () => {
 	testServiceFindByFilter<BrandEntity, BrandQuery, BrandValidator>(
 		mockBrand.query,
 		serviceBrand,
-		brandInputPayloads.get('find') as ValidatorOutput<
-			BrandValidator,
-			'find'
-		>,
+		brandInputPayloads.find,
 	);
 
 	testServiceDelete<BrandEntity, BrandQuery>(mockBrand.query, serviceBrand);

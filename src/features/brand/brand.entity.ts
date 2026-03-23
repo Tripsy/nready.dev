@@ -21,7 +21,7 @@ export enum BrandTypeEnum {
 	PRODUCT = 'product',
 }
 
-export type BrandContentInput = {
+export type BrandContentType = {
 	language: string;
 	description?: string;
 	meta: PageMeta;

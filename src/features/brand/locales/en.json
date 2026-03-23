@@ -1,10 +1,10 @@
 {
 	"validation": {
-		"name_invalid": "Invalid name",
-		"slug_invalid": "Invalid slug",
-		"type_invalid": "Invalid type",
-		"status_invalid": "Invalid status",
-		"description_invalid": "Invalid description",
+		"invalid_name": "Invalid name",
+		"invalid_slug": "Invalid slug",
+		"invalid_type": "Invalid type",
+		"invalid_status": "Invalid status",
+		"invalid_description": "Invalid description",
 		"invalid_ids_provided": "Invalid ids provided for ordering"
 	},
 	"error": {

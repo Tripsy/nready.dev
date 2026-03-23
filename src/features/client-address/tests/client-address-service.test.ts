@@ -1,6 +1,9 @@
 import { expect, jest } from '@jest/globals';
-import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
+import type { EntityManager, Repository } from 'typeorm';
 import { CustomError } from '@/exceptions';
+import type ClientEntity from '@/features/client/client.entity';
+import type { ClientQuery } from '@/features/client/client.repository';
+import { ClientService } from '@/features/client/client.service';
 import type ClientAddressEntity from '@/features/client-address/client-address.entity';
 import {
 	clientAddressOutputPayloads,
@@ -14,9 +17,7 @@ import { PlaceTypeEnum } from '@/features/place/place.entity';
 import { getPlaceEntityMock } from '@/features/place/place.mock';
 import type { PlaceQuery } from '@/features/place/place.repository';
 import { PlaceService } from '@/features/place/place.service';
-import type RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
-	createMockQuery,
 	createMockRepository,
 	testServiceDelete,
 	testServiceFindByFilter,
@@ -25,46 +26,16 @@ import {
 	testServiceUpdate,
 } from '@/tests/jest-service.setup';
 
-function createMockRepositoryForPlace<
-	E extends ObjectLiteral,
-	Q extends RepositoryAbstract<E>,
->() {
-	const query = createMockQuery() as unknown as jest.Mocked<Q>;
-
-	const createQueryMock = jest.fn(() => {
-		return query;
-	});
-
-	const repository = {
-		createQuery: createQueryMock,
-		save: jest.fn(),
-	} as unknown as jest.Mocked<Repository<E>> & {
-		createQuery(): Q;
-	};
-
-	return {
-		query,
-		repository,
-	};
-}
-
 describe('ClientService', () => {
 	beforeEach(() => {
 		jest.restoreAllMocks();
 	});
 
-	const mockPlace = createMockRepositoryForPlace<PlaceEntity, PlaceQuery>();
-
-	const mockScopedRepository = createMockRepositoryForPlace<
-		PlaceEntity,
-		PlaceQuery
-	>();
+	const mockPlace = createMockRepository<PlaceEntity, PlaceQuery>();
 
 	const getScopedPlaceRepository = jest
 		.fn()
-		.mockReturnValue(
-			mockScopedRepository.repository,
-		) as jest.MockedFunction<
+		.mockReturnValue(mockPlace.repository) as jest.MockedFunction<
 		(manager?: EntityManager) => Repository<PlaceEntity>
 	>;
 
@@ -73,6 +44,10 @@ describe('ClientService', () => {
 		getScopedPlaceRepository,
 	);
 
+	const mockClient = createMockRepository<ClientEntity, ClientQuery>();
+
+	const serviceClient = new ClientService(mockClient.repository);
+
 	const mockClientAddress = createMockRepository<
 		ClientAddressEntity,
 		ClientAddressQuery
@@ -80,16 +55,17 @@ describe('ClientService', () => {
 
 	const serviceClientAddress = new ClientAddressService(
 		mockClientAddress.repository,
+		serviceClient,
 		servicePlace,
 	);
 
 	it('should fail when address city id does not have type CITY', async () => {
 		const entity = getClientAddressEntityMock();
-		const createData = clientAddressOutputPayloads.get('create');
+		const createData = clientAddressOutputPayloads.create;
 
 		jest.spyOn(servicePlace, 'findById').mockResolvedValue({
 			...getPlaceEntityMock(),
-			type: PlaceTypeEnum.COUNTRY,
+			place_type: PlaceTypeEnum.COUNTRY,
 		});
 
 		// Use try/catch to test the error
@@ -110,12 +86,11 @@ describe('ClientService', () => {
 
 	it('should create entry', async () => {
 		const entity = getClientAddressEntityMock();
-		const createData = clientAddressOutputPayloads.get('create');
+		const createData = clientAddressOutputPayloads.create;
 
-		jest.spyOn(
-			serviceClientAddress,
-			'checkAddressCityId',
-		).mockImplementationOnce(() => Promise.resolve());
+		jest.spyOn(serviceClientAddress, 'checkCityId').mockImplementationOnce(
+			() => Promise.resolve(),
+		);
 		mockClientAddress.repository.save.mockResolvedValue(entity);
 
 		const result = await serviceClientAddress.create(
@@ -155,6 +130,6 @@ describe('ClientService', () => {
 	>(
 		mockClientAddress.query,
 		serviceClientAddress,
-		clientAddressOutputPayloads.get('find'),
+		clientAddressOutputPayloads.find,
 	);
 });

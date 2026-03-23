@@ -58,7 +58,7 @@ describe(`${controller} - create`, () => {
 
 		const response = await request(app)
 			.post(route)
-			.send(userPermissionInputPayloads.get('create'));
+			.send(userPermissionInputPayloads.create);
 
 		withDebugResponse(() => {
 			expect(response.status).toBe(200);
@@ -157,7 +157,7 @@ describe(`${controller} - find`, () => {
 
 		const response = await request(app)
 			.get(route)
-			.query(userPermissionInputPayloads.get('find'));
+			.query(userPermissionInputPayloads.find);
 
 		withDebugResponse(() => {
 			expect(response.status).toBe(200);

@@ -74,7 +74,7 @@ export const docs: Record<
 				},
 				notes: { type: 'string', required: false },
 			},
-			sample: discountInputPayloads.get('create'),
+			sample: discountInputPayloads.create,
 		},
 	}),
 	read: helperApiInputDocumentation({
@@ -160,7 +160,7 @@ export const docs: Record<
 				},
 				notes: { type: 'string', required: false },
 			},
-			sample: discountInputPayloads.get('update'),
+			sample: discountInputPayloads.update,
 		},
 	}),
 	delete: helperApiInputDocumentation({

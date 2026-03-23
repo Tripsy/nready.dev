@@ -1,6 +1,5 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import type { z } from 'zod';
 import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { BadRequestError, CustomError } from '@/exceptions';
@@ -17,6 +16,7 @@ import type UserEntity from '@/features/user/user.entity';
 import { UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
 import { createFutureDate } from '@/helpers';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 
 export type ConfirmationTokenPayload = {
 	user_id: number;
@@ -68,8 +68,7 @@ export class AccountService {
 	}
 
 	public async register(
-		data: z.infer<ReturnType<AccountValidator['register']>>,
-		language: string,
+		data: ValidatorOutput<AccountValidator, 'register'>,
 	): Promise<UserEntity> {
 		const existing = await this.userService.findByEmail(data.email, true);
 
@@ -90,7 +89,7 @@ export class AccountService {
 			name: data.name,
 			email: data.email,
 			password: data.password,
-			language: data.language || language,
+			language: data.language,
 		});
 	}
 

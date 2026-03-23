@@ -39,7 +39,7 @@ testControllerCreate<CashFlowEntity, CashFlowValidator>({
 	entityMock: getCashFlowEntityMock(),
 	policy: cashFlowPolicy,
 	service: cashFlowService,
-	createData: cashFlowInputPayloads.get('create'),
+	createData: cashFlowInputPayloads.create,
 });
 
 testControllerUpdate<CashFlowEntity, CashFlowValidator>({
@@ -48,7 +48,7 @@ testControllerUpdate<CashFlowEntity, CashFlowValidator>({
 	entityMock: getCashFlowEntityMock(),
 	policy: cashFlowPolicy,
 	service: cashFlowService,
-	updateData: cashFlowInputPayloads.get('update'),
+	updateData: cashFlowInputPayloads.update,
 });
 
 testControllerRead<CashFlowEntity>({
@@ -98,5 +98,5 @@ testControllerFind<CashFlowEntity, CashFlowValidator>({
 	entityMock: getCashFlowEntityMock(),
 	policy: cashFlowPolicy,
 	service: cashFlowService,
-	findData: cashFlowInputPayloads.get('find'),
+	findData: cashFlowInputPayloads.find,
 });
