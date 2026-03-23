@@ -160,7 +160,9 @@ export class CashFlowValidator extends BaseValidator<CashFlowValidatorMessages> 
 
 	readonly delete = z.object({
 		// Used to force deletion even when selected entry has refunds (which will also be deleted)
-		force: this.validateBoolean().default(false),
+		force: this.validateBoolean(this.useMessage('invalid_boolean'), {
+			required: false,
+		}).default(false),
 	});
 
 	readonly find = this.validateFind({

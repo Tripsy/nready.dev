@@ -74,8 +74,14 @@ export class CategoryValidator extends BaseValidator<CategoryValidatorMessages> 
 		});
 
 	readonly read = z.object({
-		with_ancestors: this.validateBoolean().default(false),
-		with_children: this.validateBoolean().default(false),
+		with_ancestors: this.validateBoolean(
+			this.useMessage('invalid_boolean'),
+			{ required: false },
+		).default(false),
+		with_children: this.validateBoolean(
+			this.useMessage('invalid_boolean'),
+			{ required: false },
+		).default(false),
 	});
 
 	readonly find = this.validateFind({
@@ -118,7 +124,10 @@ export class CategoryValidator extends BaseValidator<CategoryValidatorMessages> 
 	});
 
 	readonly statusUpdate = z.object({
-		force: this.validateBoolean().default(false), // Used to force the `inactive` status update even if the category has active descendants
+		// Used to force the `inactive` status update even if the category has active descendants
+		force: this.validateBoolean(this.useMessage('invalid_boolean'), {
+			required: false,
+		}).default(false),
 	});
 }
 
