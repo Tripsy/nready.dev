@@ -27,7 +27,7 @@ class BrandController extends BaseController {
 	public create = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canCreate(res.locals.auth);
 
-		const data = this.validate(this.validator.create(), req.body, res);
+		const data = this.validate(this.validator.create, req.body, res);
 
 		const entry = await this.brandService.create(data);
 
@@ -66,7 +66,7 @@ class BrandController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update(), req.body, res);
+		const data = this.validate(this.validator.update, req.body, res);
 
 		const entry = await this.brandService.updateDataWithContent(
 			res.locals.validated.id,
@@ -104,7 +104,7 @@ class BrandController extends BaseController {
 		this.policy.canFind(res.locals.auth);
 
 		const data = this.validate(
-			this.validator.find(),
+			this.validator.find,
 			{
 				...req.query,
 				...(res.locals.filter !== undefined && {
@@ -153,7 +153,7 @@ class BrandController extends BaseController {
 	public orderUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.orderUpdate(), req.body, res);
+		const data = this.validate(this.validator.orderUpdate, req.body, res);
 
 		await this.brandService.updateOrder(
 			res.locals.validated.type,

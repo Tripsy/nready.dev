@@ -27,7 +27,7 @@ describe('DiscountService', () => {
 
 	it('should create entry', async () => {
 		const entity = getDiscountEntityMock();
-		const createData = discountOutputPayloads.get('create');
+		const createData = discountOutputPayloads.create;
 
 		mockDiscount.repository.save.mockResolvedValue(entity);
 
@@ -59,6 +59,6 @@ describe('DiscountService', () => {
 	testServiceFindByFilter<DiscountEntity, DiscountQuery, DiscountValidator>(
 		mockDiscount.query,
 		serviceDiscount,
-		discountOutputPayloads.get('find'),
+		discountOutputPayloads.find,
 	);
 });

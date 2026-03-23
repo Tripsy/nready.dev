@@ -15,8 +15,8 @@ const listSchemas: ValidatorMethod[] = ['find'];
 describe(validator, () => {
 	listSchemas.forEach((n) => {
 		it(`${n}() accepts valid payload`, () => {
-			const schema = cronHistoryValidator[n]();
-			const payload = cronHistoryInputPayloads.get(n);
+			const schema = cronHistoryValidator[n];
+			const payload = cronHistoryInputPayloads[n];
 			const validated = schema.safeParse(payload);
 
 			withDebugValidated(() => {

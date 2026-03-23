@@ -3,7 +3,7 @@ import { CustomError } from '@/exceptions';
 import type PermissionEntity from '@/features/permission/permission.entity';
 import { getPermissionRepository } from '@/features/permission/permission.repository';
 import type { PermissionValidator } from '@/features/permission/permission.validator';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 
 type PermissionCreateResult = {
 	permission: PermissionEntity;

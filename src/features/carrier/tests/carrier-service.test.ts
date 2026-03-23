@@ -27,7 +27,7 @@ describe('CarrierService', () => {
 
 	it('should create entry', async () => {
 		const entity = getCarrierEntityMock();
-		const createData = carrierOutputPayloads.get('create');
+		const createData = carrierOutputPayloads.create;
 
 		jest.spyOn(serviceCarrier, 'findByName').mockResolvedValue(null);
 		mockCarrier.repository.save.mockResolvedValue(entity);
@@ -60,6 +60,6 @@ describe('CarrierService', () => {
 	testServiceFindByFilter<CarrierEntity, CarrierQuery, CarrierValidator>(
 		mockCarrier.query,
 		serviceCarrier,
-		carrierOutputPayloads.get('find'),
+		carrierOutputPayloads.find,
 	);
 });

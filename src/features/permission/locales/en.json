@@ -11,8 +11,8 @@
 		"delete": "Permission deleted successfully"
 	},
 	"validation": {
-		"entity_invalid": "Invalid entity",
-		"operation_invalid": "Invalid operation"
+		"invalid_entity": "Invalid entity",
+		"invalid_operation": "Invalid operation"
 	},
 	"history": {
 		"created": "Permission #{{entity_id}} created by user #{{auth_id}}",

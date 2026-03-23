@@ -9,7 +9,6 @@ import type { CategoryQuery } from '@/features/category/category.repository';
 import { CategoryService } from '@/features/category/category.service';
 import type { CategoryValidator } from '@/features/category/category.validator';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 import {
 	createMockRepository,
 	testServiceFindByFilter,
@@ -44,10 +43,7 @@ describe('CategoryService', () => {
 	testServiceFindByFilter<CategoryEntity, CategoryQuery, CategoryValidator>(
 		mockCategory.query,
 		serviceCategory,
-		categoryInputPayloads.get('find') as ValidatorOutput<
-			CategoryValidator,
-			'find'
-		>,
+		categoryInputPayloads.find,
 	);
 
 	it('should delete by id', async () => {

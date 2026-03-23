@@ -20,181 +20,179 @@ export enum OrderByEnum {
 	UPDATED_AT = 'updated_at',
 }
 
-export class TemplateValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_label: lang('template.validation.invalid_label'),
+	invalid_language: lang('template.validation.invalid_language'),
+	invalid_type: lang('template.validation.invalid_type'),
+	invalid_email_subject: lang('template.validation.invalid_email_subject'),
+	invalid_email_text: lang('template.validation.invalid_email_text'),
+	invalid_email_html: lang('template.validation.invalid_email_html'),
+	invalid_email_layout: lang('template.validation.invalid_email_layout'),
+	invalid_page_title: lang('template.validation.invalid_page_title'),
+	invalid_page_html: lang('template.validation.invalid_page_html'),
+	invalid_page_layout: lang('template.validation.invalid_page_layout'),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+};
 
-	public create() {
-		const TemplateCreateBaseValidator = z.object({
-			label: this.validateString(
-				lang('template.validation.label_invalid'),
-			),
-			language: this.validateLanguage(),
-			type: this.validateEnum(
-				TemplateTypeEnum,
-				lang('template.validation.type_invalid'),
-			),
-		});
+type TemplateValidatorMessages = typeof validatorMessages;
 
-		const TemplateCreateEmailValidator = TemplateCreateBaseValidator.extend(
-			{
+export class TemplateValidator extends BaseValidator<TemplateValidatorMessages> {
+	readonly baseCreateSchema = {
+		label: this.validateString(this.useMessage('invalid_label')),
+		language: this.validateLanguage(this.useMessage('invalid_language')),
+	};
+
+	readonly baseUpdateSchema = {
+		label: this.validateString(this.useMessage('invalid_label'), {
+			required: false,
+		}),
+		language: this.validateLanguage(this.useMessage('invalid_language'), {
+			required: false,
+		}),
+	};
+
+	readonly create = z.discriminatedUnion('type', [
+		// Email schema
+		z
+			.object({
 				type: z.literal(TemplateTypeEnum.EMAIL),
 				content: z.object({
 					subject: this.validateString(
-						lang('template.validation.email_subject_invalid'),
+						this.useMessage('invalid_email_subject'),
 					),
-					text: z
-						.string({
-							message: lang(
-								'template.validation.email_text_invalid',
-							),
-						})
-						.optional(),
+					text: this.validateString(
+						this.useMessage('invalid_email_text'),
+						{ required: false },
+					),
 					html: this.validateString(
-						lang('template.validation.email_html_invalid'),
+						this.useMessage('invalid_email_html'),
 					).transform((val) => safeHtml(val)),
-					layout: z
-						.string({
-							message: lang(
-								'template.validation.email_layout_invalid',
-							),
-						})
-						.optional(),
+					layout: this.validateString(
+						this.useMessage('invalid_email_layout'),
+						{ required: false },
+					).default('default'),
 				}),
-			},
-		);
+			})
+			.extend(this.baseCreateSchema),
 
-		const TemplateCreatePageValidator = TemplateCreateBaseValidator.extend({
-			type: z.literal(TemplateTypeEnum.PAGE),
-			content: z.object({
-				title: this.validateString(
-					lang('template.validation.page_title_invalid'),
-				),
-				html: this.validateString(
-					lang('template.validation.page_html_invalid'),
-				).transform((val) => safeHtml(val)),
-				layout: z
-					.string({
-						message: lang(
-							'template.validation.page_layout_invalid',
-						),
-					})
-					.optional(),
-			}),
-		});
-
-		return z.union([
-			TemplateCreateEmailValidator,
-			TemplateCreatePageValidator,
-		]);
-	}
-
-	update() {
-		const TemplateUpdateBaseValidator = z.object({
-			label: this.validateString(
-				lang('template.validation.label_invalid'),
-			).optional(),
-			language: this.validateLanguage().optional(),
-			type: this.validateEnum(
-				TemplateTypeEnum,
-				lang('template.validation.type_invalid'),
-			).optional(),
-		});
-
-		const TemplateUpdateEmailValidator = TemplateUpdateBaseValidator.extend(
-			{
-				type: z.literal(TemplateTypeEnum.EMAIL),
-				content: z
-					.object({
-						subject: this.validateString(
-							lang('template.validation.email_subject_invalid'),
-						),
-						text: z
-							.string({
-								message: lang(
-									'template.validation.email_text_invalid',
-								),
-							})
-							.optional(),
-						html: this.validateString(
-							lang('template.validation.page_html_invalid'),
-						).transform((val) => safeHtml(val)),
-						layout: z
-							.string({
-								message: lang(
-									'template.validation.email_layout_invalid',
-								),
-							})
-							.optional(),
-					})
-					.optional(),
-			},
-		);
-
-		const TemplateUpdatePageValidator = TemplateUpdateBaseValidator.extend({
-			type: z.literal(TemplateTypeEnum.PAGE),
-			content: z
-				.object({
+		// Page schema
+		z
+			.object({
+				type: z.literal(TemplateTypeEnum.PAGE),
+				content: z.object({
 					title: this.validateString(
-						lang('template.validation.page_title_invalid'),
+						this.useMessage('invalid_page_title'),
 					),
 					html: this.validateString(
-						lang('template.validation.page_html_invalid'),
+						this.useMessage('invalid_page_html'),
 					).transform((val) => safeHtml(val)),
-					layout: z
-						.string({
-							message: lang(
-								'template.validation.page_layout_invalid',
+					layout: this.validateString(
+						this.useMessage('invalid_page_layout'),
+						{ required: false },
+					).default('default'),
+				}),
+			})
+			.extend(this.baseCreateSchema),
+	]);
+
+	readonly update = z
+		.discriminatedUnion('type', [
+			// Email schema
+			z
+				.object({
+					type: z.literal(TemplateTypeEnum.EMAIL),
+					content: z
+						.object({
+							subject: this.validateString(
+								this.useMessage('invalid_email_subject'),
+								{ required: false },
 							),
+							text: this.validateString(
+								this.useMessage('invalid_email_text'),
+								{ required: false },
+							),
+							html: this.validateString(
+								this.useMessage('invalid_email_html'),
+								{ required: false },
+							).transform((val) =>
+								val ? safeHtml(val) : undefined,
+							),
+							layout: this.validateString(
+								this.useMessage('invalid_email_layout'),
+								{ required: false },
+							).default('default'),
 						})
 						.optional(),
 				})
-				.optional(),
+				.extend(this.baseUpdateSchema),
+
+			// Page schema
+			z
+				.object({
+					type: z.literal(TemplateTypeEnum.PAGE),
+					content: z
+						.object({
+							title: this.validateString(
+								this.useMessage('invalid_page_title'),
+								{ required: false },
+							),
+							html: this.validateString(
+								this.useMessage('invalid_page_html'),
+								{ required: false },
+							).transform((val) =>
+								val ? safeHtml(val) : undefined,
+							),
+							layout: this.validateString(
+								this.useMessage('invalid_page_layout'),
+								{ required: false },
+							).default('default'),
+						})
+						.optional(),
+				})
+				.extend(this.baseUpdateSchema),
+		])
+		.refine((data) => hasAtLeastOneValue(data), {
+			message: lang('shared.validation.params_at_least_one', {
+				params: paramsUpdateList.join(', '),
+			}),
+			path: ['_global'],
 		});
 
-		return z
-			.union([TemplateUpdateEmailValidator, TemplateUpdatePageValidator])
-			.refine((data) => hasAtLeastOneValue(data), {
-				message: lang('shared.validation.params_at_least_one', {
-					params: paramsUpdateList.join(', '),
-				}),
-				path: ['_global'],
-			});
-	}
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
 
-	find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
 
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
 
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				language: this.validateLanguage().optional(),
-				type: z
-					.enum(TemplateTypeEnum, {
-						message: lang('template.validation.type_invalid'),
-					})
-					.optional(),
-				is_deleted: this.validateBoolean().default(false),
-			},
-		});
-	}
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			language: this.validateLanguage(
+				this.useMessage('invalid_language'),
+				{ required: false },
+			),
+			type: this.validateEnum(
+				TemplateTypeEnum,
+				this.useMessage('invalid_type'),
+				{ required: false },
+			),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	});
 }
 
-export const templateValidator = new TemplateValidator();
+export const templateValidator = new TemplateValidator(validatorMessages);

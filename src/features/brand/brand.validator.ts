@@ -12,103 +12,124 @@ export enum OrderByEnum {
 	ID = 'id',
 }
 
-export class BrandValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_description: lang('brand.validation.invalid_description'),
+	invalid_name: lang('brand.validation.invalid_name'),
+	invalid_slug: lang('brand.validation.invalid_slug'),
+	invalid_type: lang('brand.validation.invalid_type'),
+	invalid_status: lang('brand.validation.invalid_status'),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_language: lang('shared.validation.invalid_language'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+	invalid_meta_title: lang('shared.validation.invalid_meta_title'),
+	invalid_meta_description: lang(
+		'shared.validation.invalid_meta_description',
+	),
+	invalid_meta_keywords: lang('shared.validation.invalid_meta_keywords'),
+};
 
-	brandContentSchema() {
-		return z.object({
-			language: this.validateLanguage(),
-			description: this.validateString(
-				lang('brand.validation.description_invalid'),
-			).optional(),
-			meta: this.validateMeta(),
-		});
-	}
+type BrandValidatorMessages = typeof validatorMessages;
 
-	create() {
-		return z.object({
-			name: this.validateString(lang('brand.validation.name_invalid')),
-			slug: this.validateString(
-				lang('brand.validation.slug_invalid'),
-			).transform((val) => val.trim().toLowerCase()),
+export class BrandValidator extends BaseValidator<BrandValidatorMessages> {
+	readonly contentSchema = z.object({
+		language: this.validateLanguage(this.useMessage('invalid_language')),
+		description: this.validateString(
+			this.useMessage('invalid_description'),
+			{ required: false },
+		),
+		meta: this.validateMeta({
+			invalid_meta_title: this.useMessage('invalid_meta_title'),
+			invalid_meta_description: this.useMessage(
+				'invalid_meta_description',
+			),
+			invalid_meta_keywords: this.useMessage('invalid_meta_keywords'),
+		}),
+	});
+
+	readonly create = z.object({
+		name: this.validateString(this.useMessage('invalid_name')),
+		slug: this.validateString(this.useMessage('invalid_slug')).transform(
+			(val) => val.trim().toLowerCase(),
+		),
+		type: this.validateEnum(BrandTypeEnum, this.useMessage('invalid_type')),
+		content: this.contentSchema.array(),
+	});
+
+	readonly update = z
+		.object({
+			name: this.validateString(this.useMessage('invalid_name'), {
+				required: false,
+			}),
+			slug: this.validateString(this.useMessage('invalid_slug'), {
+				required: false,
+			}).transform((val) => val?.trim().toLowerCase()),
 			type: this.validateEnum(
 				BrandTypeEnum,
-				lang('brand.validation.type_invalid'),
+				this.useMessage('invalid_type'),
+				{ required: false },
 			),
-			content: this.brandContentSchema().array(),
+			content: this.contentSchema.array().optional(),
+		})
+		.refine((data) => hasAtLeastOneValue(data), {
+			message: lang('shared.validation.params_at_least_one', {
+				params: [...paramsUpdateList, 'content'].join(', '),
+			}),
+			path: ['_global'],
 		});
-	}
 
-	update() {
-		return z
-			.object({
-				name: this.validateString(
-					lang('brand.validation.name_invalid'),
-				).optional(),
-				slug: this.validateString(lang('brand.validation.slug_invalid'))
-					.transform((val) => val.trim().toLowerCase())
-					.optional(),
-				type: this.validateEnum(
-					BrandTypeEnum,
-					lang('brand.validation.type_invalid'),
-				).optional(),
-				content: this.brandContentSchema().array().optional(),
-			})
-			.refine((data) => hasAtLeastOneValue(data), {
-				message: lang('shared.validation.params_at_least_one', {
-					params: [...paramsUpdateList, 'content'].join(', '),
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
+
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			type: this.validateEnum(
+				BrandTypeEnum,
+				this.useMessage('invalid_type'),
+				{ required: false },
+			),
+			status: this.validateEnum(
+				BrandStatusEnum,
+				this.useMessage('invalid_status'),
+				{ required: false },
+			),
+			language: this.validateLanguage(
+				this.useMessage('invalid_language'),
+				{ required: false },
+			),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	});
+
+	readonly orderUpdate = z.object({
+		positions: z
+			.array(
+				z.number({
+					message: this.useMessage('invalid_number'),
 				}),
-				path: ['_global'],
-			});
-	}
-
-	find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
-
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
-
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				type: z.enum(BrandTypeEnum).optional(),
-				status: z.enum(BrandStatusEnum).optional(),
-				language: this.validateLanguage().optional(),
-				is_deleted: this.validateBoolean().default(false),
-			},
-		});
-	}
-
-	orderUpdate() {
-		return z.object({
-			positions: z
-				.array(
-					z.number({
-						message: lang('shared.validation.invalid_number'),
-					}),
-				)
-				.min(2, {
-					message: lang('shared.validation.array_min', {
-						length: '2',
-					}),
+			)
+			.min(2, {
+				message: lang('shared.validation.array_min', {
+					length: '2',
 				}),
-		});
-	}
+			}),
+	});
 }
 
-export const brandValidator = new BrandValidator();
+export const brandValidator = new BrandValidator(validatorMessages);

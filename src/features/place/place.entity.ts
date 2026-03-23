@@ -12,7 +12,7 @@ import { PlaceTypeEnum } from '@/shared/types/place.type';
 
 export { PlaceTypeEnum };
 
-export type PlaceContentInput = {
+export type PlaceContentType = {
 	language: string;
 	name: string;
 	type_label: string;
@@ -34,7 +34,7 @@ export default class PlaceEntity extends EntityAbstract {
 		default: PlaceTypeEnum.COUNTRY,
 		nullable: false,
 	})
-	type!: PlaceTypeEnum;
+	place_type!: PlaceTypeEnum;
 
 	@Column('int', { nullable: true })
 	@Index('IDX_place_parent_id')

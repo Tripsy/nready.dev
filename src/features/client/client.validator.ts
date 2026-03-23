@@ -16,7 +16,7 @@ export const paramsUpdateList = [
 	'company_cui',
 	'company_reg_com',
 	'person_name',
-	'person_cnp',
+	'person_identification_number',
 	'iban',
 	'bank_name',
 	'contact_name',
@@ -30,171 +30,227 @@ export enum OrderByEnum {
 	CREATED_AT = 'created_at',
 }
 
-export class ClientValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_iban: lang('client.validation.invalid_iban'),
+	invalid_bank_name: lang('client.validation.invalid_bank_name'),
+	invalid_contact_name: lang('client.validation.invalid_contact_name'),
+	invalid_contact_email: lang('client.validation.invalid_contact_email'),
+	invalid_contact_phone: lang('client.validation.invalid_contact_phone'),
+	invalid_notes: lang('client.validation.invalid_notes'),
+	invalid_company_name: lang('client.validation.invalid_company_name'),
+	invalid_company_cui: lang('client.validation.invalid_company_cui'),
+	invalid_company_reg_com: lang('client.validation.invalid_company_reg_com'),
+	invalid_person_name: lang('client.validation.invalid_person_name'),
+	invalid_person_identification_number: lang(
+		'client.validation.invalid_person_identification_number',
+	),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+	invalid_type: lang('client.validation.invalid_type'),
+	invalid_status: lang('cash-flow.validation.invalid_status'),
+	invalid_date: lang('shared.validation.invalid_date'),
+	invalid_date_format: lang('shared.validation.invalid_date_format'),
+	invalid_past_date: lang('shared.validation.invalid_past_date'),
+	invalid_future_date: lang('shared.validation.invalid_future_date'),
+	invalid_date_range: lang('shared.validation.invalid_date_range'),
+};
 
-	public create() {
-		const ClientCreateBaseValidator = z.object({
-			client_type: this.validateEnum(
-				ClientTypeEnum,
-				lang('client.validation.client_type_invalid'),
-			),
-			iban: this.validateString(
-				lang('client.validation.iban_invalid'),
-			).optional(),
-			bank_name: this.validateString(
-				lang('client.validation.bank_name_invalid'),
-			).optional(),
-			contact_name: this.validateString(
-				lang('client.validation.contact_name_invalid'),
-			).optional(),
-			contact_email: z
-				.email({
-					message: lang('client.validation.contact_email_invalid'),
-				})
-				.optional(),
-			contact_phone: this.validateString(
-				lang('client.validation.contact_phone_invalid'),
-			).optional(),
-			notes: this.validateString(
-				lang('carrier.validation.notes_invalid'),
-			).optional(),
-		});
+type ClientValidatorMessages = typeof validatorMessages;
 
-		const ClientCreateCompanyValidator = ClientCreateBaseValidator.extend({
-			client_type: z.literal(ClientTypeEnum.COMPANY),
-			company_name: this.validateString(
-				lang('client.validation.company_name_invalid'),
-			),
-			company_cui: this.validateString(
-				lang('client.validation.company_cui_invalid'),
-			).transform((v) => v.trim().toUpperCase()),
-			company_reg_com: this.validateString(
-				lang('client.validation.company_reg_com_invalid'),
-			).transform((v) => v.trim().toUpperCase()),
-		});
-
-		const ClientCreatePersonValidator = ClientCreateBaseValidator.extend({
-			client_type: z.literal(ClientTypeEnum.PERSON),
-			person_name: this.validateString(
-				lang('client.validation.person_name_invalid'),
-			),
-			person_cnp: this.validateString(
-				lang('client.validation.person_cnp_invalid'),
-			).optional(),
-		});
-
-		return z.union([
-			ClientCreateCompanyValidator,
-			ClientCreatePersonValidator,
-		]);
-	}
-
-	update() {
-		const ClientUpdateBaseValidator = z.object({
-			client_type: this.validateEnum(
-				ClientTypeEnum,
-				lang('client.validation.client_type_invalid'),
-			),
-			iban: this.validateString(
-				lang('client.validation.iban_invalid'),
-			).optional(),
-			bank_name: this.validateString(
-				lang('client.validation.bank_name_invalid'),
-			).optional(),
-			contact_name: this.validateString(
-				lang('client.validation.contact_name_invalid'),
-			).optional(),
-			contact_email: z
-				.email({
-					message: lang('client.validation.contact_email_invalid'),
-				})
-				.optional(),
-			contact_phone: this.validateString(
-				lang('client.validation.contact_phone_invalid'),
-			).optional(),
-			notes: this.validateString(
-				lang('client.validation.notes_invalid'),
-			).optional(),
-		});
-
-		const ClientUpdateCompanyValidator = ClientUpdateBaseValidator.extend({
-			client_type: z.literal(ClientTypeEnum.COMPANY),
-			company_name: this.validateString(
-				lang('client.validation.company_name_invalid'),
-			).optional(),
-			company_cui: this.validateString(
-				lang('client.validation.company_cui_invalid'),
-			).optional(),
-			company_reg_com: this.validateString(
-				lang('client.validation.company_reg_com_invalid'),
-			).optional(),
-		});
-
-		const ClientUpdatePersonValidator = ClientUpdateBaseValidator.extend({
-			client_type: z.literal(ClientTypeEnum.PERSON),
-			person_name: this.validateString(
-				lang('client.validation.person_name_invalid'),
-			).optional(),
-			person_cnp: this.validateString(
-				lang('client.validation.person_cnp_invalid'),
-			).optional(),
-		});
-
-		return z
-			.union([ClientUpdateCompanyValidator, ClientUpdatePersonValidator])
-			.refine((data) => hasAtLeastOneValue(data), {
-				message: lang('shared.validation.params_at_least_one', {
-					params: paramsUpdateList.join(', '),
-				}),
-				path: ['_global'],
-			});
-	}
-
-	find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
-
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
-
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				client_type: z.enum(ClientTypeEnum).optional(),
-				status: z.enum(ClientStatusEnum).optional(),
-				create_date_start: this.validateDate(),
-				create_date_end: this.validateDate(),
-				is_deleted: this.validateBoolean().default(false),
+export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
+	readonly baseSchema = {
+		iban: this.validateIBAN(this.useMessage('invalid_iban'), {
+			required: false,
+		}),
+		bank_name: this.validateString(this.useMessage('invalid_bank_name'), {
+			required: false,
+		}),
+		contact_name: this.validateString(
+			this.useMessage('invalid_contact_name'),
+			{
+				required: false,
 			},
-		}).superRefine((data, ctx) => {
-			if (
-				data.filter.create_date_start &&
-				data.filter.create_date_end &&
-				data.filter.create_date_start > data.filter.create_date_end
-			) {
-				ctx.addIssue({
-					path: ['filter', 'create_date_start'],
-					message: lang('shared.validation.invalid_date_range'),
-					code: 'custom',
-				});
-			}
+		),
+		contact_email: this.validateEmail(
+			this.useMessage('invalid_contact_email'),
+			{
+				required: false,
+			},
+		),
+		contact_phone: this.validatePhone(
+			this.useMessage('invalid_contact_phone'),
+			{
+				required: false,
+			},
+		),
+		notes: this.validateString(this.useMessage('invalid_notes'), {
+			required: false,
+		}),
+	};
+
+	readonly create = z.discriminatedUnion('client_type', [
+		// Company schema
+		z
+			.object({
+				client_type: z.literal(ClientTypeEnum.COMPANY),
+				company_name: this.validateString(
+					this.useMessage('invalid_company_name'),
+				),
+				company_cui: this.validateString(
+					this.useMessage('invalid_company_cui'),
+				),
+				company_reg_com: this.validateString(
+					this.useMessage('invalid_company_reg_com'),
+					{
+						required: false,
+					},
+				),
+				person_name: z.never().optional(),
+				person_identification_number: z.never().optional(),
+			})
+			.extend(this.baseSchema),
+
+		// Person schema
+		z
+			.object({
+				client_type: z.literal(ClientTypeEnum.PERSON),
+				company_name: z.never().optional(),
+				company_cui: z.never().optional(),
+				company_reg_com: z.never().optional(),
+				person_name: this.validateString(
+					this.useMessage('invalid_person_name'),
+				),
+				person_identification_number:
+					this.validatePersonalIdentificationNumber(
+						this.useMessage('invalid_person_identification_number'),
+						{
+							required: false,
+						},
+					),
+			})
+			.extend(this.baseSchema),
+	]);
+
+	readonly update = z
+		.discriminatedUnion('client_type', [
+			// Company schema
+			z
+				.object({
+					client_type: z.literal(ClientTypeEnum.COMPANY),
+					company_name: this.validateString(
+						this.useMessage('invalid_company_name'),
+						{ required: false },
+					),
+					company_cui: this.validateString(
+						this.useMessage('invalid_company_cui'),
+						{ required: false },
+					),
+					company_reg_com: this.validateString(
+						this.useMessage('invalid_company_reg_com'),
+						{
+							required: false,
+						},
+					),
+					person_name: z.never().optional(),
+					person_identification_number: z.never().optional(),
+				})
+				.extend(this.baseSchema),
+
+			// Person schema
+			z
+				.object({
+					client_type: z.literal(ClientTypeEnum.PERSON),
+					company_name: z.never().optional(),
+					company_cui: z.never().optional(),
+					company_reg_com: z.never().optional(),
+					person_name: this.validateString(
+						this.useMessage('invalid_person_name'),
+						{ required: false },
+					),
+					person_identification_number:
+						this.validatePersonalIdentificationNumber(
+							this.useMessage(
+								'invalid_person_identification_number',
+							),
+							{
+								required: false,
+							},
+						),
+				})
+				.extend(this.baseSchema),
+		])
+		.refine((data) => hasAtLeastOneValue(data), {
+			message: lang('shared.validation.params_at_least_one', {
+				params: paramsUpdateList.join(', '),
+			}),
+			path: ['_global'],
 		});
-	}
+
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
+
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			client_type: this.validateEnum(
+				ClientTypeEnum,
+				this.useMessage('invalid_type'),
+				{ required: false },
+			).default(ClientTypeEnum.COMPANY),
+			status: this.validateEnum(
+				ClientStatusEnum,
+				this.useMessage('invalid_status'),
+				{ required: false },
+			),
+			create_date_start: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			create_date_end: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	}).superRefine((data, ctx) => {
+		if (
+			data.filter.create_date_start &&
+			data.filter.create_date_end &&
+			data.filter.create_date_start > data.filter.create_date_end
+		) {
+			ctx.addIssue({
+				path: ['filter', 'create_date_start'],
+				message: this.useMessage('invalid_date_range'),
+				code: 'custom',
+			});
+		}
+	});
 }
 
-export const clientValidator = new ClientValidator();
+export const clientValidator = new ClientValidator(validatorMessages);

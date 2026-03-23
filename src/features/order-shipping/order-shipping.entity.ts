@@ -107,10 +107,10 @@ export default class OrderShippingEntity extends EntityAbstract {
 	address_city!: string | null;
 
 	@Column('varchar', { nullable: true })
-	address_info!: string | null;
+	details!: string | null;
 
 	@Column('varchar', { nullable: true })
-	address_postal_code!: string | null;
+	postal_code!: string | null;
 
 	// DATES
 	@Column({ type: 'timestamp', nullable: true })

@@ -42,7 +42,7 @@ testControllerCreate<BrandEntity, BrandValidator>({
 	entityMock: getBrandEntityMock(),
 	policy: brandPolicy,
 	service: brandService,
-	createData: brandInputPayloads.get('create'),
+	createData: brandInputPayloads.create,
 });
 
 testControllerUpdateWithContent<BrandEntity, BrandValidator>({
@@ -51,7 +51,7 @@ testControllerUpdateWithContent<BrandEntity, BrandValidator>({
 	entityMock: getBrandEntityMock(),
 	policy: brandPolicy,
 	service: brandService,
-	updateData: brandInputPayloads.get('update'),
+	updateData: brandInputPayloads.update,
 });
 
 testControllerRead<BrandEntity>({
@@ -81,7 +81,7 @@ testControllerFind<BrandEntity, BrandValidator>({
 	entityMock: getBrandEntityMock(),
 	policy: brandPolicy,
 	service: brandService,
-	findData: brandInputPayloads.get('find'),
+	findData: brandInputPayloads.find,
 });
 
 testControllerStatusUpdate<BrandEntity>({
@@ -120,7 +120,7 @@ describe(`${controller} - orderUpdate`, () => {
 
 		const response = await request(app)
 			.patch(route)
-			.send(brandInputPayloads.get('orderUpdate'));
+			.send(brandInputPayloads.orderUpdate);
 
 		withDebugResponse(() => {
 			expect(response.status).toBe(200);

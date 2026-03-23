@@ -1,4 +1,8 @@
 {
+	"validation": {
+		"invalid_category": "Invalid category",
+		"invalid_level": "Invalid level"
+	},
 	"error": {
 		"not_found": "Log data not found"
 	},

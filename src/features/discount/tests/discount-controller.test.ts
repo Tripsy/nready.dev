@@ -30,7 +30,7 @@ testControllerCreate<DiscountEntity, DiscountValidator>({
 	entityMock: getDiscountEntityMock(),
 	policy: discountPolicy,
 	service: discountService,
-	createData: discountInputPayloads.get('create'),
+	createData: discountInputPayloads.create,
 });
 
 testControllerUpdate<DiscountEntity, DiscountValidator>({
@@ -39,7 +39,7 @@ testControllerUpdate<DiscountEntity, DiscountValidator>({
 	entityMock: getDiscountEntityMock(),
 	policy: discountPolicy,
 	service: discountService,
-	updateData: discountInputPayloads.get('update'),
+	updateData: discountInputPayloads.update,
 });
 
 testControllerRead<DiscountEntity>({
@@ -69,5 +69,5 @@ testControllerFind<DiscountEntity, DiscountValidator>({
 	entityMock: getDiscountEntityMock(),
 	policy: discountPolicy,
 	service: discountService,
-	findData: discountInputPayloads.get('find'),
+	findData: discountInputPayloads.find,
 });

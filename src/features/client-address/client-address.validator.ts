@@ -8,9 +8,9 @@ import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = [
 	'address_type',
-	'address_city_id',
-	'address_info',
-	'address_postal_code',
+	'city_id',
+	'details',
+	'postal_code',
 	'notes',
 ];
 
@@ -18,95 +18,107 @@ export enum OrderByEnum {
 	ID = 'id',
 }
 
-export class ClientAddressValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_address_type: lang(
+		'client-address.validation.invalid_address_type',
+	),
+	invalid_city_id: lang('client-address.validation.invalid_city_id'),
+	invalid_details: lang('client-address.validation.invalid_details'),
+	invalid_postal_code: lang('client-address.validation.invalid_postal_code'),
+	invalid_notes: lang('client-address.validation.invalid_notes'),
+	invalid_language: lang('shared.validation.invalid_language'),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+};
 
-	public create() {
-		return z.object({
+type ClientAddressValidatorMessages = typeof validatorMessages;
+
+export class ClientAddressValidator extends BaseValidator<ClientAddressValidatorMessages> {
+	readonly create = z.object({
+		address_type: this.validateEnum(
+			ClientAddressTypeEnum,
+			this.useMessage('invalid_address_type'),
+		),
+		city_id: this.validateId(this.useMessage('invalid_city_id'), {
+			required: false,
+		}),
+		details: this.validateString(this.useMessage('invalid_details')),
+		postal_code: this.validatePostalCode(
+			this.useMessage('invalid_postal_code'),
+			{ required: false },
+		),
+		notes: this.validateString(this.useMessage('invalid_notes'), {
+			required: false,
+		}),
+	});
+
+	readonly update = z
+		.object({
 			address_type: this.validateEnum(
 				ClientAddressTypeEnum,
-				lang('client.validation.address_type_invalid'),
+				this.useMessage('invalid_address_type'),
+				{ required: false },
 			),
-			address_city_id: this.validateNumber(
-				lang('client-address.validation.address_city_id_invalid'),
-			).optional(),
-			address_info: this.validateString(
-				lang('client-address.validation.address_info_invalid'),
+			city_id: this.validateId(this.useMessage('invalid_city_id'), {
+				required: false,
+			}),
+			details: this.validateString(this.useMessage('invalid_details'), {
+				required: false,
+			}),
+			postal_code: this.validatePostalCode(
+				this.useMessage('invalid_postal_code'),
+				{ required: false },
 			),
-			address_postal_code: this.validateNumber(
-				lang('client-address.validation.address_postal_code_invalid'),
-			).optional(),
-			notes: this.validateString(
-				lang('client-address.validation.notes_invalid'),
-			).optional(),
+			notes: this.validateString(this.useMessage('invalid_notes'), {
+				required: false,
+			}),
+		})
+		.refine((data) => hasAtLeastOneValue(data), {
+			message: lang('shared.validation.params_at_least_one', {
+				params: paramsUpdateList.join(', '),
+			}),
+			path: ['_global'],
 		});
-	}
 
-	public update() {
-		return z
-			.object({
-				address_type: this.validateEnum(
-					ClientAddressTypeEnum,
-					lang('client.validation.address_type_invalid'),
-				).optional(),
-				address_city_id: this.validateNumber(
-					lang('client-address.validation.address_city_id_invalid'),
-				).optional(),
-				address_info: this.validateString(
-					lang('client-address.validation.address_info_invalid'),
-				),
-				address_postal_code: this.validateNumber(
-					lang(
-						'client-address.validation.address_postal_code_invalid',
-					),
-				).optional(),
-				notes: this.validateString(
-					lang('client-address.validation.notes_invalid'),
-				).optional(),
-			})
-			.refine((data) => hasAtLeastOneValue(data), {
-				message: lang('shared.validation.params_at_least_one', {
-					params: paramsUpdateList.join(', '),
-				}),
-				path: ['_global'],
-			});
-	}
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
 
-	public find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
 
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
 
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				client_id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				address_type: z.enum(ClientAddressTypeEnum).optional(),
-				language: this.validateLanguage().optional(),
-				is_deleted: this.validateBoolean().default(false),
-			},
-		});
-	}
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			client_id: this.validateId(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			address_type: this.validateEnum(
+				ClientAddressTypeEnum,
+				this.useMessage('invalid_address_type'),
+				{ required: false },
+			),
+			language: this.validateLanguage(
+				this.useMessage('invalid_language'),
+				{ required: false },
+			),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	});
 }
 
-export const clientAddressValidator = new ClientAddressValidator();
+export const clientAddressValidator = new ClientAddressValidator(
+	validatorMessages,
+);

@@ -1,7 +1,7 @@
 import type LogDataEntity from '@/features/log-data/log-data.entity';
 import { getLogDataRepository } from '@/features/log-data/log-data.repository';
 import type { LogDataValidator } from '@/features/log-data/log-data.validator';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 
 export class LogDataService {
 	constructor(private repository: ReturnType<typeof getLogDataRepository>) {}

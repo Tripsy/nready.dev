@@ -33,7 +33,7 @@ testControllerCreate<ClientAddressEntity, ClientAddressValidator>({
 	entityMock: getClientAddressEntityMock(),
 	policy: clientAddressPolicy,
 	service: clientAddressService,
-	createData: clientAddressInputPayloads.get('create'),
+	createData: clientAddressInputPayloads.create,
 });
 
 testControllerUpdate<ClientAddressEntity, ClientAddressValidator>({
@@ -42,7 +42,7 @@ testControllerUpdate<ClientAddressEntity, ClientAddressValidator>({
 	entityMock: getClientAddressEntityMock(),
 	policy: clientAddressPolicy,
 	service: clientAddressService,
-	updateData: clientAddressInputPayloads.get('update'),
+	updateData: clientAddressInputPayloads.update,
 });
 
 testControllerRead<ClientAddressEntity>({
@@ -72,5 +72,5 @@ testControllerFind<ClientAddressEntity, ClientAddressValidator>({
 	entityMock: getClientAddressEntityMock(),
 	policy: clientAddressPolicy,
 	service: clientAddressService,
-	findData: clientAddressInputPayloads.get('find'),
+	findData: clientAddressInputPayloads.find,
 });

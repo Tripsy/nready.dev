@@ -30,7 +30,7 @@ class CategoryController extends BaseController {
 	public create = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canCreate(res.locals.auth);
 
-		const data = this.validate(this.validator.create(), req.body, res);
+		const data = this.validate(this.validator.create, req.body, res);
 
 		const entry = await this.categoryService.create(data);
 
@@ -43,7 +43,7 @@ class CategoryController extends BaseController {
 	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
 
-		const data = this.validate(this.validator.read(), req.query, res);
+		const data = this.validate(this.validator.read, req.query, res);
 
 		const cacheKey = this.cache.buildKey(
 			CategoryEntity.NAME,
@@ -78,7 +78,7 @@ class CategoryController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update(), req.body, res);
+		const data = this.validate(this.validator.update, req.body, res);
 
 		const entry = await this.categoryService.updateDataWithContent(
 			res.locals.validated.id,
@@ -116,7 +116,7 @@ class CategoryController extends BaseController {
 		this.policy.canFind(res.locals.auth);
 
 		const data = this.validate(
-			this.validator.find(),
+			this.validator.find,
 			{
 				...req.query,
 				...(res.locals.filter !== undefined && {
@@ -151,11 +151,7 @@ class CategoryController extends BaseController {
 	public statusUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.statusUpdate(),
-			req.query,
-			res,
-		);
+		const data = this.validate(this.validator.statusUpdate, req.query, res);
 
 		await this.categoryService.updateStatus(
 			res.locals.validated.id,

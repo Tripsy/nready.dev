@@ -31,7 +31,7 @@ class ClientController extends BaseController {
 		this.policy.canCreate(res.locals.auth);
 
 		const data = await this.validateAsync(
-			this.validator.create(),
+			this.validator.create,
 			req.body,
 			res,
 		);
@@ -75,7 +75,7 @@ class ClientController extends BaseController {
 		);
 
 		const data = await this.validateAsync(
-			this.validator.update(),
+			this.validator.update,
 			{
 				client_type: req.body.client_type ?? client.client_type,
 				...req.body, // client_type (DB value will be overwritten by the one in the body if it exists)
@@ -118,7 +118,7 @@ class ClientController extends BaseController {
 		this.policy.canFind(res.locals.auth);
 
 		const data = this.validate(
-			this.validator.find(),
+			this.validator.find,
 			{
 				...req.query,
 				...(res.locals.filter !== undefined && {

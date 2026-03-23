@@ -1,6 +1,6 @@
 import type { EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import type { BrandContentInput } from '@/features/brand/brand.entity';
+import type { BrandContentType } from '@/features/brand/brand.entity';
 import BrandContentEntity from '@/features/brand/brand-content.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
@@ -19,7 +19,7 @@ export const BrandContentRepository = dataSource
 
 		async saveContent(
 			manager: EntityManager,
-			contents: BrandContentInput[],
+			contents: BrandContentType[],
 			brand_id: number,
 		) {
 			if (!contents.length) {

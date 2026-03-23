@@ -1,10 +1,9 @@
 import type UserPermissionEntity from '@/features/user-permission/user-permission.entity';
 import {
 	UserPermissionOrderByEnum,
-	type UserPermissionValidator,
+	userPermissionValidator,
 } from '@/features/user-permission/user-permission.validator';
 import { createPastDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 export function getUserPermissionEntityMock(): UserPermissionEntity {
@@ -17,10 +16,7 @@ export function getUserPermissionEntityMock(): UserPermissionEntity {
 	};
 }
 
-export const userPermissionInputPayloads = createValidatorPayloads<
-	UserPermissionValidator,
-	'create' | 'find'
->({
+export const userPermissionInputPayloads = {
 	create: {
 		permission_ids: [1, 2],
 	},
@@ -35,13 +31,11 @@ export const userPermissionInputPayloads = createValidatorPayloads<
 			is_deleted: false,
 		},
 	},
-});
+};
 
-export const userPermissionOutputPayloads = createValidatorPayloads<
-	UserPermissionValidator,
-	'create'
->({
-	create: {
-		permission_ids: [1, 2],
-	},
-});
+export const userPermissionOutputPayloads = {
+	create: userPermissionValidator.create.parse(
+		userPermissionInputPayloads.create,
+	),
+	find: userPermissionValidator.find.parse(userPermissionInputPayloads.find),
+};

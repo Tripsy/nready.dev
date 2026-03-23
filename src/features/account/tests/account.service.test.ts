@@ -101,15 +101,13 @@ describe('AccountService', () => {
 		});
 
 		await expect(
-			serviceAccount.register(
-				{
-					name: 'John',
-					email: 'john@example.com',
-					password: 'Secret@1',
-					password_confirm: 'Secret@1',
-				},
-				'en',
-			),
+			serviceAccount.register({
+				name: 'John',
+				email: 'john@example.com',
+				password: 'Secret@1',
+				password_confirm: 'Secret@1',
+				language: 'en',
+			}),
 		).rejects.toThrow(BadRequestError);
 	});
 
@@ -120,15 +118,13 @@ describe('AccountService', () => {
 		});
 
 		await expect(
-			serviceAccount.register(
-				{
-					name: 'John',
-					email: 'john@example.com',
-					password: 'Secret@1',
-					password_confirm: 'Secret@1',
-				},
-				'en',
-			),
+			serviceAccount.register({
+				name: 'John',
+				email: 'john@example.com',
+				password: 'Secret@1',
+				password_confirm: 'Secret@1',
+				language: 'en',
+			}),
 		).rejects.toThrow(CustomError);
 	});
 
@@ -139,16 +135,13 @@ describe('AccountService', () => {
 
 		jest.spyOn(serviceUser, 'createRegister').mockResolvedValue(user);
 
-		const result = await serviceAccount.register(
-			{
-				name: 'John',
-				email: 'john@example.com',
-				password: 'Secret@1',
-				password_confirm: 'Secret@1',
-				language: 'en',
-			},
-			'en',
-		);
+		const result = await serviceAccount.register({
+			name: 'John',
+			email: 'john@example.com',
+			password: 'Secret@1',
+			password_confirm: 'Secret@1',
+			language: 'en',
+		});
 
 		expect(serviceUser.createRegister).toHaveBeenCalledWith({
 			name: 'John',

@@ -33,6 +33,6 @@ describe('LogDataService', () => {
 	testServiceFindByFilter<LogDataEntity, LogDataQuery, LogDataValidator>(
 		query,
 		serviceLogData,
-		logDataOutputPayloads.get('find'),
+		logDataOutputPayloads.find,
 	);
 });

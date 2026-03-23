@@ -42,7 +42,7 @@ describe('UserService', () => {
 
 	it('should create entry', async () => {
 		const entity = getUserEntityMock();
-		const createData = userOutputPayloads.get('create');
+		const createData = userOutputPayloads.create;
 
 		jest.spyOn(serviceUser, 'findByEmail').mockResolvedValue(null);
 		mockUser.repository.save.mockResolvedValue(entity);
@@ -89,6 +89,6 @@ describe('UserService', () => {
 	testServiceFindByFilter<UserEntity, UserQuery, UserValidator>(
 		mockUser.query,
 		serviceUser,
-		userOutputPayloads.get('find'),
+		userOutputPayloads.find,
 	);
 });

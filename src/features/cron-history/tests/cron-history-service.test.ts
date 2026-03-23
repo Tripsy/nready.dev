@@ -37,5 +37,5 @@ describe('CronHistoryService', () => {
 		CronHistoryEntity,
 		CronHistoryQuery,
 		CronHistoryValidator
-	>(query, serviceCronHistory, cronHistoryOutputPayloads.get('find'));
+	>(query, serviceCronHistory, cronHistoryOutputPayloads.find);
 });

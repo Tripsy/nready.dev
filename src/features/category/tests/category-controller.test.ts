@@ -31,7 +31,7 @@ testControllerCreate<CategoryEntity, CategoryValidator>({
 	entityMock: getCategoryEntityMock(),
 	policy: categoryPolicy,
 	service: categoryService,
-	createData: categoryInputPayloads.get('create'),
+	createData: categoryInputPayloads.create,
 });
 
 testControllerUpdateWithContent<CategoryEntity, CategoryValidator>({
@@ -40,7 +40,7 @@ testControllerUpdateWithContent<CategoryEntity, CategoryValidator>({
 	entityMock: getCategoryEntityMock(),
 	policy: categoryPolicy,
 	service: categoryService,
-	updateData: categoryInputPayloads.get('update'),
+	updateData: categoryInputPayloads.update,
 });
 
 testControllerRead<CategoryEntity>({
@@ -70,7 +70,7 @@ testControllerFind<CategoryEntity, CategoryValidator>({
 	entityMock: getCategoryEntityMock(),
 	policy: categoryPolicy,
 	service: categoryService,
-	findData: categoryInputPayloads.get('find'),
+	findData: categoryInputPayloads.find,
 });
 
 testControllerStatusUpdate<CategoryEntity>({

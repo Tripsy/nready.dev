@@ -10,48 +10,46 @@ export enum PermissionOrderByEnum {
 	OPERATION = 'operation',
 }
 
-export class PermissionValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_entity: lang('permission.validation.invalid_entity'),
+	invalid_operation: lang('permission.validation.invalid_operation'),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+};
 
-	manage() {
-		return z.object({
-			entity: this.validateString(
-				lang('permission.validation.entity_invalid'),
-			),
-			operation: this.validateString(
-				lang('permission.validation.operation_invalid'),
-			),
-		});
-	}
+type PermissionValidatorMessages = typeof validatorMessages;
 
-	find() {
-		return this.makeFindValidator({
-			orderByEnum: PermissionOrderByEnum,
-			defaultOrderBy: PermissionOrderByEnum.ID,
+export class PermissionValidator extends BaseValidator<PermissionValidatorMessages> {
+	readonly manage = z.object({
+		entity: this.validateString(this.useMessage('invalid_entity')),
+		operation: this.validateString(this.useMessage('invalid_operation')),
+	});
 
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
+	readonly find = this.validateFind({
+		orderByEnum: PermissionOrderByEnum,
+		defaultOrderBy: PermissionOrderByEnum.ID,
 
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
 
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				is_deleted: this.validateBoolean().default(false),
-			},
-		});
-	}
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			is_deleted: this.validateBoolean(
+				this.useMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	});
 }
 
-export const permissionValidator = new PermissionValidator();
+export const permissionValidator = new PermissionValidator(validatorMessages);

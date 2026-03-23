@@ -4,11 +4,10 @@ import {
 	CategoryTypeEnum,
 } from '@/features/category/category.entity';
 import {
-	type CategoryValidator,
+	categoryValidator,
 	OrderByEnum,
 } from '@/features/category/category.validator';
 import { createPastDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 export function getCategoryEntityMock(): CategoryEntity {
@@ -25,10 +24,7 @@ export function getCategoryEntityMock(): CategoryEntity {
 	};
 }
 
-export const categoryInputPayloads = createValidatorPayloads<
-	CategoryValidator,
-	'create' | 'update' | 'read' | 'find' | 'statusUpdate'
->({
+export const categoryInputPayloads = {
 	create: {
 		type: CategoryTypeEnum.ARTICLE,
 		parent_id: 1,
@@ -40,6 +36,7 @@ export const categoryInputPayloads = createValidatorPayloads<
 				meta: {
 					title: 'Technology Articles',
 					description: 'All technology related content',
+					keywords: 'technology',
 				},
 				description: 'Tech related articles and news',
 			},
@@ -50,7 +47,9 @@ export const categoryInputPayloads = createValidatorPayloads<
 				meta: {
 					title: 'Articles Technologies',
 					description: 'Contenu lié à la technologie',
+					keywords: 'technology',
 				},
+				description: 'Tech related articles and news',
 			},
 		],
 	},
@@ -68,7 +67,9 @@ export const categoryInputPayloads = createValidatorPayloads<
 				meta: {
 					title: 'Science',
 					description: 'Scientific content',
+					keywords: 'science',
 				},
+				description: 'Tech related articles and news',
 			},
 		],
 	},
@@ -88,4 +89,10 @@ export const categoryInputPayloads = createValidatorPayloads<
 	statusUpdate: {
 		force: false,
 	},
-});
+};
+
+export const categoryOutputPayloads = {
+	create: categoryValidator.create.parse(categoryInputPayloads.create),
+	update: categoryValidator.update.parse(categoryInputPayloads.update),
+	find: categoryValidator.find.parse(categoryInputPayloads.find),
+};

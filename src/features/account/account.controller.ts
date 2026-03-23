@@ -54,9 +54,11 @@ class AccountController extends BaseController {
 	public register = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.notAuth(res.locals.auth);
 
-		const data = this.validate(this.validator.register(), req.body, res);
+		const data = this.validate(this.validator.register, req.body, res);
 
-		const entry = await this.accountService.register(data, res.locals.lang);
+		data.language = data.language || res.locals.lang;
+
+		const entry = await this.accountService.register(data);
 
 		res.locals.output.data(entry);
 		res.locals.output.message(lang('account.success.register'));
@@ -67,7 +69,7 @@ class AccountController extends BaseController {
 	public login = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.notAuth(res.locals.auth);
 
-		const data = this.validate(this.validator.login(), req.body, res);
+		const data = this.validate(this.validator.login, req.body, res);
 
 		const user = await this.userService.findByEmail(data.email, false, [
 			'id',
@@ -144,7 +146,7 @@ class AccountController extends BaseController {
 	 *      - From his account page the user could see all active tokens and allow removal
 	 */
 	public removeToken = asyncHandler(async (req: Request, res: Response) => {
-		const data = this.validate(this.validator.removeToken(), req.body, res);
+		const data = this.validate(this.validator.removeToken, req.body, res);
 
 		await this.accountTokenService.removeAccountTokenByIdent(data.ident);
 
@@ -186,7 +188,7 @@ class AccountController extends BaseController {
 			this.policy.notAuth(res.locals.auth);
 
 			const data = this.validate(
-				this.validator.passwordRecover(),
+				this.validator.passwordRecover,
 				req.body,
 				res,
 			);
@@ -251,7 +253,7 @@ class AccountController extends BaseController {
 			this.policy.notAuth(res.locals.auth);
 
 			const data = this.validate(
-				this.validator.passwordRecoverChange(),
+				this.validator.passwordRecoverChange,
 				req.body,
 				res,
 			);
@@ -332,7 +334,7 @@ class AccountController extends BaseController {
 			this.policy.requiredAuth(res.locals.auth);
 
 			const data = this.validate(
-				this.validator.passwordUpdate(),
+				this.validator.passwordUpdate,
 				req.body,
 				res,
 			);
@@ -355,7 +357,7 @@ class AccountController extends BaseController {
 				res.locals.output.errors([
 					{
 						password_current: lang(
-							'account.validation.password_invalid',
+							'account.validation.invalid_password',
 						),
 					},
 				]);
@@ -455,7 +457,7 @@ class AccountController extends BaseController {
 			this.policy.notAuth(res.locals.auth);
 
 			const data = this.validate(
-				this.validator.emailConfirmSend(),
+				this.validator.emailConfirmSend,
 				req.body,
 				res,
 			);
@@ -489,7 +491,7 @@ class AccountController extends BaseController {
 	public emailUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.requiredAuth(res.locals.auth);
 
-		const data = this.validate(this.validator.emailUpdate(), req.body, res);
+		const data = this.validate(this.validator.emailUpdate, req.body, res);
 
 		const existingUser = await this.userService.findByEmail(
 			data.email_new,
@@ -569,7 +571,7 @@ class AccountController extends BaseController {
 	public meEdit = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.requiredAuth(res.locals.auth);
 
-		const data = this.validate(this.validator.meEdit(), req.body, res);
+		const data = this.validate(this.validator.meEdit, req.body, res);
 
 		const user_id = this.policy.getId(res.locals.auth);
 
@@ -597,7 +599,7 @@ class AccountController extends BaseController {
 	public meDelete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.requiredAuth(res.locals.auth);
 
-		const data = this.validate(this.validator.meDelete(), req.body, res);
+		const data = this.validate(this.validator.meDelete, req.body, res);
 
 		const user_id = this.policy.getId(res.locals.auth);
 
@@ -621,7 +623,7 @@ class AccountController extends BaseController {
 			res.locals.output.errors([
 				{
 					password_current: lang(
-						'account.validation.password_invalid',
+						'account.validation.invalid_password',
 					),
 				},
 			]);

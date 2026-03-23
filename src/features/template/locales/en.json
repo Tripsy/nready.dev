@@ -1,14 +1,14 @@
 {
 	"validation": {
-		"label_invalid": "Label is invalid",
-		"type_invalid": "Invalid type",
-		"email_subject_invalid": "Content / Invalid subject",
-		"email_text_invalid": "Content / Invalid text",
-		"email_html_invalid": "Content / Invalid html",
-		"email_layout_invalid": "Content / Invalid layout",
-		"page_title_invalid": "Content / Invalid title",
-		"page_html_invalid": "Content / Invalid html",
-		"page_layout_invalid": "Content / Invalid layout"
+		"invalid_label": "Label is invalid",
+		"invalid_type": "Invalid type",
+		"invalid_email_subject": "Content / Invalid subject",
+		"invalid_email_text": "Content / Invalid text",
+		"invalid_email_html": "Content / Invalid html",
+		"invalid_email_layout": "Content / Invalid layout",
+		"invalid_page_title": "Content / Invalid title",
+		"invalid_page_html": "Content / Invalid html",
+		"invalid_page_layout": "Content / Invalid layout"
 	},
 	"error": {
 		"cannot_load": "Template not found (eg: {{label}} - {{language}} - {{type}})",

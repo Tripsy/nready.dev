@@ -11,70 +11,93 @@ export enum OrderByEnum {
 	START_AT = 'start_at',
 }
 
-export class CronHistoryValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+	invalid_status: lang('cash-flow.validation.invalid_status'),
+	invalid_date: lang('shared.validation.invalid_date'),
+	invalid_date_format: lang('shared.validation.invalid_date_format'),
+	invalid_past_date: lang('shared.validation.invalid_past_date'),
+	invalid_future_date: lang('shared.validation.invalid_future_date'),
+	invalid_date_range: lang('shared.validation.invalid_date_range'),
+};
 
-	public delete() {
-		return z.object({
-			ids: z.array(
-				z.coerce
-					.number({
-						message: lang('shared.validation.invalid_ids', {
-							name: 'ids',
-						}),
-					})
-					.positive(),
-				{
+type CronHistoryValidatorMessages = typeof validatorMessages;
+
+export class CronHistoryValidator extends BaseValidator<CronHistoryValidatorMessages> {
+	readonly delete = z.object({
+		ids: z.array(
+			z.coerce
+				.number({
 					message: lang('shared.validation.invalid_ids', {
 						name: 'ids',
 					}),
-				},
-			),
-		});
-	}
-
-	public find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
-
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
-
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				status: z.enum(CronHistoryStatusEnum).optional(),
-				start_date_start: this.validateDate(),
-				start_date_end: this.validateDate(),
+				})
+				.positive(),
+			{
+				message: lang('shared.validation.invalid_ids', {
+					name: 'ids',
+				}),
 			},
-		}).superRefine((data, ctx) => {
-			if (
-				data.filter.start_date_start &&
-				data.filter.start_date_end &&
-				data.filter.start_date_start > data.filter.start_date_end
-			) {
-				ctx.addIssue({
-					path: ['filter', 'create_date_start'],
-					message: lang('shared.validation.invalid_date_range'),
-					code: 'custom',
-				});
-			}
-		});
-	}
+		),
+	});
+
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
+
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			status: this.validateEnum(
+				CronHistoryStatusEnum,
+				this.useMessage('invalid_status'),
+				{ required: false },
+			),
+			start_date_start: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			start_date_end: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+		},
+	}).superRefine((data, ctx) => {
+		if (
+			data.filter.start_date_start &&
+			data.filter.start_date_end &&
+			data.filter.start_date_start > data.filter.start_date_end
+		) {
+			ctx.addIssue({
+				path: ['filter', 'create_date_start'],
+				message: this.useMessage('invalid_date_range'),
+				code: 'custom',
+			});
+		}
+	});
 }
 
-export const cronHistoryValidator = new CronHistoryValidator();
+export const cronHistoryValidator = new CronHistoryValidator(validatorMessages);

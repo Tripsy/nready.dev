@@ -41,7 +41,7 @@ testControllerCreate<ClientEntity, ClientValidator>({
 	entityMock: getClientEntityMock(),
 	policy: clientPolicy,
 	service: clientService,
-	createData: clientInputPayloads.get('create'),
+	createData: clientInputPayloads.create,
 });
 
 describe(`${controller} - update`, () => {
@@ -78,7 +78,7 @@ describe(`${controller} - update`, () => {
 
 		const response = await request(app)
 			.put(route)
-			.send(clientInputPayloads.get('update'));
+			.send(clientInputPayloads.update);
 
 		withDebugResponse(() => {
 			expect(response.status).toBe(200);
@@ -118,7 +118,7 @@ testControllerFind<ClientEntity, ClientValidator>({
 	entityMock: getClientEntityMock(),
 	policy: clientPolicy,
 	service: clientService,
-	findData: clientInputPayloads.get('find'),
+	findData: clientInputPayloads.find,
 });
 
 testControllerStatusUpdate<ClientEntity>({

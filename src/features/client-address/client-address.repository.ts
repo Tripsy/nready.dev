@@ -20,12 +20,12 @@ export class ClientAddressQuery extends RepositoryAbstract<ClientAddressEntity> 
 				) {
 					this.filterAny([
 						{
-							column: 'address_info',
+							column: 'details',
 							value: term,
 							operator: 'ILIKE',
 						},
 						{
-							column: 'address_postal_code',
+							column: 'postal_code',
 							value: term,
 							operator: 'ILIKE',
 						},

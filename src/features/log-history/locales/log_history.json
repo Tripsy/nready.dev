@@ -1,4 +1,7 @@
 {
+	"validation": {
+		"invalid_source": "Invalid source"
+	},
 	"error": {
 		"not_found": "Log history entry not found"
 	},

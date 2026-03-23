@@ -1,11 +1,10 @@
 import type MailQueueEntity from '@/features/mail-queue/mail-queue.entity';
 import { MailQueueStatusEnum } from '@/features/mail-queue/mail-queue.entity';
 import {
-	type MailQueueValidator,
+	mailQueueValidator,
 	OrderByEnum,
 } from '@/features/mail-queue/mail-queue.validator';
 import { createPastDate, formatDate } from '@/helpers';
-import { createValidatorPayloads } from '@/helpers/mock.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 export function getMailQueueEntityMock(): MailQueueEntity {
@@ -32,10 +31,7 @@ export function getMailQueueEntityMock(): MailQueueEntity {
 	};
 }
 
-export const mailQueueInputPayloads = createValidatorPayloads<
-	MailQueueValidator,
-	'find' | 'delete'
->({
+export const mailQueueInputPayloads = {
 	find: {
 		page: 1,
 		limit: 10,
@@ -53,27 +49,8 @@ export const mailQueueInputPayloads = createValidatorPayloads<
 		},
 	},
 	delete: { ids: [1, 2, 3] },
-});
+};
 
-export const mailQueueOutputPayloads = createValidatorPayloads<
-	MailQueueValidator,
-	'find',
-	'output'
->({
-	find: {
-		page: 1,
-		limit: 10,
-		order_by: OrderByEnum.ID,
-		direction: OrderDirectionEnum.DESC,
-		filter: {
-			id: 1,
-			template: 'test',
-			language: 'en',
-			status: MailQueueStatusEnum.ERROR,
-			content: 'test',
-			to: 'to@mail',
-			sent_date_start: createPastDate(14400),
-			sent_date_end: createPastDate(7200),
-		},
-	},
-});
+export const mailQueueOutputPayloads = {
+	find: mailQueueValidator.find.parse(mailQueueInputPayloads.find),
+};

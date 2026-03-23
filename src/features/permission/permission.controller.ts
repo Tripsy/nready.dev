@@ -30,7 +30,7 @@ class PermissionController extends BaseController {
 	public create = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canCreate(res.locals.auth);
 
-		const data = this.validate(this.validator.manage(), req.body, res);
+		const data = this.validate(this.validator.manage, req.body, res);
 
 		const createResult = await this.permissionService.create(
 			this.policy.allowDeleted(res.locals.auth),
@@ -73,7 +73,7 @@ class PermissionController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.manage(), req.body, res);
+		const data = this.validate(this.validator.manage, req.body, res);
 
 		const entry = await this.permissionService.updateData(
 			res.locals.validated.id,
@@ -110,7 +110,7 @@ class PermissionController extends BaseController {
 		this.policy.canFind(res.locals.auth);
 
 		const data = this.validate(
-			this.validator.find(),
+			this.validator.find,
 			{
 				...req.query,
 				...(res.locals.filter !== undefined && {

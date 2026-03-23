@@ -1,4 +1,4 @@
-import dayjs from 'dayjs';
+import dayjs from '@/config/dayjs.config';
 
 /**
  * Check if a string is a valid date
@@ -7,9 +7,7 @@ import dayjs from 'dayjs';
  * @returns {boolean} - True if the date is valid, false otherwise
  */
 export function isValidDate(date: string): boolean {
-	const parsedDate = new Date(date);
-
-	return !Number.isNaN(parsedDate.getTime());
+	return dayjs(date).isValid();
 }
 
 /**
@@ -28,16 +26,16 @@ export function isValidDateInstance(date: unknown): date is Date {
 /**
  * Converts a date string to a Date object with strict validation
  *
- * @param dateString - The date string to convert (ISO 8601, RFC 2822, or other supported formats)
- * @returns Valid Date object
+ * @param {string | null} value - The date string to convert (ISO 8601, RFC 2822, or other supported formats)
+ * @returns {Date | null}
  * @throws {Error} If the input is not a valid date string or cannot be parsed
  */
-export function stringToDate(dateString: string | null): Date | null {
-	if (!dateString) {
+export function stringToDate(value: string | null): Date | null {
+	if (!value) {
 		return null;
 	}
 
-	const trimmedString = dateString.trim();
+	const trimmedString = value.trim();
 
 	if (!trimmedString) {
 		return null;

@@ -27,7 +27,7 @@ describe('TemplateService', () => {
 
 	it('should create entry', async () => {
 		const entity = getTemplateEntityMock();
-		const createData = templateOutputPayloads.get('create');
+		const createData = templateOutputPayloads.create;
 
 		mockTemplate.query.first.mockResolvedValue(null);
 		mockTemplate.repository.save.mockResolvedValue(entity);
@@ -52,7 +52,7 @@ describe('TemplateService', () => {
 	testServiceFindByFilter<TemplateEntity, TemplateQuery, TemplateValidator>(
 		mockTemplate.query,
 		serviceTemplate,
-		templateOutputPayloads.get('find'),
+		templateOutputPayloads.find,
 	);
 
 	testServiceDelete<TemplateEntity, TemplateQuery>(

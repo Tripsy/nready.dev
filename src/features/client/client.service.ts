@@ -12,11 +12,52 @@ import {
 	type ClientValidator,
 	paramsUpdateList,
 } from '@/features/client/client.validator';
+import type { ValidatorOutput } from '@/helpers/mock.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
-import type { ValidatorOutput } from '@/shared/abstracts/validator.abstract';
 
 export class ClientService {
 	constructor(private repository: ReturnType<typeof getClientRepository>) {}
+
+	public async checkDuplicate(data: ClientIdentityData, exclude_id?: number) {
+		const query = this.repository
+			.createQuery()
+			.filterBy('client_type', data.client_type);
+
+		if (exclude_id) {
+			query.filterBy('id', exclude_id, '!=');
+		}
+
+		if (data.client_type === ClientTypeEnum.COMPANY) {
+			query.filterAny([
+				{
+					column: 'company_name',
+					value: data.company_name,
+					operator: '=',
+				},
+				{
+					column: 'company_cui',
+					value: data.company_cui,
+					operator: '=',
+				},
+				{
+					column: 'company_reg_com',
+					value: data.company_reg_com,
+					operator: '=',
+				},
+			]);
+		} else {
+			query.filterBy(
+				'person_identification_number',
+				data.person_identification_number,
+			);
+		}
+
+		query.withDeleted();
+
+		if ((await query.count()) > 0) {
+			throw new CustomError(409, lang('client.error.already_exists'));
+		}
+	}
 
 	/**
 	 * @description Used in `create` method from controller;
@@ -34,15 +75,11 @@ export class ClientService {
 					}
 				: {
 						client_type: ClientTypeEnum.PERSON,
-						person_cnp: data.person_cnp,
+						person_identification_number:
+							data.person_identification_number,
 					};
 
-		const isDuplicate =
-			await this.repository.isDuplicateIdentity(identityData);
-
-		if (isDuplicate) {
-			throw new CustomError(409, lang('client.error.already_exists'));
-		}
+		await this.checkDuplicate(identityData);
 
 		const entry = {
 			...data,
@@ -78,17 +115,11 @@ export class ClientService {
 					}
 				: {
 						client_type: ClientTypeEnum.PERSON,
-						person_cnp: data.person_cnp,
+						person_identification_number:
+							data.person_identification_number,
 					};
 
-		const isDuplicate = await this.repository.isDuplicateIdentity(
-			identityData,
-			id,
-		);
-
-		if (isDuplicate) {
-			throw new CustomError(409, lang('client.error.already_exists'));
-		}
+		await this.checkDuplicate(identityData, id);
 
 		const updateData = {
 			...Object.fromEntries(
@@ -145,7 +176,7 @@ export class ClientService {
 
 		if (entry.client_type === ClientTypeEnum.COMPANY) {
 			delete entry.person_name;
-			delete entry.person_cnp;
+			delete entry.person_identification_number;
 		} else {
 			delete entry.company_name;
 			delete entry.company_cui;

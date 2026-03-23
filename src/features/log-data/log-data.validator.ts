@@ -14,71 +14,99 @@ export enum OrderByEnum {
 	CREATED_AT = 'created_at',
 }
 
-export class LogDataValidator extends BaseValidator {
-	private readonly defaultFilterLimit = Configuration.get(
-		'filter.limit',
-	) as number;
+const validatorMessages = {
+	invalid_category: lang('log_data.validation.invalid_category'),
+	invalid_level: lang('log_data.validation.invalid_level'),
+	invalid_number: lang('shared.validation.invalid_number'),
+	invalid_string: lang('shared.validation.invalid_string'),
+	invalid_boolean: lang('shared.validation.invalid_boolean'),
+	invalid_date: lang('shared.validation.invalid_date'),
+	invalid_date_format: lang('shared.validation.invalid_date_format'),
+	invalid_past_date: lang('shared.validation.invalid_past_date'),
+	invalid_future_date: lang('shared.validation.invalid_future_date'),
+	invalid_date_range: lang('shared.validation.invalid_date_range'),
+};
 
-	public delete() {
-		return z.object({
-			ids: z.array(
-				z.coerce
-					.number({
-						message: lang('shared.validation.invalid_ids', {
-							name: 'ids',
-						}),
-					})
-					.positive(),
-				{
+type LogDataValidatorMessages = typeof validatorMessages;
+
+export class LogDataValidator extends BaseValidator<LogDataValidatorMessages> {
+	readonly delete = z.object({
+		ids: z.array(
+			z.coerce
+				.number({
 					message: lang('shared.validation.invalid_ids', {
 						name: 'ids',
 					}),
-				},
-			),
-		});
-	}
-
-	find() {
-		return this.makeFindValidator({
-			orderByEnum: OrderByEnum,
-			defaultOrderBy: OrderByEnum.ID,
-
-			directionEnum: OrderDirectionEnum,
-			defaultDirection: OrderDirectionEnum.ASC,
-
-			defaultLimit: this.defaultFilterLimit,
-			defaultPage: 1,
-
-			filterShape: {
-				id: z.coerce
-					.number({
-						message: lang('shared.validation.invalid_number'),
-					})
-					.optional(),
-				category: z.enum(LogDataCategoryEnum).optional(),
-				level: z.enum(LogDataLevelEnum).optional(),
-				term: z
-					.string({
-						message: lang('shared.validation.invalid_string'),
-					})
-					.optional(),
-				create_date_start: this.validateDate(),
-				create_date_end: this.validateDate(),
+				})
+				.positive(),
+			{
+				message: lang('shared.validation.invalid_ids', {
+					name: 'ids',
+				}),
 			},
-		}).superRefine((data, ctx) => {
-			if (
-				data.filter.create_date_start &&
-				data.filter.create_date_end &&
-				data.filter.create_date_start > data.filter.create_date_end
-			) {
-				ctx.addIssue({
-					path: ['filter', 'create_date_start'],
-					message: lang('shared.validation.invalid_date_range'),
-					code: 'custom',
-				});
-			}
-		});
-	}
+		),
+	});
+
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
+
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterShape: {
+			id: this.validateNumber(this.useMessage('invalid_number'), {
+				required: false,
+			}),
+			category: this.validateEnum(
+				LogDataCategoryEnum,
+				this.useMessage('invalid_category'),
+				{ required: false },
+			),
+			level: this.validateEnum(
+				LogDataLevelEnum,
+				this.useMessage('invalid_level'),
+				{ required: false },
+			),
+			term: this.validateString(this.useMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			create_date_start: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+			create_date_end: this.validateDate(
+				{
+					invalid_date: this.useMessage('invalid_date'),
+					invalid_date_format: this.useMessage('invalid_date_format'),
+					invalid_past_date: this.useMessage('invalid_past_date'),
+					invalid_future_date: this.useMessage('invalid_future_date'),
+				},
+				{ required: false },
+			),
+		},
+	}).superRefine((data, ctx) => {
+		if (
+			data.filter.create_date_start &&
+			data.filter.create_date_end &&
+			data.filter.create_date_start > data.filter.create_date_end
+		) {
+			ctx.addIssue({
+				path: ['filter', 'create_date_start'],
+				message: this.useMessage('invalid_date_range'),
+				code: 'custom',
+			});
+		}
+	});
 }
 
-export const logDataValidator = new LogDataValidator();
+export const logDataValidator = new LogDataValidator(validatorMessages);
