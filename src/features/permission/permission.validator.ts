@@ -18,12 +18,12 @@ const validatorMessages = {
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
 };
 
-type PermissionValidatorMessages = typeof validatorMessages;
-
-export class PermissionValidator extends BaseValidator<PermissionValidatorMessages> {
+export class PermissionValidator extends BaseValidator<
+	typeof validatorMessages
+> {
 	readonly manage = z.object({
-		entity: this.validateString(this.useMessage('invalid_entity')),
-		operation: this.validateString(this.useMessage('invalid_operation')),
+		entity: this.validateString(this.getMessage('invalid_entity')),
+		operation: this.validateString(this.getMessage('invalid_operation')),
 	});
 
 	readonly find = this.validateFind({
@@ -37,15 +37,15 @@ export class PermissionValidator extends BaseValidator<PermissionValidatorMessag
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},

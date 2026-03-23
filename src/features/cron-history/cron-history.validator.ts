@@ -23,9 +23,9 @@ const validatorMessages = {
 	invalid_date_range: lang('shared.validation.invalid_date_range'),
 };
 
-type CronHistoryValidatorMessages = typeof validatorMessages;
-
-export class CronHistoryValidator extends BaseValidator<CronHistoryValidatorMessages> {
+export class CronHistoryValidator extends BaseValidator<
+	typeof validatorMessages
+> {
 	readonly delete = z.object({
 		ids: z.array(
 			z.coerce
@@ -54,33 +54,33 @@ export class CronHistoryValidator extends BaseValidator<CronHistoryValidatorMess
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			status: this.validateEnum(
 				CronHistoryStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			),
 			start_date_start: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			start_date_end: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
@@ -93,7 +93,7 @@ export class CronHistoryValidator extends BaseValidator<CronHistoryValidatorMess
 		) {
 			ctx.addIssue({
 				path: ['filter', 'create_date_start'],
-				message: this.useMessage('invalid_date_range'),
+				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});
 		}

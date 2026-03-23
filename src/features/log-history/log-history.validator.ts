@@ -24,9 +24,9 @@ const validatorMessages = {
 	invalid_date_range: lang('shared.validation.invalid_date_range'),
 };
 
-type LogHistoryValidatorMessages = typeof validatorMessages;
-
-export class LogHistoryValidator extends BaseValidator<LogHistoryValidatorMessages> {
+export class LogHistoryValidator extends BaseValidator<
+	typeof validatorMessages
+> {
 	readonly delete = z.object({
 		ids: z.array(
 			z.coerce
@@ -55,38 +55,38 @@ export class LogHistoryValidator extends BaseValidator<LogHistoryValidatorMessag
 		defaultPage: 1,
 
 		filterShape: {
-			entity: this.validateString(this.useMessage('invalid_string'), {
+			entity: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 			}),
-			entity_id: this.validateId(this.useMessage('invalid_number'), {
+			entity_id: this.validateId(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			action: this.validateString(this.useMessage('invalid_string'), {
+			action: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 			}),
-			request_id: this.validateString(this.useMessage('invalid_string'), {
+			request_id: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 			}),
 			source: this.validateEnum(
 				RequestContextSource,
-				this.useMessage('invalid_source'),
+				this.getMessage('invalid_source'),
 				{ required: false },
 			),
 			recorded_at_start: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			recorded_at_end: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
@@ -99,7 +99,7 @@ export class LogHistoryValidator extends BaseValidator<LogHistoryValidatorMessag
 		) {
 			ctx.addIssue({
 				path: ['filter', 'recorded_at_start'],
-				message: this.useMessage('invalid_date_range'),
+				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});
 		}

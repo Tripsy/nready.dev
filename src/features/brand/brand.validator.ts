@@ -18,6 +18,7 @@ const validatorMessages = {
 	invalid_slug: lang('brand.validation.invalid_slug'),
 	invalid_type: lang('brand.validation.invalid_type'),
 	invalid_status: lang('brand.validation.invalid_status'),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_language: lang('shared.validation.invalid_language'),
@@ -29,50 +30,48 @@ const validatorMessages = {
 	invalid_meta_keywords: lang('shared.validation.invalid_meta_keywords'),
 };
 
-type BrandValidatorMessages = typeof validatorMessages;
-
-export class BrandValidator extends BaseValidator<BrandValidatorMessages> {
+export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 	readonly contentSchema = z.object({
-		language: this.validateLanguage(this.useMessage('invalid_language')),
+		language: this.validateLanguage(this.getMessage('invalid_language')),
 		description: this.validateString(
-			this.useMessage('invalid_description'),
+			this.getMessage('invalid_description'),
 			{ required: false },
 		),
 		meta: this.validateMeta({
-			invalid_meta_title: this.useMessage('invalid_meta_title'),
-			invalid_meta_description: this.useMessage(
+			invalid_meta_title: this.getMessage('invalid_meta_title'),
+			invalid_meta_description: this.getMessage(
 				'invalid_meta_description',
 			),
-			invalid_meta_keywords: this.useMessage('invalid_meta_keywords'),
+			invalid_meta_keywords: this.getMessage('invalid_meta_keywords'),
 		}),
 	});
 
 	readonly create = z.object({
-		name: this.validateString(this.useMessage('invalid_name')),
-		slug: this.validateString(this.useMessage('invalid_slug')).transform(
+		name: this.validateString(this.getMessage('invalid_name')),
+		slug: this.validateString(this.getMessage('invalid_slug')).transform(
 			(val) => val.trim().toLowerCase(),
 		),
-		type: this.validateEnum(BrandTypeEnum, this.useMessage('invalid_type')),
+		type: this.validateEnum(BrandTypeEnum, this.getMessage('invalid_type')),
 		content: this.contentSchema.array(),
 	});
 
 	readonly update = z
 		.object({
-			name: this.validateString(this.useMessage('invalid_name'), {
+			name: this.validateString(this.getMessage('invalid_name'), {
 				required: false,
 			}),
-			slug: this.validateString(this.useMessage('invalid_slug'), {
+			slug: this.validateString(this.getMessage('invalid_slug'), {
 				required: false,
 			}).transform((val) => val?.trim().toLowerCase()),
 			type: this.validateEnum(
 				BrandTypeEnum,
-				this.useMessage('invalid_type'),
+				this.getMessage('invalid_type'),
 				{ required: false },
 			),
 			content: this.contentSchema.array().optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: [...paramsUpdateList, 'content'].join(', '),
 			}),
 			path: ['_global'],
@@ -89,29 +88,29 @@ export class BrandValidator extends BaseValidator<BrandValidatorMessages> {
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			type: this.validateEnum(
 				BrandTypeEnum,
-				this.useMessage('invalid_type'),
+				this.getMessage('invalid_type'),
 				{ required: false },
 			),
 			status: this.validateEnum(
 				BrandStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{ required: false },
 			),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},
@@ -121,7 +120,7 @@ export class BrandValidator extends BaseValidator<BrandValidatorMessages> {
 		positions: z
 			.array(
 				z.number({
-					message: this.useMessage('invalid_number'),
+					message: this.getMessage('invalid_number'),
 				}),
 			)
 			.min(2, {

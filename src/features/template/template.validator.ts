@@ -31,24 +31,23 @@ const validatorMessages = {
 	invalid_page_title: lang('template.validation.invalid_page_title'),
 	invalid_page_html: lang('template.validation.invalid_page_html'),
 	invalid_page_layout: lang('template.validation.invalid_page_layout'),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
 };
 
-type TemplateValidatorMessages = typeof validatorMessages;
-
-export class TemplateValidator extends BaseValidator<TemplateValidatorMessages> {
+export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 	readonly baseCreateSchema = {
-		label: this.validateString(this.useMessage('invalid_label')),
-		language: this.validateLanguage(this.useMessage('invalid_language')),
+		label: this.validateString(this.getMessage('invalid_label')),
+		language: this.validateLanguage(this.getMessage('invalid_language')),
 	};
 
 	readonly baseUpdateSchema = {
-		label: this.validateString(this.useMessage('invalid_label'), {
+		label: this.validateString(this.getMessage('invalid_label'), {
 			required: false,
 		}),
-		language: this.validateLanguage(this.useMessage('invalid_language'), {
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
 			required: false,
 		}),
 	};
@@ -60,17 +59,17 @@ export class TemplateValidator extends BaseValidator<TemplateValidatorMessages> 
 				type: z.literal(TemplateTypeEnum.EMAIL),
 				content: z.object({
 					subject: this.validateString(
-						this.useMessage('invalid_email_subject'),
+						this.getMessage('invalid_email_subject'),
 					),
 					text: this.validateString(
-						this.useMessage('invalid_email_text'),
+						this.getMessage('invalid_email_text'),
 						{ required: false },
 					),
 					html: this.validateString(
-						this.useMessage('invalid_email_html'),
+						this.getMessage('invalid_email_html'),
 					).transform((val) => safeHtml(val)),
 					layout: this.validateString(
-						this.useMessage('invalid_email_layout'),
+						this.getMessage('invalid_email_layout'),
 						{ required: false },
 					).default('default'),
 				}),
@@ -83,13 +82,13 @@ export class TemplateValidator extends BaseValidator<TemplateValidatorMessages> 
 				type: z.literal(TemplateTypeEnum.PAGE),
 				content: z.object({
 					title: this.validateString(
-						this.useMessage('invalid_page_title'),
+						this.getMessage('invalid_page_title'),
 					),
 					html: this.validateString(
-						this.useMessage('invalid_page_html'),
+						this.getMessage('invalid_page_html'),
 					).transform((val) => safeHtml(val)),
 					layout: this.validateString(
-						this.useMessage('invalid_page_layout'),
+						this.getMessage('invalid_page_layout'),
 						{ required: false },
 					).default('default'),
 				}),
@@ -106,21 +105,21 @@ export class TemplateValidator extends BaseValidator<TemplateValidatorMessages> 
 					content: z
 						.object({
 							subject: this.validateString(
-								this.useMessage('invalid_email_subject'),
+								this.getMessage('invalid_email_subject'),
 								{ required: false },
 							),
 							text: this.validateString(
-								this.useMessage('invalid_email_text'),
+								this.getMessage('invalid_email_text'),
 								{ required: false },
 							),
 							html: this.validateString(
-								this.useMessage('invalid_email_html'),
+								this.getMessage('invalid_email_html'),
 								{ required: false },
 							).transform((val) =>
 								val ? safeHtml(val) : undefined,
 							),
 							layout: this.validateString(
-								this.useMessage('invalid_email_layout'),
+								this.getMessage('invalid_email_layout'),
 								{ required: false },
 							).default('default'),
 						})
@@ -135,17 +134,17 @@ export class TemplateValidator extends BaseValidator<TemplateValidatorMessages> 
 					content: z
 						.object({
 							title: this.validateString(
-								this.useMessage('invalid_page_title'),
+								this.getMessage('invalid_page_title'),
 								{ required: false },
 							),
 							html: this.validateString(
-								this.useMessage('invalid_page_html'),
+								this.getMessage('invalid_page_html'),
 								{ required: false },
 							).transform((val) =>
 								val ? safeHtml(val) : undefined,
 							),
 							layout: this.validateString(
-								this.useMessage('invalid_page_layout'),
+								this.getMessage('invalid_page_layout'),
 								{ required: false },
 							).default('default'),
 						})
@@ -154,7 +153,7 @@ export class TemplateValidator extends BaseValidator<TemplateValidatorMessages> 
 				.extend(this.baseUpdateSchema),
 		])
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
@@ -171,24 +170,24 @@ export class TemplateValidator extends BaseValidator<TemplateValidatorMessages> 
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{ required: false },
 			),
 			type: this.validateEnum(
 				TemplateTypeEnum,
-				this.useMessage('invalid_type'),
+				this.getMessage('invalid_type'),
 				{ required: false },
 			),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},

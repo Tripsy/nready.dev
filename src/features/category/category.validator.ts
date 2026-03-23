@@ -22,6 +22,7 @@ const validatorMessages = {
 	invalid_description: lang('category.validation.invalid_description'),
 	invalid_type: lang('category.validation.invalid_type'),
 	invalid_parent_id: lang('category.validation.invalid_parent_id'),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
 	invalid_language: lang('shared.validation.invalid_language'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
@@ -29,21 +30,19 @@ const validatorMessages = {
 	invalid_status: lang('shared.validation.invalid_status'),
 };
 
-type CategoryValidatorMessages = typeof validatorMessages;
-
-export class CategoryValidator extends BaseValidator<CategoryValidatorMessages> {
+export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 	private contentSchema() {
 		return z.object({
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 			),
-			label: this.validateString(this.useMessage('invalid_label')),
+			label: this.validateString(this.getMessage('invalid_label')),
 			slug: this.validateString(
-				this.useMessage('invalid_slug'),
+				this.getMessage('invalid_slug'),
 			).transform((val) => val.trim().toLowerCase()),
 			meta: this.validateMeta(),
 			description: this.validateString(
-				this.useMessage('invalid_description'),
+				this.getMessage('invalid_description'),
 			),
 		});
 	}
@@ -51,9 +50,9 @@ export class CategoryValidator extends BaseValidator<CategoryValidatorMessages> 
 	readonly create = z.object({
 		type: this.validateEnum(
 			CategoryTypeEnum,
-			this.useMessage('invalid_type'),
+			this.getMessage('invalid_type'),
 		),
-		parent_id: this.validateId(this.useMessage('invalid_parent_id'), {
+		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 			required: false,
 		}),
 		content: this.contentSchema().array(),
@@ -61,13 +60,13 @@ export class CategoryValidator extends BaseValidator<CategoryValidatorMessages> 
 
 	readonly update = z
 		.object({
-			parent_id: this.validateId(this.useMessage('invalid_parent_id'), {
+			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 				required: false,
 			}),
 			content: this.contentSchema().array().optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: ['parent_id', 'content'].join(', '),
 			}),
 			path: ['_global'],
@@ -75,11 +74,11 @@ export class CategoryValidator extends BaseValidator<CategoryValidatorMessages> 
 
 	readonly read = z.object({
 		with_ancestors: this.validateBoolean(
-			this.useMessage('invalid_boolean'),
+			this.getMessage('invalid_boolean'),
 			{ required: false },
 		).default(false),
 		with_children: this.validateBoolean(
-			this.useMessage('invalid_boolean'),
+			this.getMessage('invalid_boolean'),
 			{ required: false },
 		).default(false),
 	});
@@ -95,29 +94,29 @@ export class CategoryValidator extends BaseValidator<CategoryValidatorMessages> 
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{ required: false },
 			),
 			type: this.validateEnum(
 				CategoryTypeEnum,
-				this.useMessage('invalid_type'),
+				this.getMessage('invalid_type'),
 				{ required: false },
 			).default(CategoryTypeEnum.ARTICLE),
 			status: this.validateEnum(
 				CategoryStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},
@@ -125,7 +124,7 @@ export class CategoryValidator extends BaseValidator<CategoryValidatorMessages> 
 
 	readonly statusUpdate = z.object({
 		// Used to force the `inactive` status update even if the category has active descendants
-		force: this.validateBoolean(this.useMessage('invalid_boolean'), {
+		force: this.validateBoolean(this.getMessage('invalid_boolean'), {
 			required: false,
 		}).default(false),
 	});

@@ -44,6 +44,7 @@ const validatorMessages = {
 	invalid_person_identification_number: lang(
 		'client.validation.invalid_person_identification_number',
 	),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
@@ -56,35 +57,33 @@ const validatorMessages = {
 	invalid_date_range: lang('shared.validation.invalid_date_range'),
 };
 
-type ClientValidatorMessages = typeof validatorMessages;
-
-export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
+export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 	readonly baseSchema = {
-		iban: this.validateIBAN(this.useMessage('invalid_iban'), {
+		iban: this.validateIBAN(this.getMessage('invalid_iban'), {
 			required: false,
 		}),
-		bank_name: this.validateString(this.useMessage('invalid_bank_name'), {
+		bank_name: this.validateString(this.getMessage('invalid_bank_name'), {
 			required: false,
 		}),
 		contact_name: this.validateString(
-			this.useMessage('invalid_contact_name'),
+			this.getMessage('invalid_contact_name'),
 			{
 				required: false,
 			},
 		),
 		contact_email: this.validateEmail(
-			this.useMessage('invalid_contact_email'),
+			this.getMessage('invalid_contact_email'),
 			{
 				required: false,
 			},
 		),
 		contact_phone: this.validatePhone(
-			this.useMessage('invalid_contact_phone'),
+			this.getMessage('invalid_contact_phone'),
 			{
 				required: false,
 			},
 		),
-		notes: this.validateString(this.useMessage('invalid_notes'), {
+		notes: this.validateString(this.getMessage('invalid_notes'), {
 			required: false,
 		}),
 	};
@@ -95,13 +94,13 @@ export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
 			.object({
 				client_type: z.literal(ClientTypeEnum.COMPANY),
 				company_name: this.validateString(
-					this.useMessage('invalid_company_name'),
+					this.getMessage('invalid_company_name'),
 				),
 				company_cui: this.validateString(
-					this.useMessage('invalid_company_cui'),
+					this.getMessage('invalid_company_cui'),
 				),
 				company_reg_com: this.validateString(
-					this.useMessage('invalid_company_reg_com'),
+					this.getMessage('invalid_company_reg_com'),
 					{
 						required: false,
 					},
@@ -119,11 +118,11 @@ export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
 				company_cui: z.never().optional(),
 				company_reg_com: z.never().optional(),
 				person_name: this.validateString(
-					this.useMessage('invalid_person_name'),
+					this.getMessage('invalid_person_name'),
 				),
 				person_identification_number:
 					this.validatePersonalIdentificationNumber(
-						this.useMessage('invalid_person_identification_number'),
+						this.getMessage('invalid_person_identification_number'),
 						{
 							required: false,
 						},
@@ -139,15 +138,15 @@ export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
 				.object({
 					client_type: z.literal(ClientTypeEnum.COMPANY),
 					company_name: this.validateString(
-						this.useMessage('invalid_company_name'),
+						this.getMessage('invalid_company_name'),
 						{ required: false },
 					),
 					company_cui: this.validateString(
-						this.useMessage('invalid_company_cui'),
+						this.getMessage('invalid_company_cui'),
 						{ required: false },
 					),
 					company_reg_com: this.validateString(
-						this.useMessage('invalid_company_reg_com'),
+						this.getMessage('invalid_company_reg_com'),
 						{
 							required: false,
 						},
@@ -165,12 +164,12 @@ export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
 					company_cui: z.never().optional(),
 					company_reg_com: z.never().optional(),
 					person_name: this.validateString(
-						this.useMessage('invalid_person_name'),
+						this.getMessage('invalid_person_name'),
 						{ required: false },
 					),
 					person_identification_number:
 						this.validatePersonalIdentificationNumber(
-							this.useMessage(
+							this.getMessage(
 								'invalid_person_identification_number',
 							),
 							{
@@ -181,7 +180,7 @@ export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
 				.extend(this.baseSchema),
 		])
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
@@ -198,43 +197,43 @@ export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			client_type: this.validateEnum(
 				ClientTypeEnum,
-				this.useMessage('invalid_type'),
+				this.getMessage('invalid_type'),
 				{ required: false },
 			).default(ClientTypeEnum.COMPANY),
 			status: this.validateEnum(
 				ClientStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			),
 			create_date_start: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			create_date_end: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},
@@ -246,7 +245,7 @@ export class ClientValidator extends BaseValidator<ClientValidatorMessages> {
 		) {
 			ctx.addIssue({
 				path: ['filter', 'create_date_start'],
-				message: this.useMessage('invalid_date_range'),
+				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});
 		}

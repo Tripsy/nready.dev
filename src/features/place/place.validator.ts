@@ -18,19 +18,18 @@ const validatorMessages = {
 	code_invalid: lang('place.validation.code_invalid'),
 	invalid_parent_id: lang('place.validation.invalid_parent_id'),
 	required_parent_id: lang('place.validation.required_parent_id'),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
 	invalid_language: lang('shared.validation.invalid_language'),
 };
 
-type PlaceValidatorMessages = typeof validatorMessages;
-
-export class PlaceValidator extends BaseValidator<PlaceValidatorMessages> {
+export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 	contentSchema() {
 		return z.object({
 			language: this.validateLanguage(),
-			name: this.validateString(this.useMessage('invalid_name')),
+			name: this.validateString(this.getMessage('invalid_name')),
 			type_label: this.validateString(
 				lang('place.validation.invalid_type_label'),
 			),
@@ -41,12 +40,12 @@ export class PlaceValidator extends BaseValidator<PlaceValidatorMessages> {
 		.object({
 			place_type: this.validateEnum(
 				PlaceTypeEnum,
-				this.useMessage('invalid_place_type'),
+				this.getMessage('invalid_place_type'),
 			),
-			code: this.validateString(this.useMessage('code_invalid'), {
+			code: this.validateString(this.getMessage('code_invalid'), {
 				required: false,
 			}),
-			parent_id: this.validateId(this.useMessage('invalid_parent_id'), {
+			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 				required: false,
 			}),
 			content: this.contentSchema().array(),
@@ -61,7 +60,7 @@ export class PlaceValidator extends BaseValidator<PlaceValidatorMessages> {
 			) {
 				ctx.addIssue({
 					path: ['parent_id'],
-					message: this.useMessage('required_parent_id'),
+					message: this.getMessage('required_parent_id'),
 					code: 'custom',
 				});
 			}
@@ -71,19 +70,19 @@ export class PlaceValidator extends BaseValidator<PlaceValidatorMessages> {
 		.object({
 			place_type: this.validateEnum(
 				PlaceTypeEnum,
-				this.useMessage('invalid_place_type'),
+				this.getMessage('invalid_place_type'),
 				{ required: false },
 			),
-			code: this.validateString(this.useMessage('code_invalid'), {
+			code: this.validateString(this.getMessage('code_invalid'), {
 				required: false,
 			}),
-			parent_id: this.validateId(this.useMessage('invalid_parent_id'), {
+			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 				required: false,
 			}),
 			content: this.contentSchema().array().optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: [...paramsUpdateList, 'content'].join(', '),
 			}),
 			path: ['_global'],
@@ -98,7 +97,7 @@ export class PlaceValidator extends BaseValidator<PlaceValidatorMessages> {
 			) {
 				ctx.addIssue({
 					path: ['parent_id'],
-					message: this.useMessage('required_parent_id'),
+					message: this.getMessage('required_parent_id'),
 					code: 'custom',
 				});
 			}
@@ -115,24 +114,24 @@ export class PlaceValidator extends BaseValidator<PlaceValidatorMessages> {
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			place_type: this.validateEnum(
 				PlaceTypeEnum,
-				this.useMessage('invalid_place_type'),
+				this.getMessage('invalid_place_type'),
 				{ required: false },
 			),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{ required: false },
 			),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},

@@ -24,9 +24,9 @@ const validatorMessages = {
 	invalid_date_range: lang('shared.validation.invalid_date_range'),
 };
 
-type MailQueueValidatorMessages = typeof validatorMessages;
-
-export class MailQueueValidator extends BaseValidator<MailQueueValidatorMessages> {
+export class MailQueueValidator extends BaseValidator<
+	typeof validatorMessages
+> {
 	readonly delete = z.object({
 		ids: z.array(
 			z.coerce
@@ -55,42 +55,42 @@ export class MailQueueValidator extends BaseValidator<MailQueueValidatorMessages
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
 			template: z.union([z.string(), z.number()]).optional(),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{ required: false },
 			),
 			status: this.validateEnum(
 				MailQueueStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			),
-			content: this.validateString(this.useMessage('invalid_string'), {
+			content: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
-			to: this.validateString(this.useMessage('invalid_string'), {
+			to: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			sent_date_start: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			sent_date_end: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
@@ -103,7 +103,7 @@ export class MailQueueValidator extends BaseValidator<MailQueueValidatorMessages
 		) {
 			ctx.addIssue({
 				path: ['filter', 'sent_date_start'],
-				message: this.useMessage('invalid_date_range'),
+				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});
 		}
