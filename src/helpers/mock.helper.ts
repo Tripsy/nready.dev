@@ -12,13 +12,13 @@ export type ValidatorOutput<V, K extends keyof V> = V[K] extends z.ZodTypeAny
 		? z.output<ReturnType<V[K]>>
 		: never;
 
-export type ValidatorShape = 'input' | 'output';
+// export type ValidatorShape = 'input' | 'output';
 
-export type ValidatorByShape<
-	TValidator extends Record<string, z.ZodTypeAny>,
-	K extends keyof TValidator,
-	S extends ValidatorShape,
-> = S extends 'input' ? z.input<TValidator[K]> : z.output<TValidator[K]>;
+// export type ValidatorByShape<
+// 	TValidator extends Record<string, z.ZodTypeAny>,
+// 	K extends keyof TValidator,
+// 	S extends ValidatorShape,
+// > = S extends 'input' ? z.input<TValidator[K]> : z.output<TValidator[K]>;
 
 // export type ValidatorPayloads<
 // 	TValidator extends Record<string, z.ZodTypeAny>,
