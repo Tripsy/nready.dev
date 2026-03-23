@@ -17,9 +17,9 @@ const validatorMessages = {
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
 };
 
-type UserPermissionValidatorMessages = typeof validatorMessages;
-
-export class UserPermissionValidator extends BaseValidator<UserPermissionValidatorMessages> {
+export class UserPermissionValidator extends BaseValidator<
+	typeof validatorMessages
+> {
 	readonly create = z.object({
 		permission_ids: z
 			.array(
@@ -50,19 +50,19 @@ export class UserPermissionValidator extends BaseValidator<UserPermissionValidat
 		defaultPage: 1,
 
 		filterShape: {
-			user_id: this.validateId(this.useMessage('invalid_number'), {
+			user_id: this.validateId(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			entity: this.validateString(this.useMessage('invalid_string'), {
+			entity: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
-			operation: this.validateString(this.useMessage('invalid_string'), {
+			operation: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},

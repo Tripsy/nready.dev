@@ -3,8 +3,7 @@
 		"invalid_name": "Name is invalid",
 		"website_invalid": "Website URL is invalid",
 		"phone_invalid": "Phone is invalid",
-		"invalid_email": "Email is invalid",
-		"invalid_notes": "Notes is invalid"
+		"invalid_email": "Email is invalid"
 	},
 	"error": {
 		"not_found": "Carrier not found",

@@ -55,6 +55,7 @@ const validatorMessages = {
 	operator_type_only_for_operator: lang(
 		'user.validation.operator_type_only_for_operator',
 	),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
@@ -65,32 +66,30 @@ const validatorMessages = {
 	invalid_date_range: lang('shared.validation.invalid_date_range'),
 };
 
-type UserValidatorMessages = typeof validatorMessages;
-
-export class UserValidator extends BaseValidator<UserValidatorMessages> {
+export class UserValidator extends BaseValidator<typeof validatorMessages> {
 	readonly create = z
 		.object({
 			name: this.validateString(
 				{
-					invalid: this.useMessage('invalid_name'),
-					min_chars: this.useMessage('name_min'),
+					invalid: this.getMessage('invalid_name'),
+					min_chars: this.getMessage('name_min'),
 				},
 				{
 					minChars: Configuration.get('user.nameMinChars') as number,
 				},
 			),
-			email: this.validateEmail(this.useMessage('invalid_email')),
+			email: this.validateEmail(this.getMessage('invalid_email')),
 			password: this.validatePassword(
 				{
-					invalid_password: this.useMessage('invalid_password'),
-					password_min: this.useMessage('password_min'),
-					password_condition_capital_letter: this.useMessage(
+					invalid_password: this.getMessage('invalid_password'),
+					password_min: this.getMessage('password_min'),
+					password_condition_capital_letter: this.getMessage(
 						'password_condition_capital_letter',
 					),
-					password_condition_number: this.useMessage(
+					password_condition_number: this.getMessage(
 						'password_condition_number',
 					),
-					password_condition_special_character: this.useMessage(
+					password_condition_special_character: this.getMessage(
 						'password_condition_special_character',
 					),
 				},
@@ -101,27 +100,27 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 				},
 			),
 			password_confirm: this.validateString(
-				this.useMessage('password_confirm_required'),
+				this.getMessage('password_confirm_required'),
 			),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{
 					required: false,
 				},
 			),
 			status: this.validateEnum(
 				UserStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			).default(UserStatusEnum.PENDING),
 			role: this.validateEnum(
 				UserRoleEnum,
-				this.useMessage('invalid_role'),
+				this.getMessage('invalid_role'),
 				{ required: false },
 			).default(UserRoleEnum.MEMBER),
 			operator_type: this.validateEnum(
 				UserOperatorTypeEnum,
-				this.useMessage('invalid_operator_type'),
+				this.getMessage('invalid_operator_type'),
 				{ required: false },
 			),
 		})
@@ -129,7 +128,7 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 			if (password !== password_confirm) {
 				ctx.addIssue({
 					path: ['password_confirm'],
-					message: this.useMessage('password_confirm_mismatch'),
+					message: this.getMessage('password_confirm_mismatch'),
 					code: 'custom',
 				});
 			}
@@ -138,7 +137,7 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 			if (role === UserRoleEnum.OPERATOR && !operator_type) {
 				ctx.addIssue({
 					path: ['operator_type'],
-					message: this.useMessage('operator_type_required'),
+					message: this.getMessage('operator_type_required'),
 					code: 'custom',
 				});
 			}
@@ -146,7 +145,7 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 			if (role !== UserRoleEnum.OPERATOR && operator_type) {
 				ctx.addIssue({
 					path: ['operator_type'],
-					message: this.useMessage('operator_type_only_for_operator'),
+					message: this.getMessage('operator_type_only_for_operator'),
 					code: 'custom',
 				});
 			}
@@ -156,28 +155,28 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 		.object({
 			name: this.validateString(
 				{
-					invalid: this.useMessage('invalid_name'),
-					min_chars: this.useMessage('name_min'),
+					invalid: this.getMessage('invalid_name'),
+					min_chars: this.getMessage('name_min'),
 				},
 				{
 					required: false,
 					minChars: Configuration.get('user.nameMinChars') as number,
 				},
 			),
-			email: this.validateEmail(this.useMessage('invalid_email'), {
+			email: this.validateEmail(this.getMessage('invalid_email'), {
 				required: false,
 			}),
 			password: this.validatePassword(
 				{
-					invalid_password: this.useMessage('invalid_password'),
-					password_min: this.useMessage('password_min'),
-					password_condition_capital_letter: this.useMessage(
+					invalid_password: this.getMessage('invalid_password'),
+					password_min: this.getMessage('password_min'),
+					password_condition_capital_letter: this.getMessage(
 						'password_condition_capital_letter',
 					),
-					password_condition_number: this.useMessage(
+					password_condition_number: this.getMessage(
 						'password_condition_number',
 					),
-					password_condition_special_character: this.useMessage(
+					password_condition_special_character: this.getMessage(
 						'password_condition_special_character',
 					),
 				},
@@ -189,33 +188,33 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 				},
 			),
 			password_confirm: this.validateString(
-				this.useMessage('password_confirm_required'),
+				this.getMessage('password_confirm_required'),
 				{ required: false },
 			),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{
 					required: false,
 				},
 			),
 			status: this.validateEnum(
 				UserStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			),
 			role: this.validateEnum(
 				UserRoleEnum,
-				this.useMessage('invalid_role'),
+				this.getMessage('invalid_role'),
 				{ required: false },
 			),
 			operator_type: this.validateEnum(
 				UserOperatorTypeEnum,
-				this.useMessage('invalid_operator_type'),
+				this.getMessage('invalid_operator_type'),
 				{ required: false },
 			),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
@@ -224,7 +223,7 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 			if (password !== password_confirm) {
 				ctx.addIssue({
 					path: ['password_confirm'],
-					message: this.useMessage('password_confirm_mismatch'),
+					message: this.getMessage('password_confirm_mismatch'),
 					code: 'custom',
 				});
 			}
@@ -237,7 +236,7 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 			) {
 				ctx.addIssue({
 					path: ['operator_type'],
-					message: this.useMessage('operator_type_required'),
+					message: this.getMessage('operator_type_required'),
 					code: 'custom',
 				});
 			}
@@ -251,7 +250,7 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 			) {
 				ctx.addIssue({
 					path: ['operator_type'],
-					message: this.useMessage('operator_type_only_for_operator'),
+					message: this.getMessage('operator_type_only_for_operator'),
 					code: 'custom',
 				});
 			}
@@ -268,43 +267,43 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			status: this.validateEnum(
 				UserStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			),
 			role: this.validateEnum(
 				UserRoleEnum,
-				this.useMessage('invalid_role'),
+				this.getMessage('invalid_role'),
 				{ required: false },
 			),
 			create_date_start: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			create_date_end: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},
@@ -316,7 +315,7 @@ export class UserValidator extends BaseValidator<UserValidatorMessages> {
 		) {
 			ctx.addIssue({
 				path: ['filter', 'create_date_start'],
-				message: this.useMessage('invalid_date_range'),
+				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});
 		}

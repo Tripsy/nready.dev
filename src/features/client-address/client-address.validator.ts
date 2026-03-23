@@ -25,30 +25,31 @@ const validatorMessages = {
 	invalid_city_id: lang('client-address.validation.invalid_city_id'),
 	invalid_details: lang('client-address.validation.invalid_details'),
 	invalid_postal_code: lang('client-address.validation.invalid_postal_code'),
-	invalid_notes: lang('client-address.validation.invalid_notes'),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
+	invalid_notes: lang('shared.validation.invalid_notes'),
 	invalid_language: lang('shared.validation.invalid_language'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
 };
 
-type ClientAddressValidatorMessages = typeof validatorMessages;
-
-export class ClientAddressValidator extends BaseValidator<ClientAddressValidatorMessages> {
+export class ClientAddressValidator extends BaseValidator<
+	typeof validatorMessages
+> {
 	readonly create = z.object({
 		address_type: this.validateEnum(
 			ClientAddressTypeEnum,
-			this.useMessage('invalid_address_type'),
+			this.getMessage('invalid_address_type'),
 		),
-		city_id: this.validateId(this.useMessage('invalid_city_id'), {
+		city_id: this.validateId(this.getMessage('invalid_city_id'), {
 			required: false,
 		}),
-		details: this.validateString(this.useMessage('invalid_details')),
+		details: this.validateString(this.getMessage('invalid_details')),
 		postal_code: this.validatePostalCode(
-			this.useMessage('invalid_postal_code'),
+			this.getMessage('invalid_postal_code'),
 			{ required: false },
 		),
-		notes: this.validateString(this.useMessage('invalid_notes'), {
+		notes: this.validateString(this.getMessage('invalid_notes'), {
 			required: false,
 		}),
 	});
@@ -57,25 +58,25 @@ export class ClientAddressValidator extends BaseValidator<ClientAddressValidator
 		.object({
 			address_type: this.validateEnum(
 				ClientAddressTypeEnum,
-				this.useMessage('invalid_address_type'),
+				this.getMessage('invalid_address_type'),
 				{ required: false },
 			),
-			city_id: this.validateId(this.useMessage('invalid_city_id'), {
+			city_id: this.validateId(this.getMessage('invalid_city_id'), {
 				required: false,
 			}),
-			details: this.validateString(this.useMessage('invalid_details'), {
+			details: this.validateString(this.getMessage('invalid_details'), {
 				required: false,
 			}),
 			postal_code: this.validatePostalCode(
-				this.useMessage('invalid_postal_code'),
+				this.getMessage('invalid_postal_code'),
 				{ required: false },
 			),
-			notes: this.validateString(this.useMessage('invalid_notes'), {
+			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
@@ -92,27 +93,27 @@ export class ClientAddressValidator extends BaseValidator<ClientAddressValidator
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			client_id: this.validateId(this.useMessage('invalid_number'), {
+			client_id: this.validateId(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			address_type: this.validateEnum(
 				ClientAddressTypeEnum,
-				this.useMessage('invalid_address_type'),
+				this.getMessage('invalid_address_type'),
 				{ required: false },
 			),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{ required: false },
 			),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import dayjs from '@/config/dayjs.config';
 import { Configuration } from '@/config/settings.config';
-import { isValidDate } from '@/helpers';
+import { isValidDate, replaceVars } from '@/helpers';
 
 export abstract class IsValidator {
 	/**
@@ -71,8 +71,14 @@ export abstract class BaseValidator<
 		super();
 	}
 
-	protected useMessage(key: keyof TMessage) {
-		return this.message[key];
+	protected getMessage(key: keyof TMessage, vars?: Record<string, string>) {
+		const message = this.message[key];
+
+		if (!vars) {
+			return message;
+		}
+
+		return replaceVars(message, vars);
 	}
 
 	/**

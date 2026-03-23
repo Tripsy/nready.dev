@@ -35,33 +35,31 @@ const validatorMessages = {
 	invalid_ident: lang('account.validation.invalid_ident'),
 };
 
-type AccountValidatorMessages = typeof validatorMessages;
-
-export class AccountValidator extends BaseValidator<AccountValidatorMessages> {
+export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 	readonly register = z
 		.object({
 			name: this.validateString(
 				{
-					invalid: this.useMessage('invalid_name'),
-					min_chars: this.useMessage('name_min'),
+					invalid: this.getMessage('invalid_name'),
+					min_chars: this.getMessage('name_min'),
 				},
 				{
 					required: true,
 					minChars: Configuration.get('user.nameMinChars') as number,
 				},
 			),
-			email: this.validateEmail(this.useMessage('invalid_email')),
+			email: this.validateEmail(this.getMessage('invalid_email')),
 			password: this.validatePassword(
 				{
-					invalid_password: this.useMessage('invalid_password'),
-					password_min: this.useMessage('password_min'),
-					password_condition_capital_letter: this.useMessage(
+					invalid_password: this.getMessage('invalid_password'),
+					password_min: this.getMessage('password_min'),
+					password_condition_capital_letter: this.getMessage(
 						'password_condition_capital_letter',
 					),
-					password_condition_number: this.useMessage(
+					password_condition_number: this.getMessage(
 						'password_condition_number',
 					),
-					password_condition_special_character: this.useMessage(
+					password_condition_special_character: this.getMessage(
 						'password_condition_special_character',
 					),
 				},
@@ -73,10 +71,10 @@ export class AccountValidator extends BaseValidator<AccountValidatorMessages> {
 				},
 			),
 			password_confirm: this.validateString(
-				this.useMessage('password_confirm_required'),
+				this.getMessage('password_confirm_required'),
 			),
 			language: this.validateLanguage(
-				this.useMessage('invalid_language'),
+				this.getMessage('invalid_language'),
 				{
 					required: false,
 				},
@@ -86,34 +84,34 @@ export class AccountValidator extends BaseValidator<AccountValidatorMessages> {
 			if (password !== password_confirm) {
 				ctx.addIssue({
 					path: ['password_confirm'],
-					message: this.useMessage('password_confirm_mismatch'),
+					message: this.getMessage('password_confirm_mismatch'),
 					code: 'custom',
 				});
 			}
 		});
 
 	readonly login = z.object({
-		email: this.validateEmail(this.useMessage('invalid_email')),
-		password: this.validateString(this.useMessage('invalid_password')),
+		email: this.validateEmail(this.getMessage('invalid_email')),
+		password: this.validateString(this.getMessage('invalid_password')),
 	});
 
 	readonly passwordRecover = z.object({
-		email: this.validateEmail(this.useMessage('invalid_email')),
+		email: this.validateEmail(this.getMessage('invalid_email')),
 	});
 
 	readonly passwordRecoverChange = z
 		.object({
 			password: this.validatePassword(
 				{
-					invalid_password: this.useMessage('invalid_password'),
-					password_min: this.useMessage('password_min'),
-					password_condition_capital_letter: this.useMessage(
+					invalid_password: this.getMessage('invalid_password'),
+					password_min: this.getMessage('password_min'),
+					password_condition_capital_letter: this.getMessage(
 						'password_condition_capital_letter',
 					),
-					password_condition_number: this.useMessage(
+					password_condition_number: this.getMessage(
 						'password_condition_number',
 					),
-					password_condition_special_character: this.useMessage(
+					password_condition_special_character: this.getMessage(
 						'password_condition_special_character',
 					),
 				},
@@ -125,14 +123,14 @@ export class AccountValidator extends BaseValidator<AccountValidatorMessages> {
 				},
 			),
 			password_confirm: this.validateString(
-				this.useMessage('password_confirm_required'),
+				this.getMessage('password_confirm_required'),
 			),
 		})
 		.superRefine(({ password, password_confirm }, ctx) => {
 			if (password !== password_confirm) {
 				ctx.addIssue({
 					path: ['password_confirm'],
-					message: this.useMessage('password_confirm_mismatch'),
+					message: this.getMessage('password_confirm_mismatch'),
 					code: 'custom',
 				});
 			}
@@ -141,19 +139,19 @@ export class AccountValidator extends BaseValidator<AccountValidatorMessages> {
 	readonly passwordUpdate = z
 		.object({
 			password_current: this.validateString(
-				this.useMessage('invalid_password_current'),
+				this.getMessage('invalid_password_current'),
 			),
 			password_new: this.validatePassword(
 				{
-					invalid_password: this.useMessage('invalid_password'),
-					password_min: this.useMessage('password_min'),
-					password_condition_capital_letter: this.useMessage(
+					invalid_password: this.getMessage('invalid_password'),
+					password_min: this.getMessage('password_min'),
+					password_condition_capital_letter: this.getMessage(
 						'password_condition_capital_letter',
 					),
-					password_condition_number: this.useMessage(
+					password_condition_number: this.getMessage(
 						'password_condition_number',
 					),
-					password_condition_special_character: this.useMessage(
+					password_condition_special_character: this.getMessage(
 						'password_condition_special_character',
 					),
 				},
@@ -165,52 +163,52 @@ export class AccountValidator extends BaseValidator<AccountValidatorMessages> {
 				},
 			),
 			password_confirm: this.validateString(
-				this.useMessage('password_confirm_required'),
+				this.getMessage('password_confirm_required'),
 			),
 		})
 		.superRefine(({ password_new, password_confirm }, ctx) => {
 			if (password_new !== password_confirm) {
 				ctx.addIssue({
 					path: ['password_confirm'],
-					message: this.useMessage('password_confirm_mismatch'),
+					message: this.getMessage('password_confirm_mismatch'),
 					code: 'custom',
 				});
 			}
 		});
 
 	readonly emailConfirmSend = z.object({
-		email: this.validateEmail(this.useMessage('invalid_email')),
+		email: this.validateEmail(this.getMessage('invalid_email')),
 	});
 
 	readonly emailUpdate = z.object({
-		email_new: this.validateEmail(this.useMessage('invalid_email')),
+		email_new: this.validateEmail(this.getMessage('invalid_email')),
 	});
 
 	readonly removeToken = z.object({
 		ident: z.uuid({
-			message: this.useMessage('invalid_ident'),
+			message: this.getMessage('invalid_ident'),
 		}),
 	});
 
 	readonly meEdit = z.object({
 		name: this.validateString(
 			{
-				invalid: this.useMessage('invalid_name'),
-				min_chars: this.useMessage('name_min'),
+				invalid: this.getMessage('invalid_name'),
+				min_chars: this.getMessage('name_min'),
 			},
 			{
 				required: true,
 				minChars: Configuration.get('user.nameMinChars') as number,
 			},
 		),
-		language: this.validateLanguage(this.useMessage('invalid_language'), {
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
 			required: false,
 		}),
 	});
 
 	readonly meDelete = z.object({
 		password_current: this.validateString(
-			this.useMessage('invalid_password_current'),
+			this.getMessage('invalid_password_current'),
 		),
 	});
 }

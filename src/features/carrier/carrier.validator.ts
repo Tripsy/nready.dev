@@ -25,51 +25,50 @@ const validatorMessages = {
 	invalid_website: lang('carrier.validation.invalid_website'),
 	invalid_phone: lang('carrier.validation.invalid_phone'),
 	invalid_email: lang('carrier.validation.invalid_email'),
-	invalid_notes: lang('carrier.validation.invalid_notes'),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
+	invalid_notes: lang('shared.validation.invalid_notes'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
 };
 
-type CarrierValidatorMessages = typeof validatorMessages;
-
-export class CarrierValidator extends BaseValidator<CarrierValidatorMessages> {
+export class CarrierValidator extends BaseValidator<typeof validatorMessages> {
 	readonly create = z.object({
-		name: this.validateString(this.useMessage('invalid_name')),
-		website: this.validateString(this.useMessage('invalid_website'), {
+		name: this.validateString(this.getMessage('invalid_name')),
+		website: this.validateString(this.getMessage('invalid_website'), {
 			required: false,
 		}),
-		phone: this.validatePhone(this.useMessage('invalid_phone'), {
+		phone: this.validatePhone(this.getMessage('invalid_phone'), {
 			required: false,
 		}),
-		email: this.validateEmail(this.useMessage('invalid_email'), {
+		email: this.validateEmail(this.getMessage('invalid_email'), {
 			required: false,
 		}),
-		notes: this.validateString(this.useMessage('invalid_notes'), {
+		notes: this.validateString(this.getMessage('invalid_notes'), {
 			required: false,
 		}),
 	});
 
 	readonly update = z
 		.object({
-			name: this.validateString(this.useMessage('invalid_name'), {
+			name: this.validateString(this.getMessage('invalid_name'), {
 				required: false,
 			}),
-			website: this.validateString(this.useMessage('invalid_website'), {
+			website: this.validateString(this.getMessage('invalid_website'), {
 				required: false,
 			}),
-			phone: this.validatePhone(this.useMessage('invalid_phone'), {
+			phone: this.validatePhone(this.getMessage('invalid_phone'), {
 				required: false,
 			}),
-			email: this.validateEmail(this.useMessage('invalid_email'), {
+			email: this.validateEmail(this.getMessage('invalid_email'), {
 				required: false,
 			}),
-			notes: this.validateString(this.useMessage('invalid_notes'), {
+			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
@@ -86,15 +85,15 @@ export class CarrierValidator extends BaseValidator<CarrierValidatorMessages> {
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},

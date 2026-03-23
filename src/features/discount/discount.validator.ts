@@ -43,13 +43,14 @@ const validatorMessages = {
 	invalid_value: lang('discount.validation.invalid_value'),
 	invalid_start_at: lang('discount.validation.invalid_start_at'),
 	invalid_end_at: lang('discount.validation.invalid_end_at'),
-	invalid_notes: lang('shared.validation.invalid_notes'),
 	end_at_must_be_after_start_at: lang(
 		'discount.validation.end_at_must_be_after_start_at',
 	),
 	percent_must_be_between_0_and_100: lang(
 		'discount.validation.percent_must_be_between_0_and_100',
 	),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
+	invalid_notes: lang('shared.validation.invalid_notes'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
@@ -61,9 +62,7 @@ const validatorMessages = {
 	invalid_date_range: lang('shared.validation.invalid_date_range'),
 };
 
-type DiscountValidatorMessages = typeof validatorMessages;
-
-export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> {
+export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 	rulesSchema: z.ZodType<DiscountRules> = z.record(
 		z.string(), // Keys are strings
 		z.union([
@@ -75,37 +74,37 @@ export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> 
 
 	readonly create = z
 		.object({
-			label: this.validateString(this.useMessage('invalid_label')),
+			label: this.validateString(this.getMessage('invalid_label')),
 			scope: this.validateEnum(
 				DiscountScopeEnum,
-				this.useMessage('invalid_scope'),
+				this.getMessage('invalid_scope'),
 			),
 			reason: this.validateEnum(
 				DiscountReasonEnum,
-				this.useMessage('invalid_reason'),
+				this.getMessage('invalid_reason'),
 			),
 			reference: this.validateString(
-				this.useMessage('invalid_reference'),
+				this.getMessage('invalid_reference'),
 			),
 			type: this.validateEnum(
 				DiscountTypeEnum,
-				this.useMessage('invalid_type'),
+				this.getMessage('invalid_type'),
 			),
 			rules: this.rulesSchema.optional(),
-			value: this.validateNumber(this.useMessage('invalid_number'), {
+			value: this.validateNumber(this.getMessage('invalid_number'), {
 				required: true,
 				onlyPositive: true,
 				allowDecimals: true,
 			}),
-			start_at: this.validateDate(this.useMessage('invalid_start_at'), {
+			start_at: this.validateDate(this.getMessage('invalid_start_at'), {
 				required: false,
 				maxPastSeconds: 0,
 			}),
-			end_at: this.validateDate(this.useMessage('invalid_end_at'), {
+			end_at: this.validateDate(this.getMessage('invalid_end_at'), {
 				required: false,
 				maxPastSeconds: 0,
 			}),
-			notes: this.validateString(this.useMessage('invalid_notes'), {
+			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),
 		})
@@ -113,7 +112,7 @@ export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> 
 			if (data.end_at && data.start_at && data.end_at <= data.start_at) {
 				ctx.addIssue({
 					path: ['end_at'],
-					message: this.useMessage('end_at_must_be_after_start_at'),
+					message: this.getMessage('end_at_must_be_after_start_at'),
 					code: 'custom',
 				});
 			}
@@ -126,7 +125,7 @@ export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> 
 			) {
 				ctx.addIssue({
 					path: ['value'],
-					message: this.useMessage(
+					message: this.getMessage(
 						'percent_must_be_between_0_and_100',
 					),
 					code: 'custom',
@@ -136,48 +135,48 @@ export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> 
 
 	readonly update = z
 		.object({
-			label: this.validateString(this.useMessage('invalid_label'), {
+			label: this.validateString(this.getMessage('invalid_label'), {
 				required: false,
 			}),
 			scope: this.validateEnum(
 				DiscountScopeEnum,
-				this.useMessage('invalid_scope'),
+				this.getMessage('invalid_scope'),
 				{ required: false },
 			),
 			reason: this.validateEnum(
 				DiscountReasonEnum,
-				this.useMessage('invalid_reason'),
+				this.getMessage('invalid_reason'),
 				{ required: false },
 			),
 			reference: this.validateString(
-				this.useMessage('invalid_reference'),
+				this.getMessage('invalid_reference'),
 				{ required: false },
 			),
 			type: this.validateEnum(
 				DiscountTypeEnum,
-				this.useMessage('invalid_type'),
+				this.getMessage('invalid_type'),
 				{ required: false },
 			),
 			rules: this.rulesSchema.optional(),
-			value: this.validateNumber(this.useMessage('invalid_number'), {
+			value: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 				onlyPositive: true,
 				allowDecimals: true,
 			}),
-			start_at: this.validateDate(this.useMessage('invalid_start_at'), {
+			start_at: this.validateDate(this.getMessage('invalid_start_at'), {
 				required: false,
 				maxPastSeconds: 0,
 			}),
-			end_at: this.validateDate(this.useMessage('invalid_end_at'), {
+			end_at: this.validateDate(this.getMessage('invalid_end_at'), {
 				required: false,
 				maxPastSeconds: 0,
 			}),
-			notes: this.validateString(this.useMessage('invalid_notes'), {
+			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
@@ -186,7 +185,7 @@ export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> 
 			if (data.end_at && data.start_at && data.end_at <= data.start_at) {
 				ctx.addIssue({
 					path: ['end_at'],
-					message: this.useMessage('end_at_must_be_after_start_at'),
+					message: this.getMessage('end_at_must_be_after_start_at'),
 					code: 'custom',
 				});
 			}
@@ -199,7 +198,7 @@ export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> 
 			) {
 				ctx.addIssue({
 					path: ['value'],
-					message: this.useMessage(
+					message: this.getMessage(
 						'percent_must_be_between_0_and_100',
 					),
 					code: 'custom',
@@ -218,51 +217,51 @@ export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> 
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			scope: this.validateEnum(
 				DiscountScopeEnum,
-				this.useMessage('invalid_scope'),
+				this.getMessage('invalid_scope'),
 				{ required: false },
 			),
 			reason: this.validateEnum(
 				DiscountReasonEnum,
-				this.useMessage('invalid_reason'),
+				this.getMessage('invalid_reason'),
 				{ required: false },
 			),
 			type: this.validateEnum(
 				DiscountTypeEnum,
-				this.useMessage('invalid_type'),
+				this.getMessage('invalid_type'),
 				{ required: false },
 			),
-			reference: this.validateString(this.useMessage('invalid_string'), {
+			reference: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 			}),
 			start_at_start: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			start_at_end: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},
@@ -274,7 +273,7 @@ export class DiscountValidator extends BaseValidator<DiscountValidatorMessages> 
 		) {
 			ctx.addIssue({
 				path: ['filter', 'start_at_start'],
-				message: this.useMessage('invalid_date_range'),
+				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});
 		}

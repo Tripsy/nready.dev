@@ -48,6 +48,7 @@ const validatorMessages = {
 		'cash-flow.validation.invalid_external_reference',
 	),
 	invalid_parent_id: lang('cash-flow.validation.invalid_parent_id'),
+	params_at_least_one: lang('shared.validation.params_at_least_one'),
 	invalid_notes: lang('shared.validation.invalid_notes'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
@@ -59,48 +60,46 @@ const validatorMessages = {
 	invalid_future_date: lang('shared.validation.invalid_future_date'),
 };
 
-type CashFlowValidatorMessages = typeof validatorMessages;
-
-export class CashFlowValidator extends BaseValidator<CashFlowValidatorMessages> {
+export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 	readonly create = z.object({
 		direction: this.validateEnum(
 			CashFlowDirectionEnum,
-			this.useMessage('invalid_direction'),
+			this.getMessage('invalid_direction'),
 		),
 		category_type: this.validateEnum(
 			CashFlowCategoryTypeEnum,
-			this.useMessage('invalid_category_type'),
+			this.getMessage('invalid_category_type'),
 		),
 		category: this.validateEnum(
 			CashFlowCategoryEnum,
-			this.useMessage('invalid_category'),
+			this.getMessage('invalid_category'),
 		),
 		gateway: this.validateEnum(
 			CashFlowGatewayEnum,
-			this.useMessage('invalid_gateway'),
+			this.getMessage('invalid_gateway'),
 		),
 		method: this.validateEnum(
 			CashFlowMethodEnum,
-			this.useMessage('invalid_method'),
+			this.getMessage('invalid_method'),
 		),
-		amount: this.validateNumber(this.useMessage('invalid_amount')),
-		vat_rate: this.validateNumber(this.useMessage('invalid_vat_rate'), {
+		amount: this.validateNumber(this.getMessage('invalid_amount')),
+		vat_rate: this.validateNumber(this.getMessage('invalid_vat_rate'), {
 			required: true,
 			onlyPositive: true,
 			allowDecimals: true,
 		}),
 		currency: this.validateEnum(
 			CurrencyEnum,
-			this.useMessage('invalid_currency'),
+			this.getMessage('invalid_currency'),
 		),
 		external_reference: this.validateString(
-			this.useMessage('invalid_external_reference'),
+			this.getMessage('invalid_external_reference'),
 			{ required: false },
 		),
-		parent_id: this.validateId(this.useMessage('invalid_parent_id'), {
+		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 			required: false,
 		}),
-		notes: this.validateString(this.useMessage('invalid_notes'), {
+		notes: this.validateString(this.getMessage('invalid_notes'), {
 			required: false,
 		}),
 	});
@@ -109,50 +108,50 @@ export class CashFlowValidator extends BaseValidator<CashFlowValidatorMessages> 
 		.object({
 			direction: this.validateEnum(
 				CashFlowDirectionEnum,
-				this.useMessage('invalid_direction'),
+				this.getMessage('invalid_direction'),
 				{ required: false },
 			),
 			category_type: this.validateEnum(
 				CashFlowCategoryTypeEnum,
-				this.useMessage('invalid_category_type'),
+				this.getMessage('invalid_category_type'),
 				{ required: false },
 			),
 			category: this.validateEnum(
 				CashFlowCategoryEnum,
-				this.useMessage('invalid_category'),
+				this.getMessage('invalid_category'),
 				{ required: false },
 			),
 			gateway: this.validateEnum(
 				CashFlowGatewayEnum,
-				this.useMessage('invalid_gateway'),
+				this.getMessage('invalid_gateway'),
 				{ required: false },
 			),
 			method: this.validateEnum(
 				CashFlowMethodEnum,
-				this.useMessage('invalid_method'),
+				this.getMessage('invalid_method'),
 				{ required: false },
 			),
-			amount: this.validateNumber(this.useMessage('invalid_amount')),
-			vat_rate: this.validateNumber(this.useMessage('invalid_vat_rate'), {
+			amount: this.validateNumber(this.getMessage('invalid_amount')),
+			vat_rate: this.validateNumber(this.getMessage('invalid_vat_rate'), {
 				required: false,
 				onlyPositive: true,
 				allowDecimals: true,
 			}),
 			currency: this.validateEnum(
 				CurrencyEnum,
-				this.useMessage('invalid_currency'),
+				this.getMessage('invalid_currency'),
 				{ required: false },
 			),
 			external_reference: this.validateString(
-				this.useMessage('invalid_external_reference'),
+				this.getMessage('invalid_external_reference'),
 				{ required: false },
 			),
-			notes: this.validateString(this.useMessage('invalid_notes'), {
+			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
-			message: lang('shared.validation.params_at_least_one', {
+			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
@@ -160,7 +159,7 @@ export class CashFlowValidator extends BaseValidator<CashFlowValidatorMessages> 
 
 	readonly delete = z.object({
 		// Used to force deletion even when selected entry has refunds (which will also be deleted)
-		force: this.validateBoolean(this.useMessage('invalid_boolean'), {
+		force: this.validateBoolean(this.getMessage('invalid_boolean'), {
 			required: false,
 		}).default(false),
 	});
@@ -176,63 +175,63 @@ export class CashFlowValidator extends BaseValidator<CashFlowValidatorMessages> 
 		defaultPage: 1,
 
 		filterShape: {
-			id: this.validateNumber(this.useMessage('invalid_number'), {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
 			direction: this.validateEnum(
 				CashFlowDirectionEnum,
-				this.useMessage('invalid_direction'),
+				this.getMessage('invalid_direction'),
 				{ required: false },
 			),
 			category_type: this.validateEnum(
 				CashFlowCategoryTypeEnum,
-				this.useMessage('invalid_category_type'),
+				this.getMessage('invalid_category_type'),
 				{ required: false },
 			),
 			category: this.validateEnum(
 				CashFlowCategoryEnum,
-				this.useMessage('invalid_category'),
+				this.getMessage('invalid_category'),
 				{ required: false },
 			),
 			gateway: this.validateEnum(
 				CashFlowGatewayEnum,
-				this.useMessage('invalid_gateway'),
+				this.getMessage('invalid_gateway'),
 				{ required: false },
 			),
 			method: this.validateEnum(
 				CashFlowMethodEnum,
-				this.useMessage('invalid_method'),
+				this.getMessage('invalid_method'),
 				{ required: false },
 			),
 			status: this.validateEnum(
 				CashFlowStatusEnum,
-				this.useMessage('invalid_status'),
+				this.getMessage('invalid_status'),
 				{ required: false },
 			),
 			create_date_start: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
 			create_date_end: this.validateDate(
 				{
-					invalid_date: this.useMessage('invalid_date'),
-					invalid_date_format: this.useMessage('invalid_date_format'),
-					invalid_past_date: this.useMessage('invalid_past_date'),
-					invalid_future_date: this.useMessage('invalid_future_date'),
+					invalid_date: this.getMessage('invalid_date'),
+					invalid_date_format: this.getMessage('invalid_date_format'),
+					invalid_past_date: this.getMessage('invalid_past_date'),
+					invalid_future_date: this.getMessage('invalid_future_date'),
 				},
 				{ required: false },
 			),
-			term: this.validateString(this.useMessage('invalid_string'), {
+			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
 			is_deleted: this.validateBoolean(
-				this.useMessage('invalid_boolean'),
+				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
 		},
