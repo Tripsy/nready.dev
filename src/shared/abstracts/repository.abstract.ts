@@ -492,6 +492,19 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 		return this;
 	}
 
+	/**
+	 * Add a raw SQL filter condition
+	 *
+	 * @param sql - Raw SQL condition (e.g., "to_tsvector('simple', name) @@ plainto_tsquery('simple', :term)")
+	 * @param parameters - Parameters for the SQL condition
+	 * @returns this instance for chaining
+	 */
+	filterRaw(sql: string, parameters: Record<string, QueryValue> = {}): this {
+		this.query.andWhere(sql, parameters);
+
+		return this;
+	}
+
 	filterByRange(
 		column: string,
 		min?: Date | number | null,

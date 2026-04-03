@@ -267,8 +267,8 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.start_at_start &&
-			data.filter.start_at_end &&
+			data.filter?.start_at_start &&
+			data.filter?.start_at_end &&
 			data.filter.start_at_start > data.filter.start_at_end
 		) {
 			ctx.addIssue({

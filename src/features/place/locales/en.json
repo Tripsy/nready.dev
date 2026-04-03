@@ -16,7 +16,8 @@
 		"cannot_change_type_with_children": "Type cannot be changed. This place has children(s).",
 		"cannot_delete_with_children": "This place has children(s) and cannot be deleted.",
 		"parent_not_found": "Parent place not found",
-		"invalid_parent_type": "Invalid parent type"
+		"invalid_parent_type": "Invalid parent type",
+		"parent_required": "Parent ID required for region & city types"
 	},
 	"success": {
 		"create": "Place created successfully",

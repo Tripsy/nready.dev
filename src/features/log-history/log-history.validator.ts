@@ -13,7 +13,7 @@ export enum OrderByEnum {
 }
 
 const validatorMessages = {
-	invalid_source: lang('log_history.validation.invalid_source'),
+	invalid_source: lang('log-history.validation.invalid_source'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
@@ -93,8 +93,8 @@ export class LogHistoryValidator extends BaseValidator<
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.recorded_at_start &&
-			data.filter.recorded_at_end &&
+			data.filter?.recorded_at_start &&
+			data.filter?.recorded_at_end &&
 			data.filter.recorded_at_start > data.filter.recorded_at_end
 		) {
 			ctx.addIssue({

@@ -1,7 +1,7 @@
 import type { Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { Configuration } from '@/config/settings.config';
-import ClientEntity from '@/features/client/client.entity';
+import ClientEntity, { ClientTypeEnum } from '@/features/client/client.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
 export class ClientQuery extends RepositoryAbstract<ClientEntity> {
@@ -9,7 +9,7 @@ export class ClientQuery extends RepositoryAbstract<ClientEntity> {
 		super(repository, ClientEntity.NAME);
 	}
 
-	filterByTerm(term?: string): this {
+	filterByTerm(term?: string, client_type?: ClientTypeEnum): this {
 		if (term) {
 			if (!Number.isNaN(Number(term)) && term.trim() !== '') {
 				this.filterBy('id', Number(term));
@@ -18,7 +18,7 @@ export class ClientQuery extends RepositoryAbstract<ClientEntity> {
 					term.length >
 					(Configuration.get('filter.termMinLength') as number)
 				) {
-					this.filterAny([
+					const companyFilters = [
 						{
 							column: 'company_name',
 							value: term,
@@ -34,6 +34,9 @@ export class ClientQuery extends RepositoryAbstract<ClientEntity> {
 							value: term,
 							operator: 'ILIKE',
 						},
+					];
+
+					const personFilters = [
 						{
 							column: 'person_name',
 							value: term,
@@ -44,7 +47,22 @@ export class ClientQuery extends RepositoryAbstract<ClientEntity> {
 							value: term,
 							operator: 'ILIKE',
 						},
-					]);
+					];
+
+					switch (client_type) {
+						case ClientTypeEnum.COMPANY:
+							this.filterAny(companyFilters);
+							break;
+						case ClientTypeEnum.PERSON:
+							this.filterAny(personFilters);
+							break;
+						default:
+							this.filterAny([
+								...companyFilters,
+								...personFilters,
+							]);
+							break;
+					}
 				}
 			}
 		}

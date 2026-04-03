@@ -64,7 +64,7 @@ export class CategoryService {
 
 			await CategoryContentRepository.saveContent(
 				manager,
-				data.content,
+				data.contents,
 				entrySaved.id,
 				entrySaved.type,
 			);
@@ -156,10 +156,10 @@ export class CategoryService {
 				}
 			}
 
-			if (data.content) {
+			if (data.contents) {
 				await CategoryContentRepository.saveContent(
 					manager,
-					data.content,
+					data.contents,
 					category.id,
 					category.type,
 				);

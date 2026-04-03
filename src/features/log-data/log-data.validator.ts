@@ -15,8 +15,8 @@ export enum OrderByEnum {
 }
 
 const validatorMessages = {
-	invalid_category: lang('log_data.validation.invalid_category'),
-	invalid_level: lang('log_data.validation.invalid_level'),
+	invalid_category: lang('log-data.validation.invalid_category'),
+	invalid_level: lang('log-data.validation.invalid_level'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
@@ -94,8 +94,8 @@ export class LogDataValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.create_date_start &&
-			data.filter.create_date_end &&
+			data.filter?.create_date_start &&
+			data.filter?.create_date_end &&
 			data.filter.create_date_start > data.filter.create_date_end
 		) {
 			ctx.addIssue({

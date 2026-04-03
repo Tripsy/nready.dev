@@ -87,8 +87,8 @@ export class CronHistoryValidator extends BaseValidator<
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.start_date_start &&
-			data.filter.start_date_end &&
+			data.filter?.start_date_start &&
+			data.filter?.start_date_end &&
 			data.filter.start_date_start > data.filter.start_date_end
 		) {
 			ctx.addIssue({

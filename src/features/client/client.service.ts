@@ -200,7 +200,7 @@ export class ClientService {
 				data.filter.create_date_start,
 				data.filter.create_date_end,
 			)
-			.filterByTerm(data.filter.term)
+			.filterByTerm(data.filter.term, data.filter.client_type)
 			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit)

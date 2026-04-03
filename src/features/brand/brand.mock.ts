@@ -25,7 +25,7 @@ export const brandInputPayloads = {
 		name: 'Pepsi',
 		slug: 'pepsi',
 		type: BrandTypeEnum.PRODUCT,
-		content: [
+		contents: [
 			{
 				language: 'en',
 				description: 'Juicy juice',
@@ -41,7 +41,7 @@ export const brandInputPayloads = {
 		name: 'Pepsi',
 		slug: 'pepsi',
 		type: BrandTypeEnum.PRODUCT,
-		content: [
+		contents: [
 			{
 				language: 'en',
 				description: 'Juicy juice',

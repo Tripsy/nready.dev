@@ -260,14 +260,15 @@ $ pnpm run madge
 
 # 📌 TODO
 
-1. Does it make sense to have validator test considering the new way mocks are created?
-2. Go on FE → client, client_address, place, brand, cash-flow
-3. Go on FE → category
-4. Deploy on AWS
-5. API documentation
+1. 'no-console': 'warn', 
+2. Does it make sense to have validator test considering the new way mocks are created?
+3. Go on FE → client, client_address, place, brand, cash-flow
+4. Go on FE → category
+5. Deploy on AWS
+6. API documentation
     > done for discounts
     > do for: account, category, carrier, cash-flow, client, cron-history, log-history, mail-queue, permission, place, template, user-permission
-6. create CLI script which should generate something like:
+7. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -289,11 +290,11 @@ $ pnpm run madge
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-7. Tests for account-recovery.service.ts are missing 
-8. feature - images  (image-content)
-9. Go on FE #3 → image (multer - File upload handling)
-10. Go on FE #2 → carrier, discount,
-11. wip entities:
+8. Tests for account-recovery.service.ts are missing 
+9. feature - images  (image-content)
+10. Go on FE #3 → image (multer - File upload handling)
+11. Go on FE #2 → carrier, discount,
+12. wip entities:
      - article
          - article-category
          - article-content
@@ -312,8 +313,8 @@ $ pnpm run madge
      - subscription
          - subscription-evidence
      - term
-12. For reporting create separate DB table (in a new schema `reporting`). This new table can be updated via subscribers.
-13. cron hanging / delaying / semaphore 
+13. For reporting create separate DB table (in a new schema `reporting`). This new table can be updated via subscribers.
+14. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

@@ -309,8 +309,8 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.create_date_start &&
-			data.filter.create_date_end &&
+			data.filter?.create_date_start &&
+			data.filter?.create_date_end &&
 			data.filter.create_date_start > data.filter.create_date_end
 		) {
 			ctx.addIssue({

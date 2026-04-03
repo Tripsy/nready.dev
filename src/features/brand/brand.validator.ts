@@ -31,7 +31,7 @@ const validatorMessages = {
 };
 
 export class BrandValidator extends BaseValidator<typeof validatorMessages> {
-	readonly contentSchema = z.object({
+	readonly contentsSchema = z.object({
 		language: this.validateLanguage(this.getMessage('invalid_language')),
 		description: this.validateString(
 			this.getMessage('invalid_description'),
@@ -52,7 +52,7 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 			(val) => val.trim().toLowerCase(),
 		),
 		type: this.validateEnum(BrandTypeEnum, this.getMessage('invalid_type')),
-		content: this.contentSchema.array(),
+		contents: this.contentsSchema.array(),
 	});
 
 	readonly update = z
@@ -68,11 +68,11 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_type'),
 				{ required: false },
 			),
-			content: this.contentSchema.array().optional(),
+			contents: this.contentsSchema.array().optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
 			message: this.getMessage('params_at_least_one', {
-				params: [...paramsUpdateList, 'content'].join(', '),
+				params: [...paramsUpdateList, 'contents'].join(', '),
 			}),
 			path: ['_global'],
 		});

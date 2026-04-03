@@ -64,11 +64,21 @@ export abstract class IsValidator {
 	}
 }
 
+type EmptyValue = null | undefined;
+
 export abstract class BaseValidator<
 	TMessage extends Record<string, string>,
+	TEmpty extends EmptyValue = undefined, // null - for FE; undefined - for BE
 > extends IsValidator {
-	constructor(private readonly message: TMessage) {
+	private readonly emptyValue: TEmpty;
+
+	constructor(
+		private readonly message: TMessage,
+		options?: { emptyValue?: TEmpty },
+	) {
 		super();
+
+		this.emptyValue = options?.emptyValue ?? (undefined as TEmpty);
 	}
 
 	protected getMessage(key: keyof TMessage, vars?: Record<string, string>) {
@@ -82,15 +92,17 @@ export abstract class BaseValidator<
 	}
 
 	/**
-	 * Transforms null values to undefined before passing to the schema
-	 * Useful for handling form data where null and undefined might both represent "empty"
+	 * Coerces null input values to the configured empty value (null or undefined)
+	 * before passing to the schema.
 	 *
 	 * @param {z.ZodTypeAny} schema - The Zod schema to apply the transformation to
-	 * @returns A preprocessed schema that converts null to undefined
+	 * @returns A preprocessed schema that converts null to the configured empty value
 	 */
-	private nullToUndefined(schema: z.ZodTypeAny) {
+	private coerceEmpty(schema: z.ZodTypeAny) {
+		const empty = this.emptyValue;
+
 		return z.preprocess((val) => {
-			return val === null ? undefined : val;
+			return val === null ? empty : val;
 		}, schema);
 	}
 
@@ -98,12 +110,17 @@ export abstract class BaseValidator<
 	 * Preprocesses a schema to handle optional fields
 	 */
 	private preprocessOptional<T extends z.ZodTypeAny>(schema: T) {
-		return z.preprocess((val) => {
-			if (val === null || val === undefined || val === '') {
-				return undefined;
-			}
-			return val;
-		}, schema.optional());
+		const empty = this.emptyValue;
+
+		return z.preprocess(
+			(val) => {
+				if (val === null || val === undefined || val === '') {
+					return empty;
+				}
+				return val;
+			},
+			empty === null ? schema.nullable() : schema.optional(),
+		);
 	}
 
 	/**
@@ -163,7 +180,7 @@ export abstract class BaseValidator<
 			| string
 			| { invalid?: string; min_chars?: string; max_chars?: string },
 		optionsData?: { required: false; minChars?: number; maxChars?: number },
-	): z.ZodType<string | undefined>;
+	): z.ZodType<string | TEmpty>;
 
 	// Implementation signature
 	protected validateString(
@@ -175,7 +192,7 @@ export abstract class BaseValidator<
 			minChars?: number;
 			maxChars?: number;
 		},
-	): z.ZodType<string | undefined> {
+	): z.ZodType<string | TEmpty> {
 		const defaultMessages: Record<string, string> = {
 			invalid: 'Invalid value (e.g.: string required)',
 		};
@@ -216,16 +233,16 @@ export abstract class BaseValidator<
 
 		if (options.required) {
 			if (!options?.minChars && !options?.maxChars) {
-				return this.nullToUndefined(
+				return this.coerceEmpty(
 					baseSchema.nonempty({ message: message.invalid }),
 				) as z.ZodType<string>;
 			} else {
-				return this.nullToUndefined(baseSchema) as z.ZodType<string>;
+				return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 			}
 		}
 
 		return this.preprocessOptional(baseSchema) as z.ZodType<
-			string | undefined
+			string | TEmpty
 		>;
 	}
 
@@ -275,7 +292,7 @@ export abstract class BaseValidator<
 			onlyPositive?: boolean;
 			allowDecimals?: boolean;
 		},
-	): z.ZodType<number | undefined>;
+	): z.ZodType<number | TEmpty>;
 
 	// Implementation signature
 	protected validateNumber(
@@ -291,7 +308,7 @@ export abstract class BaseValidator<
 			onlyPositive?: boolean;
 			allowDecimals?: boolean;
 		},
-	): z.ZodType<number | undefined> {
+	): z.ZodType<number | TEmpty> {
 		const options = {
 			required: true,
 			onlyPositive: true,
@@ -326,11 +343,11 @@ export abstract class BaseValidator<
 		}
 
 		if (options.required) {
-			return this.nullToUndefined(baseSchema) as z.ZodType<number>;
+			return this.coerceEmpty(baseSchema) as z.ZodType<number>;
 		}
 
 		return this.preprocessOptional(baseSchema) as z.ZodType<
-			number | undefined
+			number | TEmpty
 		>;
 	}
 
@@ -348,16 +365,14 @@ export abstract class BaseValidator<
 		enumObj: T,
 		message: string,
 		optionsData: { required: false },
-	): z.ZodType<T[keyof T] | undefined>;
+	): z.ZodType<T[keyof T] | TEmpty>;
 
 	// Implementation signature
 	protected validateEnum<T extends Record<string, string>>(
 		enumObj: T,
 		message: string,
-		optionsData?: {
-			required?: boolean;
-		},
-	): z.ZodType<T[keyof T] | undefined> {
+		optionsData?: { required?: boolean },
+	): z.ZodType<T[keyof T] | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
@@ -369,7 +384,9 @@ export abstract class BaseValidator<
 			return baseSchema;
 		}
 
-		return this.preprocessOptional(baseSchema);
+		return this.preprocessOptional(baseSchema) as z.ZodType<
+			T[keyof T] | TEmpty
+		>;
 	}
 
 	/**
@@ -384,7 +401,7 @@ export abstract class BaseValidator<
 	protected validateBoolean(
 		message: string,
 		optionsData: { required: false },
-	): z.ZodType<boolean | undefined>;
+	): z.ZodType<boolean | TEmpty>;
 
 	// Implementation signature
 	protected validateBoolean(
@@ -392,7 +409,7 @@ export abstract class BaseValidator<
 		optionsData?: {
 			required?: boolean;
 		},
-	) {
+	): z.ZodType<boolean | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
@@ -423,7 +440,7 @@ export abstract class BaseValidator<
 	protected validateId(
 		message: string = 'Invalid ID',
 		optionsData?: { required?: boolean },
-	): z.ZodType<number> | z.ZodType<number | undefined> {
+	): z.ZodType<number | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
@@ -550,7 +567,7 @@ export abstract class BaseValidator<
 			maxPastSeconds?: number;
 			maxFutureSeconds?: number;
 		},
-	): z.ZodType<Date | undefined>;
+	): z.ZodType<Date | TEmpty>;
 
 	// Implementation signature
 	protected validateDate(
@@ -571,7 +588,7 @@ export abstract class BaseValidator<
 			maxPastSeconds?: number;
 			maxFutureSeconds?: number;
 		},
-	) {
+	): z.ZodType<Date | TEmpty> {
 		const options = {
 			required: true,
 			runtime: typeof window === 'undefined' ? 'server' : 'client', // Auto-detect
@@ -685,12 +702,10 @@ export abstract class BaseValidator<
 		});
 
 		if (options.required) {
-			return this.nullToUndefined(dateSchema) as z.ZodType<Date>;
+			return this.coerceEmpty(dateSchema) as z.ZodType<Date>;
 		}
 
-		return this.preprocessOptional(dateSchema) as z.ZodType<
-			Date | undefined
-		>;
+		return this.preprocessOptional(dateSchema) as z.ZodType<Date | TEmpty>;
 	}
 
 	/**
@@ -753,6 +768,7 @@ export abstract class BaseValidator<
 				.optional()
 				.default(defaultPage),
 
+			// Note: Do not add `optional()` types will break in *.service.ts files
 			filter: z.object(filterShape).partial(),
 		});
 	}
@@ -765,7 +781,9 @@ export abstract class BaseValidator<
 		},
 	) {
 		return z.object({
-			title: this.validateString(message.invalid_meta_title),
+			title: this.validateString(message.invalid_meta_title, {
+				required: false,
+			}),
 			description: this.validateString(message.invalid_meta_description, {
 				required: false,
 			}),
@@ -788,23 +806,27 @@ export abstract class BaseValidator<
 		optionsData: {
 			required: false;
 		},
-	): z.ZodType<string | undefined>;
+	): z.ZodType<string | TEmpty>;
 
 	// Implementation signature
 	protected validateLanguage(
 		message = 'Invalid language',
 		optionsData?: { required?: boolean },
-	): z.ZodType<string | undefined> {
+	): z.ZodType<string | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
 		};
 
+		const baseSchema = z.string().length(2, { message });
+
 		if (options.required) {
-			return z.string().length(2, { message });
+			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
-		return z.string().length(2, { message }).optional();
+		return this.preprocessOptional(baseSchema) as z.ZodType<
+			string | TEmpty
+		>;
 	}
 
 	// Overload signatures
@@ -840,7 +862,7 @@ export abstract class BaseValidator<
 			requireNumber?: boolean;
 			requireSpecial?: boolean;
 		},
-	): z.ZodType<string | undefined>;
+	): z.ZodType<string | TEmpty>;
 
 	// Implementation signature
 	protected validatePassword(
@@ -858,7 +880,7 @@ export abstract class BaseValidator<
 			requireNumber?: boolean;
 			requireSpecial?: boolean;
 		},
-	): z.ZodType<string | undefined> {
+	): z.ZodType<string | TEmpty> {
 		const options = {
 			required: true,
 			minLength: 8,
@@ -900,7 +922,9 @@ export abstract class BaseValidator<
 			return baseSchema;
 		}
 
-		return this.preprocessOptional(baseSchema);
+		return this.preprocessOptional(baseSchema) as z.ZodType<
+			string | TEmpty
+		>;
 	}
 
 	// Overload signatures
@@ -912,13 +936,13 @@ export abstract class BaseValidator<
 	protected validateEmail(
 		message: string,
 		optionsData?: { required: false },
-	): z.ZodType<string | undefined>;
+	): z.ZodType<string | TEmpty>;
 
 	// Implementation signature
 	protected validateEmail(
 		message: string = 'Invalid email address',
 		optionsData?: { required?: boolean },
-	): z.ZodType<string | undefined> {
+	): z.ZodType<string | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
@@ -927,16 +951,14 @@ export abstract class BaseValidator<
 		const baseSchema = z.email({ message });
 
 		if (options.required) {
-			return this.nullToUndefined(baseSchema) as z.ZodType<string>;
+			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
 		const optionalSchema = baseSchema
 			.transform((val) => (val === '' ? undefined : val))
 			.optional();
 
-		return this.nullToUndefined(optionalSchema) as z.ZodType<
-			string | undefined
-		>;
+		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
 
 	// Overload signatures
@@ -948,7 +970,7 @@ export abstract class BaseValidator<
 	protected validateIBAN(
 		message: string,
 		optionsData?: { required: false },
-	): z.ZodType<string | undefined>;
+	): z.ZodType<string | TEmpty>;
 
 	// Implementation signature
 	protected validateIBAN(
@@ -956,7 +978,7 @@ export abstract class BaseValidator<
 		optionsData?: {
 			required?: boolean;
 		},
-	): z.ZodType<string | undefined> {
+	): z.ZodType<string | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
@@ -968,16 +990,14 @@ export abstract class BaseValidator<
 			.refine((val) => this.isValidIBAN(val), { message });
 
 		if (options.required) {
-			return this.nullToUndefined(baseSchema) as z.ZodType<string>;
+			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
 		const optionalSchema = baseSchema
 			.transform((val) => (val === '' ? undefined : val))
 			.optional();
 
-		return this.nullToUndefined(optionalSchema) as z.ZodType<
-			string | undefined
-		>;
+		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
 
 	// Overload signatures
@@ -989,7 +1009,7 @@ export abstract class BaseValidator<
 	protected validatePersonalIdentificationNumber(
 		message: string,
 		optionsData?: { required: false },
-	): z.ZodType<string | undefined>;
+	): z.ZodType<string | TEmpty>;
 
 	// Implementation signature
 	protected validatePersonalIdentificationNumber(
@@ -997,7 +1017,7 @@ export abstract class BaseValidator<
 		optionsData?: {
 			required?: boolean;
 		},
-	): z.ZodType<string | undefined> {
+	): z.ZodType<string | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
@@ -1009,16 +1029,14 @@ export abstract class BaseValidator<
 			.refine((val) => this.isValidCNP(val), { message });
 
 		if (options.required) {
-			return this.nullToUndefined(baseSchema) as z.ZodType<string>;
+			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
 		const optionalSchema = baseSchema
 			.transform((val) => (val === '' ? undefined : val))
 			.optional();
 
-		return this.nullToUndefined(optionalSchema) as z.ZodType<
-			string | undefined
-		>;
+		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
 
 	// Overload signatures
@@ -1030,7 +1048,7 @@ export abstract class BaseValidator<
 	protected validatePostalCode(
 		message: string,
 		optionsData?: { required: false },
-	): z.ZodType<string | undefined>;
+	): z.ZodType<string | TEmpty>;
 
 	// Implementation signature
 	protected validatePostalCode(
@@ -1038,7 +1056,7 @@ export abstract class BaseValidator<
 		optionsData?: {
 			required?: boolean;
 		},
-	): z.ZodType<string | undefined> {
+	): z.ZodType<string | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
@@ -1050,16 +1068,14 @@ export abstract class BaseValidator<
 			.refine((val) => this.isValidPostalCode(val), { message });
 
 		if (options.required) {
-			return this.nullToUndefined(baseSchema) as z.ZodType<string>;
+			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
 		const optionalSchema = baseSchema
 			.transform((val) => (val === '' ? undefined : val))
 			.optional();
 
-		return this.nullToUndefined(optionalSchema) as z.ZodType<
-			string | undefined
-		>;
+		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
 
 	// Overload signatures
@@ -1071,7 +1087,7 @@ export abstract class BaseValidator<
 	protected validatePhone(
 		message: string,
 		optionsData?: { required: false },
-	): z.ZodType<string | undefined>;
+	): z.ZodType<string | TEmpty>;
 
 	// Implementation signature
 	protected validatePhone(
@@ -1079,7 +1095,7 @@ export abstract class BaseValidator<
 		optionsData?: {
 			required?: boolean;
 		},
-	): z.ZodType<string | undefined> {
+	): z.ZodType<string | TEmpty> {
 		const options = {
 			required: true,
 			...optionsData,
@@ -1091,15 +1107,13 @@ export abstract class BaseValidator<
 			.refine((val) => this.isValidPhoneNumber(val), { message });
 
 		if (options.required) {
-			return this.nullToUndefined(baseSchema) as z.ZodType<string>;
+			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
 		const optionalSchema = baseSchema
 			.transform((val) => (val === '' ? undefined : val))
 			.optional();
 
-		return this.nullToUndefined(optionalSchema) as z.ZodType<
-			string | undefined
-		>;
+		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
 }

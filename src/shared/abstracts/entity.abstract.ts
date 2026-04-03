@@ -12,7 +12,7 @@ export enum OrderDirectionEnum {
 }
 
 export type PageMeta = {
-	title: string;
+	title?: string;
 	description?: string;
 	keywords?: string;
 };

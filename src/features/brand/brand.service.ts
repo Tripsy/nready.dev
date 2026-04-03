@@ -49,7 +49,7 @@ export class BrandService {
 
 			await BrandContentRepository.saveContent(
 				manager,
-				data.content,
+				data.contents,
 				entrySaved.id,
 			);
 
@@ -95,10 +95,10 @@ export class BrandService {
 
 			const updatedEntity = await repository.save(updateData);
 
-			if (data.content) {
+			if (data.contents) {
 				await BrandContentRepository.saveContent(
 					manager,
-					data.content,
+					data.contents,
 					id,
 				);
 			}

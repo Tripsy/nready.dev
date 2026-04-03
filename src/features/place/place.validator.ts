@@ -26,7 +26,7 @@ const validatorMessages = {
 };
 
 export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
-	contentSchema() {
+	contentsSchema() {
 		return z.object({
 			language: this.validateLanguage(),
 			name: this.validateString(this.getMessage('invalid_name')),
@@ -36,35 +36,19 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		});
 	}
 
-	readonly create = z
-		.object({
-			place_type: this.validateEnum(
-				PlaceTypeEnum,
-				this.getMessage('invalid_place_type'),
-			),
-			code: this.validateString(this.getMessage('code_invalid'), {
-				required: false,
-			}),
-			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
-				required: false,
-			}),
-			content: this.contentSchema().array(),
-		})
-		.superRefine((data, ctx) => {
-			if (
-				data.place_type &&
-				[PlaceTypeEnum.REGION, PlaceTypeEnum.CITY].includes(
-					data.place_type,
-				) &&
-				!data.parent_id
-			) {
-				ctx.addIssue({
-					path: ['parent_id'],
-					message: this.getMessage('required_parent_id'),
-					code: 'custom',
-				});
-			}
-		});
+	readonly create = z.object({
+		place_type: this.validateEnum(
+			PlaceTypeEnum,
+			this.getMessage('invalid_place_type'),
+		),
+		code: this.validateString(this.getMessage('code_invalid'), {
+			required: false,
+		}),
+		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
+			required: false,
+		}),
+		contents: this.contentsSchema().array(),
+	});
 
 	readonly update = z
 		.object({
@@ -79,11 +63,11 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 				required: false,
 			}),
-			content: this.contentSchema().array().optional(),
+			contents: this.contentsSchema().array().optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
 			message: this.getMessage('params_at_least_one', {
-				params: [...paramsUpdateList, 'content'].join(', '),
+				params: [...paramsUpdateList, 'contents'].join(', '),
 			}),
 			path: ['_global'],
 		})

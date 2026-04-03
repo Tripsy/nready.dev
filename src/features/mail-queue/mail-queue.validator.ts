@@ -97,8 +97,8 @@ export class MailQueueValidator extends BaseValidator<
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.sent_date_start &&
-			data.filter.sent_date_end &&
+			data.filter?.sent_date_start &&
+			data.filter?.sent_date_end &&
 			data.filter.sent_date_start > data.filter.sent_date_end
 		) {
 			ctx.addIssue({
