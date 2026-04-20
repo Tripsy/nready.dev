@@ -28,7 +28,7 @@ export const categoryInputPayloads = {
 	create: {
 		type: CategoryTypeEnum.ARTICLE,
 		parent_id: 1,
-		content: [
+		contents: [
 			{
 				language: 'en',
 				label: 'Technology',
@@ -59,7 +59,7 @@ export const categoryInputPayloads = {
 	},
 	update: {
 		parent_id: 3,
-		content: [
+		contents: [
 			{
 				language: 'en',
 				label: 'Science',

@@ -10,18 +10,23 @@ import type ClientEntity from '@/features/client/client.entity';
 import type OrderProductEntity from '@/features/order/order-product.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum OrderStatusEnum {
-	DRAFT = 'draft',
-	PENDING = 'pending',
-	CONFIRMED = 'confirmed',
-	COMPLETED = 'completed',
-	CANCELLED = 'cancelled',
-}
+export const OrderStatusEnum = {
+	DRAFT: 'draft',
+	PENDING: 'pending',
+	CONFIRMED: 'confirmed',
+	COMPLETED: 'completed',
+	CANCELLED: 'cancelled',
+} as const;
 
-export enum OrderTypeEnum {
-	STANDARD = 'standard',
-	SUBSCRIPTION = 'subscription',
-}
+export type OrderStatus =
+	(typeof OrderStatusEnum)[keyof typeof OrderStatusEnum];
+
+export const OrderTypeEnum = {
+	STANDARD: 'standard',
+	SUBSCRIPTION: 'subscription',
+} as const;
+
+export type OrderType = (typeof OrderTypeEnum)[keyof typeof OrderTypeEnum];
 
 const ENTITY_TABLE_NAME = 'order';
 
@@ -49,7 +54,7 @@ export default class OrderEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_order_status')
-	status!: OrderStatusEnum;
+	status!: OrderStatus;
 
 	@Column({
 		type: 'enum',
@@ -57,7 +62,7 @@ export default class OrderEntity extends EntityAbstract {
 		default: OrderTypeEnum.STANDARD,
 		nullable: false,
 	})
-	type!: OrderTypeEnum;
+	type!: OrderType;
 
 	@Column({ type: 'timestamp', nullable: false })
 	@Index('IDX_order_issued_at')

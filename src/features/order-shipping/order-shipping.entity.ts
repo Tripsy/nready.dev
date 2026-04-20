@@ -4,14 +4,17 @@ import type { DiscountSnapshot } from '@/features/discount/discount.entity';
 import type OrderEntity from '@/features/order/order.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum ShippingStatusEnum {
-	PENDING = 'pending',
-	PREPARING = 'preparing',
-	SHIPPED = 'shipped',
-	DELIVERED = 'delivered',
-	FAILED = 'failed',
-	RETURNED = 'returned',
-}
+export const ShippingStatusEnum = {
+	PENDING: 'pending',
+	PREPARING: 'preparing',
+	SHIPPED: 'shipped',
+	DELIVERED: 'delivered',
+	FAILED: 'failed',
+	RETURNED: 'returned',
+} as const;
+
+export type ShippingStatus =
+	(typeof ShippingStatusEnum)[keyof typeof ShippingStatusEnum];
 
 const ENTITY_TABLE_NAME = 'order_shipping';
 
@@ -35,7 +38,7 @@ export default class OrderShippingEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_order_shipping_status')
-	status!: ShippingStatusEnum;
+	status!: ShippingStatus;
 
 	@Column('varchar', {
 		nullable: true,

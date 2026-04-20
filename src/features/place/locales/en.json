@@ -4,19 +4,22 @@
 		"code_invalid": "Invalid code",
 		"invalid_parent_id": "Invalid parent ID",
 		"required_parent_id": "Parent ID required for region & city types",
-		"invalid_name": "Invalid place name",
-		"invalid_type_label": "Invalid type label",
 		"address_country_invalid": "Invalid address country",
 		"address_region_invalid": "Invalid address region",
 		"address_city_invalid": "Invalid address city",
-		"country_no_parent": "Country cannot have a parent"
+		"country_no_parent": "Country cannot have a parent",
+		"invalid_contents": "At least one content entry is required",
+		"duplicate_contents": "Contents data cannot contain duplicate language",
+		"invalid_name": "Invalid place name",
+		"invalid_type_label": "Invalid type label"
 	},
 	"error": {
 		"not_found": "Place not found",
 		"cannot_change_type_with_children": "Type cannot be changed. This place has children(s).",
 		"cannot_delete_with_children": "This place has children(s) and cannot be deleted.",
 		"parent_not_found": "Parent place not found",
-		"invalid_parent_type": "Invalid parent type"
+		"invalid_parent_type": "Invalid parent type",
+		"parent_required": "Parent ID required for region & city types"
 	},
 	"success": {
 		"create": "Place created successfully",

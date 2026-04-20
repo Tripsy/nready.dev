@@ -1,13 +1,17 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
-import CashFlowEntity, {
+import type CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
+import {
+	type CashFlowCategory,
 	CashFlowCategoryEnum,
+	type CashFlowCategoryType,
 	CashFlowCategoryTypeEnum,
-	type CashFlowDirectionEnum,
+	type CashFlowDirection,
+	type CashFlowStatus,
 	CashFlowStatusEnum,
 	CURRENCY_DEFAULT,
-	type CurrencyEnum,
+	type Currency,
 	getExpectedCategoryType,
 	getExpectedDirection,
 	MUTABLE_STATUSES,
@@ -19,6 +23,7 @@ import {
 	type CashFlowValidator,
 	paramsUpdateList,
 } from '@/features/cash-flow/cash-flow.validator';
+import { arrayHasValue } from '@/helpers';
 import type { ValidatorOutput } from '@/helpers/mock.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 
@@ -26,8 +31,8 @@ export class CashFlowService {
 	constructor(private repository: ReturnType<typeof getCashFlowRepository>) {}
 
 	public checkDirection(
-		category_type: CashFlowCategoryTypeEnum,
-		direction: CashFlowDirectionEnum,
+		category_type: CashFlowCategoryType,
+		direction: CashFlowDirection,
 	) {
 		const expectedDirection = getExpectedDirection(category_type);
 
@@ -42,8 +47,8 @@ export class CashFlowService {
 	}
 
 	public checkCategoryType(
-		category_type: CashFlowCategoryTypeEnum,
-		category: CashFlowCategoryEnum,
+		category_type: CashFlowCategoryType,
+		category: CashFlowCategory,
 	) {
 		const expectedCategoryType = getExpectedCategoryType(category);
 
@@ -57,7 +62,7 @@ export class CashFlowService {
 		}
 	}
 
-	public checkCategory(category: CashFlowCategoryEnum, parent_id?: number) {
+	public checkCategory(category: CashFlowCategory, parent_id?: number) {
 		if (category === CashFlowCategoryEnum.REFUND && !parent_id) {
 			throw new BadRequestError(
 				lang('cash-flow.error.refund_parent_required'),
@@ -74,9 +79,9 @@ export class CashFlowService {
 	}
 
 	public async checkRefund(deps: {
-		category: CashFlowCategoryEnum;
+		category: CashFlowCategory;
 		amount: number;
-		currency: CurrencyEnum;
+		currency: Currency;
 		parentEntry: CashFlowEntity;
 		refundedAmount: number;
 	}) {
@@ -86,7 +91,7 @@ export class CashFlowService {
 			);
 		}
 
-		if (!REFUNDABLE_STATUSES.includes(deps.parentEntry.status)) {
+		if (!arrayHasValue(deps.parentEntry.status, REFUNDABLE_STATUSES)) {
 			throw new CustomError(
 				409,
 				lang('cash-flow.error.refund_parent_status_invalid', {
@@ -113,9 +118,9 @@ export class CashFlowService {
 		}
 
 		if (
-			[CashFlowCategoryEnum.EMPLOYEE_SALARY].includes(
-				deps.parentEntry.category,
-			)
+			arrayHasValue(deps.parentEntry.category, [
+				CashFlowCategoryEnum.EMPLOYEE_SALARY,
+			])
 		) {
 			throw new CustomError(
 				409,
@@ -149,7 +154,7 @@ export class CashFlowService {
 		}
 	}
 
-	public getExchangeRate(selectedCurrency: CurrencyEnum) {
+	public getExchangeRate(selectedCurrency: Currency) {
 		if (selectedCurrency === CURRENCY_DEFAULT) {
 			return 1;
 		}
@@ -233,7 +238,7 @@ export class CashFlowService {
 	) {
 		const entry = await this.findById(id, withDeleted);
 
-		if (!MUTABLE_STATUSES.includes(entry.status)) {
+		if (!arrayHasValue(entry.status, MUTABLE_STATUSES)) {
 			throw new CustomError(
 				409,
 				lang('cash-flow.error.update_not_allowed'),
@@ -298,7 +303,7 @@ export class CashFlowService {
 
 	public async updateStatus(
 		id: number,
-		newStatus: CashFlowStatusEnum,
+		newStatus: CashFlowStatus,
 		withDeleted: boolean,
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);

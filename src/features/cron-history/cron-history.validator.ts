@@ -5,11 +5,11 @@ import { CronHistoryStatusEnum } from '@/features/cron-history/cron-history.enti
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export enum OrderByEnum {
-	ID = 'id',
-	LABEL = 'label',
-	START_AT = 'start_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	LABEL: 'label',
+	START_AT: 'start_at',
+} as const;
 
 const validatorMessages = {
 	invalid_number: lang('shared.validation.invalid_number'),
@@ -87,8 +87,8 @@ export class CronHistoryValidator extends BaseValidator<
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.start_date_start &&
-			data.filter.start_date_end &&
+			data.filter?.start_date_start &&
+			data.filter?.start_date_end &&
 			data.filter.start_date_start > data.filter.start_date_end
 		) {
 			ctx.addIssue({

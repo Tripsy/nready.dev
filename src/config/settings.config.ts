@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { getObjectValue, type ObjectValue, setObjectValue } from '@/helpers';
-import type { LogDataLevelEnum } from '@/shared/types/log-data.type';
+import type { LogDataLevel } from '@/shared/types/log-data.type';
 import type { LogHistoryDestination } from '@/shared/types/log-history.type';
 
 type Settings = { [key: string]: ObjectValue };
@@ -46,22 +46,16 @@ function loadSettings(): Settings {
 			ttl: Number(process.env.CACHE_TTL) ?? 60,
 		},
 		logging: {
-			logLevel:
-				process.env.PINO_LOG_LEVEL || ('trace' as LogDataLevelEnum),
+			logLevel: process.env.PINO_LOG_LEVEL || ('trace' as LogDataLevel),
 			levelFile: [
 				'debug',
 				'info',
 				'error',
 				'warn',
 				'fatal',
-			] as LogDataLevelEnum[],
-			levelDatabase: [
-				'info',
-				'error',
-				'warn',
-				'fatal',
-			] as LogDataLevelEnum[],
-			levelEmail: ['error', 'fatal'] as LogDataLevelEnum[],
+			] as LogDataLevel[],
+			levelDatabase: ['info', 'error', 'warn', 'fatal'] as LogDataLevel[],
+			levelEmail: ['error', 'fatal'] as LogDataLevel[],
 			logEmail: process.env.PINO_LOG_EMAIL || '',
 			history: process.env.LOGGING_HISTORY as LogHistoryDestination,
 		},

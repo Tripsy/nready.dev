@@ -6,7 +6,10 @@ import type {
 	UpdateEvent,
 } from 'typeorm';
 import { eventEmitter } from '@/config/event.config';
-import { LogHistoryAction } from '@/shared/types/log-history.type';
+import {
+	type LogHistoryAction,
+	LogHistoryActionEnum,
+} from '@/shared/types/log-history.type';
 
 interface BaseEntity {
 	id: number;
@@ -113,7 +116,7 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 
 		this.cacheClean(id);
 
-		this.logHistory(id, LogHistoryAction.REMOVED);
+		this.logHistory(id, LogHistoryActionEnum.REMOVED);
 	}
 
 	/**
@@ -131,7 +134,7 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 
 		this.cacheClean(id);
 
-		this.logHistory(id, LogHistoryAction.DELETED);
+		this.logHistory(id, LogHistoryActionEnum.DELETED);
 	}
 
 	afterInsert(event: InsertEvent<T>) {
@@ -139,7 +142,7 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 			return;
 		}
 
-		this.logHistory(event.entity.id, LogHistoryAction.CREATED);
+		this.logHistory(event.entity.id, LogHistoryActionEnum.CREATED);
 	}
 
 	afterUpdate(event: UpdateEvent<T>) {
@@ -154,8 +157,8 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 		this.logHistory(
 			id,
 			this.isRestore(event)
-				? LogHistoryAction.RESTORED
-				: LogHistoryAction.UPDATED,
+				? LogHistoryActionEnum.RESTORED
+				: LogHistoryActionEnum.UPDATED,
 		);
 
 		// Log `status` change if exist
@@ -166,7 +169,7 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 			'status' in event.databaseEntity &&
 			event.entity.status !== event.databaseEntity.status
 		) {
-			this.logHistory(id, LogHistoryAction.STATUS, {
+			this.logHistory(id, LogHistoryActionEnum.STATUS, {
 				oldStatus: event.databaseEntity.status as string,
 				newStatus: event.entity.status as string,
 			});

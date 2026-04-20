@@ -20,6 +20,11 @@ export const parseFilterMiddleware = (
 			);
 		}
 	} else {
+		// Note: `validateFind` will throw an error if `filter` is undefined
+		if (filter === undefined) {
+			res.locals.filter = {};
+		}
+
 		next();
 	}
 };

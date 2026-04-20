@@ -5,11 +5,11 @@ import { MailQueueStatusEnum } from '@/features/mail-queue/mail-queue.entity';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export enum OrderByEnum {
-	ID = 'id',
-	TEMPLATE_ID = 'template_id',
-	SENT_AT = 'sent_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	TEMPLATE_ID: 'template_id',
+	SENT_AT: 'sent_at',
+} as const;
 
 const validatorMessages = {
 	invalid_language: lang('shared.validation.invalid_language'),
@@ -97,8 +97,8 @@ export class MailQueueValidator extends BaseValidator<
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.sent_date_start &&
-			data.filter.sent_date_end &&
+			data.filter?.sent_date_start &&
+			data.filter?.sent_date_end &&
 			data.filter.sent_date_start > data.filter.sent_date_end
 		) {
 			ctx.addIssue({

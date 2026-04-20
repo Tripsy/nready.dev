@@ -10,6 +10,7 @@ import {
 } from '@/features/place/place.validator';
 import PlaceContentRepository from '@/features/place/place-content.repository';
 import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { PlaceType } from '@/shared/types/place.type';
 
 export class PlaceService {
 	constructor(
@@ -19,7 +20,11 @@ export class PlaceService {
 		) => Repository<PlaceEntity>,
 	) {}
 
-	public async checkParentId(place_type: PlaceTypeEnum, parent_id?: number) {
+	public async checkParentId(
+		action: 'create' | 'update',
+		place_type: PlaceType,
+		parent_id?: number,
+	) {
 		if (place_type === PlaceTypeEnum.COUNTRY) {
 			if (parent_id) {
 				throw new BadRequestError(
@@ -62,7 +67,11 @@ export class PlaceService {
 			}
 		}
 
-		if (place_type !== PlaceTypeEnum.COUNTRY && !parent_id) {
+		if (
+			action === 'update' &&
+			place_type !== PlaceTypeEnum.COUNTRY &&
+			!parent_id
+		) {
 			throw new BadRequestError(lang('place.error.parent_required'));
 		}
 	}
@@ -73,7 +82,7 @@ export class PlaceService {
 	public async create(
 		data: ValidatorOutput<PlaceValidator, 'create'>,
 	): Promise<PlaceEntity> {
-		await this.checkParentId(data.place_type, data.parent_id);
+		await this.checkParentId('create', data.place_type, data.parent_id);
 
 		return dataSource.transaction(async (manager) => {
 			const repository = this.getScopedPlaceRepository(manager);
@@ -88,7 +97,7 @@ export class PlaceService {
 
 			await PlaceContentRepository.saveContent(
 				manager,
-				data.content,
+				data.contents,
 				entrySaved.id,
 			);
 
@@ -106,12 +115,11 @@ export class PlaceService {
 	) {
 		const place = await this.findById(id, withDeleted);
 
-		if (data.parent_id) {
-			await this.checkParentId(
-				data.place_type || place.place_type,
-				data.parent_id,
-			);
-		}
+		await this.checkParentId(
+			'update',
+			data.place_type || place.place_type,
+			data.parent_id || place.parent_id,
+		);
 
 		const isTypeChange =
 			data.place_type !== undefined &&
@@ -141,10 +149,10 @@ export class PlaceService {
 
 			const updatedEntity = await repository.save(updateData);
 
-			if (data.content) {
+			if (data.contents) {
 				await PlaceContentRepository.saveContent(
 					manager,
-					data.content,
+					data.contents,
 					id,
 				);
 			}
@@ -182,20 +190,11 @@ export class PlaceService {
 	 */
 	public async getDataById(
 		id: number,
-		language: string,
+		data: ValidatorOutput<PlaceValidator, 'read'>,
 		withDeleted: boolean,
 	) {
-		return await this.repository
+		const query = this.repository
 			.createQuery()
-			.joinAndSelect(
-				'place.contents',
-				'content',
-				'INNER',
-				'content.language = :language',
-				{
-					language: language,
-				},
-			)
 			.select([
 				'place.id',
 				'place.place_type',
@@ -204,14 +203,27 @@ export class PlaceService {
 				'place.created_at',
 				'place.updated_at',
 				'place.deleted_at',
-
 				'content.language',
 				'content.name',
 				'content.type_label',
 			])
 			.filterById(id)
-			.withDeleted(withDeleted)
-			.firstOrFail();
+			.withDeleted(withDeleted);
+
+		if (data.language) {
+			query.joinAndSelect(
+				'place.contents',
+				'content',
+				'INNER',
+				'content.language = :language',
+				{ language: data.language },
+			);
+		} else {
+			// No language: take all contents
+			query.joinAndSelect('place.contents', 'content', 'LEFT');
+		}
+
+		return await query.firstOrFail();
 	}
 
 	public hasChildren(id: number) {
@@ -248,7 +260,7 @@ export class PlaceService {
 			)
 			.select([
 				'place.id',
-				'place.type',
+				'place.place_type',
 				'place.code',
 				'place.created_at',
 				'place.deleted_at',
@@ -258,7 +270,7 @@ export class PlaceService {
 				'content.type_label',
 
 				'parent.id',
-				'parent.type',
+				'parent.place_type',
 				'parent.code',
 
 				'parentContent.name',
@@ -267,7 +279,7 @@ export class PlaceService {
 			.filterById(data.filter.id)
 			.filterBy('content.language', data.filter.language)
 			.filterByTerm(data.filter.term)
-			.filterBy('place.type', data.filter.place_type)
+			.filterBy('place.place_type', data.filter.place_type)
 			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit)

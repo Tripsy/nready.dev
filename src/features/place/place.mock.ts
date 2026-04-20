@@ -23,7 +23,7 @@ export const placeInputPayloads = {
 		place_type: PlaceTypeEnum.COUNTRY,
 		code: 'RO',
 		parent_id: undefined,
-		content: [
+		contents: [
 			{
 				language: 'en',
 				name: 'Romania',
@@ -35,7 +35,7 @@ export const placeInputPayloads = {
 		place_type: PlaceTypeEnum.COUNTRY,
 		code: 'RO',
 		parent_id: undefined,
-		content: [
+		contents: [
 			{
 				language: 'en',
 				name: 'Romania',

@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import type PlaceContentEntity from '@/features/place/place-content.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import { PlaceTypeEnum } from '@/shared/types/place.type';
+import { type PlaceType, PlaceTypeEnum } from '@/shared/types/place.type';
 
 export { PlaceTypeEnum };
 
@@ -34,7 +34,7 @@ export default class PlaceEntity extends EntityAbstract {
 		default: PlaceTypeEnum.COUNTRY,
 		nullable: false,
 	})
-	place_type!: PlaceTypeEnum;
+	place_type!: PlaceType;
 
 	@Column('int', { nullable: true })
 	@Index('IDX_place_parent_id')

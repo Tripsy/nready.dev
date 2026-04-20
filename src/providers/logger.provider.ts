@@ -12,6 +12,7 @@ import LogDataEntity from '@/features/log-data/log-data.entity';
 import { buildRootPath, formatDate } from '@/helpers';
 import {
 	LogDataCategoryEnum,
+	type LogDataLevel,
 	LogDataLevelEnum,
 } from '@/shared/types/log-data.type';
 
@@ -34,7 +35,7 @@ interface PinoLog {
 	[key: string]: unknown;
 }
 
-export function getLogLevel(level: number): LogDataLevelEnum {
+export function getLogLevel(level: number): LogDataLevel {
 	switch (level) {
 		case 10:
 			return LogDataLevelEnum.TRACE;
@@ -105,7 +106,7 @@ export class LogStream extends Writable {
 	private fileStreams: Record<string, FileStreamRotatorStream> = {};
 	private fileStreamTimeouts: Record<string, NodeJS.Timeout> = {};
 
-	private getFileStream(level: LogDataLevelEnum): FileStreamRotatorStream {
+	private getFileStream(level: LogDataLevel): FileStreamRotatorStream {
 		if (!this.fileStreams[level]) {
 			this.fileStreams[level] = FileStreamRotator.getStream({
 				filename: buildRootPath('logs', `%DATE%-${level}.log`),
@@ -146,7 +147,7 @@ export class LogStream extends Writable {
 		this.fileStreams = {};
 	}
 
-	private writeToFile(logLevel: LogDataLevelEnum, log: PinoLog) {
+	private writeToFile(logLevel: LogDataLevel, log: PinoLog) {
 		// Do not write to file - already written to file
 		if (log.destinations.includes('file')) {
 			return;
@@ -182,7 +183,7 @@ export class LogStream extends Writable {
 		);
 	}
 
-	private async writeToDatabase(logLevel: LogDataLevelEnum, log: PinoLog) {
+	private async writeToDatabase(logLevel: LogDataLevel, log: PinoLog) {
 		if (log.destinations.includes('database')) {
 			return;
 		}
@@ -226,7 +227,7 @@ export class LogStream extends Writable {
 		}
 	}
 
-	private async sendToEmail(logLevel: LogDataLevelEnum, log: PinoLog) {
+	private async sendToEmail(logLevel: LogDataLevel, log: PinoLog) {
 		if (log.destinations.includes('email')) {
 			return;
 		}
@@ -282,11 +283,11 @@ export class LogStream extends Writable {
 				this.pretty.write(chunk);
 			}
 
-			const logLevel: LogDataLevelEnum = getLogLevel(log.level);
+			const logLevel: LogDataLevel = getLogLevel(log.level);
 
 			if (
 				(
-					Configuration.get('logging.levelFile') as LogDataLevelEnum[]
+					Configuration.get('logging.levelFile') as LogDataLevel[]
 				).includes(logLevel)
 			) {
 				this.writeToFile(logLevel, log);
@@ -294,9 +295,7 @@ export class LogStream extends Writable {
 
 			if (
 				(
-					Configuration.get(
-						'logging.levelDatabase',
-					) as LogDataLevelEnum[]
+					Configuration.get('logging.levelDatabase') as LogDataLevel[]
 				).includes(logLevel)
 			) {
 				this.writeToDatabase(logLevel, log).catch((error) => {
@@ -306,9 +305,7 @@ export class LogStream extends Writable {
 
 			if (
 				(
-					Configuration.get(
-						'logging.levelEmail',
-					) as LogDataLevelEnum[]
+					Configuration.get('logging.levelEmail') as LogDataLevel[]
 				).includes(logLevel)
 			) {
 				this.sendToEmail(logLevel, log).catch((error) => {
@@ -332,7 +329,7 @@ const logger = pino(
 		// 'fatal', 'error', 'warn', 'info', 'debug', 'trace' or 'silent'
 		level: Configuration.isEnvironment('test')
 			? 'error'
-			: (Configuration.get('logging.logLevel') as LogDataLevelEnum),
+			: (Configuration.get('logging.logLevel') as LogDataLevel),
 		// Defines how and where to send log data, such as to files, external services, or streams.
 		nestedKey: 'context',
 		// Define default properties included in every log line.
@@ -425,7 +422,7 @@ export function getCronLogger(): Logger {
 }
 
 if (Configuration.isEnvironment('test')) {
-	// getSystemLogger().debug = console.log;
+	// getSystemLogger().debug = console.debug;
 	getSystemLogger().debug = () => {};
 	getSystemLogger().error = console.error;
 }

@@ -12,11 +12,14 @@ import {
 import type TemplateEntity from '@/features/template/template.entity';
 import type { EmailContent } from '@/features/template/template.entity';
 
-export enum MailQueueStatusEnum {
-	PENDING = 'pending',
-	SENT = 'sent',
-	ERROR = 'error',
-}
+export const MailQueueStatusEnum = {
+	PENDING: 'pending',
+	SENT: 'sent',
+	ERROR: 'error',
+} as const;
+
+export type MailQueueStatus =
+	(typeof MailQueueStatusEnum)[keyof typeof MailQueueStatusEnum];
 
 const ENTITY_TABLE_NAME = 'mail_queue';
 
@@ -58,7 +61,7 @@ export default class MailQueueEntity {
 		nullable: false,
 	})
 	@Index('IDX_mail_queue_status', { unique: false })
-	status!: MailQueueStatusEnum;
+	status!: MailQueueStatus;
 
 	@Column('text', { nullable: true })
 	error?: string | null;

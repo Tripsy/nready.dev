@@ -13,7 +13,7 @@ import {
 	accountRecoveryService,
 } from '@/features/account/account-recovery.service';
 import type UserEntity from '@/features/user/user.entity';
-import { UserStatusEnum } from '@/features/user/user.entity';
+import { type UserStatus, UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
 import { createFutureDate } from '@/helpers';
 import type { ValidatorOutput } from '@/helpers/mock.helper';
@@ -148,7 +148,7 @@ export class AccountService {
 			name: string;
 			email: string;
 			language: string;
-			status: UserStatusEnum;
+			status: UserStatus;
 		},
 	): void {
 		const { token, expire_at } = this.createConfirmationToken(user);
@@ -166,7 +166,7 @@ export class AccountService {
 			name: string;
 			email: string;
 			language: string;
-			status: UserStatusEnum;
+			status: UserStatus;
 		},
 	): void {
 		switch (user.status) {

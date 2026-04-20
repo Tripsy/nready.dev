@@ -3,8 +3,8 @@ import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import BrandEntity, {
-	type BrandStatusEnum,
-	type BrandTypeEnum,
+	type BrandStatus,
+	type BrandType,
 	STATUS_TRANSITIONS,
 } from '@/features/brand/brand.entity';
 import { getBrandRepository } from '@/features/brand/brand.repository';
@@ -49,7 +49,7 @@ export class BrandService {
 
 			await BrandContentRepository.saveContent(
 				manager,
-				data.content,
+				data.contents,
 				entrySaved.id,
 			);
 
@@ -95,10 +95,10 @@ export class BrandService {
 
 			const updatedEntity = await repository.save(updateData);
 
-			if (data.content) {
+			if (data.contents) {
 				await BrandContentRepository.saveContent(
 					manager,
-					data.content,
+					data.contents,
 					id,
 				);
 			}
@@ -109,7 +109,7 @@ export class BrandService {
 
 	public async updateStatus(
 		id: number,
-		newStatus: BrandStatusEnum,
+		newStatus: BrandStatus,
 		withDeleted: boolean,
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);
@@ -126,7 +126,7 @@ export class BrandService {
 	}
 
 	public async updateOrder(
-		type: BrandTypeEnum,
+		type: BrandType,
 		ids: number[], // Array of IDs in the desired order
 		withDeleted: boolean,
 	): Promise<void> {
@@ -177,7 +177,7 @@ export class BrandService {
 
 	public findBySlug(
 		slug: string,
-		type: BrandTypeEnum,
+		type: BrandType,
 		withDeleted: boolean,
 		fields?: string[],
 		excludeId?: number,
@@ -204,20 +204,11 @@ export class BrandService {
 	 */
 	public async getDataById(
 		id: number,
-		language: string,
+		data: ValidatorOutput<BrandValidator, 'read'>,
 		withDeleted: boolean,
 	) {
-		return await this.repository
+		const query = this.repository
 			.createQuery()
-			.joinAndSelect(
-				'brand.contents',
-				'content',
-				'INNER',
-				'content.language = :language',
-				{
-					language: language,
-				},
-			)
 			.select([
 				'brand.id',
 				'brand.name',
@@ -232,8 +223,24 @@ export class BrandService {
 				'content.meta',
 			])
 			.filterById(id)
-			.withDeleted(withDeleted)
-			.firstOrFail();
+			.withDeleted(withDeleted);
+
+		if (data.language) {
+			query.joinAndSelect(
+				'brand.contents',
+				'content',
+				'INNER',
+				'content.language = :language',
+				{
+					language: data.language,
+				},
+			);
+		} else {
+			// No language: take all contents
+			query.joinAndSelect('brand.contents', 'content', 'LEFT');
+		}
+
+		return await query.firstOrFail();
 	}
 
 	public findByFilter(

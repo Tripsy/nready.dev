@@ -10,32 +10,36 @@ export const EXPECTED_RUN_TIME = 3; // seconds
 const cronTimeCheck = async () => {
 	const querySql = `
 		SELECT
-			ch.id, ch.label, ch.start_at
-		FROM cron_history ch
+			ch.id, 
+			ch.label, 
+			ch.start_at
+		FROM logs.cron_history ch
 		INNER JOIN (
 			SELECT
 				DATE(start_at) AS day,
 				TO_CHAR(start_at, 'HH24:MI') AS hour_min,
 				COUNT(id) AS count
-			FROM cron_history
+			FROM logs.cron_history
 			WHERE
-				start_at >= $1 AND start_at < $2
+				start_at >= $1::TIMESTAMP 
+				AND start_at < $2::TIMESTAMP
 			GROUP BY
 				DATE(start_at),
 				TO_CHAR(start_at, 'HH24:MI')
 			HAVING COUNT(id) > 1
-		) dup ON DATE(ch.start_at) = dup.day
+		) dup ON DATE(ch.start_at) = dup.day::DATE
 			AND TO_CHAR(ch.start_at, 'HH24:MI') = dup.hour_min
 		WHERE
-			ch.start_at >= $1 AND ch.start_at < $2
+			ch.start_at >= $1::TIMESTAMP 
+			AND ch.start_at < $2::TIMESTAMP
 		ORDER BY
-			ch.start_at
+			ch.start_at;
     `;
 
 	const endDate = new Date().toISOString();
 	const startDate = createPastDate(86400).toISOString();
 
-	const queryParameters = [startDate, endDate, startDate, endDate];
+	const queryParameters = [startDate, endDate];
 
 	const results: {
 		[key: string]: {
@@ -86,7 +90,8 @@ const cronTimeCheck = async () => {
 	}
 
 	return {
-		overlapping: results.length,
+		results: results,
+		overlapping: Object.keys(results).length,
 	};
 };
 

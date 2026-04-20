@@ -4,12 +4,12 @@ import { Configuration } from '@/config/settings.config';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export enum UserPermissionOrderByEnum {
-	ID = 'id',
-	PERMISSION_ID = 'permission_id',
-	ENTITY = 'permission.entity',
-	OPERATION = 'permission.operation',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	PERMISSION_ID: 'permission_id',
+	ENTITY: 'permission.entity',
+	OPERATION: 'permission.operation',
+} as const;
 
 const validatorMessages = {
 	invalid_number: lang('shared.validation.invalid_number'),
@@ -40,8 +40,8 @@ export class UserPermissionValidator extends BaseValidator<
 	});
 
 	readonly find = this.validateFind({
-		orderByEnum: UserPermissionOrderByEnum,
-		defaultOrderBy: UserPermissionOrderByEnum.ID,
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
 
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,

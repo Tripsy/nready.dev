@@ -4,7 +4,7 @@ import {
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
 import type CategoryEntity from './category.entity';
-import { CategoryTypeEnum } from './category.entity';
+import { type CategoryType, CategoryTypeEnum } from './category.entity';
 
 const ENTITY_TABLE_NAME = 'category_content';
 
@@ -42,7 +42,7 @@ export default class CategoryContentEntity extends EntityAbstract {
 		comment:
 			'The type is duplicated here from category to be used as unique index',
 	})
-	type!: CategoryTypeEnum;
+	type!: CategoryType;
 
 	@Column('varchar', { nullable: false })
 	label!: string;

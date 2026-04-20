@@ -5,10 +5,10 @@ import {
 	type SoftRemoveEvent,
 	type UpdateEvent,
 } from 'typeorm';
-import { LogHistoryAction } from '@/features/log-history/log-history.entity';
 import UserEntity from '@/features/user/user.entity';
 import UserPermissionEntity from '@/features/user-permission/user-permission.entity';
 import SubscriberAbstract from '@/shared/abstracts/subscriber.abstract';
+import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 
 @EventSubscriber()
 export class UserPermissionSubscriber extends SubscriberAbstract<UserPermissionEntity> {
@@ -21,7 +21,7 @@ export class UserPermissionSubscriber extends SubscriberAbstract<UserPermissionE
 
 		this.cacheClean(user_id, UserEntity);
 
-		this.logHistory(id, LogHistoryAction.DELETED);
+		this.logHistory(id, LogHistoryActionEnum.DELETED);
 	}
 
 	afterSoftRemove(event: SoftRemoveEvent<UserPermissionEntity>) {
@@ -30,7 +30,7 @@ export class UserPermissionSubscriber extends SubscriberAbstract<UserPermissionE
 			event.entity?.user_id || event.databaseEntity?.user_id;
 
 		this.cacheClean(user_id, UserEntity);
-		this.logHistory(id, LogHistoryAction.REMOVED);
+		this.logHistory(id, LogHistoryActionEnum.REMOVED);
 	}
 
 	afterInsert(event: InsertEvent<UserPermissionEntity>) {
@@ -38,7 +38,7 @@ export class UserPermissionSubscriber extends SubscriberAbstract<UserPermissionE
 		const user_id = event.entity?.user_id;
 
 		this.cacheClean(user_id, UserEntity);
-		this.logHistory(id, LogHistoryAction.CREATED);
+		this.logHistory(id, LogHistoryActionEnum.CREATED);
 	}
 
 	afterUpdate(event: UpdateEvent<UserPermissionEntity>) {
@@ -48,7 +48,7 @@ export class UserPermissionSubscriber extends SubscriberAbstract<UserPermissionE
 				event.entity?.user_id || event.databaseEntity?.user_id;
 
 			this.cacheClean(user_id, UserEntity);
-			this.logHistory(id, LogHistoryAction.RESTORED);
+			this.logHistory(id, LogHistoryActionEnum.RESTORED);
 		}
 	}
 }

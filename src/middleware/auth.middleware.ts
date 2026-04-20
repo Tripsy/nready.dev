@@ -15,16 +15,19 @@ import {
 import { cacheProvider } from '@/providers/cache.provider';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
 
-export enum AuthFailureReason {
-	NO_TOKEN = 'NO_TOKEN',
-	INVALID_TOKEN = 'INVALID_TOKEN',
-	TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-	METADATA_MISMATCH = 'METADATA_MISMATCH',
-	USER_NOT_FOUND = 'USER_NOT_FOUND',
-	USER_INACTIVE = 'USER_INACTIVE',
-	UNAUTHORIZED = 'UNAUTHORIZED',
-	SYSTEM_ERROR = 'SYSTEM_ERROR',
-}
+export const AuthFailureReason = {
+	NO_TOKEN: 'NO_TOKEN',
+	INVALID_TOKEN: 'INVALID_TOKEN',
+	TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+	METADATA_MISMATCH: 'METADATA_MISMATCH',
+	USER_NOT_FOUND: 'USER_NOT_FOUND',
+	USER_INACTIVE: 'USER_INACTIVE',
+	UNAUTHORIZED: 'UNAUTHORIZED',
+	SYSTEM_ERROR: 'SYSTEM_ERROR',
+} as const;
+
+export type AuthFailureReason =
+	(typeof AuthFailureReason)[keyof typeof AuthFailureReason];
 
 async function getUserPermissions(user_id: number): Promise<string[]> {
 	const cacheKey = cacheProvider.buildKey(

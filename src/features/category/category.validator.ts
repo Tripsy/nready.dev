@@ -9,12 +9,12 @@ import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export enum OrderByEnum {
-	ID = 'id',
-	LABEL = 'label',
-	CREATED_AT = 'created_at',
-	UPDATED_AT = 'updated_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	LABEL: 'label',
+	CREATED_AT: 'created_at',
+	UPDATED_AT: 'updated_at',
+} as const;
 
 const validatorMessages = {
 	invalid_label: lang('category.validation.invalid_label'),
@@ -31,7 +31,7 @@ const validatorMessages = {
 };
 
 export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
-	private contentSchema() {
+	private contentsSchema() {
 		return z.object({
 			language: this.validateLanguage(
 				this.getMessage('invalid_language'),
@@ -55,7 +55,7 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 			required: false,
 		}),
-		content: this.contentSchema().array(),
+		contents: this.contentsSchema().array(),
 	});
 
 	readonly update = z
@@ -63,11 +63,11 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 				required: false,
 			}),
-			content: this.contentSchema().array().optional(),
+			contents: this.contentsSchema().array().optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
 			message: this.getMessage('params_at_least_one', {
-				params: ['parent_id', 'content'].join(', '),
+				params: ['parent_id', 'contents'].join(', '),
 			}),
 			path: ['_global'],
 		});
@@ -81,6 +81,9 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 			this.getMessage('invalid_boolean'),
 			{ required: false },
 		).default(false),
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}),
 	});
 
 	readonly find = this.validateFind({

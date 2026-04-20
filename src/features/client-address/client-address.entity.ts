@@ -3,10 +3,13 @@ import type ClientEntity from '@/features/client/client.entity';
 import type PlaceEntity from '@/features/place/place.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum ClientAddressTypeEnum {
-	BILLING = 'billing',
-	DELIVERY = 'delivery',
-}
+export const ClientAddressTypeEnum = {
+	BILLING: 'billing',
+	DELIVERY: 'delivery',
+} as const;
+
+export type ClientAddressType =
+	(typeof ClientAddressTypeEnum)[keyof typeof ClientAddressTypeEnum];
 
 const ENTITY_TABLE_NAME = 'client_address';
 
@@ -29,7 +32,7 @@ export default class ClientAddressEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_client_address_address_type')
-	address_type!: ClientAddressTypeEnum;
+	address_type!: ClientAddressType;
 
 	@Column('int', { nullable: true })
 	city_id!: number | null;

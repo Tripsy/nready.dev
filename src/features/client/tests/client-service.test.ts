@@ -1,6 +1,9 @@
 import { expect, jest } from '@jest/globals';
 import type ClientEntity from '@/features/client/client.entity';
-import { ClientStatusEnum } from '@/features/client/client.entity';
+import {
+	type ClientStatus,
+	ClientStatusEnum,
+} from '@/features/client/client.entity';
 import {
 	clientOutputPayloads,
 	getClientEntityMock,
@@ -49,7 +52,7 @@ describe('ClientService', () => {
 		getClientEntityMock(),
 	);
 
-	testServiceUpdateStatus<ClientEntity, ClientStatusEnum>(
+	testServiceUpdateStatus<ClientEntity, ClientStatus>(
 		serviceClient,
 		mockClient.repository,
 		{

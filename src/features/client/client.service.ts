@@ -1,8 +1,10 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
 import { CustomError } from '@/exceptions';
-import ClientEntity, {
+import type ClientEntity from '@/features/client/client.entity';
+import {
 	type ClientIdentityData,
+	type ClientStatus,
 	ClientStatusEnum,
 	ClientTypeEnum,
 	STATUS_TRANSITIONS,
@@ -28,6 +30,15 @@ export class ClientService {
 		}
 
 		if (data.client_type === ClientTypeEnum.COMPANY) {
+			// `company_cui` is usually required but we do the check anyway
+			if (
+				!data.company_name &&
+				!data.company_cui &&
+				!data.company_reg_com
+			) {
+				return;
+			}
+
 			query.filterAny([
 				{
 					column: 'company_name',
@@ -46,6 +57,11 @@ export class ClientService {
 				},
 			]);
 		} else {
+			// if `person_identification_number` is not present the check doesn't make sense
+			if (!data.person_identification_number) {
+				return;
+			}
+
 			query.filterBy(
 				'person_identification_number',
 				data.person_identification_number,
@@ -135,7 +151,7 @@ export class ClientService {
 
 	public async updateStatus(
 		id: number,
-		newStatus: ClientStatusEnum,
+		newStatus: ClientStatus,
 		withDeleted: boolean,
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);
@@ -200,7 +216,7 @@ export class ClientService {
 				data.filter.create_date_start,
 				data.filter.create_date_end,
 			)
-			.filterByTerm(data.filter.term)
+			.filterByTerm(data.filter.term, data.filter.client_type)
 			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit)

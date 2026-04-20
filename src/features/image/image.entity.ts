@@ -3,10 +3,12 @@ import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
 export type ImageEntityType = 'product' | 'category' | 'brand';
 
-export enum ImageKindEnum {
-	LOGO = 'logo',
-	GALLERY = 'gallery',
-}
+export const ImageKindEnum = {
+	LOGO: 'logo',
+	GALLERY: 'gallery',
+} as const;
+
+export type ImageKind = (typeof ImageKindEnum)[keyof typeof ImageKindEnum];
 
 const ENTITY_TABLE_NAME = 'image';
 
@@ -33,7 +35,7 @@ export default class ImageEntity extends EntityAbstract {
 		nullable: false,
 		comment: 'The kind of the image (eg: primary, logo, gallery, etc)',
 	})
-	kind!: ImageKindEnum;
+	kind!: ImageKind;
 
 	@Column('boolean', { default: false })
 	@Index('IDX_image_unique_main', ['entity_type', 'entity_id'], {

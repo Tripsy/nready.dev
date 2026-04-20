@@ -3,14 +3,17 @@ import {
 	type LogHistoryEventPayload,
 } from '@/config/event.config';
 import { lang } from '@/config/i18n.setup';
-import { RequestContextSource, requestContext } from '@/config/request.context';
-import { Configuration } from '@/config/settings.config';
 import {
-	LogHistoryAction,
-	type LogHistoryDestination,
-} from '@/features/log-history/log-history.entity';
+	RequestContextSourceEnum,
+	requestContext,
+} from '@/config/request.context';
+import { Configuration } from '@/config/settings.config';
 import { getLogHistoryRepository } from '@/features/log-history/log-history.repository';
 import { getHistoryLogger } from '@/providers/logger.provider';
+import {
+	LogHistoryActionEnum,
+	type LogHistoryDestination,
+} from '@/shared/types/log-history.type';
 
 export default function registerLogHistoryListener() {
 	eventEmitter.on('history', async (payload: LogHistoryEventPayload) => {
@@ -28,16 +31,14 @@ export default function registerLogHistoryListener() {
 					auth_id: ctx?.auth_id.toString() || '0',
 					performed_by: ctx?.performed_by || 'unknown',
 					request_id: ctx?.request_id || 'unknown',
-					source: ctx?.source || RequestContextSource.UNKNOWN,
+					source: ctx?.source || RequestContextSourceEnum.UNKNOWN,
 					...payload.data,
 				};
 
 				if (
-					[
-						LogHistoryAction.DELETED,
-						LogHistoryAction.REMOVED,
-						LogHistoryAction.RESTORED,
-					].includes(payload.action)
+					payload.action === LogHistoryActionEnum.DELETED ||
+					payload.action === LogHistoryActionEnum.REMOVED ||
+					payload.action === LogHistoryActionEnum.RESTORED
 				) {
 					replacements.entity_ids = payload.entity_ids.join(', ');
 				} else {
@@ -61,7 +62,7 @@ export default function registerLogHistoryListener() {
 					ctx?.auth_id || null,
 					ctx?.performed_by || 'unknown',
 					ctx?.request_id || 'unknown',
-					ctx?.source || RequestContextSource.UNKNOWN,
+					ctx?.source || RequestContextSourceEnum.UNKNOWN,
 					payload.data,
 				);
 

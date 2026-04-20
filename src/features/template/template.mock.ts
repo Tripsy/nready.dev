@@ -9,7 +9,10 @@ import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 type CreateInput = z.input<typeof templateValidator.create>;
-type CreateEmailInput = Extract<CreateInput, { type: TemplateTypeEnum.EMAIL }>;
+type CreateEmailInput = Extract<
+	CreateInput,
+	{ type: typeof TemplateTypeEnum.EMAIL }
+>;
 
 export function getTemplateEntityMock(): TemplateEntity {
 	return {

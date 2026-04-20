@@ -97,3 +97,16 @@ export function hasAtLeastOneValue(obj: unknown): boolean {
 	// Check children
 	return values.some((v) => hasAtLeastOneValue(v));
 }
+
+/**
+ * Determine if value is included in array
+ *
+ * @param value
+ * @param array
+ */
+export function arrayHasValue<T extends readonly unknown[]>(
+	value: unknown,
+	array: T,
+): value is T[number] {
+	return array.includes(value);
+}

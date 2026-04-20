@@ -3,12 +3,15 @@ import type OrderEntity from '@/features/order/order.entity';
 import type UserEntity from '@/features/user/user.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum SubscriptionStatusEnum {
-	ACTIVE = 'active',
-	PAUSED = 'paused',
-	CANCELLED = 'cancelled',
-	EXPIRED = 'expired',
-}
+export const SubscriptionStatusEnum = {
+	ACTIVE: 'active',
+	PAUSED: 'paused',
+	CANCELLED: 'cancelled',
+	EXPIRED: 'expired',
+} as const;
+
+export type SubscriptionStatus =
+	(typeof SubscriptionStatusEnum)[keyof typeof SubscriptionStatusEnum];
 
 const ENTITY_TABLE_NAME = 'subscription';
 
@@ -50,7 +53,7 @@ export default class SubscriptionEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_subscription_status')
-	status!: SubscriptionStatusEnum;
+	status!: SubscriptionStatus;
 
 	@Column('timestamp', {
 		nullable: true,

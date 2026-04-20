@@ -1,13 +1,14 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
-import { CustomError } from '@/exceptions';
+import { CustomError, NotFoundError } from '@/exceptions';
 import {
 	type AccountTokenService,
 	accountTokenService,
 } from '@/features/account/account-token.service';
-import UserEntity, {
+import type UserEntity from '@/features/user/user.entity';
+import {
 	STATUS_TRANSITIONS,
-	type UserStatusEnum,
+	type UserStatus,
 } from '@/features/user/user.entity';
 import { getUserRepository } from '@/features/user/user.repository';
 import {
@@ -98,7 +99,16 @@ export class UserService {
 		}
 
 		if (data.password || data.email !== entry.email) {
-			await this.accountTokenService.removeAccountTokenForUser(entry.id); // Note: Removes all account tokens for the user
+			try {
+				await this.accountTokenService.removeAccountTokenForUser(
+					entry.id,
+				); // Note: Removes all account tokens for the user
+			} catch (error) {
+				// Do nothing if the user has no account tokens
+				if (!(error instanceof NotFoundError)) {
+					throw error;
+				}
+			}
 		}
 
 		const updateData = {
@@ -115,7 +125,7 @@ export class UserService {
 
 	public async updateStatus(
 		id: number,
-		newStatus: UserStatusEnum,
+		newStatus: UserStatus,
 		withDeleted: boolean,
 	): Promise<void> {
 		const entry = await this.findById(id, withDeleted);

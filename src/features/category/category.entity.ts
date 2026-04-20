@@ -15,14 +15,17 @@ import {
 } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
-export enum CategoryStatusEnum {
-	ACTIVE = 'active',
-	PENDING = 'pending',
-	INACTIVE = 'inactive',
-}
+export const CategoryStatusEnum = {
+	ACTIVE: 'active',
+	PENDING: 'pending',
+	INACTIVE: 'inactive',
+} as const;
+
+export type CategoryStatus =
+	(typeof CategoryStatusEnum)[keyof typeof CategoryStatusEnum];
 
 // Allowed status transition configuration
-export const STATUS_TRANSITIONS: StatusTransitions<CategoryStatusEnum> = {
+export const STATUS_TRANSITIONS: StatusTransitions<CategoryStatus> = {
 	[CategoryStatusEnum.ACTIVE]: [CategoryStatusEnum.INACTIVE],
 	[CategoryStatusEnum.INACTIVE]: [CategoryStatusEnum.ACTIVE],
 	[CategoryStatusEnum.PENDING]: [
@@ -31,10 +34,13 @@ export const STATUS_TRANSITIONS: StatusTransitions<CategoryStatusEnum> = {
 	],
 };
 
-export enum CategoryTypeEnum {
-	PRODUCT = 'product',
-	ARTICLE = 'article',
-}
+export const CategoryTypeEnum = {
+	PRODUCT: 'product',
+	ARTICLE: 'article',
+} as const;
+
+export type CategoryType =
+	(typeof CategoryTypeEnum)[keyof typeof CategoryTypeEnum];
 
 export type CategoryContentInput = {
 	language: string;
@@ -63,7 +69,7 @@ export default class CategoryEntity extends EntityAbstract {
 		default: CategoryStatusEnum.PENDING,
 		nullable: false,
 	})
-	status!: CategoryStatusEnum;
+	status!: CategoryStatus;
 
 	@Column({
 		type: 'enum',
@@ -72,7 +78,7 @@ export default class CategoryEntity extends EntityAbstract {
 		nullable: false,
 		comment: 'Specifies the entity type this category belongs to',
 	})
-	type!: CategoryTypeEnum;
+	type!: CategoryType;
 
 	@Column('int', {
 		default: 0,

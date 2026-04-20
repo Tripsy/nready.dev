@@ -56,7 +56,7 @@ testControllerUpdateWithContent<BrandEntity, BrandValidator>({
 
 testControllerRead<BrandEntity>({
 	controller: controller,
-	route: `${basePath}/${getBrandEntityMock().id}/en`,
+	route: `${basePath}/${getBrandEntityMock().id}`,
 	entityMock: getBrandEntityMock(),
 	policy: brandPolicy,
 });

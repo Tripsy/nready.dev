@@ -17,7 +17,7 @@ const routesModule: FeatureRoutesModule<typeof brandController> = {
 			method: 'post',
 		},
 		read: {
-			path: '/:id/:language',
+			path: '/:id',
 			method: 'get',
 			handlers: [
 				validateParamsWhenId('id'),

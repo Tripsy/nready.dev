@@ -1,11 +1,10 @@
 import type { Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import type { RequestContextSource } from '@/config/request.context';
-import LogHistoryEntity, {
-	type LogHistoryAction,
-} from '@/features/log-history/log-history.entity';
+import LogHistoryEntity from '@/features/log-history/log-history.entity';
 import { getSystemLogger } from '@/providers/logger.provider';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
+import type { LogHistoryAction } from '@/shared/types/log-history.type';
 
 export class LogHistoryQuery extends RepositoryAbstract<LogHistoryEntity> {
 	constructor(repository: Repository<LogHistoryEntity>) {

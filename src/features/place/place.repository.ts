@@ -18,13 +18,10 @@ export class PlaceQuery extends RepositoryAbstract<PlaceEntity> {
 					term.length >
 					(Configuration.get('filter.termMinLength') as number)
 				) {
-					this.filterAny([
-						{
-							column: 'content.name',
-							value: term,
-							operator: 'ILIKE',
-						},
-					]);
+					this.filterRaw(
+						`to_tsvector('simple', COALESCE(content.name, '')) @@ to_tsquery('simple', :term || ':*')`,
+						{ term: term.toLowerCase() },
+					);
 				}
 			}
 		}

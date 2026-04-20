@@ -13,7 +13,7 @@ export class CacheProvider {
 	constructor(private readonly cache: Redis) {}
 
 	buildKey(...args: string[]) {
-		return args.join(':');
+		return args.filter((arg) => arg !== '').join(':');
 	}
 
 	determineTtl(ttl?: number): number {

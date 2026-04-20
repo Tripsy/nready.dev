@@ -13,12 +13,12 @@ export const paramsUpdateList: string[] = [
 	'content',
 ];
 
-export enum OrderByEnum {
-	ID = 'id',
-	LABEL = 'label',
-	CREATED_AT = 'created_at',
-	UPDATED_AT = 'updated_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	LABEL: 'label',
+	CREATED_AT: 'created_at',
+	UPDATED_AT: 'updated_at',
+} as const;
 
 const validatorMessages = {
 	invalid_label: lang('template.validation.invalid_label'),

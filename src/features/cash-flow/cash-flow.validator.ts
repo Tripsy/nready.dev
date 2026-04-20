@@ -27,12 +27,12 @@ export const paramsUpdateList: string[] = [
 	'notes',
 ];
 
-export enum OrderByEnum {
-	ID = 'id',
-	CATEGORY = 'category',
-	METHOD = 'method',
-	CREATED_AT = 'created_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	CATEGORY: 'category',
+	METHOD: 'method',
+	CREATED_AT: 'created_at',
+} as const;
 
 const validatorMessages = {
 	invalid_direction: lang('cash-flow.validation.invalid_direction'),

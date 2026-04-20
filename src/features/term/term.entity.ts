@@ -1,12 +1,14 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum TermTypeEnum {
-	TAG = 'tag',
-	ATTRIBUTE_LABEL = 'attribute_label',
-	ATTRIBUTE_VALUE = 'attribute_value',
-	TEXT = 'text',
-}
+export const TermTypeEnum = {
+	TAG: 'tag',
+	ATTRIBUTE_LABEL: 'attribute_label',
+	ATTRIBUTE_VALUE: 'attribute_value',
+	TEXT: 'text',
+} as const;
+
+export type TermType = (typeof TermTypeEnum)[keyof typeof TermTypeEnum];
 
 const ENTITY_TABLE_NAME = 'term';
 
@@ -26,7 +28,7 @@ export default class TermEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_term_type')
-	type!: TermTypeEnum;
+	type!: TermType;
 
 	@Column('varchar', {
 		length: 3,

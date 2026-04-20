@@ -132,7 +132,7 @@ export class ClientAddressService {
 	 */
 	public async getDataById(
 		id: number,
-		language: string,
+		data: ValidatorOutput<ClientAddressValidator, 'read'>,
 		withDeleted: boolean,
 		client_id: number,
 	) {
@@ -150,29 +150,13 @@ export class ClientAddressService {
 
 		const address_city = await this.placeService.getDataById(
 			entry.city_id,
-			language,
+			data,
 			withDeleted,
 		);
-		const address_region = address_city.parent_id
-			? await this.placeService.getDataById(
-					address_city.parent_id,
-					language,
-					withDeleted,
-				)
-			: null;
-		const address_country = address_region?.parent_id
-			? await this.placeService.getDataById(
-					address_region.parent_id,
-					language,
-					withDeleted,
-				)
-			: null;
 
 		return {
 			...entry,
 			client: client,
-			address_country: address_country,
-			address_region: address_region,
 			address_city: address_city,
 		};
 	}
@@ -184,12 +168,12 @@ export class ClientAddressService {
 		return this.repository
 			.createQuery()
 			.joinAndSelect('client_address.client', 'client', 'INNER')
-			.joinAndSelect('client_address.city', 'city', 'LEFT')
+			.joinAndSelect('client_address.city', 'address_city', 'LEFT')
 			.joinAndSelect(
-				'city.contents',
-				'cityContent',
+				'address_city.contents',
+				'address_city_content',
 				'LEFT',
-				'cityContent.language = :language',
+				'address_city_content.language = :language',
 				{
 					language: data.filter.language,
 				},

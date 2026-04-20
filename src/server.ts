@@ -166,13 +166,13 @@ function printStartupInfo(): void {
 		['Health:', `${appConfig.url}:${appConfig.port}/health`],
 	];
 
-	console.log(`┌${'─'.repeat(width + 2)}┐`);
-	console.log(`│ ${appConfig.name.padEnd(width)} │`);
-	console.log(`├${'─'.repeat(width + 2)}┤`);
+	console.debug(`┌${'─'.repeat(width + 2)}┐`);
+	console.debug(`│ ${appConfig.name.padEnd(width)} │`);
+	console.debug(`├${'─'.repeat(width + 2)}┤`);
 
 	for (const [label, value] of lines) {
 		const text = `${label} ${value}`.padEnd(width);
-		console.log(`│ ${text} │`);
+		console.debug(`│ ${text} │`);
 	}
 
 	// Display routes
@@ -180,19 +180,19 @@ function printStartupInfo(): void {
 		const routes = getRoutesInfo();
 
 		if (routes.length > 0) {
-			console.log(`├${'─'.repeat(width + 2)}┤`);
-			console.log(
+			console.debug(`├${'─'.repeat(width + 2)}┤`);
+			console.debug(
 				`│ ${`Routes (${routes.length} total):`.padEnd(width)} │`,
 			);
-			console.log(`│${' '.repeat(width + 2)}│`);
+			console.debug(`│${' '.repeat(width + 2)}│`);
 
 			routes.forEach((route) => {
-				console.log(
+				console.debug(
 					`│ ${route.method.padEnd(7)} ${route.path.padEnd(width - 8)} │`,
 				);
 			});
 		}
 	}
 
-	console.log(`└${'─'.repeat(width + 2)}┘`);
+	console.debug(`└${'─'.repeat(width + 2)}┘`);
 }

@@ -25,10 +25,10 @@ export const paramsUpdateList = [
 	'notes',
 ];
 
-export enum OrderByEnum {
-	ID = 'id',
-	CREATED_AT = 'created_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	CREATED_AT: 'created_at',
+} as const;
 
 const validatorMessages = {
 	invalid_iban: lang('client.validation.invalid_iban'),
@@ -208,7 +208,7 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 				ClientTypeEnum,
 				this.getMessage('invalid_type'),
 				{ required: false },
-			).default(ClientTypeEnum.COMPANY),
+			),
 			status: this.validateEnum(
 				ClientStatusEnum,
 				this.getMessage('invalid_status'),
@@ -239,8 +239,8 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.create_date_start &&
-			data.filter.create_date_end &&
+			data.filter?.create_date_start &&
+			data.filter?.create_date_end &&
 			data.filter.create_date_start > data.filter.create_date_end
 		) {
 			ctx.addIssue({

@@ -1,19 +1,19 @@
 import { z } from 'zod';
 import { lang } from '@/config/i18n.setup';
-import { RequestContextSource } from '@/config/request.context';
+import { RequestContextSourceEnum } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export enum OrderByEnum {
-	ID = 'id',
-	ENTITY = 'entity',
-	ACTION = 'action',
-	RECORDED_AT = 'recorded_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	ENTITY: 'entity',
+	ACTION: 'action',
+	RECORDED_AT: 'recorded_at',
+} as const;
 
 const validatorMessages = {
-	invalid_source: lang('log_history.validation.invalid_source'),
+	invalid_source: lang('log-history.validation.invalid_source'),
 	invalid_number: lang('shared.validation.invalid_number'),
 	invalid_string: lang('shared.validation.invalid_string'),
 	invalid_boolean: lang('shared.validation.invalid_boolean'),
@@ -68,7 +68,7 @@ export class LogHistoryValidator extends BaseValidator<
 				required: false,
 			}),
 			source: this.validateEnum(
-				RequestContextSource,
+				RequestContextSourceEnum,
 				this.getMessage('invalid_source'),
 				{ required: false },
 			),
@@ -93,8 +93,8 @@ export class LogHistoryValidator extends BaseValidator<
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter.recorded_at_start &&
-			data.filter.recorded_at_end &&
+			data.filter?.recorded_at_start &&
+			data.filter?.recorded_at_end &&
 			data.filter.recorded_at_start > data.filter.recorded_at_end
 		) {
 			ctx.addIssue({

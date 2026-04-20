@@ -43,19 +43,22 @@ class ClientAddressController extends BaseController {
 		res.status(201).json(res.locals.output);
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.query, res);
 
 		const cacheKey = this.cache.buildKey(
 			ClientAddressEntity.NAME,
 			res.locals.validated.id,
+			data.language ?? '',
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
 			this.clientAddressService.getDataById(
 				res.locals.validated.id,
-				res.locals.language,
+				data,
 				this.policy.allowDeleted(res.locals.auth),
 				res.locals.validated.client_id,
 			),

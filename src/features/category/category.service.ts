@@ -3,6 +3,7 @@ import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { CustomError } from '@/exceptions';
 import CategoryEntity, {
+	type CategoryStatus,
 	CategoryStatusEnum,
 	STATUS_TRANSITIONS,
 } from '@/features/category/category.entity';
@@ -64,7 +65,7 @@ export class CategoryService {
 
 			await CategoryContentRepository.saveContent(
 				manager,
-				data.content,
+				data.contents,
 				entrySaved.id,
 				entrySaved.type,
 			);
@@ -156,10 +157,10 @@ export class CategoryService {
 				}
 			}
 
-			if (data.content) {
+			if (data.contents) {
 				await CategoryContentRepository.saveContent(
 					manager,
-					data.content,
+					data.contents,
 					category.id,
 					category.type,
 				);
@@ -171,7 +172,7 @@ export class CategoryService {
 
 	public async updateStatus(
 		id: number,
-		newStatus: CategoryStatusEnum,
+		newStatus: CategoryStatus,
 		withDeleted: boolean,
 		forceUpdate?: boolean, // When `true` & newStatus is CategoryStatusEnum.INACTIVE the active descendants will also be marked as inactive
 	): Promise<void> {
@@ -302,24 +303,28 @@ export class CategoryService {
 	 */
 	public async getDataById(
 		id: number,
-		language: string,
 		data: ValidatorOutput<CategoryValidator, 'read'>,
 		withDeleted: boolean,
 	) {
-		const categoryEntry = await this.repository
+		const categoryQuery = this.repository
 			.createQuery()
-			.joinAndSelect(
+			.filterById(id)
+			.withDeleted(withDeleted);
+
+		if (data.language) {
+			categoryQuery.joinAndSelect(
 				'category.contents',
 				'content',
 				'INNER',
 				'content.language = :language',
-				{
-					language: language,
-				},
-			)
-			.filterById(id)
-			.withDeleted(withDeleted)
-			.firstOrFail();
+				{ language: data.language },
+			);
+		} else {
+			// No language: take all contents
+			categoryQuery.joinAndSelect('category.contents', 'content', 'LEFT');
+		}
+
+		const categoryEntry = await categoryQuery.firstOrFail();
 
 		const treeRepository =
 			RepositoryAbstract.getTreeRepository(CategoryEntity);
@@ -335,20 +340,30 @@ export class CategoryService {
 					.filter((a) => a.id !== categoryEntry.id) // Exclude the current category
 					.map((a) => a.id);
 
-				const ancestorsWithContentData = await getCategoryRepository()
+				const ancestorsWithContentDataQuery = getCategoryRepository()
 					.createQuery()
-					.joinAndSelect(
+					.filterBy('id', orderedIds, 'IN')
+					.withDeleted(withDeleted);
+
+				if (data.language) {
+					ancestorsWithContentDataQuery.joinAndSelect(
 						'category.contents',
 						'content',
 						'INNER',
 						'content.language = :language',
-						{
-							language: language,
-						},
-					)
-					.filterBy('id', orderedIds, 'IN')
-					.withDeleted(withDeleted)
-					.all();
+						{ language: data.language },
+					);
+				} else {
+					// No language: take all contents
+					ancestorsWithContentDataQuery.joinAndSelect(
+						'category.contents',
+						'content',
+						'LEFT',
+					);
+				}
+
+				const ancestorsWithContentData =
+					await ancestorsWithContentDataQuery.all();
 
 				ancestorsWithContent = orderedIds
 					.map((id) =>
@@ -358,20 +373,29 @@ export class CategoryService {
 			}
 
 			if (data.with_children) {
-				childrenWithContent = await getCategoryRepository()
+				const childrenWithContentQuery = getCategoryRepository()
 					.createQuery()
-					.joinAndSelect(
+					.filterBy('parent_id', categoryEntry.id)
+					.withDeleted(withDeleted);
+
+				if (data.language) {
+					childrenWithContentQuery.joinAndSelect(
 						'category.contents',
 						'content',
 						'INNER',
 						'content.language = :language',
-						{
-							language: language,
-						},
-					)
-					.filterBy('parent_id', categoryEntry.id)
-					.withDeleted(withDeleted)
-					.all();
+						{ language: data.language },
+					);
+				} else {
+					// No language: take all contents
+					childrenWithContentQuery.joinAndSelect(
+						'category.contents',
+						'content',
+						'LEFT',
+					);
+				}
+
+				childrenWithContent = await childrenWithContentQuery.all();
 			}
 		}
 

@@ -1,10 +1,13 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum TemplateTypeEnum {
-	PAGE = 'page',
-	EMAIL = 'email',
-}
+export const TemplateTypeEnum = {
+	PAGE: 'page',
+	EMAIL: 'email',
+} as const;
+
+export type TemplateType =
+	(typeof TemplateTypeEnum)[keyof typeof TemplateTypeEnum];
 
 export type PageContent = {
 	title: string;
@@ -65,7 +68,7 @@ export default class TemplateEntity extends EntityAbstract {
 		default: TemplateTypeEnum.PAGE,
 		nullable: false,
 	})
-	type!: TemplateTypeEnum;
+	type!: TemplateType;
 
 	@Column({ type: 'jsonb', nullable: false, comment: 'Template data' })
 	content!: Record<string, unknown>;

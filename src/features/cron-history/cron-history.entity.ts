@@ -1,10 +1,13 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
-export enum CronHistoryStatusEnum {
-	ERROR = 'error',
-	OK = 'ok',
-	WARNING = 'warning', // Set when cron job is not running in expected time
-}
+export const CronHistoryStatusEnum = {
+	ERROR: 'error',
+	OK: 'ok',
+	WARNING: 'warning', // Set when cron job is not running in expected time
+} as const;
+
+export type CronHistoryStatus =
+	(typeof CronHistoryStatusEnum)[keyof typeof CronHistoryStatusEnum];
 
 const ENTITY_TABLE_NAME = 'cron_history';
 
@@ -36,7 +39,7 @@ export default class CronHistoryEntity {
 		nullable: false,
 	})
 	@Index('IDX_cron_history_status', { unique: false })
-	status!: CronHistoryStatusEnum;
+	status!: CronHistoryStatus;
 
 	@Column('smallint', {
 		nullable: false,

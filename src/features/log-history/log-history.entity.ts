@@ -8,13 +8,7 @@ import {
 } from 'typeorm';
 import type { RequestContextSource } from '@/config/request.context';
 import type UserEntity from '@/features/user/user.entity';
-import {
-	LogHistoryAction,
-	type LogHistoryDestination,
-} from '@/shared/types/log-history.type';
-
-export type { LogHistoryDestination };
-export { LogHistoryAction };
+import type { LogHistoryAction } from '@/shared/types/log-history.type';
 
 const ENTITY_TABLE_NAME = 'log_history';
 

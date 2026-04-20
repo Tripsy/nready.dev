@@ -2,7 +2,7 @@ import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
 import { CustomError } from '@/exceptions';
 import type TemplateEntity from '@/features/template/template.entity';
-import type { TemplateTypeEnum } from '@/features/template/template.entity';
+import type { TemplateType } from '@/features/template/template.entity';
 import { getTemplateRepository } from '@/features/template/template.repository';
 import {
 	paramsUpdateList,
@@ -103,7 +103,7 @@ export class TemplateService {
 	public findByLabel(
 		label: string,
 		language: string,
-		type: TemplateTypeEnum,
+		type: TemplateType,
 		withDeleted: boolean,
 	): Promise<TemplateEntity> {
 		return this.repository
@@ -118,7 +118,7 @@ export class TemplateService {
 	public checkIfExist(
 		label: string,
 		language: string,
-		type: TemplateTypeEnum,
+		type: TemplateType,
 		withDeleted: boolean,
 		fields?: string[],
 		excludeId?: number,

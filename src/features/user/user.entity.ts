@@ -1,26 +1,31 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
-import { UserRoleEnum } from '@/shared/types/user-role.type';
+import { type UserRole, UserRoleEnum } from '@/shared/types/user-role.type';
 
-export enum UserStatusEnum {
-	ACTIVE = 'active',
-	INACTIVE = 'inactive',
-	PENDING = 'pending',
-}
+export const UserStatusEnum = {
+	ACTIVE: 'active',
+	INACTIVE: 'inactive',
+	PENDING: 'pending',
+} as const;
+
+export type UserStatus = (typeof UserStatusEnum)[keyof typeof UserStatusEnum];
 
 // Allowed status transition configuration
-export const STATUS_TRANSITIONS: StatusTransitions<UserStatusEnum> = {
+export const STATUS_TRANSITIONS: StatusTransitions<UserStatus> = {
 	[UserStatusEnum.ACTIVE]: [UserStatusEnum.INACTIVE],
 	[UserStatusEnum.INACTIVE]: [UserStatusEnum.ACTIVE],
 	[UserStatusEnum.PENDING]: [UserStatusEnum.ACTIVE, UserStatusEnum.INACTIVE],
 };
 
-export enum UserOperatorTypeEnum {
-	SELLER = 'seller',
-	PRODUCT_MANAGER = 'product_manager',
-	CONTENT_EDITOR = 'content_editor',
-}
+export const UserOperatorTypeEnum = {
+	SELLER: 'seller',
+	PRODUCT_MANAGER: 'product_manager',
+	CONTENT_EDITOR: 'content_editor',
+} as const;
+
+export type UserOperatorType =
+	(typeof UserOperatorTypeEnum)[keyof typeof UserOperatorTypeEnum];
 
 const ENTITY_TABLE_NAME = 'user';
 
@@ -57,7 +62,7 @@ export default class UserEntity extends EntityAbstract {
 		default: UserStatusEnum.PENDING,
 		nullable: false,
 	})
-	status!: UserStatusEnum;
+	status!: UserStatus;
 
 	@Column({
 		type: 'enum',
@@ -65,7 +70,7 @@ export default class UserEntity extends EntityAbstract {
 		default: UserRoleEnum.MEMBER,
 		nullable: false,
 	})
-	role!: UserRoleEnum;
+	role!: UserRole;
 
 	@Column({
 		type: 'enum',
@@ -73,5 +78,5 @@ export default class UserEntity extends EntityAbstract {
 		nullable: true,
 		comment: 'Operator type; only relevant when role is OPERATOR',
 	})
-	operator_type!: UserOperatorTypeEnum | null;
+	operator_type!: UserOperatorType | null;
 }

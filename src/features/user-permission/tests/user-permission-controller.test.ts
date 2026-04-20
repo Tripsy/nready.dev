@@ -139,14 +139,6 @@ describe(`${controller} - restore`, () => {
 describe(`${controller} - find`, () => {
 	const route = `${basePath}/${getUserEntityMock().id}/permissions`;
 
-	it('failed validation', async () => {
-		authorizedSpy(permissionPolicy);
-
-		const response = await request(app).get(route).query({});
-
-		expect(response.status).toBe(422);
-	});
-
 	it('should return success', async () => {
 		authorizedSpy(permissionPolicy);
 
