@@ -1,6 +1,9 @@
 import { v4 as uuid } from 'uuid';
 import dataSource from '@/config/data-source.config';
-import { RequestContextSource, requestContext } from '@/config/request.context';
+import {
+	RequestContextSourceEnum,
+	requestContext,
+} from '@/config/request.context';
 import PermissionEntity from '@/features/permission/permission.entity';
 import { getSystemLogger } from '@/providers/logger.provider';
 
@@ -19,7 +22,7 @@ async function seedPermissions() {
 	const connection = dataSource;
 
 	try {
-		console.log('Initializing database connection...');
+		console.debug('Initializing database connection...');
 		await connection.initialize();
 
 		const permissionData: { entity: string; operation: string }[] = [];
@@ -34,14 +37,14 @@ async function seedPermissions() {
 			{
 				auth_id: 0,
 				performed_by: 'permission.seed',
-				source: RequestContextSource.SEED,
+				source: RequestContextSourceEnum.SEED,
 				request_id: uuid(),
 				language: 'en',
 			},
 			async () => {
 				await connection.transaction(
 					async (transactionalEntityManager) => {
-						console.log('Clearing permission table...');
+						console.debug('Clearing permission table...');
 
 						const tableName =
 							connection.getMetadata(PermissionEntity).tableName;
@@ -54,7 +57,7 @@ async function seedPermissions() {
 							`DELETE FROM "${schemaName}"."${tableName}"`,
 						);
 
-						console.log('Inserting new permissions...');
+						console.debug('Inserting new permissions...');
 
 						// Insert new data
 						const repository =
@@ -77,7 +80,7 @@ async function seedPermissions() {
 			// Wait a moment to ensure all operations are complete
 			await new Promise((resolve) => setTimeout(resolve, 500));
 			await connection.destroy();
-			console.log('Database connection closed.');
+			console.debug('Database connection closed.');
 		}
 	}
 }

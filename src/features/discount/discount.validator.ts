@@ -24,14 +24,14 @@ export const paramsUpdateList: string[] = [
 	'notes',
 ];
 
-export enum OrderByEnum {
-	ID = 'id',
-	LABEL = 'label',
-	START_AT = 'start_at',
-	END_AT = 'end_at',
-	CREATED_AT = 'created_at',
-	UPDATED_AT = 'updated_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	LABEL: 'label',
+	START_AT: 'start_at',
+	END_AT: 'end_at',
+	CREATED_AT: 'created_at',
+	UPDATED_AT: 'updated_at',
+} as const;
 
 const validatorMessages = {
 	invalid_label: lang('discount.validation.invalid_label'),

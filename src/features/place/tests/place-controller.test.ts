@@ -44,7 +44,7 @@ testControllerUpdateWithContent<PlaceEntity, PlaceValidator>({
 
 testControllerRead<PlaceEntity>({
 	controller: controller,
-	route: `${basePath}/${getPlaceEntityMock().id}/en`,
+	route: `${basePath}/${getPlaceEntityMock().id}`,
 	entityMock: getPlaceEntityMock(),
 	policy: placePolicy,
 });

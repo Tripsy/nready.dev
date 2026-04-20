@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import cron from 'node-cron';
 import { v4 as uuid } from 'uuid';
-import { RequestContextSource, requestContext } from '@/config/request.context';
+import {
+	RequestContextSourceEnum,
+	requestContext,
+} from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
 import { NotFoundError } from '@/exceptions';
 import { ModuleError } from '@/exceptions/module.error';
@@ -34,7 +37,7 @@ async function executeCron<R extends Record<string, unknown>>(
 		{
 			auth_id: 0,
 			performed_by: action.name,
-			source: RequestContextSource.CRON,
+			source: RequestContextSourceEnum.CRON,
 			request_id: uuid(),
 			language: 'en',
 		},
@@ -87,7 +90,7 @@ async function executeCron<R extends Record<string, unknown>>(
 	);
 }
 
-function getCoreCronJobsPaths() {
+export function getCoreCronJobsPaths() {
 	const sharedFolder = Configuration.get('folder.shared') as string;
 	const sharedCronJobsPath = buildSrcPath(sharedFolder, '/cron-jobs');
 
@@ -100,7 +103,7 @@ function getCoreCronJobsPaths() {
 		.map((f) => buildSrcPath(sharedFolder, '/cron-jobs', f));
 }
 
-function getFeatureCronJobsPaths() {
+export function getFeatureCronJobsPaths() {
 	const featuresFolder = Configuration.get<string>(
 		'folder.features',
 	) as string;

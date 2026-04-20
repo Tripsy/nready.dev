@@ -8,11 +8,13 @@ import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = ['place_type', 'code', 'parent_id'];
 
-export enum OrderByEnum {
-	ID = 'id',
-}
+export const OrderByEnum = {
+	ID: 'id',
+} as const;
 
 const validatorMessages = {
+	invalid_contents: lang('place.validation.invalid_contents'),
+	duplicate_contents: lang('place.validation.duplicate_contents'),
 	invalid_name: lang('place.validation.invalid_name'),
 	invalid_place_type: lang('place.validation.invalid_place_type'),
 	code_invalid: lang('place.validation.code_invalid'),
@@ -36,6 +38,12 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		});
 	}
 
+	readonly read = z.object({
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}),
+	});
+
 	readonly create = z.object({
 		place_type: this.validateEnum(
 			PlaceTypeEnum,
@@ -47,7 +55,16 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 			required: false,
 		}),
-		contents: this.contentsSchema().array(),
+		contents: this.contentsSchema()
+			.array()
+			.min(1, this.getMessage('invalid_contents'))
+			.refine(
+				(contents) => {
+					const languages = contents.map((c) => c.language);
+					return new Set(languages).size === languages.length;
+				},
+				{ message: this.getMessage('duplicate_contents') },
+			),
 	});
 
 	readonly update = z
@@ -63,7 +80,16 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 				required: false,
 			}),
-			contents: this.contentsSchema().array().optional(),
+			contents: this.contentsSchema()
+				.array()
+				.refine(
+					(contents) => {
+						const languages = contents.map((c) => c.language);
+						return new Set(languages).size === languages.length;
+					},
+					{ message: this.getMessage('duplicate_contents') },
+				)
+				.optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
 			message: this.getMessage('params_at_least_one', {
@@ -74,9 +100,8 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		.superRefine((data, ctx) => {
 			if (
 				data.place_type &&
-				[PlaceTypeEnum.REGION, PlaceTypeEnum.CITY].includes(
-					data.place_type,
-				) &&
+				(data.place_type === PlaceTypeEnum.REGION ||
+					data.place_type === PlaceTypeEnum.CITY) &&
 				!data.parent_id
 			) {
 				ctx.addIssue({

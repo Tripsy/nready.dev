@@ -4,23 +4,29 @@ import type { DiscountSnapshot } from '@/features/discount/discount.entity';
 import type OrderEntity from '@/features/order/order.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum InvoiceStatusEnum {
-	DRAFT = 'draft', // Initial state, not sent to customer
-	ISSUED = 'issued', // Invoice issued to customer
-	PAID = 'paid', // Payment received in full
-	OVERDUE = 'overdue', // Past due date, payment not received
-	CANCELLED = 'cancelled', // Invoice invalidated
-	REFUNDED = 'refunded', // Payment returned to the customer
-}
+export const InvoiceStatusEnum = {
+	DRAFT: 'draft', // Initial state, not sent to customer
+	ISSUED: 'issued', // Invoice issued to customer
+	PAID: 'paid', // Payment received in full
+	OVERDUE: 'overdue', // Past due date, payment not received
+	CANCELLED: 'cancelled', // Invoice invalidated
+	REFUNDED: 'refunded', // Payment returned to the customer
+} as const;
 
-export enum InvoiceTypeEnum {
-	CHARGE = 'charge',
-	PROFORMA = 'proforma',
-	CREDIT_NOTE = 'credit_note', // Reduces the amount the buyer owes from a previous order
-}
+export type InvoiceStatus =
+	(typeof InvoiceStatusEnum)[keyof typeof InvoiceStatusEnum];
+
+export const InvoiceTypeEnum = {
+	CHARGE: 'charge',
+	PROFORMA: 'proforma',
+	CREDIT_NOTE: 'credit_note', // Reduces the amount the buyer owes from a previous order
+} as const;
+
+export type InvoiceType =
+	(typeof InvoiceTypeEnum)[keyof typeof InvoiceTypeEnum];
 
 export type BillingDetailsPerson = {
-	type: ClientTypeEnum.PERSON;
+	type: typeof ClientTypeEnum.PERSON;
 
 	// Person
 	person_name: string;
@@ -44,7 +50,7 @@ export type BillingDetailsPerson = {
 };
 
 export type BillingDetailsCompany = {
-	type: ClientTypeEnum.COMPANY;
+	type: typeof ClientTypeEnum.COMPANY;
 
 	// Company
 	company_name: string;
@@ -110,7 +116,7 @@ export default class InvoiceEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_invoice_status')
-	status!: InvoiceStatusEnum;
+	status!: InvoiceStatus;
 
 	@Column({
 		type: 'enum',
@@ -119,7 +125,7 @@ export default class InvoiceEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_invoice_type')
-	type!: InvoiceTypeEnum;
+	type!: InvoiceType;
 
 	@Column('char', {
 		length: 3,

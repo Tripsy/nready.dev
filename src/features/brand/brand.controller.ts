@@ -37,13 +37,15 @@ class BrandController extends BaseController {
 		res.status(201).json(res.locals.output);
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.query, res);
 
 		const cacheKey = this.cache.buildKey(
 			BrandEntity.NAME,
 			res.locals.validated.id,
-			res.locals.language,
+			data.language ?? '',
 			'read',
 		);
 
@@ -52,7 +54,7 @@ class BrandController extends BaseController {
 			async () =>
 				await this.brandService.getDataById(
 					res.locals.validated.id,
-					res.locals.language,
+					data,
 					this.policy.allowDeleted(res.locals.auth),
 				),
 		);

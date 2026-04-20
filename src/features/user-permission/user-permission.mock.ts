@@ -1,6 +1,6 @@
 import type UserPermissionEntity from '@/features/user-permission/user-permission.entity';
 import {
-	UserPermissionOrderByEnum,
+	OrderByEnum,
 	userPermissionValidator,
 } from '@/features/user-permission/user-permission.validator';
 import { createPastDate } from '@/helpers';
@@ -23,7 +23,7 @@ export const userPermissionInputPayloads = {
 	find: {
 		page: 1,
 		limit: 10,
-		order_by: UserPermissionOrderByEnum.ID,
+		order_by: OrderByEnum.ID,
 		direction: OrderDirectionEnum.DESC,
 		filter: {
 			entity: 'user',

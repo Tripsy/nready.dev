@@ -2,14 +2,17 @@ import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
-export enum ClientStatusEnum {
-	ACTIVE = 'active',
-	INACTIVE = 'inactive',
-	PENDING = 'pending',
-}
+export const ClientStatusEnum = {
+	ACTIVE: 'active',
+	INACTIVE: 'inactive',
+	PENDING: 'pending',
+} as const;
+
+export type ClientStatus =
+	(typeof ClientStatusEnum)[keyof typeof ClientStatusEnum];
 
 // Allowed status transition configuration
-export const STATUS_TRANSITIONS: StatusTransitions<ClientStatusEnum> = {
+export const STATUS_TRANSITIONS: StatusTransitions<ClientStatus> = {
 	[ClientStatusEnum.ACTIVE]: [ClientStatusEnum.INACTIVE],
 	[ClientStatusEnum.INACTIVE]: [ClientStatusEnum.ACTIVE],
 	[ClientStatusEnum.PENDING]: [
@@ -18,20 +21,22 @@ export const STATUS_TRANSITIONS: StatusTransitions<ClientStatusEnum> = {
 	],
 };
 
-export enum ClientTypeEnum {
-	PERSON = 'person',
-	COMPANY = 'company',
-}
+export const ClientTypeEnum = {
+	PERSON: 'person',
+	COMPANY: 'company',
+} as const;
+
+export type ClientType = (typeof ClientTypeEnum)[keyof typeof ClientTypeEnum];
 
 export type ClientIdentityData =
 	| {
-			client_type: ClientTypeEnum.COMPANY;
+			client_type: typeof ClientTypeEnum.COMPANY;
 			company_name?: string | null;
 			company_cui?: string | null;
 			company_reg_com?: string | null;
 	  }
 	| {
-			client_type: ClientTypeEnum.PERSON;
+			client_type: typeof ClientTypeEnum.PERSON;
 			person_identification_number?: string | null;
 	  };
 
@@ -67,7 +72,7 @@ export default class ClientEntity extends EntityAbstract {
 		enum: ClientTypeEnum,
 		nullable: false,
 	})
-	client_type!: ClientTypeEnum;
+	client_type!: ClientType;
 
 	@Column({
 		type: 'enum',
@@ -75,7 +80,7 @@ export default class ClientEntity extends EntityAbstract {
 		default: ClientStatusEnum.PENDING,
 		nullable: false,
 	})
-	status!: ClientStatusEnum;
+	status!: ClientStatus;
 
 	// COMPANY FIELDS
 	@Column('varchar', { nullable: true })

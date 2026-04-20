@@ -14,7 +14,7 @@ import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 type CreateInput = z.input<typeof clientValidator.create>;
 type CreateCompanyInput = Extract<
 	CreateInput,
-	{ client_type: ClientTypeEnum.COMPANY }
+	{ client_type: typeof ClientTypeEnum.COMPANY }
 >;
 
 export function getClientEntityMock(): ClientEntity {

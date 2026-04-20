@@ -4,21 +4,30 @@ import type ArticleTagEntity from '@/features/article/article-tag.entity';
 import type ArticleTrackEntity from '@/features/article/article-track.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum ArticleStatusEnum {
-	DRAFT = 'draft', // Initial creation
-	PUBLISHED = 'published', // Available for display (note: in combination with show_start_at & show_end_at)
-	ARCHIVED = 'archived', // Not available for display
-}
+export const ArticleStatusEnum = {
+	DRAFT: 'draft', // Initial creation
+	PUBLISHED: 'published', // Available for display (note: in combination with show_start_at & show_end_at)
+	ARCHIVED: 'archived', // Not available for display
+} as const;
 
-export enum ArticleLayoutEnum {
-	DEFAULT = 'default',
-}
+export type ArticleStatus =
+	(typeof ArticleStatusEnum)[keyof typeof ArticleStatusEnum];
 
-export enum ArticleFeaturedStatusEnum {
-	NOWHERE = 'nowhere',
-	HOME = 'home',
-	CATEGORY = 'category',
-}
+export const ArticleLayoutEnum = {
+	DEFAULT: 'default',
+} as const;
+
+export type ArticleLayout =
+	(typeof ArticleLayoutEnum)[keyof typeof ArticleLayoutEnum];
+
+export const ArticleFeaturedStatusEnum = {
+	NOWHERE: 'nowhere',
+	HOME: 'home',
+	CATEGORY: 'category',
+} as const;
+
+export type ArticleFeaturedStatus =
+	(typeof ArticleFeaturedStatusEnum)[keyof typeof ArticleFeaturedStatusEnum];
 
 const ENTITY_TABLE_NAME = 'article';
 
@@ -39,12 +48,12 @@ export default class ArticleEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_article_status')
-	status!: ArticleStatusEnum;
+	status!: ArticleStatus;
 
 	@Column('text', {
 		nullable: false,
 	})
-	layout!: ArticleLayoutEnum;
+	layout!: ArticleLayout;
 
 	@Column('jsonb', {
 		nullable: true,
@@ -75,7 +84,7 @@ export default class ArticleEntity extends EntityAbstract {
 		default: ArticleFeaturedStatusEnum.NOWHERE,
 		nullable: false,
 	})
-	featuredStatus!: ArticleFeaturedStatusEnum;
+	featuredStatus!: ArticleFeaturedStatus;
 
 	// RELATIONS
 	@OneToMany('ArticleTagEntity', (tag: ArticleTagEntity) => tag.article)

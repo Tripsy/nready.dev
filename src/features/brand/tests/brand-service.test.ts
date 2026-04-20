@@ -1,7 +1,11 @@
 import { expect, jest } from '@jest/globals';
 import type { EntityManager, Repository } from 'typeorm';
 import type BrandEntity from '@/features/brand/brand.entity';
-import { BrandStatusEnum, BrandTypeEnum } from '@/features/brand/brand.entity';
+import {
+	type BrandStatus,
+	BrandStatusEnum,
+	BrandTypeEnum,
+} from '@/features/brand/brand.entity';
 import {
 	brandInputPayloads,
 	brandOutputPayloads,
@@ -64,7 +68,7 @@ describe('BrandService', () => {
 		expect(result).toBe(entity);
 	});
 
-	testServiceUpdateStatus<BrandEntity, BrandStatusEnum>(
+	testServiceUpdateStatus<BrandEntity, BrandStatus>(
 		serviceBrand,
 		mockBrand.repository,
 		{

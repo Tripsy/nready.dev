@@ -12,34 +12,46 @@ import type ProductCategoryEntity from '@/features/product/product-category.enti
 import type ProductTagEntity from '@/features/product/product-tag.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum ProductWorkflowEnum {
-	DRAFT = 'draft', // Initial creation
-	PENDING_REVIEW = 'pending_review', // Awaiting approval
-	REVISION_REQUIRED = 'revision_required', // Needs changes
-	READY = 'ready', // Ready to be sold
-}
+export const ProductWorkflowEnum = {
+	DRAFT: 'draft', // Initial creation
+	PENDING_REVIEW: 'pending_review', // Awaiting approval
+	REVISION_REQUIRED: 'revision_required', // Needs changes
+	READY: 'ready', // Ready to be sold
+} as const;
 
-export enum ProductSaleStatusEnum {
-	ON_SALE = 'on_sale',
-	COMING_SOON = 'coming_soon', // Updated via cron based on available_from
-	SEASONAL = 'seasonal', // Updated via cron based on available_from / available_until
-	DISCONTINUED = 'discontinued', // No longer manufactured
-	ARCHIVED = 'archived', // Historical record only
-}
+export type ProductWorkflow =
+	(typeof ProductWorkflowEnum)[keyof typeof ProductWorkflowEnum];
 
-export enum ProductTypeEnum {
-	PHYSICAL = 'physical',
-	DIGITAL = 'digital',
-	SERVICE = 'service',
-}
+export const ProductSaleStatusEnum = {
+	ON_SALE: 'on_sale',
+	COMING_SOON: 'coming_soon', // Updated via cron based on available_from
+	SEASONAL: 'seasonal', // Updated via cron based on available_from / available_until
+	DISCONTINUED: 'discontinued', // No longer manufactured
+	ARCHIVED: 'archived', // Historical record only
+} as const;
+
+export type ProductSaleStatus =
+	(typeof ProductSaleStatusEnum)[keyof typeof ProductSaleStatusEnum];
+
+export const ProductTypeEnum = {
+	PHYSICAL: 'physical',
+	DIGITAL: 'digital',
+	SERVICE: 'service',
+} as const;
+
+export type ProductType =
+	(typeof ProductTypeEnum)[keyof typeof ProductTypeEnum];
 
 /**
  * @note: The stock status should be updated via cron job hourly
  */
-export enum ProductStockEnum {
-	LOW_STOCK = 'low_stock', // Stock running low
-	OUT_OF_STOCK = 'out_of_stock', // Temporarily unavailable
-}
+export const ProductStockEnum = {
+	LOW_STOCK: 'low_stock', // Stock running low
+	OUT_OF_STOCK: 'out_of_stock', // Temporarily unavailable
+} as const;
+
+export type ProductStock =
+	(typeof ProductStockEnum)[keyof typeof ProductStockEnum];
 
 const ENTITY_TABLE_NAME = 'product';
 
@@ -93,7 +105,7 @@ export default class ProductEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_product_workflow')
-	workflow!: ProductWorkflowEnum;
+	workflow!: ProductWorkflow;
 
 	@Column({
 		type: 'enum',
@@ -102,7 +114,7 @@ export default class ProductEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_product_sale_status')
-	sale_status!: ProductSaleStatusEnum;
+	sale_status!: ProductSaleStatus;
 
 	@Column({
 		type: 'enum',
@@ -110,7 +122,7 @@ export default class ProductEntity extends EntityAbstract {
 		default: ProductTypeEnum.PHYSICAL,
 		nullable: false,
 	})
-	type!: ProductTypeEnum;
+	type!: ProductType;
 
 	@Column({
 		type: 'enum',
@@ -118,7 +130,7 @@ export default class ProductEntity extends EntityAbstract {
 		nullable: true,
 		comment: 'Stock status; updated via cron job',
 	})
-	stock_status?: ProductStockEnum | null;
+	stock_status?: ProductStock | null;
 
 	@Column('int', {
 		nullable: false,

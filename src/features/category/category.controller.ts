@@ -48,13 +48,9 @@ class CategoryController extends BaseController {
 		const cacheKey = this.cache.buildKey(
 			CategoryEntity.NAME,
 			res.locals.validated.id,
-			res.locals.validated.with_ancestors
-				? 'with_ancestors'
-				: 'no_ancestors',
-			res.locals.validated.with_children
-				? 'with_children'
-				: 'no_children',
-			res.locals.language,
+			data.with_ancestors ? 'with_ancestors' : 'no_ancestors',
+			data.with_children ? 'with_children' : 'no_children',
+			data.language ?? '',
 			'read',
 		);
 
@@ -63,7 +59,6 @@ class CategoryController extends BaseController {
 			async () =>
 				await this.categoryService.getDataById(
 					res.locals.validated.id,
-					res.locals.language,
 					data,
 					this.policy.allowDeleted(res.locals.auth),
 				),

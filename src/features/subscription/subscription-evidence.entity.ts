@@ -9,10 +9,13 @@ import {
 } from 'typeorm';
 import type SubscriptionEntity from '@/features/subscription/subscription.entity';
 
-export enum SubscriptionEvidenceStatusEnum {
-	SUCCESS = 'success',
-	FAILED = 'failed',
-}
+export const SubscriptionEvidenceStatusEnum = {
+	SUCCESS: 'success',
+	FAILED: 'failed',
+} as const;
+
+export type SubscriptionEvidenceStatus =
+	(typeof SubscriptionEvidenceStatusEnum)[keyof typeof SubscriptionEvidenceStatusEnum];
 
 const ENTITY_TABLE_NAME = 'subscription_evidence';
 
@@ -42,7 +45,7 @@ export default class SubscriptionEvidenceEntity {
 		nullable: false,
 	})
 	@Index('IDX_subscription_evidence_status')
-	status!: SubscriptionEvidenceStatusEnum;
+	status!: SubscriptionEvidenceStatus;
 
 	@Column('jsonb', {
 		nullable: true,

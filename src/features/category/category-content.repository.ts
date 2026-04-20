@@ -4,7 +4,7 @@ import { lang } from '@/config/i18n.setup';
 import { CustomError } from '@/exceptions';
 import type {
 	CategoryContentInput,
-	CategoryTypeEnum,
+	CategoryType,
 } from '@/features/category/category.entity';
 import CategoryContentEntity from '@/features/category/category-content.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
@@ -26,7 +26,7 @@ export const CategoryContentRepository = dataSource
 			manager: EntityManager,
 			contents: CategoryContentInput[],
 			category_id: number,
-			type: CategoryTypeEnum,
+			type: CategoryType,
 		) {
 			const pairs = Array.from(
 				new Map(
@@ -72,7 +72,7 @@ export const CategoryContentRepository = dataSource
 			manager: EntityManager,
 			contents: CategoryContentInput[],
 			category_id: number,
-			type: CategoryTypeEnum,
+			type: CategoryType,
 		) {
 			if (!contents.length) {
 				return;

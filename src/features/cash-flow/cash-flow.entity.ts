@@ -7,54 +7,66 @@ import {
 	ManyToOne,
 	OneToMany,
 } from 'typeorm';
+import { arrayHasValue } from '@/helpers';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
-export enum CurrencyEnum {
-	RON = 'RON',
-	EUR = 'EUR',
-	USD = 'USD',
-}
+export const CurrencyEnum = {
+	RON: 'RON',
+	EUR: 'EUR',
+	USD: 'USD',
+} as const;
+
+export type Currency = (typeof CurrencyEnum)[keyof typeof CurrencyEnum];
 
 export const CURRENCY_DEFAULT = CurrencyEnum.RON;
 
-export enum CashFlowDirectionEnum { // relative to company
-	IN = 'in', // money received
-	OUT = 'out', // money sent
-}
+export const CashFlowDirectionEnum = {
+	IN: 'in', // money received relative to company
+	OUT: 'out', // money sent relative to company
+} as const;
 
-export enum CashFlowCategoryTypeEnum {
-	REVENUE = 'revenue',
-	EXPENSE = 'expense',
-	CORRECTION = 'correction',
-}
+export type CashFlowDirection =
+	(typeof CashFlowDirectionEnum)[keyof typeof CashFlowDirectionEnum];
 
-export enum CashFlowCategoryEnum {
+export const CashFlowCategoryTypeEnum = {
+	REVENUE: 'revenue',
+	EXPENSE: 'expense',
+	CORRECTION: 'correction',
+} as const;
+
+export type CashFlowCategoryType =
+	(typeof CashFlowCategoryTypeEnum)[keyof typeof CashFlowCategoryTypeEnum];
+
+export const CashFlowCategoryEnum = {
 	// Revenue
-	CUSTOMER = 'customer', // When company receive money from customer (invoice based)
+	CUSTOMER: 'customer', // When company receive money from customer (invoice based)
 
 	// Operational Expenses
-	FUEL = 'fuel', // Vehicle fuel
-	MAINTENANCE = 'maintenance', // Vehicle repairs
-	TOLLS = 'tolls', // Road tolls
+	FUEL: 'fuel', // Vehicle fuel
+	MAINTENANCE: 'maintenance', // Vehicle repairs
+	TOLLS: 'tolls', // Road tolls
 
 	// Personnel
-	EMPLOYEE_SALARY = 'employee_salary',
+	EMPLOYEE_SALARY: 'employee_salary',
 
 	// Business Expenses
-	VENDOR = 'vendor', // Third-party services
-	INSURANCE = 'insurance',
-	TAXES = 'taxes',
+	VENDOR: 'vendor', // Third-party services
+	INSURANCE: 'insurance',
+	TAXES: 'taxes',
 
 	// Correction
-	CORRECTION = 'correction',
-	REFUND = 'refund',
-	EMPLOYEE_REIMBURSEMENT = 'employee_reimbursement',
-}
+	CORRECTION: 'correction',
+	REFUND: 'refund',
+	EMPLOYEE_REIMBURSEMENT: 'employee_reimbursement',
+} as const;
+
+export type CashFlowCategory =
+	(typeof CashFlowCategoryEnum)[keyof typeof CashFlowCategoryEnum];
 
 export const getExpectedCategoryType = (
-	category: CashFlowCategoryEnum,
-): CashFlowCategoryTypeEnum => {
+	category: CashFlowCategory,
+): CashFlowCategoryType => {
 	const revenueCategories = [CashFlowCategoryEnum.CUSTOMER];
 	const expenseCategories = [
 		CashFlowCategoryEnum.FUEL,
@@ -71,15 +83,15 @@ export const getExpectedCategoryType = (
 		CashFlowCategoryEnum.EMPLOYEE_REIMBURSEMENT,
 	];
 
-	if (revenueCategories.includes(category)) {
+	if (arrayHasValue(category, revenueCategories)) {
 		return CashFlowCategoryTypeEnum.REVENUE;
 	}
 
-	if (expenseCategories.includes(category)) {
+	if (arrayHasValue(category, expenseCategories)) {
 		return CashFlowCategoryTypeEnum.EXPENSE;
 	}
 
-	if (correctionCategories.includes(category)) {
+	if (arrayHasValue(category, correctionCategories)) {
 		return CashFlowCategoryTypeEnum.CORRECTION;
 	}
 
@@ -87,8 +99,8 @@ export const getExpectedCategoryType = (
 };
 
 export const getExpectedDirection = (
-	categoryType: CashFlowCategoryTypeEnum,
-): CashFlowDirectionEnum | null => {
+	categoryType: CashFlowCategoryType,
+): CashFlowDirection | null => {
 	switch (categoryType) {
 		case CashFlowCategoryTypeEnum.REVENUE:
 			return CashFlowDirectionEnum.IN;
@@ -100,15 +112,18 @@ export const getExpectedDirection = (
 	}
 };
 
-export enum CashFlowStatusEnum {
-	PENDING = 'pending', // Created, waiting for gateway or user redirect
-	AUTHORIZED = 'authorized', // CashFlow authorized but not captured
-	COMPLETED = 'completed', // Money captured
-	FAILED = 'failed',
-	CANCELED = 'canceled', // User canceled before completion
-	EXPIRED = 'expired', // Authorization expired
-	REQUIRES_ACTION = 'requires_action', // 3D Secure, etc.
-}
+export const CashFlowStatusEnum = {
+	PENDING: 'pending', // Created, waiting for gateway or user redirect
+	AUTHORIZED: 'authorized', // CashFlow authorized but not captured
+	COMPLETED: 'completed', // Money captured
+	FAILED: 'failed',
+	CANCELED: 'canceled', // User canceled before completion
+	EXPIRED: 'expired', // Authorization expired
+	REQUIRES_ACTION: 'requires_action', // 3D Secure, etc.
+} as const;
+
+export type CashFlowStatus =
+	(typeof CashFlowStatusEnum)[keyof typeof CashFlowStatusEnum];
 
 // Only entries with specified statuses are available for update
 export const MUTABLE_STATUSES = [
@@ -121,7 +136,7 @@ export const MUTABLE_STATUSES = [
 export const REFUNDABLE_STATUSES = [CashFlowStatusEnum.COMPLETED];
 
 // Allowed status transition configuration
-export const STATUS_TRANSITIONS: StatusTransitions<CashFlowStatusEnum> = {
+export const STATUS_TRANSITIONS: StatusTransitions<CashFlowStatus> = {
 	[CashFlowStatusEnum.PENDING]: [
 		CashFlowStatusEnum.AUTHORIZED,
 		CashFlowStatusEnum.COMPLETED,
@@ -152,29 +167,35 @@ export const STATUS_TRANSITIONS: StatusTransitions<CashFlowStatusEnum> = {
 	[CashFlowStatusEnum.EXPIRED]: [],
 };
 
-export enum CashFlowGatewayEnum {
-	DIRECT = 'direct',
-	STRIPE = 'stripe',
-	PAYPAL = 'paypal',
-}
+export const CashFlowGatewayEnum = {
+	DIRECT: 'direct',
+	STRIPE: 'stripe',
+	PAYPAL: 'paypal',
+} as const;
 
-export enum CashFlowMethodEnum {
+export type CashFlowGateway =
+	(typeof CashFlowGatewayEnum)[keyof typeof CashFlowGatewayEnum];
+
+export const CashFlowMethodEnum = {
 	// Card methods
-	CREDIT_CARD = 'credit_card',
-	DEBIT_CARD = 'debit_card',
+	CREDIT_CARD: 'credit_card',
+	DEBIT_CARD: 'debit_card',
 
 	// Digital wallets
-	PAYPAL = 'paypal',
+	PAYPAL: 'paypal',
 
 	// Traditional
-	CASH = 'cash',
-	BANK_TRANSFER = 'bank_transfer',
-	CHECK = 'check',
+	CASH: 'cash',
+	BANK_TRANSFER: 'bank_transfer',
+	CHECK: 'check',
 
-	// Other
-	CRYPTO = 'crypto',
-	GIFT_CARD = 'gift_card',
-}
+	// // Other
+	CRYPTO: 'crypto',
+	GIFT_CARD: 'gift_card',
+} as const;
+
+export type CashFlowMethod =
+	(typeof CashFlowMethodEnum)[keyof typeof CashFlowMethodEnum];
 
 /**
  * Hard-rules:
@@ -228,7 +249,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		default: CashFlowDirectionEnum.IN,
 		nullable: false,
 	})
-	direction!: CashFlowDirectionEnum;
+	direction!: CashFlowDirection;
 
 	@Column({
 		type: 'enum',
@@ -236,7 +257,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		default: CashFlowCategoryTypeEnum.REVENUE,
 		nullable: false,
 	})
-	category_type!: CashFlowCategoryTypeEnum;
+	category_type!: CashFlowCategoryType;
 
 	@Column({
 		type: 'enum',
@@ -244,7 +265,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		default: CashFlowCategoryEnum.CUSTOMER,
 		nullable: false,
 	})
-	category!: CashFlowCategoryEnum;
+	category!: CashFlowCategory;
 
 	@Column({
 		type: 'enum',
@@ -252,7 +273,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		default: CashFlowGatewayEnum.DIRECT,
 		nullable: false,
 	})
-	gateway!: CashFlowGatewayEnum;
+	gateway!: CashFlowGateway;
 
 	@Column({
 		type: 'enum',
@@ -260,7 +281,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		default: CashFlowMethodEnum.CASH,
 		nullable: false,
 	})
-	method!: CashFlowMethodEnum;
+	method!: CashFlowMethod;
 
 	@Column({
 		type: 'enum',
@@ -268,7 +289,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		default: CashFlowStatusEnum.PENDING,
 		nullable: false,
 	})
-	status!: CashFlowStatusEnum;
+	status!: CashFlowStatus;
 
 	@Column('int', {
 		nullable: false,
@@ -286,7 +307,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		default: CURRENCY_DEFAULT,
 		nullable: false,
 	})
-	currency!: CurrencyEnum;
+	currency!: Currency;
 
 	@Column('decimal', {
 		precision: 10,

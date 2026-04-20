@@ -1,6 +1,9 @@
 import { v4 as uuid } from 'uuid';
 import dataSource from '@/config/data-source.config';
-import { RequestContextSource, requestContext } from '@/config/request.context';
+import {
+	RequestContextSourceEnum,
+	requestContext,
+} from '@/config/request.context';
 import TemplateEntity, {
 	TemplateTypeEnum,
 } from '@/features/template/template.entity';
@@ -218,21 +221,21 @@ async function seedTemplates() {
 	const connection = dataSource;
 
 	try {
-		console.log('Initializing database connection...');
+		console.debug('Initializing database connection...');
 		await connection.initialize();
 
 		await requestContext.run(
 			{
 				auth_id: 0,
 				performed_by: 'template.seed',
-				source: RequestContextSource.SEED,
+				source: RequestContextSourceEnum.SEED,
 				request_id: uuid(),
 				language: 'en',
 			},
 			async () => {
 				await connection.transaction(
 					async (transactionalEntityManager) => {
-						console.log('Clearing templates table...');
+						console.debug('Clearing templates table...');
 
 						const tableName =
 							connection.getMetadata(TemplateEntity).tableName;
@@ -250,7 +253,7 @@ async function seedTemplates() {
 								TemplateEntity,
 							);
 
-						console.log('Inserting new templates...');
+						console.debug('Inserting new templates...');
 
 						// Insert new data
 						await repository.save(templateData);
@@ -259,7 +262,7 @@ async function seedTemplates() {
 			},
 		);
 
-		console.log('Templates seeded successfully ✅');
+		console.debug('Templates seeded successfully ✅');
 	} catch (error) {
 		console.error('Error seeding templates:', error);
 		throw error;
@@ -269,7 +272,7 @@ async function seedTemplates() {
 			// Wait a moment to ensure all operations are complete
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			await connection.destroy();
-			console.log('Database connection closed.');
+			console.debug('Database connection closed.');
 		}
 	}
 }

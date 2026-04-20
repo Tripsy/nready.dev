@@ -1,3 +1,14 @@
+# NReady
+
+![Node.js](https://img.shields.io/badge/Node.js-22-green)
+![Express](https://img.shields.io/badge/Express-4.21-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
+![Docker](https://img.shields.io/badge/Docker-ready-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Redis](https://img.shields.io/badge/Redis-integrated-red)
+![JWT](https://img.shields.io/badge/JWT-auth-orange)
+![Zod](https://img.shields.io/badge/Zod-validation-3E6B9B)
+
 # 📄 Description
 
 NReady is a production-ready **Node.js - Express / TypeScript** boilerplate designed for complex, secure REST APIs.
@@ -37,12 +48,35 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 
 # 🚀 Tech Stack
 
-- Runtime: Node.js
-- Framework: Express.js
-- Database: PostgresSQL, MariaDB
-- Language: TypeScript
-- Security: Helmet, CORS, rate limiting, input validation (powered by Zod), JWT tokens, bcrypt hashing
-- Logging: Pino (destinations: file, email, database)
+## Core
+- Language: TypeScript 5.9
+- Runtime Environment: Node.js 22
+- Runtime: Node.js 22
+- Framework: Express.js 4.21
+
+## Code Quality
+- Linting & Formatting: Biome
+- Circular Dependency Check: Madge
+- Validation: Zod 4.3
+
+## Security
+- Authentication: JWT tokens
+- Password Hashing: bcrypt
+- Headers Security: Helmet
+- Cross-Origin: CORS
+- Rate Limiting: express-rate-limit
+- Input Validation: Zod 4.3
+
+## Database
+- Primary: PostgreSQL 15
+- Secondary: MariaDB 11
+- ORM: TypeORM
+
+## Logging
+- Logger: Pino
+- Transports: file, email, database
+
+## Infrastructure
 - Containerization: Docker
 - Testing: Jest, Supertest
 
@@ -200,6 +234,10 @@ $ pnpm run test account.unit.ts --detect-open-handles
 $ pnpm run biome
 $ pnpm run madge
 
+// CLI
+$ pnpx tsx cli/cron.ts list -s  
+$ pnpx tsx cli/cron.ts run cron-time-check
+
 ```
 
 # 📁 Structure
@@ -260,15 +298,13 @@ $ pnpm run madge
 
 # 📌 TODO
 
-1. 'no-console': 'warn', 
-2. Does it make sense to have validator test considering the new way mocks are created?
-3. Go on FE → client, client_address, place, brand, cash-flow
-4. Go on FE → category
-5. Deploy on AWS
-6. API documentation
+1. Go on FE → brand, cash-flow
+2. Go on FE → category
+3. Deploy on AWS
+4. API documentation
     > done for discounts
     > do for: account, category, carrier, cash-flow, client, cron-history, log-history, mail-queue, permission, place, template, user-permission
-7. create CLI script which should generate something like:
+5. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -290,11 +326,11 @@ $ pnpm run madge
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-8. Tests for account-recovery.service.ts are missing 
-9. feature - images  (image-content)
-10. Go on FE #3 → image (multer - File upload handling)
-11. Go on FE #2 → carrier, discount,
-12. wip entities:
+6. Tests for account-recovery.service.ts are missing 
+7. feature - images  (image-content)
+8. Go on FE #3 → image (multer - File upload handling)
+9. Go on FE #2 → carrier, discount,
+10. wip entities:
      - article
          - article-category
          - article-content
@@ -313,8 +349,8 @@ $ pnpm run madge
      - subscription
          - subscription-evidence
      - term
-13. For reporting create separate DB table (in a new schema `reporting`). This new table can be updated via subscribers.
-14. cron hanging / delaying / semaphore 
+11. For reporting create separate DB table (in a new schema `reporting`). This new table can be updated via subscribers.
+12. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

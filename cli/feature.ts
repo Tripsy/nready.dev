@@ -291,7 +291,7 @@ class FeatureManager {
 	// 					`Failed to generate migration: ${error.message || 'Unknown error'}`,
 	// 				);
 	// 		} else {
-	// 			console.log('');
+	// 			console.debug('');
 	// 			console.error(error);
 	// 		}
 	//
@@ -331,7 +331,7 @@ class FeatureManager {
 	// 					`Failed to run migration: ${error.message || 'Unknown error'}`,
 	// 				);
 	// 		} else {
-	// 			console.log('');
+	// 			console.debug('');
 	// 			console.error(error);
 	// 		}
 	//

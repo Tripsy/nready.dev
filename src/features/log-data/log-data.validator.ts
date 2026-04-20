@@ -6,13 +6,13 @@ import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 import { LogDataLevelEnum } from '@/shared/types/log-data.type';
 
-export enum OrderByEnum {
-	ID = 'id',
-	REQUEST_ID = 'request_id',
-	CATEGORY = 'category',
-	LEVEL = 'level',
-	CREATED_AT = 'created_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	REQUEST_ID: 'request_id',
+	CATEGORY: 'category',
+	LEVEL: 'level',
+	CREATED_AT: 'created_at',
+} as const;
 
 const validatorMessages = {
 	invalid_category: lang('log-data.validation.invalid_category'),

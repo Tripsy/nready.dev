@@ -1,28 +1,37 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
-export enum DiscountScopeEnum {
-	CLIENT = 'client',
-	ORDER = 'order',
-	PRODUCT = 'product',
-	CATEGORY = 'category',
-	COUNTRY = 'country',
-}
+export const DiscountScopeEnum = {
+	CLIENT: 'client',
+	ORDER: 'order',
+	PRODUCT: 'product',
+	CATEGORY: 'category',
+	COUNTRY: 'country',
+} as const;
 
-export enum DiscountTypeEnum {
-	PERCENT = 'percent',
-	AMOUNT = 'amount',
-}
+export type DiscountScope =
+	(typeof DiscountScopeEnum)[keyof typeof DiscountScopeEnum];
 
-export enum DiscountReasonEnum {
-	FLASH_SALE = 'flash_sale',
-	FIRST_TIME_CUSTOMER = 'first_time_customer',
-	LOYALTY_DISCOUNT = 'loyalty_discount',
-	BIRTHDAY_DISCOUNT = 'birthday_discount',
-	REFERRAL_DISCOUNT = 'referral_discount',
-	VIP_DISCOUNT = 'vip_discount',
-	SPECIAL_DISCOUNT = 'special_discount',
-}
+export const DiscountTypeEnum = {
+	PERCENT: 'percent',
+	AMOUNT: 'amount',
+} as const;
+
+export type DiscountType =
+	(typeof DiscountTypeEnum)[keyof typeof DiscountTypeEnum];
+
+export const DiscountReasonEnum = {
+	FLASH_SALE: 'flash_sale',
+	FIRST_TIME_CUSTOMER: 'first_time_customer',
+	LOYALTY_DISCOUNT: 'loyalty_discount',
+	BIRTHDAY_DISCOUNT: 'birthday_discount',
+	REFERRAL_DISCOUNT: 'referral_discount',
+	VIP_DISCOUNT: 'vip_discount',
+	SPECIAL_DISCOUNT: 'special_discount',
+} as const;
+
+export type DiscountReason =
+	(typeof DiscountReasonEnum)[keyof typeof DiscountReasonEnum];
 
 /*
     @example
@@ -39,10 +48,10 @@ export type DiscountRules = Record<
 
 export type DiscountSnapshot = {
 	label: string;
-	scope: DiscountScopeEnum;
-	reason: DiscountReasonEnum;
+	scope: DiscountScope;
+	reason: DiscountReason;
 	reference?: string | null;
-	type: DiscountTypeEnum;
+	type: DiscountType;
 	rules?: DiscountRules;
 	value: number;
 };
@@ -69,7 +78,7 @@ export default class DiscountEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_discount_scope')
-	scope!: DiscountScopeEnum;
+	scope!: DiscountScope;
 
 	@Column({
 		type: 'enum',
@@ -77,7 +86,7 @@ export default class DiscountEntity extends EntityAbstract {
 		nullable: false,
 	})
 	@Index('IDX_discount_reason')
-	reason!: DiscountReasonEnum;
+	reason!: DiscountReason;
 
 	@Column('varchar', {
 		nullable: true,
@@ -91,7 +100,7 @@ export default class DiscountEntity extends EntityAbstract {
 		enum: DiscountTypeEnum,
 		nullable: false,
 	})
-	type!: DiscountTypeEnum;
+	type!: DiscountType;
 
 	@Column('jsonb', {
 		nullable: true,

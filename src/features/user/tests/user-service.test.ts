@@ -3,7 +3,7 @@ import type AccountTokenEntity from '@/features/account/account-token.entity';
 import type { AccountTokenQuery } from '@/features/account/account-token.repository';
 import { AccountTokenService } from '@/features/account/account-token.service';
 import type UserEntity from '@/features/user/user.entity';
-import { UserStatusEnum } from '@/features/user/user.entity';
+import { type UserStatus, UserStatusEnum } from '@/features/user/user.entity';
 import {
 	getUserEntityMock,
 	userOutputPayloads,
@@ -59,7 +59,7 @@ describe('UserService', () => {
 		getUserEntityMock(),
 	);
 
-	testServiceUpdateStatus<UserEntity, UserStatusEnum>(
+	testServiceUpdateStatus<UserEntity, UserStatus>(
 		serviceUser,
 		mockUser.repository,
 		{

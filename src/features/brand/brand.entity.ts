@@ -6,20 +6,25 @@ import {
 } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
-export enum BrandStatusEnum {
-	ACTIVE = 'active',
-	INACTIVE = 'inactive',
-}
+export const BrandStatusEnum = {
+	ACTIVE: 'active',
+	INACTIVE: 'inactive',
+} as const;
+
+export type BrandStatus =
+	(typeof BrandStatusEnum)[keyof typeof BrandStatusEnum];
 
 // Allowed status transition configuration
-export const STATUS_TRANSITIONS: StatusTransitions<BrandStatusEnum> = {
+export const STATUS_TRANSITIONS: StatusTransitions<BrandStatus> = {
 	[BrandStatusEnum.ACTIVE]: [BrandStatusEnum.INACTIVE],
 	[BrandStatusEnum.INACTIVE]: [BrandStatusEnum.ACTIVE],
 };
 
-export enum BrandTypeEnum {
-	PRODUCT = 'product',
-}
+export const BrandTypeEnum = {
+	PRODUCT: 'product',
+} as const;
+
+export type BrandType = (typeof BrandTypeEnum)[keyof typeof BrandTypeEnum];
 
 export type BrandContentType = {
 	language: string;
@@ -53,7 +58,7 @@ export default class BrandEntity extends EntityAbstract {
 		default: BrandStatusEnum.ACTIVE,
 		nullable: false,
 	})
-	status!: BrandStatusEnum;
+	status!: BrandStatus;
 
 	@Column({
 		type: 'enum',
@@ -62,7 +67,7 @@ export default class BrandEntity extends EntityAbstract {
 		nullable: false,
 		comment: 'Specifies the entity type this brand belongs to',
 	})
-	type!: BrandTypeEnum;
+	type!: BrandType;
 
 	@Column('int', {
 		nullable: false,

@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
-import PlaceEntity from '@/features/place/place.entity';
+import CategoryEntity from '@/features/category/category.entity';
 import { type PlacePolicy, placePolicy } from '@/features/place/place.policy';
 import {
 	type PlaceService,
@@ -37,13 +37,15 @@ class PlaceController extends BaseController {
 		res.status(201).json(res.locals.output);
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
 
+		const data = this.validate(this.validator.read, req.query, res);
+
 		const cacheKey = this.cache.buildKey(
-			PlaceEntity.NAME,
+			CategoryEntity.NAME,
 			res.locals.validated.id,
-			res.locals.language,
+			data.language ?? '',
 			'read',
 		);
 
@@ -52,7 +54,7 @@ class PlaceController extends BaseController {
 			async () =>
 				await this.placeService.getDataById(
 					res.locals.validated.id,
-					res.locals.language,
+					data,
 					this.policy.allowDeleted(res.locals.auth),
 				),
 		);

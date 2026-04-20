@@ -6,10 +6,13 @@ import {
 	UpdateDateColumn,
 } from 'typeorm';
 
-export enum OrderDirectionEnum {
-	ASC = 'ASC',
-	DESC = 'DESC',
-}
+export const OrderDirectionEnum = {
+	ASC: 'ASC',
+	DESC: 'DESC',
+} as const;
+
+export type OrderDirection =
+	(typeof OrderDirectionEnum)[keyof typeof OrderDirectionEnum];
 
 export type PageMeta = {
 	title?: string;

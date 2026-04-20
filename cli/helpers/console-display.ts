@@ -71,15 +71,15 @@ class ConsoleDisplay {
 
 		switch (type) {
 			case 'headline':
-				console.log(`${indent}${'═'.repeat(50)}`);
-				console.log(`${indent}  ${message.toUpperCase()}`);
-				console.log(`${indent}${'═'.repeat(50)}`);
+				console.debug(`${indent}${'═'.repeat(50)}`);
+				console.debug(`${indent}  ${message.toUpperCase()}`);
+				console.debug(`${indent}${'═'.repeat(50)}`);
 				break;
 
 			case 'subheadline':
-				console.log(`${indent}${'─'.repeat(message.length + 4)}`);
-				console.log(`${indent}  ${message}`);
-				console.log(`${indent}${'─'.repeat(message.length + 4)}`);
+				console.debug(`${indent}${'─'.repeat(message.length + 4)}`);
+				console.debug(`${indent}  ${message}`);
+				console.debug(`${indent}${'─'.repeat(message.length + 4)}`);
 				break;
 
 			case 'error':
@@ -87,7 +87,7 @@ class ConsoleDisplay {
 				break;
 
 			case 'default':
-				console.log(`${indent}${message}`);
+				console.debug(`${indent}${message}`);
 				break;
 
 			default: {
@@ -95,7 +95,7 @@ class ConsoleDisplay {
 
 				const iconToUse =
 					this.icons[type as IconType] ?? 'icon_not_found';
-				console.log(`${indent}${iconToUse} ${message}`);
+				console.debug(`${indent}${iconToUse} ${message}`);
 				break;
 			}
 		}
@@ -255,24 +255,24 @@ class ConsoleDisplay {
 			.map((col) => col.toUpperCase().padEnd(columnWidths[col]))
 			.join(' │ ');
 
-		console.log(`\n${this.getIndent()}${header}`);
-		console.log(`${this.getIndent()}${'─'.repeat(header.length)}`);
+		console.debug(`\n${this.getIndent()}${header}`);
+		console.debug(`${this.getIndent()}${'─'.repeat(header.length)}`);
 
 		// Print rows
 		data.forEach((row) => {
 			const rowStr = allColumns
 				.map((col) => String(row[col] || '').padEnd(columnWidths[col]))
 				.join(' │ ');
-			console.log(`${this.getIndent()}${rowStr}`);
+			console.debug(`${this.getIndent()}${rowStr}`);
 		});
 
-		console.log();
+		console.debug();
 		return this;
 	}
 
 	// Divider line
 	divider(length: number = 50, char: string = '─'): this {
-		console.log(`${this.getIndent()}${char.repeat(length)}`);
+		console.debug(`${this.getIndent()}${char.repeat(length)}`);
 		return this;
 	}
 
@@ -282,7 +282,7 @@ class ConsoleDisplay {
 			this.text(label, 'info');
 		}
 
-		console.log(`${this.getIndent()}${JSON.stringify(data, null, 2)}`);
+		console.debug(`${this.getIndent()}${JSON.stringify(data, null, 2)}`);
 		return this;
 	}
 
@@ -295,7 +295,7 @@ class ConsoleDisplay {
 	// Blank line
 	blank(lines: number = 1): this {
 		for (let i = 0; i < lines; i++) {
-			console.log();
+			console.debug();
 		}
 		return this;
 	}

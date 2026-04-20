@@ -4,9 +4,9 @@ import {
 	type SoftRemoveEvent,
 	type UpdateEvent,
 } from 'typeorm';
-import { LogHistoryAction } from '@/features/log-history/log-history.entity';
 import TemplateEntity from '@/features/template/template.entity';
 import SubscriberAbstract from '@/shared/abstracts/subscriber.abstract';
+import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 
 @EventSubscriber()
 export class TemplateSubscriber extends SubscriberAbstract<TemplateEntity> {
@@ -30,7 +30,7 @@ export class TemplateSubscriber extends SubscriberAbstract<TemplateEntity> {
 			event.databaseEntity.type,
 		]);
 
-		this.logHistory(id, LogHistoryAction.REMOVED);
+		this.logHistory(id, LogHistoryActionEnum.REMOVED);
 	}
 
 	afterSoftRemove(event: SoftRemoveEvent<TemplateEntity>) {
@@ -39,7 +39,7 @@ export class TemplateSubscriber extends SubscriberAbstract<TemplateEntity> {
 		this.cacheClean(id);
 		this.cacheClean(event.databaseEntity.label);
 
-		this.logHistory(id, LogHistoryAction.DELETED);
+		this.logHistory(id, LogHistoryActionEnum.DELETED);
 	}
 
 	async afterUpdate(event: UpdateEvent<TemplateEntity>) {
@@ -51,8 +51,8 @@ export class TemplateSubscriber extends SubscriberAbstract<TemplateEntity> {
 		this.logHistory(
 			id,
 			this.isRestore(event)
-				? LogHistoryAction.RESTORED
-				: LogHistoryAction.UPDATED,
+				? LogHistoryActionEnum.RESTORED
+				: LogHistoryActionEnum.UPDATED,
 		);
 	}
 }

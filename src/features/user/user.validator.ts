@@ -19,12 +19,12 @@ export const paramsUpdateList: string[] = [
 	'operator_type',
 ];
 
-export enum OrderByEnum {
-	ID = 'id',
-	NAME = 'name',
-	CREATED_AT = 'created_at',
-	UPDATED_AT = 'updated_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	NAME: 'name',
+	CREATED_AT: 'created_at',
+	UPDATED_AT: 'updated_at',
+} as const;
 
 const validatorMessages = {
 	invalid_name: lang('user.validation.invalid_name'),

@@ -1,7 +1,10 @@
 import type { Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { Configuration } from '@/config/settings.config';
-import ClientEntity, { ClientTypeEnum } from '@/features/client/client.entity';
+import ClientEntity, {
+	type ClientType,
+	ClientTypeEnum,
+} from '@/features/client/client.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
 export class ClientQuery extends RepositoryAbstract<ClientEntity> {
@@ -9,7 +12,7 @@ export class ClientQuery extends RepositoryAbstract<ClientEntity> {
 		super(repository, ClientEntity.NAME);
 	}
 
-	filterByTerm(term?: string, client_type?: ClientTypeEnum): this {
+	filterByTerm(term?: string, client_type?: ClientType): this {
 		if (term) {
 			if (!Number.isNaN(Number(term)) && term.trim() !== '') {
 				this.filterBy('id', Number(term));

@@ -8,9 +8,9 @@ import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = ['name', 'slug', 'type'];
 
-export enum OrderByEnum {
-	ID = 'id',
-}
+export const OrderByEnum = {
+	ID: 'id',
+} as const;
 
 const validatorMessages = {
 	invalid_description: lang('brand.validation.invalid_description'),
@@ -43,6 +43,12 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 				'invalid_meta_description',
 			),
 			invalid_meta_keywords: this.getMessage('invalid_meta_keywords'),
+		}),
+	});
+
+	readonly read = z.object({
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
 		}),
 	});
 

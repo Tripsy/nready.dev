@@ -1,14 +1,14 @@
-import { UserOperatorTypeEnum } from '@/features/user/user.entity';
+import { UserOperatorType } from '@/features/user/user.entity';
 import { OutputWrapper } from '@/middleware/output-handler.middleware';
-import { UserRoleEnum } from '@/shared/types/user-role.type';
+import { UserRole } from '@/shared/types/user-role.type';
 
 export type AuthContext = {
 	id: number;
 	email: string;
 	name: string;
 	language: string;
-	role: UserRoleEnum | 'visitor';
-	operator_type: UserOperatorTypeEnum | null;
+	role: UserRole | 'visitor';
+	operator_type: UserOperatorType | null;
 	permissions: string[];
 	activeToken: string;
 };

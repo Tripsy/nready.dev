@@ -14,9 +14,9 @@ export const paramsUpdateList: string[] = [
 	'notes',
 ];
 
-export enum OrderByEnum {
-	ID = 'id',
-}
+export const OrderByEnum = {
+	ID: 'id',
+} as const;
 
 const validatorMessages = {
 	invalid_address_type: lang(
@@ -36,6 +36,12 @@ const validatorMessages = {
 export class ClientAddressValidator extends BaseValidator<
 	typeof validatorMessages
 > {
+	readonly read = z.object({
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}).default(Configuration.get('app.language') as string),
+	});
+
 	readonly create = z.object({
 		address_type: this.validateEnum(
 			ClientAddressTypeEnum,

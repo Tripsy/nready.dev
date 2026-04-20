@@ -21,10 +21,13 @@ export type EmailAddressType = {
 	address: string;
 };
 
-export enum EmailProvider {
-	SMTP = 'smtp',
-	SES = 'ses',
-}
+export const EmailProviderEnum = {
+	SMTP: 'smtp',
+	SES: 'ses',
+} as const;
+
+export type EmailProvider =
+	(typeof EmailProviderEnum)[keyof typeof EmailProviderEnum];
 
 export type SendEmailArgs = {
 	content: EmailContent;

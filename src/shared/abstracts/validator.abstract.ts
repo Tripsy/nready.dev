@@ -234,7 +234,7 @@ export abstract class BaseValidator<
 		if (options.required) {
 			if (!options?.minChars && !options?.maxChars) {
 				return this.coerceEmpty(
-					baseSchema.nonempty({ message: message.invalid }),
+					baseSchema.min(1, { message: message.invalid }),
 				) as z.ZodType<string>;
 			} else {
 				return this.coerceEmpty(baseSchema) as z.ZodType<string>;
@@ -378,13 +378,14 @@ export abstract class BaseValidator<
 			...optionsData,
 		};
 
-		const baseSchema = z.enum(enumObj, { message });
+		const values = Object.values(enumObj);
+		const baseSchema = z.enum(values, { message });
 
 		if (options.required) {
-			return baseSchema;
+			return baseSchema as unknown as z.ZodType<T[keyof T]>;
 		}
 
-		return this.preprocessOptional(baseSchema) as z.ZodType<
+		return this.preprocessOptional(baseSchema) as unknown as z.ZodType<
 			T[keyof T] | TEmpty
 		>;
 	}

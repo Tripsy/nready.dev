@@ -10,7 +10,10 @@ import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { CustomError, NotFoundError } from '@/exceptions';
 import { formatDate } from '@/helpers';
-import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+import {
+	type OrderDirection,
+	OrderDirectionEnum,
+} from '@/shared/abstracts/entity.abstract';
 
 type QueryValue = string | number | (string | number)[] | null;
 type QueryParams = Record<string, QueryValue>;
@@ -43,8 +46,8 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 	}
 
 	debug(): this {
-		console.log('SQL:', this.query.getSql());
-		console.log('Parameters:', this.query.getParameters());
+		console.debug('SQL:', this.query.getSql());
+		console.debug('Parameters:', this.query.getParameters());
 
 		return this;
 	}
@@ -241,7 +244,7 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 
 	orderBy(
 		column?: string,
-		direction: OrderDirectionEnum = OrderDirectionEnum.ASC,
+		direction: OrderDirection = OrderDirectionEnum.ASC,
 	): this {
 		if (column) {
 			this.query.addOrderBy(`${this.prepareColumn(column)}`, direction);

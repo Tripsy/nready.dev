@@ -13,12 +13,12 @@ export const paramsUpdateList: string[] = [
 	'notes',
 ];
 
-export enum OrderByEnum {
-	ID = 'id',
-	NAME = 'name',
-	CREATED_AT = 'created_at',
-	UPDATED_AT = 'updated_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	NAME: 'name',
+	CREATED_AT: 'created_at',
+	UPDATED_AT: 'updated_at',
+} as const;
 
 const validatorMessages = {
 	invalid_name: lang('carrier.validation.website_invalid'),

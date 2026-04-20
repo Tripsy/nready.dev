@@ -1,16 +1,16 @@
 import { z } from 'zod';
 import { lang } from '@/config/i18n.setup';
-import { RequestContextSource } from '@/config/request.context';
+import { RequestContextSourceEnum } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export enum OrderByEnum {
-	ID = 'id',
-	ENTITY = 'entity',
-	ACTION = 'action',
-	RECORDED_AT = 'recorded_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	ENTITY: 'entity',
+	ACTION: 'action',
+	RECORDED_AT: 'recorded_at',
+} as const;
 
 const validatorMessages = {
 	invalid_source: lang('log-history.validation.invalid_source'),
@@ -68,7 +68,7 @@ export class LogHistoryValidator extends BaseValidator<
 				required: false,
 			}),
 			source: this.validateEnum(
-				RequestContextSource,
+				RequestContextSourceEnum,
 				this.getMessage('invalid_source'),
 				{ required: false },
 			),

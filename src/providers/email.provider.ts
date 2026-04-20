@@ -15,7 +15,8 @@ import { SmtpEmailService } from '@/providers/email/email-smtp.service';
 import { getSystemLogger } from '@/providers/logger.provider';
 import {
 	type EmailAddressType,
-	EmailProvider,
+	type EmailProvider,
+	EmailProviderEnum,
 	type EmailService,
 	type SendEmailArgs,
 } from '@/shared/types/email.type';
@@ -113,14 +114,14 @@ let currentServiceInstance: EmailService | null = null;
 export function getEmailService(): EmailService {
 	const provider =
 		(Configuration.get('mail.provider') as EmailProvider) ||
-		EmailProvider.SES;
+		EmailProviderEnum.SES;
 
 	if (currentServiceInstance) {
 		return currentServiceInstance;
 	}
 
 	switch (provider) {
-		case EmailProvider.SMTP:
+		case EmailProviderEnum.SMTP:
 			currentServiceInstance = new SmtpEmailService();
 			break;
 		default:

@@ -1,6 +1,6 @@
 import type PermissionEntity from '@/features/permission/permission.entity';
 import {
-	PermissionOrderByEnum,
+	OrderByEnum,
 	permissionValidator,
 } from '@/features/permission/permission.validator';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
@@ -22,7 +22,7 @@ export const permissionInputPayloads = {
 	find: {
 		page: 1,
 		limit: 10,
-		order_by: PermissionOrderByEnum.ID,
+		order_by: OrderByEnum.ID,
 		direction: OrderDirectionEnum.DESC,
 		filter: {
 			term: 'user',

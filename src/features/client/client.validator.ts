@@ -25,10 +25,10 @@ export const paramsUpdateList = [
 	'notes',
 ];
 
-export enum OrderByEnum {
-	ID = 'id',
-	CREATED_AT = 'created_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	CREATED_AT: 'created_at',
+} as const;
 
 const validatorMessages = {
 	invalid_iban: lang('client.validation.invalid_iban'),

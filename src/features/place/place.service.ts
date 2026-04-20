@@ -10,6 +10,7 @@ import {
 } from '@/features/place/place.validator';
 import PlaceContentRepository from '@/features/place/place-content.repository';
 import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { PlaceType } from '@/shared/types/place.type';
 
 export class PlaceService {
 	constructor(
@@ -21,7 +22,7 @@ export class PlaceService {
 
 	public async checkParentId(
 		action: 'create' | 'update',
-		place_type: PlaceTypeEnum,
+		place_type: PlaceType,
 		parent_id?: number,
 	) {
 		if (place_type === PlaceTypeEnum.COUNTRY) {
@@ -189,20 +190,11 @@ export class PlaceService {
 	 */
 	public async getDataById(
 		id: number,
-		language: string,
+		data: ValidatorOutput<PlaceValidator, 'read'>,
 		withDeleted: boolean,
 	) {
-		return await this.repository
+		const query = this.repository
 			.createQuery()
-			.joinAndSelect(
-				'place.contents',
-				'content',
-				'INNER',
-				'content.language = :language',
-				{
-					language: language,
-				},
-			)
 			.select([
 				'place.id',
 				'place.place_type',
@@ -211,14 +203,27 @@ export class PlaceService {
 				'place.created_at',
 				'place.updated_at',
 				'place.deleted_at',
-
 				'content.language',
 				'content.name',
 				'content.type_label',
 			])
 			.filterById(id)
-			.withDeleted(withDeleted)
-			.firstOrFail();
+			.withDeleted(withDeleted);
+
+		if (data.language) {
+			query.joinAndSelect(
+				'place.contents',
+				'content',
+				'INNER',
+				'content.language = :language',
+				{ language: data.language },
+			);
+		} else {
+			// No language: take all contents
+			query.joinAndSelect('place.contents', 'content', 'LEFT');
+		}
+
+		return await query.firstOrFail();
 	}
 
 	public hasChildren(id: number) {

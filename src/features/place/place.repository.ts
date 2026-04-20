@@ -19,8 +19,8 @@ export class PlaceQuery extends RepositoryAbstract<PlaceEntity> {
 					(Configuration.get('filter.termMinLength') as number)
 				) {
 					this.filterRaw(
-						`to_tsvector('simple', COALESCE(content.name, '')) @@ plainto_tsquery('simple', :term)`,
-						{ term: term },
+						`to_tsvector('simple', COALESCE(content.name, '')) @@ to_tsquery('simple', :term || ':*')`,
+						{ term: term.toLowerCase() },
 					);
 				}
 			}

@@ -9,12 +9,12 @@ import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export enum OrderByEnum {
-	ID = 'id',
-	LABEL = 'label',
-	CREATED_AT = 'created_at',
-	UPDATED_AT = 'updated_at',
-}
+export const OrderByEnum = {
+	ID: 'id',
+	LABEL: 'label',
+	CREATED_AT: 'created_at',
+	UPDATED_AT: 'updated_at',
+} as const;
 
 const validatorMessages = {
 	invalid_label: lang('category.validation.invalid_label'),
@@ -81,6 +81,9 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 			this.getMessage('invalid_boolean'),
 			{ required: false },
 		).default(false),
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}),
 	});
 
 	readonly find = this.validateFind({

@@ -1,10 +1,7 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { placeController } from '@/features/place/place.controller';
 import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
-import {
-	validateParamsWhenId,
-	validateParamsWhenString,
-} from '@/middleware/validate-params.middleware';
+import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof placeController> = {
 	basePath: '/places',
@@ -15,12 +12,9 @@ const routesModule: FeatureRoutesModule<typeof placeController> = {
 			method: 'post',
 		},
 		read: {
-			path: '/:id/:language',
+			path: '/:id',
 			method: 'get',
-			handlers: [
-				validateParamsWhenId('id'),
-				validateParamsWhenString('language'),
-			],
+			handlers: [validateParamsWhenId('id')],
 		},
 		update: {
 			path: '/:id',

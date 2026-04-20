@@ -1,7 +1,6 @@
 import type { Request, Response } from 'express';
 import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/i18n.setup';
-import { LogHistoryAction } from '@/features/log-history/log-history.entity';
 import MailQueueEntity from '@/features/mail-queue/mail-queue.entity';
 import {
 	type MailQueuePolicy,
@@ -18,6 +17,7 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
+import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 
 class MailQueueController extends BaseController {
 	constructor(
@@ -63,7 +63,7 @@ class MailQueueController extends BaseController {
 			eventEmitter.emit('history', {
 				entity: MailQueueEntity.NAME,
 				entity_ids: data.ids,
-				action: LogHistoryAction.DELETED,
+				action: LogHistoryActionEnum.DELETED,
 			});
 
 			res.locals.output.message(lang('mail-queue.success.delete'));

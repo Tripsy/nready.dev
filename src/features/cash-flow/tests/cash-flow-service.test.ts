@@ -5,6 +5,7 @@ import {
 	CashFlowCategoryEnum,
 	CashFlowCategoryTypeEnum,
 	CashFlowDirectionEnum,
+	type CashFlowStatus,
 	CashFlowStatusEnum,
 	CURRENCY_DEFAULT,
 	CurrencyEnum,
@@ -257,7 +258,7 @@ describe('CashFlowService', () => {
 		expect(updateSpy).toHaveBeenCalled();
 	});
 
-	testServiceUpdateStatus<CashFlowEntity, CashFlowStatusEnum>(
+	testServiceUpdateStatus<CashFlowEntity, CashFlowStatus>(
 		serviceCashFlow,
 		mockCashFlow.repository,
 		{
