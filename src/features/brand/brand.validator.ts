@@ -6,17 +6,18 @@ import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { BaseValidator } from '@/shared/abstracts/validator.abstract';
 
-export const paramsUpdateList: string[] = ['name', 'slug', 'type'];
+export const paramsUpdateList: string[] = ['name', 'slug', 'brand_type'];
 
 export const OrderByEnum = {
 	ID: 'id',
+	NAME: 'name',
 } as const;
 
 const validatorMessages = {
 	invalid_description: lang('brand.validation.invalid_description'),
 	invalid_name: lang('brand.validation.invalid_name'),
 	invalid_slug: lang('brand.validation.invalid_slug'),
-	invalid_type: lang('brand.validation.invalid_type'),
+	invalid_brand_type: lang('brand.validation.invalid_brand_type'),
 	invalid_status: lang('brand.validation.invalid_status'),
 	params_at_least_one: lang('shared.validation.params_at_least_one'),
 	invalid_number: lang('shared.validation.invalid_number'),
@@ -57,7 +58,10 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 		slug: this.validateString(this.getMessage('invalid_slug')).transform(
 			(val) => val.trim().toLowerCase(),
 		),
-		type: this.validateEnum(BrandTypeEnum, this.getMessage('invalid_type')),
+		brand_type: this.validateEnum(
+			BrandTypeEnum,
+			this.getMessage('invalid_brand_type'),
+		),
 		contents: this.contentsSchema.array(),
 	});
 
@@ -69,9 +73,9 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 			slug: this.validateString(this.getMessage('invalid_slug'), {
 				required: false,
 			}).transform((val) => val?.trim().toLowerCase()),
-			type: this.validateEnum(
+			brand_type: this.validateEnum(
 				BrandTypeEnum,
-				this.getMessage('invalid_type'),
+				this.getMessage('invalid_brand_type'),
 				{ required: false },
 			),
 			contents: this.contentsSchema.array().optional(),
@@ -101,9 +105,9 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
-			type: this.validateEnum(
+			brand_type: this.validateEnum(
 				BrandTypeEnum,
-				this.getMessage('invalid_type'),
+				this.getMessage('invalid_brand_type'),
 				{ required: false },
 			),
 			status: this.validateEnum(

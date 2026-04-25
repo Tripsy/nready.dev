@@ -93,7 +93,7 @@ testControllerStatusUpdate<BrandEntity>({
 });
 
 describe(`${controller} - orderUpdate`, () => {
-	const route = `${basePath}/${getBrandEntityMock().type}/order`;
+	const route = `${basePath}/${getBrandEntityMock().brand_type}/order`;
 
 	it('should fail if not authenticated', async () => {
 		const response = await request(app).patch(route).send();

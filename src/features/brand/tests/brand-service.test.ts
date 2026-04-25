@@ -62,7 +62,7 @@ describe('BrandService', () => {
 		expect(mockBrand.repository.save).toHaveBeenCalledWith({
 			name: createData.name,
 			slug: createData.slug,
-			type: createData.type,
+			brand_type: createData.brand_type,
 		});
 
 		expect(result).toBe(entity);
@@ -100,7 +100,7 @@ describe('BrandService', () => {
 
 		const result = await serviceBrand.findBySlug(
 			entity.slug,
-			entity.type,
+			entity.brand_type,
 			true,
 		);
 

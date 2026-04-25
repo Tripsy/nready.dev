@@ -11,7 +11,7 @@
 
 # 📄 Description
 
-NReady is a production-ready **Node.js - Express / TypeScript** boilerplate designed for complex, secure REST APIs.
+NReady is a **Node.js - Express / TypeScript** boilerplate designed for complex, secure REST APIs.
 
 This boilerplate can serve as a foundation to quickly build MVPs, CMS platforms, or E-commerce solutions.
 
@@ -27,11 +27,9 @@ and many [goodies](#Characteristics) including:
 - Docker support;
 
 The code follows **best practices** and **design principles** like SOLID, KISS, DRY, and strong security standards. 
-The codebase is fully typed in **TypeScript** — no as any shortcuts. **Biome** (on top of ESLint) ensures code quality.
+The codebase is fully typed in **TypeScript**. **Biome** ensures code quality.
 
 The recommended database is **PostgreSQL**, though it has also been tested with MariaDB, using **TypeORM** as the ORM layer. 
-
-At this date (e.g.: 2026 January), all [dependencies](#Dependencies) are updated to their latest versions, and Node.js 22 is supported.
 
 A ready-to-use Docker environment is provided for quick [setup](#Setup).
 
@@ -43,8 +41,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 
 > On a [separate project](https://github.com/Tripsy/dashboard.dev), powered by **React / Next.js** you can find a 
 > working #FrontEnd interface which demonstrate the usability of the `authentification system` and 
-> an **Administration Dashboard** with some features already included: Users, Permissions, Template,
-> Logs for data, mail queue, entity operations
+> an **Administration Dashboard** with some features already included: Users, Permissions, Template, Logs, Clients, Cash-Flow, Places, etc
 
 # 🚀 Tech Stack
 
@@ -85,9 +82,9 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - [x] Ready-to-use boilerplate with a modular, feature-based architecture
 - [x] Best Practices: Clean architecture, TypeScript, error handling, async patterns, DRY, SOLID, KISS
 - [x] Security: Helmet, rate limiting, input validation, CORS
-- [x] Logging (powered by Pino) to a file, db, or email
+- [x] Logging (powered by Pino)
 - [x] Request validation (powered by Zod)
-- [x] Standardized JSON Responses: Consistent response structures for better frontend integration (e.g.: res.locals.output)
+- [x] Standardized JSON Responses: Consistent response structures for better frontend integration
 - [x] Caching (powered by ioredis)
 - [x] Cron jobs provider with automatic discovery and registration
 - [x] Auto-registered event listeners
@@ -298,7 +295,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Go on FE → brand, cash-flow
+1. Go on FE → cash-flow
 2. Go on FE → category
 3. Deploy on AWS
 4. API documentation
@@ -330,7 +327,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 7. feature - images  (image-content)
 8. Go on FE #3 → image (multer - File upload handling)
 9. Go on FE #2 → carrier, discount,
-10. wip entities:
+10. Prepared entities:
      - article
          - article-category
          - article-content
@@ -349,7 +346,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
      - subscription
          - subscription-evidence
      - term
-11. For reporting create separate DB table (in a new schema `reporting`). This new table can be updated via subscribers.
+11. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
 12. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies

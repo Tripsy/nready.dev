@@ -1,4 +1,5 @@
 import { expect, jest } from '@jest/globals';
+import { Configuration } from '@/config/settings.config';
 import { BadRequestError } from '@/exceptions';
 import type CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
 import {
@@ -7,7 +8,7 @@ import {
 	CashFlowDirectionEnum,
 	type CashFlowStatus,
 	CashFlowStatusEnum,
-	CURRENCY_DEFAULT,
+	type Currency,
 	CurrencyEnum,
 } from '@/features/cash-flow/cash-flow.entity';
 import {
@@ -79,18 +80,12 @@ describe('CashFlowService', () => {
 		).toThrow(BadRequestError);
 	});
 
-	it('checkAmount - should throw when amount is below 0', async () => {
-		expect(() => serviceCashFlow.checkAmount(-10000)).toThrow(
-			BadRequestError,
-		);
-	});
-
 	it('checkRefund - should throw when invalid category is set', async () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
 				category: CashFlowCategoryEnum.FUEL,
-				amount: 2500,
-				currency: CURRENCY_DEFAULT,
+				inputAmount: 2500,
+				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock(),
 				refundedAmount: 10000,
 			}),
@@ -101,8 +96,8 @@ describe('CashFlowService', () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
 				category: CashFlowCategoryEnum.REFUND,
-				amount: 2500,
-				currency: CURRENCY_DEFAULT,
+				inputAmount: 2500,
+				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock({
 					status: CashFlowStatusEnum.CANCELED,
 				}),
@@ -115,8 +110,8 @@ describe('CashFlowService', () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
 				category: CashFlowCategoryEnum.REFUND,
-				amount: 2500,
-				currency: CURRENCY_DEFAULT,
+				inputAmount: 2500,
+				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock({
 					currency: CurrencyEnum.EUR,
 				}),
@@ -129,8 +124,8 @@ describe('CashFlowService', () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
 				category: CashFlowCategoryEnum.REFUND,
-				amount: 2500,
-				currency: CURRENCY_DEFAULT,
+				inputAmount: 2500,
+				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock({
 					category_type: CashFlowCategoryTypeEnum.CORRECTION,
 				}),
@@ -145,8 +140,8 @@ describe('CashFlowService', () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
 				category: CashFlowCategoryEnum.REFUND,
-				amount: 2500,
-				currency: CURRENCY_DEFAULT,
+				inputAmount: 2500,
+				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock({
 					category: CashFlowCategoryEnum.EMPLOYEE_SALARY,
 				}),
@@ -159,8 +154,8 @@ describe('CashFlowService', () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
 				category: CashFlowCategoryEnum.REFUND,
-				amount: 2500,
-				currency: CURRENCY_DEFAULT,
+				inputAmount: 2500,
+				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock({
 					amount: 1000,
 				}),
@@ -173,8 +168,8 @@ describe('CashFlowService', () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
 				category: CashFlowCategoryEnum.REFUND,
-				amount: 2500,
-				currency: CURRENCY_DEFAULT,
+				inputAmount: 2500,
+				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock({
 					amount: 12000,
 				}),
@@ -184,7 +179,9 @@ describe('CashFlowService', () => {
 	});
 
 	it('getExchangeRate - should return 1 for default currency', () => {
-		const result = serviceCashFlow.getExchangeRate(CURRENCY_DEFAULT);
+		const result = serviceCashFlow.getExchangeRate(
+			Configuration.currency() as Currency,
+		);
 
 		expect(result).toBe(1);
 	});
@@ -204,9 +201,6 @@ describe('CashFlowService', () => {
 			() => null,
 		);
 		jest.spyOn(serviceCashFlow, 'checkCategory').mockImplementationOnce(
-			() => null,
-		);
-		jest.spyOn(serviceCashFlow, 'checkAmount').mockImplementationOnce(
 			() => null,
 		);
 

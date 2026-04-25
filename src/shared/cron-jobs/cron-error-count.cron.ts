@@ -19,7 +19,7 @@ const cronErrorCount = async () => {
 	if (errorCount > 0) {
 		const emailTemplate = await loadEmailTemplate(
 			'cron-error-count',
-			Configuration.get('app.language') as string,
+			Configuration.language(),
 		);
 
 		emailTemplate.content.vars = {

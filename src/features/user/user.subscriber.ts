@@ -34,7 +34,7 @@ export class UserSubscriber extends SubscriberAbstract<UserEntity> {
 
 		// Set the default language
 		if (!event.entity.language) {
-			event.entity.language = Configuration.get('app.language') as string;
+			event.entity.language = Configuration.language();
 		}
 
 		event.entity.password_updated_at = new Date();

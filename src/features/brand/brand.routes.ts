@@ -55,11 +55,11 @@ const routesModule: FeatureRoutesModule<typeof brandController> = {
 			],
 		},
 		orderUpdate: {
-			path: '/:type/order',
+			path: '/:brand_type/order',
 			method: 'patch',
 			handlers: [
 				validateParamsWhenEnum({
-					type: Object.values(BrandTypeEnum),
+					brand_type: Object.values(BrandTypeEnum),
 				}),
 			],
 		},

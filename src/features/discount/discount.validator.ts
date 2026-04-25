@@ -94,7 +94,7 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 			value: this.validateNumber(this.getMessage('invalid_number'), {
 				required: true,
 				onlyPositive: true,
-				allowDecimals: true,
+				allowDecimals: 2,
 			}),
 			start_at: this.validateDate(this.getMessage('invalid_start_at'), {
 				required: false,
@@ -161,7 +161,7 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 			value: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 				onlyPositive: true,
-				allowDecimals: true,
+				allowDecimals: 2,
 			}),
 			start_at: this.validateDate(this.getMessage('invalid_start_at'), {
 				required: false,

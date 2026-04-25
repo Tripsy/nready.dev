@@ -76,7 +76,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			id: 0,
 			email: '',
 			name: '',
-			language: Configuration.get('app.language') as string,
+			language: Configuration.language(),
 			role: 'visitor',
 			operator_type: null,
 			permissions: [],

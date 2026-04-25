@@ -39,7 +39,7 @@ const ENTITY_TABLE_NAME = 'brand';
 	schema: 'public',
 })
 
-@Index('IDX_brand_slug', ['slug', 'type'], {
+@Index('IDX_brand_slug', ['slug', 'brand_type'], {
 	unique: true,
 })
 export default class BrandEntity extends EntityAbstract {
@@ -67,7 +67,7 @@ export default class BrandEntity extends EntityAbstract {
 		nullable: false,
 		comment: 'Specifies the entity type this brand belongs to',
 	})
-	type!: BrandType;
+	brand_type!: BrandType;
 
 	@Column('int', {
 		nullable: false,
