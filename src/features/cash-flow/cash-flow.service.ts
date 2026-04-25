@@ -1,16 +1,16 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
+import { Configuration } from '@/config/settings.config';
 import { BadRequestError, CustomError } from '@/exceptions';
-import type CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
-import {
+import CashFlowEntity, {
+	AMOUNT_DECIMALS,
 	type CashFlowCategory,
 	CashFlowCategoryEnum,
 	type CashFlowCategoryType,
 	CashFlowCategoryTypeEnum,
 	type CashFlowDirection,
+	CashFlowDirectionEnum,
 	type CashFlowStatus,
-	CashFlowStatusEnum,
-	CURRENCY_DEFAULT,
 	type Currency,
 	getExpectedCategoryType,
 	getExpectedDirection,
@@ -29,6 +29,19 @@ import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract
 
 export class CashFlowService {
 	constructor(private repository: ReturnType<typeof getCashFlowRepository>) {}
+
+	// `amount` represent the value coming through request; this method returns the value to be stored in database
+	public inputAmount(amount: number) {
+		return Math.abs(amount) * 10 ** AMOUNT_DECIMALS;
+	}
+
+	// `inputAmount` represent the value coming from database; this method returns the value to returned on requests (eg: read, find)
+	public outputAmount(inputAmount: number, direction: CashFlowDirection) {
+		return (
+			((CashFlowDirectionEnum.IN === direction ? 1 : -1) * inputAmount) /
+			10 ** AMOUNT_DECIMALS
+		);
+	}
 
 	public checkDirection(
 		category_type: CashFlowCategoryType,
@@ -70,17 +83,9 @@ export class CashFlowService {
 		}
 	}
 
-	public checkAmount(amount: number) {
-		if (amount <= 0) {
-			throw new BadRequestError(
-				lang('cash-flow.validation.invalid_amount'),
-			);
-		}
-	}
-
 	public async checkRefund(deps: {
 		category: CashFlowCategory;
-		amount: number;
+		inputAmount: number;
 		currency: Currency;
 		parentEntry: CashFlowEntity;
 		refundedAmount: number;
@@ -128,7 +133,7 @@ export class CashFlowService {
 			);
 		}
 
-		if (deps.parentEntry.amount < deps.amount) {
+		if (deps.parentEntry.amount < deps.inputAmount) {
 			throw new CustomError(
 				409,
 				lang('cash-flow.error.refund_amount_mismatch', {
@@ -139,7 +144,7 @@ export class CashFlowService {
 			);
 		}
 
-		if (deps.parentEntry.amount - deps.refundedAmount < deps.amount) {
+		if (deps.parentEntry.amount - deps.refundedAmount < deps.inputAmount) {
 			throw new CustomError(
 				409,
 				lang('cash-flow.error.refund_amount_mismatch', {
@@ -155,7 +160,7 @@ export class CashFlowService {
 	}
 
 	public getExchangeRate(selectedCurrency: Currency) {
-		if (selectedCurrency === CURRENCY_DEFAULT) {
+		if (selectedCurrency === Configuration.currency()) {
 			return 1;
 		}
 
@@ -179,10 +184,11 @@ export class CashFlowService {
 	public async create(
 		data: ValidatorOutput<CashFlowValidator, 'create'>,
 	): Promise<CashFlowEntity> {
+		const inputAmount = this.inputAmount(data.amount);
+
 		this.checkDirection(data.category_type, data.direction);
 		this.checkCategoryType(data.category_type, data.category);
 		this.checkCategory(data.category, data.parent_id);
-		this.checkAmount(data.amount);
 
 		if (data.parent_id) {
 			const parentEntry = await this.findById(data.parent_id, false);
@@ -193,7 +199,7 @@ export class CashFlowService {
 
 			await this.checkRefund({
 				category: data.category,
-				amount: data.amount,
+				inputAmount: inputAmount,
 				currency: data.currency,
 				parentEntry: parentEntry,
 				refundedAmount: refundedAmount,
@@ -204,16 +210,14 @@ export class CashFlowService {
 			direction: data.direction,
 			category_type: data.category_type,
 			category: data.category,
-			gateway: data.gateway,
 			method: data.method,
-			amount: data.amount,
+			amount: inputAmount,
 			vat_rate: data.vat_rate,
 			currency: data.currency,
 			exchange_rate: this.getExchangeRate(data.currency),
 			external_reference: data.external_reference,
 			parent_id: data.parent_id,
 			notes: data.notes,
-			status: CashFlowStatusEnum.COMPLETED, // force `status` as COMPLETED when create runs via controller
 		};
 
 		return this.repository.save(entry);
@@ -237,6 +241,10 @@ export class CashFlowService {
 		withDeleted: boolean = true,
 	) {
 		const entry = await this.findById(id, withDeleted);
+
+		if (data.amount) {
+			data.amount = this.inputAmount(data.amount);
+		}
 
 		if (!arrayHasValue(entry.status, MUTABLE_STATUSES)) {
 			throw new CustomError(
@@ -266,10 +274,6 @@ export class CashFlowService {
 			);
 		}
 
-		if (data.amount) {
-			this.checkAmount(data.amount);
-		}
-
 		if (
 			entry.parent_id &&
 			(data.category || data.amount || data.currency)
@@ -282,7 +286,7 @@ export class CashFlowService {
 
 			await this.checkRefund({
 				category: data.category || entry.category,
-				amount: data.amount || entry.amount,
+				inputAmount: data.amount || entry.amount,
 				currency: data.currency || entry.currency,
 				parentEntry: parentEntry,
 				refundedAmount: refundedAmount,
@@ -364,6 +368,17 @@ export class CashFlowService {
 			.createQuery()
 			.filterById(data.filter.id)
 			.filterByTerm(data.filter.term)
+			.filterBy('parent_id', data.filter.parent_id)
+			.filterBy('direction', data.filter.direction)
+			.filterBy('category_type', data.filter.category_type)
+			.filterBy('category', data.filter.category)
+			.filterBy('method', data.filter.method)
+			.filterBy('status', data.filter.status)
+			.filterByRange(
+				'created_at',
+				data.filter.create_date_start,
+				data.filter.create_date_end,
+			)
 			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit)

@@ -158,7 +158,7 @@ class BrandController extends BaseController {
 		const data = this.validate(this.validator.orderUpdate, req.body, res);
 
 		await this.brandService.updateOrder(
-			res.locals.validated.type,
+			res.locals.validated.brand_type,
 			data.positions,
 			this.policy.allowDeleted(res.locals.auth),
 		);

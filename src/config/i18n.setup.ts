@@ -22,7 +22,7 @@ async function getFeatureNamespaces(): Promise<string[]> {
 						featuresPath,
 						n,
 						'locales',
-						`${Configuration.get('app.language')}.json`,
+						`${Configuration.language()}.json`,
 					),
 				);
 

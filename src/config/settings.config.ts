@@ -23,6 +23,7 @@ function loadSettings(): Settings {
 			languageSupported: (process.env.APP_LANGUAGE_SUPPORTED || 'en')
 				.trim()
 				.split(','),
+			currency: process.env.APP_CURRENCY || 'RON',
 		},
 		folder: {
 			features: '/features',
@@ -128,6 +129,14 @@ export const Configuration = {
 
 	isEnvironment: (value: string) => {
 		return Configuration.environment() === value;
+	},
+
+	language: () => {
+		return Configuration.get('app.language') as string;
+	},
+
+	currency: () => {
+		return Configuration.get('app.currency') as string;
 	},
 
 	resolveExtension: () => {

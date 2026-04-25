@@ -73,12 +73,19 @@ class CashFlowController extends BaseController {
 			'read',
 		);
 
-		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.cashFlowService.findById(
+		const cacheGetResults = await this.cache.get(cacheKey, async () => {
+			const entry = await this.cashFlowService.findById(
 				res.locals.validated.id,
 				this.policy.allowDeleted(res.locals.auth),
-			),
-		);
+			);
+
+			entry.amount = this.cashFlowService.outputAmount(
+				entry.amount,
+				entry.direction,
+			);
+
+			return entry;
+		});
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
 		res.locals.output.data(cacheGetResults.data);
@@ -133,6 +140,13 @@ class CashFlowController extends BaseController {
 			data,
 			this.policy.allowDeleted(res.locals.auth),
 		);
+
+		entries.forEach((entry) => {
+			entry.amount = this.cashFlowService.outputAmount(
+				entry.amount,
+				entry.direction,
+			);
+		});
 
 		res.locals.output.data({
 			entries: entries,

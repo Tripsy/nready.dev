@@ -9,7 +9,7 @@ export function getBrandEntityMock(): BrandEntity {
 		id: 1,
 		name: 'Pepsi',
 		slug: 'pepsi',
-		type: BrandTypeEnum.PRODUCT,
+		brand_type: BrandTypeEnum.PRODUCT,
 		status: BrandStatusEnum.ACTIVE,
 		sort_order: 0,
 		details: null,
@@ -24,7 +24,7 @@ export const brandInputPayloads = {
 	create: {
 		name: 'Pepsi',
 		slug: 'pepsi',
-		type: BrandTypeEnum.PRODUCT,
+		brand_type: BrandTypeEnum.PRODUCT,
 		contents: [
 			{
 				language: 'en',
@@ -40,7 +40,7 @@ export const brandInputPayloads = {
 	update: {
 		name: 'Pepsi',
 		slug: 'pepsi',
-		type: BrandTypeEnum.PRODUCT,
+		brand_type: BrandTypeEnum.PRODUCT,
 		contents: [
 			{
 				language: 'en',
@@ -60,7 +60,7 @@ export const brandInputPayloads = {
 		direction: OrderDirectionEnum.DESC,
 		filter: {
 			term: 'pepsi',
-			type: BrandTypeEnum.PRODUCT,
+			brand_type: BrandTypeEnum.PRODUCT,
 			status: BrandStatusEnum.ACTIVE,
 			language: 'en',
 			is_deleted: false,

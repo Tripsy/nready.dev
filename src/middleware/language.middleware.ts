@@ -28,7 +28,7 @@ async function languageMiddleware(
 	) {
 		res.locals.language = language;
 	} else {
-		res.locals.language = Configuration.get('app.language') as string;
+		res.locals.language = Configuration.language();
 	}
 
 	next();

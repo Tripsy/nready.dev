@@ -7,6 +7,7 @@ import {
 	ManyToOne,
 	OneToMany,
 } from 'typeorm';
+import { Configuration } from '@/config/settings.config';
 import { arrayHasValue } from '@/helpers';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
@@ -18,8 +19,6 @@ export const CurrencyEnum = {
 } as const;
 
 export type Currency = (typeof CurrencyEnum)[keyof typeof CurrencyEnum];
-
-export const CURRENCY_DEFAULT = CurrencyEnum.RON;
 
 export const CashFlowDirectionEnum = {
 	IN: 'in', // money received relative to company
@@ -167,15 +166,6 @@ export const STATUS_TRANSITIONS: StatusTransitions<CashFlowStatus> = {
 	[CashFlowStatusEnum.EXPIRED]: [],
 };
 
-export const CashFlowGatewayEnum = {
-	DIRECT: 'direct',
-	STRIPE: 'stripe',
-	PAYPAL: 'paypal',
-} as const;
-
-export type CashFlowGateway =
-	(typeof CashFlowGatewayEnum)[keyof typeof CashFlowGatewayEnum];
-
 export const CashFlowMethodEnum = {
 	// Card methods
 	CREDIT_CARD: 'credit_card',
@@ -197,14 +187,17 @@ export const CashFlowMethodEnum = {
 export type CashFlowMethod =
 	(typeof CashFlowMethodEnum)[keyof typeof CashFlowMethodEnum];
 
+// Define number of decimals allowed for amount value
+export const AMOUNT_DECIMALS = 2;
+
 /**
  * Hard-rules:
  * 	- Only MUTABLE_STATUSES can be updated (therefore REFUND, PARTIALLY_UPDATED cannot be updated)
  * 	- Only REFUNDABLE_STATUSES are available for REFUND
- * 	- Cash flow entries are marked as COMPLETED when added via controller
  * 	- `restore` functionality should not be implemented
  * 	- On `delete` if entry has refunds the operation is blocked unless `force` argument is present and then refunds are also deleted
  * 	- Status update is controlled via STATUS_TRANSITIONS
+ * 	- Amounts are stored as positive number without decimals (defined by AMOUNT_DECIMALS)
  */
 const ENTITY_TABLE_NAME = 'cash_flow';
 
@@ -219,10 +212,6 @@ const ENTITY_TABLE_NAME = 'cash_flow';
 	'created_at',
 ])
 @Index('IDX_cash_flow_category_created_at', ['category', 'created_at'])
-@Index('IDX_cash_flow_gateway_status', ['gateway', 'status'])
-@Index('IDX_cash_flow_gateway_transaction_id', ['gateway', 'transaction_id'], {
-	unique: true,
-})
 @Index('IDX_cash_flow_method_status', ['method', 'status'])
 @Index('IDX_cash_flow_status_created_at', ['status', 'created_at'])
 @Check(`
@@ -269,14 +258,6 @@ export default class CashFlowEntity extends EntityAbstract {
 
 	@Column({
 		type: 'enum',
-		enum: CashFlowGatewayEnum,
-		default: CashFlowGatewayEnum.DIRECT,
-		nullable: false,
-	})
-	gateway!: CashFlowGateway;
-
-	@Column({
-		type: 'enum',
 		enum: CashFlowMethodEnum,
 		default: CashFlowMethodEnum.CASH,
 		nullable: false,
@@ -304,7 +285,7 @@ export default class CashFlowEntity extends EntityAbstract {
 	@Column({
 		type: 'enum',
 		enum: CurrencyEnum,
-		default: CURRENCY_DEFAULT,
+		default: Configuration.currency(),
 		nullable: false,
 	})
 	currency!: Currency;
@@ -330,29 +311,6 @@ export default class CashFlowEntity extends EntityAbstract {
 	})
 	@Index('IDX_parent_id')
 	parent_id!: number | null;
-
-	// GATEWAY ( // TODO in the future move this to a separate entity)
-	@Column('varchar', {
-		nullable: true,
-		comment: 'Gateway transaction ID (e.g., Stripe charge id)',
-	})
-	transaction_id!: string | null;
-
-	@Column('jsonb', {
-		nullable: true,
-		comment: 'Full gateway response snapshot for debugging/audit',
-	})
-	gateway_response!: Record<string, unknown> | null;
-
-	@Column('text', { nullable: true })
-	fail_reason!: string | null;
-
-	// DATES
-	@Column({ type: 'timestamp', nullable: true })
-	captured_at!: Date | null;
-
-	@Column({ type: 'timestamp', nullable: true })
-	authorized_at!: Date | null;
 
 	// OTHER
 	@Column('text', { nullable: true })

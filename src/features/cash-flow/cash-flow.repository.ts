@@ -29,11 +29,6 @@ export class CashFlowQuery extends RepositoryAbstract<CashFlowEntity> {
 							value: term,
 							operator: 'ILIKE',
 						},
-						{
-							column: 'transaction_id',
-							value: term,
-							operator: 'ILIKE',
-						},
 					]);
 				}
 			}

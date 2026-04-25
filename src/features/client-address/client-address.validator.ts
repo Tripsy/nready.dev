@@ -39,7 +39,7 @@ export class ClientAddressValidator extends BaseValidator<
 	readonly read = z.object({
 		language: this.validateLanguage(this.getMessage('invalid_language'), {
 			required: false,
-		}).default(Configuration.get('app.language') as string),
+		}).default(Configuration.language()),
 	});
 
 	readonly create = z.object({

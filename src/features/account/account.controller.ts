@@ -119,7 +119,7 @@ class AccountController extends BaseController {
 				lang('account.error.max_active_sessions'),
 			);
 			res.locals.output.data({
-				authValidTokens: authValidTokens,
+				authTokens: authValidTokens,
 			});
 		} else {
 			const token = await this.accountTokenService.setupAuthToken(

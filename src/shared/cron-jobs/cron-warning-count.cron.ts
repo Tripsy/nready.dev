@@ -34,7 +34,7 @@ const cronWarningCount = async () => {
 		if (warningCount > 0) {
 			const emailTemplate = await loadEmailTemplate(
 				'cron-warning-count',
-				Configuration.get('app.language') as string,
+				Configuration.language(),
 			);
 
 			emailTemplate.content.vars = {

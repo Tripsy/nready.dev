@@ -277,7 +277,6 @@ export class PlaceService {
 				'parentContent.type_label',
 			])
 			.filterById(data.filter.id)
-			.filterBy('content.language', data.filter.language)
 			.filterByTerm(data.filter.term)
 			.filterBy('place.place_type', data.filter.place_type)
 			.withDeleted(withDeleted && data.filter.is_deleted)

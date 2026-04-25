@@ -2,10 +2,10 @@ import { z } from 'zod';
 import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import {
+	AMOUNT_DECIMALS,
 	CashFlowCategoryEnum,
 	CashFlowCategoryTypeEnum,
 	CashFlowDirectionEnum,
-	CashFlowGatewayEnum,
 	CashFlowMethodEnum,
 	CashFlowStatusEnum,
 	CurrencyEnum,
@@ -74,19 +74,19 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			CashFlowCategoryEnum,
 			this.getMessage('invalid_category'),
 		),
-		gateway: this.validateEnum(
-			CashFlowGatewayEnum,
-			this.getMessage('invalid_gateway'),
-		),
 		method: this.validateEnum(
 			CashFlowMethodEnum,
 			this.getMessage('invalid_method'),
 		),
-		amount: this.validateNumber(this.getMessage('invalid_amount')),
+		amount: this.validateNumber(this.getMessage('invalid_amount'), {
+			required: true,
+			onlyPositive: false,
+			allowDecimals: AMOUNT_DECIMALS,
+		}),
 		vat_rate: this.validateNumber(this.getMessage('invalid_vat_rate'), {
 			required: true,
 			onlyPositive: true,
-			allowDecimals: true,
+			allowDecimals: 2,
 		}),
 		currency: this.validateEnum(
 			CurrencyEnum,
@@ -121,21 +121,20 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_category'),
 				{ required: false },
 			),
-			gateway: this.validateEnum(
-				CashFlowGatewayEnum,
-				this.getMessage('invalid_gateway'),
-				{ required: false },
-			),
 			method: this.validateEnum(
 				CashFlowMethodEnum,
 				this.getMessage('invalid_method'),
 				{ required: false },
 			),
-			amount: this.validateNumber(this.getMessage('invalid_amount')),
+			amount: this.validateNumber(this.getMessage('invalid_amount'), {
+				required: true,
+				onlyPositive: false,
+				allowDecimals: AMOUNT_DECIMALS,
+			}),
 			vat_rate: this.validateNumber(this.getMessage('invalid_vat_rate'), {
 				required: false,
 				onlyPositive: true,
-				allowDecimals: true,
+				allowDecimals: 2,
 			}),
 			currency: this.validateEnum(
 				CurrencyEnum,
@@ -178,6 +177,10 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
+			parent_id: this.validateId(
+				this.getMessage('invalid_parent_id'),
+				{ required: false },
+			),
 			direction: this.validateEnum(
 				CashFlowDirectionEnum,
 				this.getMessage('invalid_direction'),
@@ -191,11 +194,6 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			category: this.validateEnum(
 				CashFlowCategoryEnum,
 				this.getMessage('invalid_category'),
-				{ required: false },
-			),
-			gateway: this.validateEnum(
-				CashFlowGatewayEnum,
-				this.getMessage('invalid_gateway'),
 				{ required: false },
 			),
 			method: this.validateEnum(

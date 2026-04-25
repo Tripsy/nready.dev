@@ -30,7 +30,11 @@ export class BrandService {
 	public async create(
 		data: ValidatorOutput<BrandValidator, 'create'>,
 	): Promise<BrandEntity> {
-		const existing = await this.findBySlug(data.slug, data.type, true);
+		const existing = await this.findBySlug(
+			data.slug,
+			data.brand_type,
+			true,
+		);
 
 		if (existing) {
 			throw new CustomError(409, lang('brand.error.already_exist'));
@@ -42,7 +46,7 @@ export class BrandService {
 			const entry = {
 				name: data.name,
 				slug: data.slug,
-				type: data.type,
+				brand_type: data.brand_type,
 			};
 
 			const entrySaved = await repository.save(entry);
@@ -67,10 +71,10 @@ export class BrandService {
 	) {
 		const brand = await this.findById(id, withDeleted);
 
-		if (data.slug || data.type) {
+		if (data.slug || data.brand_type) {
 			const existing = await this.findBySlug(
 				data.slug || brand.slug,
-				data.type || brand.type,
+				data.brand_type || brand.brand_type,
 				true,
 				undefined,
 				id,
@@ -126,14 +130,14 @@ export class BrandService {
 	}
 
 	public async updateOrder(
-		type: BrandType,
+		brand_type: BrandType,
 		ids: number[], // Array of IDs in the desired order
 		withDeleted: boolean,
 	): Promise<void> {
 		// We make sure all the available IDs are present in the sorting (eg: ids)
 		const count = await this.repository
 			.createQuery()
-			.filterBy('type', type)
+			.filterBy('brand_type', brand_type)
 			// .filterBy('id', ids, 'IN') // In case we want to allow partial sorting
 			.withDeleted(withDeleted)
 			.count();
@@ -177,7 +181,7 @@ export class BrandService {
 
 	public findBySlug(
 		slug: string,
-		type: BrandType,
+		brand_type: BrandType,
 		withDeleted: boolean,
 		fields?: string[],
 		excludeId?: number,
@@ -185,7 +189,7 @@ export class BrandService {
 		const q = this.repository
 			.createQuery()
 			.filterBy('slug', slug)
-			.filterBy('type', type)
+			.filterBy('brand_type', brand_type)
 			.withDeleted(withDeleted);
 
 		if (excludeId) {
@@ -213,7 +217,8 @@ export class BrandService {
 				'brand.id',
 				'brand.name',
 				'brand.slug',
-				'brand.type',
+				'brand.status',
+				'brand.brand_type',
 				'brand.created_at',
 				'brand.updated_at',
 				'brand.deleted_at',
@@ -252,7 +257,7 @@ export class BrandService {
 			.join(
 				'brand.contents',
 				'content',
-				'INNER',
+				'LEFT',
 				'content.language = :language',
 				{
 					language: data.filter.language,
@@ -260,9 +265,10 @@ export class BrandService {
 			)
 			.select([
 				'brand.id',
+				'brand.brand_type',
 				'brand.name',
 				'brand.slug',
-				'brand.type',
+				'brand.status',
 				'brand.created_at',
 				'brand.updated_at',
 				'brand.deleted_at',
@@ -272,9 +278,8 @@ export class BrandService {
 				'content.meta',
 			])
 			.filterById(data.filter.id)
-			.filterBy('brand.type', data.filter.type)
+			.filterBy('brand.brand_type', data.filter.brand_type)
 			.filterBy('brand.status', data.filter.status)
-			.filterBy('content.language', data.filter.language)
 			.filterByTerm(data.filter.term)
 			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)

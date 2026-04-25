@@ -74,7 +74,7 @@ const cronTimeCheck = async () => {
 
 		const emailTemplate = await loadEmailTemplate(
 			'cron-time-check',
-			Configuration.get('app.language') as string,
+			Configuration.language(),
 		);
 
 		emailTemplate.content.vars = {
