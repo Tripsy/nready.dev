@@ -295,13 +295,14 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Go on FE → cash-flow
-2. Go on FE → category
-3. Deploy on AWS
-4. API documentation
+1. order for brand
+2. Go on FE → cash-flow
+3. Go on FE → category
+4. Deploy on AWS
+5. API documentation
     > done for discounts
     > do for: account, category, carrier, cash-flow, client, cron-history, log-history, mail-queue, permission, place, template, user-permission
-5. create CLI script which should generate something like:
+6. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -323,11 +324,11 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-6. Tests for account-recovery.service.ts are missing 
-7. feature - images  (image-content)
-8. Go on FE #3 → image (multer - File upload handling)
-9. Go on FE #2 → carrier, discount,
-10. Prepared entities:
+7. Tests for account-recovery.service.ts are missing 
+8. feature - images  (image-content)
+9. Go on FE #3 → image (multer - File upload handling)
+10. Go on FE #2 → carrier, discount,
+11. Prepared entities:
      - article
          - article-category
          - article-content
@@ -346,8 +347,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
      - subscription
          - subscription-evidence
      - term
-11. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-12. cron hanging / delaying / semaphore 
+12. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+13. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

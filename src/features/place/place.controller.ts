@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
-import CategoryEntity from '@/features/category/category.entity';
 import { type PlacePolicy, placePolicy } from '@/features/place/place.policy';
 import {
 	type PlaceService,
@@ -13,6 +12,7 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
+import PlaceEntity from "@/features/place/place.entity";
 
 class PlaceController extends BaseController {
 	constructor(
@@ -43,7 +43,7 @@ class PlaceController extends BaseController {
 		const data = this.validate(this.validator.read, req.query, res);
 
 		const cacheKey = this.cache.buildKey(
-			CategoryEntity.NAME,
+			PlaceEntity.NAME,
 			res.locals.validated.id,
 			data.language ?? '',
 			'read',
