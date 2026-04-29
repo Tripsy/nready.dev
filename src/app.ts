@@ -11,6 +11,7 @@ import qs from 'qs';
 import { v4 as uuid } from 'uuid';
 import { initRoutes } from '@/config/routes.setup';
 import { Configuration } from '@/config/settings.config';
+import { createCurrentDate } from '@/helpers';
 import authMiddleware from '@/middleware/auth.middleware';
 import { corsHandler } from '@/middleware/cors-handler.middleware';
 import { errorHandler } from '@/middleware/error-handler.middleware';
@@ -145,7 +146,7 @@ export async function createApp() {
 	app.get('/health', (_req, res) => {
 		res.status(200).json({
 			status: 'OK',
-			timestamp: new Date().toISOString(),
+			timestamp: createCurrentDate().toISOString(),
 			uptime: process.uptime(),
 		});
 	});

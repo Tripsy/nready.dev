@@ -15,7 +15,7 @@ import {
 import type UserEntity from '@/features/user/user.entity';
 import { type UserStatus, UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
-import { createFutureDate } from '@/helpers';
+import { createCurrentDate, createFutureDate } from '@/helpers';
 import type { ValidatorOutput } from '@/helpers/mock.helper';
 
 export type ConfirmationTokenPayload = {
@@ -56,12 +56,12 @@ export class AccountService {
 		password: string,
 	): Promise<void> {
 		user.password = password; // Encryption it handled in subscriber
-		user.password_updated_at = new Date();
+		user.password_updated_at = createCurrentDate();
 
 		await this.userService.update({
 			id: user.id,
 			password: password,
-			password_updated_at: new Date(),
+			password_updated_at: createCurrentDate(),
 		});
 
 		await this.accountRecoveryService.removeAccountRecoveryForUser(user.id);

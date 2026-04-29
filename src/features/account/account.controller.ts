@@ -35,7 +35,12 @@ import {
 } from '@/features/account/account-token.service';
 import { UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
-import { compareMetaDataValue, createPastDate, tokenMetaData } from '@/helpers';
+import {
+	compareMetaDataValue,
+	createCurrentDate,
+	createPastDate,
+	tokenMetaData,
+} from '@/helpers';
 import asyncHandler from '@/helpers/async.handler';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
@@ -274,7 +279,7 @@ class AccountController extends BaseController {
 				);
 			}
 
-			if (recovery.expire_at < new Date()) {
+			if (recovery.expire_at < createCurrentDate()) {
 				throw new BadRequestError(
 					lang('account.error.recovery_token_expired'),
 				);
@@ -315,7 +320,7 @@ class AccountController extends BaseController {
 			// Mark the recovery token as used
 			await this.accountRecoveryService.update({
 				id: recovery.id,
-				used_at: new Date(),
+				used_at: createCurrentDate(),
 			});
 
 			void this.accountEmailService.sendEmailPasswordChange({
@@ -413,7 +418,7 @@ class AccountController extends BaseController {
 		if (confirmationTokenPayload.user_email_new) {
 			// Confirm procedure for email update
 			user.email = confirmationTokenPayload.user_email_new;
-			user.email_verified_at = new Date();
+			user.email_verified_at = createCurrentDate();
 
 			await this.userService.update({
 				id: user.id,
@@ -435,7 +440,7 @@ class AccountController extends BaseController {
 
 			// Update user status
 			user.status = UserStatusEnum.ACTIVE;
-			user.email_verified_at = new Date();
+			user.email_verified_at = createCurrentDate();
 
 			await this.userService.update({
 				id: user.id,

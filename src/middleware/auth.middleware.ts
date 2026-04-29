@@ -8,6 +8,7 @@ import { getUserRepository } from '@/features/user/user.repository';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import {
 	compareMetaDataValue,
+	createCurrentDate,
 	createFutureDate,
 	dateDiffInSeconds,
 	tokenMetaData,
@@ -65,7 +66,7 @@ function setAuthFailure(
 	details?: Record<string, unknown>,
 ) {
 	if (Configuration.isEnvironment('development')) {
-		console.error(`[Auth] ${new Date()} ${reason}`, details);
+		console.error(`[Auth] ${createCurrentDate()} ${reason}`, details);
 	}
 }
 
@@ -106,7 +107,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		}
 
 		// Check if the token is expired
-		if (activeToken.expire_at < new Date()) {
+		if (activeToken.expire_at < createCurrentDate()) {
 			getAccountTokenRepository().removeTokenById(activeToken.id);
 
 			setAuthFailure(AuthFailureReason.TOKEN_EXPIRED, { ...activeToken });
@@ -183,7 +184,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		// Refresh the token if it's close to expiration
 		const diffInSeconds = dateDiffInSeconds(
 			activeToken.expire_at,
-			new Date(),
+			createCurrentDate(),
 		);
 
 		if (
@@ -191,14 +192,14 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			(Configuration.get('user.authRefreshExpiresIn') as number)
 		) {
 			await getAccountTokenRepository().update(activeToken.id, {
-				used_at: new Date(),
+				used_at: createCurrentDate(),
 				expire_at: createFutureDate(
 					Configuration.get('user.authExpiresIn') as number,
 				),
 			});
 		} else {
 			await getAccountTokenRepository().update(activeToken.id, {
-				used_at: new Date(),
+				used_at: createCurrentDate(),
 			});
 		}
 

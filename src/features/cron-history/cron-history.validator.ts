@@ -92,7 +92,7 @@ export class CronHistoryValidator extends BaseValidator<
 			data.filter.start_date_start > data.filter.start_date_end
 		) {
 			ctx.addIssue({
-				path: ['filter', 'create_date_start'],
+				path: ['filter', 'create_at_start'],
 				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});

@@ -5,6 +5,7 @@ import {
 	accountService,
 } from '@/features/account/account.service';
 import UserEntity, { UserStatusEnum } from '@/features/user/user.entity';
+import { createCurrentDate } from '@/helpers';
 import SubscriberAbstract from '@/shared/abstracts/subscriber.abstract';
 import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 
@@ -37,7 +38,7 @@ export class UserSubscriber extends SubscriberAbstract<UserEntity> {
 			event.entity.language = Configuration.language();
 		}
 
-		event.entity.password_updated_at = new Date();
+		event.entity.password_updated_at = createCurrentDate();
 	}
 
 	async beforeUpdate(event: UpdateEvent<UserEntity>) {

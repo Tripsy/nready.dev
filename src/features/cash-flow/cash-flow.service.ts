@@ -376,8 +376,8 @@ export class CashFlowService {
 			.filterBy('status', data.filter.status)
 			.filterByRange(
 				'created_at',
-				data.filter.create_date_start,
-				data.filter.create_date_end,
+				data.filter.create_at_start,
+				data.filter.create_at_end,
 			)
 			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)

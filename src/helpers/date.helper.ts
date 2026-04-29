@@ -69,6 +69,15 @@ export function stringToDate(value: string | null): Date | null {
 }
 
 /**
+ * Create a current date
+ *
+ * @returns {Date} - The current date
+ */
+export function createCurrentDate(): Date {
+	return new Date();
+}
+
+/**
  * Create a future date by adding seconds to the current date
  *
  * @param {number} seconds - The number of seconds to add
@@ -183,4 +192,37 @@ export function formatDate(
 
 			return date.toISOString();
 	}
+}
+
+/**
+ * Combine a date with specified time
+ *
+ * @param date
+ * @param time
+ * @param timezone
+ */
+export function combineDateAndTime(
+	date: Date,
+	time: string,
+	timezone?: string,
+): Date {
+	const parts = time.split(':').map(Number);
+	const hours = parts[0];
+	const minutes = parts[1];
+
+	if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+		throw new Error(`Invalid time format: "${time}". Expected "HH:MM".`);
+	}
+
+	if (timezone) {
+		const dateStr = dayjs(date).format('YYYY-MM-DD');
+		const combinedStr = `${dateStr} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+
+		return dayjs.tz(combinedStr, timezone).utc().toDate();
+	}
+
+	const result = new Date(date);
+	result.setHours(hours, minutes, 0, 0);
+
+	return result;
 }

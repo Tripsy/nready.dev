@@ -552,7 +552,10 @@ export abstract class BaseValidator<
 	 * @throws {Error} If runtime is 'server' and no timezone is provided
 	 */
 	// Overload signatures
-	protected validateDate(
+	protected validateDate<
+		TRequired extends boolean = true,
+		TRuntime extends 'client' | 'server' = 'server',
+	>(
 		messageData?:
 			| string
 			| {
@@ -562,35 +565,21 @@ export abstract class BaseValidator<
 					invalid_future_date: string;
 			  },
 		optionsData?: {
-			required?: true;
-			runtime?: 'client' | 'server';
+			required?: TRequired;
+			runtime?: TRuntime;
 			timezone?: string;
 			dateFormat?: RegExp;
 			requireTime?: boolean;
 			maxPastSeconds?: number;
 			maxFutureSeconds?: number;
 		},
-	): z.ZodType<Date>;
-
-	protected validateDate(
-		messageData:
-			| string
-			| {
-					invalid_date: string;
-					invalid_date_format: string;
-					invalid_past_date: string;
-					invalid_future_date: string;
-			  },
-		optionsData: {
-			required: false;
-			runtime?: 'client' | 'server';
-			timezone?: string;
-			dateFormat?: RegExp;
-			requireTime?: boolean;
-			maxPastSeconds?: number;
-			maxFutureSeconds?: number;
-		},
-	): z.ZodType<Date | TEmpty>;
+	): z.ZodType<
+		TRequired extends false
+			? (TRuntime extends 'server' ? Date : string) | TEmpty
+			: TRuntime extends 'server'
+				? Date
+				: string
+	>;
 
 	// Implementation signature
 	protected validateDate(
@@ -719,8 +708,8 @@ export abstract class BaseValidator<
 				// Server: Convert to UTC Date object
 				return dayjs.tz(val, options.timezone).utc().toDate();
 			} else {
-				// Client: Return local Date object
-				return dayjs(val).toDate();
+				// Client: Return string
+				return val;
 			}
 		});
 
@@ -729,6 +718,229 @@ export abstract class BaseValidator<
 		}
 
 		return this.preprocessOptional(dateSchema) as z.ZodType<Date | TEmpty>;
+	}
+
+	/**
+	 * Validate time string in HH:MM format with optional interval constraints
+	 *
+	 * @param messageData - Optional string or object with custom error messages
+	 * @param optionsData - Configuration options for time validation
+	 *
+	 * @example
+	 * // Basic usage
+	 * const basicSchema = validateTime('Invalid time');
+	 *
+	 * @example
+	 * // Required with 5-minute intervals
+	 * const timeSchema = validateTime({
+	 *   invalid: 'Please enter a valid time',
+	 *   invalid_format: 'Use format: HH:MM',
+	 *   invalid_interval: 'Time must be in 5-minute intervals'
+	 * });
+	 *
+	 * @example
+	 * // Optional with custom interval (15 minutes)
+	 * const optionalSchema = validateTime({
+	 *   invalid: 'Invalid time'
+	 * }, {
+	 *   required: false,
+	 *   minuteInterval: 15
+	 * });
+	 *
+	 * @example
+	 * // With time range restrictions
+	 * const workingHoursSchema = validateTime({
+	 *   invalid: 'Invalid time',
+	 *   invalid_range: 'Time must be between 09:00 and 17:00'
+	 * }, {
+	 *   minTime: '09:00',
+	 *   maxTime: '17:00',
+	 *   minuteInterval: 5
+	 * });
+	 */
+	// Overload signatures
+	protected validateTime(
+		messageData?:
+			| string
+			| {
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
+		optionsData?: {
+			required?: true;
+			minuteInterval?: number;
+			minTime?: string;
+			maxTime?: string;
+		},
+	): z.ZodType<string>;
+
+	protected validateTime(
+		messageData?:
+			| string
+			| {
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
+		optionsData?: {
+			required: false;
+			minuteInterval?: number;
+			minTime?: string;
+			maxTime?: string;
+		},
+	): z.ZodType<string | TEmpty>;
+
+	// Implementation signature
+	protected validateTime(
+		messageData?:
+			| string
+			| {
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
+		optionsData?: {
+			required?: boolean;
+			minuteInterval?: number;
+			minTime?: string;
+			maxTime?: string;
+		},
+	): z.ZodType<string | TEmpty> {
+		const options = {
+			required: true,
+			minuteInterval: 1,
+			...optionsData,
+		};
+
+		const defaultMessages: Record<string, string> = {
+			invalid: 'Invalid time',
+			invalid_format: 'Time must be in HH:MM format (e.g., 09:00, 14:30)',
+		};
+
+		if (options.minuteInterval && options.minuteInterval > 1) {
+			defaultMessages.invalid_interval = `Time must be in ${options.minuteInterval}-minute intervals`;
+		}
+
+		if (options.minTime || options.maxTime) {
+			defaultMessages.invalid_range = `Time must be between ${options.minTime ?? '00:00'} and ${options.maxTime ?? '23:59'}`;
+		}
+
+		const message = this.buildMessage(defaultMessages, messageData);
+
+		const parseTimeToMinutes = (time: string): number | null => {
+			const match = time.match(/^([0-1][0-9]|2[0-3]):([0-5][0-9])$/);
+
+			if (!match) {
+				return null;
+			}
+
+			const hours = parseInt(match[1], 10);
+			const minutes = parseInt(match[2], 10);
+
+			return hours * 60 + minutes;
+		};
+
+		const formatMinutesToTime = (minutes: number): string => {
+			const hours = Math.floor(minutes / 60);
+			const mins = minutes % 60;
+
+			return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+		};
+
+		let baseSchema = z.string({ message: message.invalid });
+
+		// Validate format (HH:MM)
+		baseSchema = baseSchema.refine(
+			(val) => /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/.test(val),
+			{ message: message.invalid_format },
+		);
+
+		// Validate minute interval (e.g., 00, 05, 10, 15, etc.)
+		if (options.minuteInterval && options.minuteInterval > 1) {
+			baseSchema = baseSchema.refine(
+				(val) => {
+					const minutes = parseTimeToMinutes(val);
+					if (minutes === null) return false;
+					return minutes % options.minuteInterval === 0;
+				},
+				{ message: message.invalid_interval },
+			);
+		}
+
+		// Validate min time
+		if (options.minTime) {
+			baseSchema = baseSchema.refine(
+				(val) => {
+					const timeMinutes = parseTimeToMinutes(val);
+					const minMinutes = options.minTime
+						? parseTimeToMinutes(options.minTime)
+						: null;
+
+					if (timeMinutes === null || minMinutes === null) {
+						return false;
+					}
+
+					return timeMinutes >= minMinutes;
+				},
+				{ message: message.invalid_range },
+			);
+		}
+
+		// Validate max time
+		if (options.maxTime) {
+			baseSchema = baseSchema.refine(
+				(val) => {
+					const timeMinutes = parseTimeToMinutes(val);
+					const maxMinutes = options.maxTime
+						? parseTimeToMinutes(options.maxTime)
+						: null;
+
+					if (timeMinutes === null || maxMinutes === null) {
+						return false;
+					}
+
+					return timeMinutes <= maxMinutes;
+				},
+				{ message: message.invalid_range },
+			);
+		}
+
+		// Optional step to round to nearest interval if needed
+		const timeSchema =
+			options.minuteInterval && options.minuteInterval > 1
+				? baseSchema.transform((val) => {
+						const minutes = parseTimeToMinutes(val);
+
+						if (minutes === null) {
+							return val;
+						}
+
+						// Round to nearest interval
+						const remainder = minutes % options.minuteInterval;
+
+						if (remainder === 0) {
+							return val;
+						}
+
+						const roundedMinutes = minutes - remainder;
+
+						return formatMinutesToTime(roundedMinutes);
+					})
+				: baseSchema;
+
+		if (options.required) {
+			return this.coerceEmpty(timeSchema) as z.ZodType<string>;
+		}
+
+		const optionalSchema = timeSchema
+			.transform((val) => (val === '' ? undefined : val))
+			.optional();
+
+		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
 
 	/**

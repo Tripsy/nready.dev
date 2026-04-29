@@ -213,8 +213,8 @@ export class ClientService {
 			.filterByStatus(data.filter.status)
 			.filterByRange(
 				'created_at',
-				data.filter.create_date_start,
-				data.filter.create_date_end,
+				data.filter.create_at_start,
+				data.filter.create_at_end,
 			)
 			.filterByTerm(data.filter.term, data.filter.client_type)
 			.withDeleted(withDeleted && data.filter.is_deleted)

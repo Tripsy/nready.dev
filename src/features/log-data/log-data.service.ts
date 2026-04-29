@@ -23,8 +23,8 @@ export class LogDataService {
 			.filterById(data.filter.id)
 			.filterByRange(
 				'created_at',
-				data.filter.create_date_start,
-				data.filter.create_date_end,
+				data.filter.create_at_start,
+				data.filter.create_at_end,
 			)
 			.filterBy('category', data.filter.category)
 			.filterBy('level', data.filter.level)

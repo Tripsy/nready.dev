@@ -1,4 +1,5 @@
 import {
+	createCurrentDate,
 	createFutureDate,
 	createPastDate,
 	dateDiffInSeconds,
@@ -84,11 +85,10 @@ describe('helpers/utils.helper.ts - Unit Tests', () => {
 
 	describe('createFutureDate', () => {
 		it('should create a future date by adding seconds to the current date', () => {
-			const currentDate = new Date();
 			const seconds = 60;
 			const futureDate = createFutureDate(seconds);
 
-			const expectedTime = currentDate.getTime() + seconds * 1000;
+			const expectedTime = createCurrentDate().getTime() + seconds * 1000;
 
 			expect(futureDate.getTime()).toBe(expectedTime);
 		});
@@ -104,11 +104,10 @@ describe('helpers/utils.helper.ts - Unit Tests', () => {
 
 	describe('createPastDate', () => {
 		it('should create a past date by subtracting seconds from the current date', () => {
-			const currentDate = new Date();
 			const seconds = 60;
 			const pastDate = createPastDate(seconds);
 
-			const expectedTime = currentDate.getTime() - seconds * 1000;
+			const expectedTime = createCurrentDate().getTime() - seconds * 1000;
 
 			expect(pastDate.getTime()).toBe(expectedTime);
 		});

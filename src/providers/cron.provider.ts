@@ -15,6 +15,7 @@ import CronHistoryEntity, {
 import { getCronHistoryRepository } from '@/features/cron-history/cron-history.repository';
 import {
 	buildSrcPath,
+	createCurrentDate,
 	dateDiffInSeconds,
 	getErrorMessage,
 	getFileNameWithoutExtension,
@@ -44,7 +45,7 @@ async function executeCron<R extends Record<string, unknown>>(
 		async () => {
 			const cronHistoryEntity = new CronHistoryEntity();
 			cronHistoryEntity.label = action.name;
-			cronHistoryEntity.start_at = new Date();
+			cronHistoryEntity.start_at = createCurrentDate();
 
 			try {
 				cronHistoryEntity.content = await action();
@@ -71,7 +72,7 @@ async function executeCron<R extends Record<string, unknown>>(
 					getCronLogger().error(error, 'Unknown error');
 				}
 			} finally {
-				cronHistoryEntity.end_at = new Date();
+				cronHistoryEntity.end_at = createCurrentDate();
 				cronHistoryEntity.run_time = dateDiffInSeconds(
 					cronHistoryEntity.end_at,
 					cronHistoryEntity.start_at,

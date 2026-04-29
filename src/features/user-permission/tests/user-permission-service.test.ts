@@ -8,6 +8,7 @@ import {
 } from '@/features/user-permission/user-permission.mock';
 import type { UserPermissionQuery } from '@/features/user-permission/user-permission.repository';
 import { UserPermissionService } from '@/features/user-permission/user-permission.service';
+import { createCurrentDate } from '@/helpers';
 import type RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import { createMockQuery } from '@/tests/jest-service.setup';
 
@@ -72,7 +73,7 @@ describe('UserPermissionService', () => {
 		mockUserPermission.query.first
 			.mockResolvedValueOnce({
 				id: 1,
-				deleted_at: new Date(),
+				deleted_at: createCurrentDate(),
 			} as UserPermissionEntity)
 			.mockResolvedValueOnce(null);
 

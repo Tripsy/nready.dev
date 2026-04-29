@@ -214,7 +214,7 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_status'),
 				{ required: false },
 			),
-			create_date_start: this.validateDate(
+			create_at_start: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),
 					invalid_date_format: this.getMessage('invalid_date_format'),
@@ -223,7 +223,7 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 				},
 				{ required: false },
 			),
-			create_date_end: this.validateDate(
+			create_at_end: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),
 					invalid_date_format: this.getMessage('invalid_date_format'),
@@ -239,12 +239,12 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter?.create_date_start &&
-			data.filter?.create_date_end &&
-			data.filter.create_date_start > data.filter.create_date_end
+			data.filter?.create_at_start &&
+			data.filter?.create_at_end &&
+			data.filter.create_at_start > data.filter.create_at_end
 		) {
 			ctx.addIssue({
-				path: ['filter', 'create_date_start'],
+				path: ['filter', 'create_at_start'],
 				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});

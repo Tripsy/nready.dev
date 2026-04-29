@@ -8,6 +8,7 @@ import {
 import type { PermissionQuery } from '@/features/permission/permission.repository';
 import { PermissionService } from '@/features/permission/permission.service';
 import type { PermissionValidator } from '@/features/permission/permission.validator';
+import { createCurrentDate } from '@/helpers';
 import {
 	createMockRepository,
 	testServiceDelete,
@@ -44,7 +45,7 @@ describe('PermissionService', () => {
 	it('should restore when creating with deleted existing', async () => {
 		const entity = {
 			...getPermissionEntityMock(),
-			deleted_at: new Date(),
+			deleted_at: createCurrentDate(),
 		};
 		const createData = permissionOutputPayloads.manage;
 

@@ -177,10 +177,9 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			parent_id: this.validateId(
-				this.getMessage('invalid_parent_id'),
-				{ required: false },
-			),
+			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
+				required: false,
+			}),
 			direction: this.validateEnum(
 				CashFlowDirectionEnum,
 				this.getMessage('invalid_direction'),
@@ -206,7 +205,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_status'),
 				{ required: false },
 			),
-			create_date_start: this.validateDate(
+			create_at_start: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),
 					invalid_date_format: this.getMessage('invalid_date_format'),
@@ -215,7 +214,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 				},
 				{ required: false },
 			),
-			create_date_end: this.validateDate(
+			create_at_end: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),
 					invalid_date_format: this.getMessage('invalid_date_format'),

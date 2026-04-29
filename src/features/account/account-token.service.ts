@@ -11,6 +11,7 @@ import {
 } from '@/features/account/account-token.repository';
 import type UserEntity from '@/features/user/user.entity';
 import {
+	createCurrentDate,
 	createFutureDate,
 	getErrorMessage,
 	getMetaDataValue,
@@ -116,7 +117,7 @@ export class AccountTokenService {
 			.createQuery()
 			.select(['id', 'ident', 'metadata', 'used_at'])
 			.filterBy('user_id', user_id)
-			.filterByRange('expire_at', new Date())
+			.filterByRange('expire_at', createCurrentDate())
 			.all(false);
 
 		return authValidTokens.map((token) => {
@@ -161,7 +162,7 @@ export class AccountTokenService {
 			user_id: user.id,
 			ident: ident,
 			metadata: tokenMetaData(req),
-			used_at: new Date(),
+			used_at: createCurrentDate(),
 			expire_at: expire_at,
 		});
 

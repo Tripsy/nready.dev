@@ -193,8 +193,8 @@ export class UserService {
 			.filterBy('role', data.filter.role)
 			.filterByRange(
 				'created_at',
-				data.filter.create_date_start,
-				data.filter.create_date_end,
+				data.filter.create_at_start,
+				data.filter.create_at_end,
 			)
 			.filterByTerm(data.filter.term)
 			.withDeleted(withDeleted && data.filter.is_deleted)
