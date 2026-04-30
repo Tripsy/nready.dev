@@ -9,7 +9,7 @@ import {
 	paramsUpdateList,
 } from '@/features/place/place.validator';
 import PlaceContentRepository from '@/features/place/place-content.repository';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 import type { PlaceType } from '@/shared/types/place.type';
 
 export class PlaceService {

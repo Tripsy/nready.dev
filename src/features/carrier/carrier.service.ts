@@ -7,7 +7,7 @@ import {
 	type CarrierValidator,
 	paramsUpdateList,
 } from '@/features/carrier/carrier.validator';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class CarrierService {
 	constructor(private repository: ReturnType<typeof getCarrierRepository>) {}

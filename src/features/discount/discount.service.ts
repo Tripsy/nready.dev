@@ -5,7 +5,7 @@ import {
 	type DiscountValidator,
 	paramsUpdateList,
 } from '@/features/discount/discount.validator';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class DiscountService {
 	constructor(private repository: ReturnType<typeof getDiscountRepository>) {}

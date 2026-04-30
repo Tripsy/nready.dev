@@ -1,7 +1,7 @@
 import { lang } from '@/config/i18n.setup';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import type { UserPermissionValidator } from '@/features/user-permission/user-permission.validator';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class UserPermissionService {
 	constructor(

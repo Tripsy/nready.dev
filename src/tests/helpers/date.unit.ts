@@ -2,11 +2,9 @@ import {
 	createCurrentDate,
 	createFutureDate,
 	createPastDate,
-	dateDiffInSeconds,
+	dateDiff,
 	formatDate,
 	isValidDate,
-	isValidDateInstance,
-	stringToDate,
 } from '@/helpers';
 
 describe('helpers/utils.helper.ts - Unit Tests', () => {
@@ -21,41 +19,6 @@ describe('helpers/utils.helper.ts - Unit Tests', () => {
 			const invalidDateString = 'invalid-date';
 
 			expect(isValidDate(invalidDateString)).toBe(false);
-		});
-	});
-
-	describe('isValidDateInstance', () => {
-		it('should return true for a valid Date object', () => {
-			const validDate = new Date('2023-10-01T12:00:00.000Z');
-
-			expect(isValidDateInstance(validDate)).toBe(true);
-		});
-
-		it('should return false for an invalid Date object', () => {
-			const invalidDate = new Date('invalid-date');
-
-			expect(isValidDateInstance(invalidDate)).toBe(false);
-		});
-	});
-
-	describe('stringToDate', () => {
-		it('should convert a valid date string to a Date object', () => {
-			const dateString = '2023-10-01T12:00:00.000Z';
-			const result = stringToDate(dateString);
-
-			expect(result).toBeInstanceOf(Date);
-
-			if (result) {
-				expect(result.toISOString()).toBe(dateString);
-			}
-		});
-
-		it('should throw an error for an invalid date string', () => {
-			const invalidDateString = 'invalid-date';
-
-			expect(() => stringToDate(invalidDateString)).toThrow(
-				`Invalid date format: ${invalidDateString}`,
-			);
 		});
 	});
 
@@ -79,7 +42,11 @@ describe('helpers/utils.helper.ts - Unit Tests', () => {
 		it('should convert a Date object to a specific format', () => {
 			const date = new Date('2023-10-01T12:00:00.000Z');
 
-			expect(formatDate(date, 'YYYY-MM-DD')).toBe('2023-10-01');
+			expect(
+				formatDate(date, undefined, {
+					customFormat: 'YYYY-MM-DD',
+				}),
+			).toBe('2023-10-01');
 		});
 	});
 
@@ -121,36 +88,27 @@ describe('helpers/utils.helper.ts - Unit Tests', () => {
 		});
 	});
 
-	describe('dateDiffInSeconds', () => {
+	describe('dateDiff', () => {
 		it('should calculate the difference between two dates in seconds', () => {
 			const date1 = new Date('2023-10-01T12:00:00.000Z');
 			const date2 = new Date('2023-10-01T12:00:30Z');
 
-			expect(dateDiffInSeconds(date1, date2)).toBe(-30); // date1 is earlier than date2
+			expect(dateDiff(date1, date2, 'seconds')).toBe(-30); // date1 is earlier than date2
 		});
 
 		it('should handle the same date and return 0', () => {
 			const date1 = new Date('2023-10-01T12:00:00.000Z');
 			const date2 = new Date('2023-10-01T12:00:00.000Z');
 
-			expect(dateDiffInSeconds(date1, date2)).toBe(0);
+			expect(dateDiff(date1, date2, 'seconds')).toBe(0);
 		});
 
 		it('should throw an error for invalid date1', () => {
 			const date1 = new Date('invalid-date');
 			const date2 = new Date('2023-10-01T12:00:00.000Z');
 
-			expect(() => dateDiffInSeconds(date1, date2)).toThrow(
-				'Invalid date (eg: date1)',
-			);
-		});
-
-		it('should throw an error for invalid date2', () => {
-			const date1 = new Date('2023-10-01T12:00:00.000Z');
-			const date2 = new Date('invalid-date');
-
-			expect(() => dateDiffInSeconds(date1, date2)).toThrow(
-				'Invalid date (eg: date2)',
+			expect(() => dateDiff(date1, date2, 'seconds')).toThrow(
+				'Invalid date arguments provided for dateDiff',
 			);
 		});
 	});

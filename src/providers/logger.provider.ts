@@ -155,7 +155,9 @@ export class LogStream extends Writable {
 
 		const clonedLog = JSON.parse(JSON.stringify(log));
 
-		clonedLog.time = formatDate(log.time, 'HH:mm:ss Z');
+		clonedLog.time = formatDate(log.time, undefined, {
+			customFormat: 'HH:mm:ss Z',
+		});
 
 		delete clonedLog?.destinations; // Destinations were added to track log channels
 		delete clonedLog.level;
@@ -244,7 +246,9 @@ export class LogStream extends Writable {
 
 		const clonedLog = JSON.parse(JSON.stringify(log));
 
-		clonedLog.time = formatDate(log.time, 'HH:mm:ss Z');
+		clonedLog.time = formatDate(log.time, undefined, {
+			customFormat: 'HH:mm:ss Z',
+		});
 
 		delete clonedLog?.destinations; // Destinations were added to track log channels
 

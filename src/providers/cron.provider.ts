@@ -16,7 +16,7 @@ import { getCronHistoryRepository } from '@/features/cron-history/cron-history.r
 import {
 	buildSrcPath,
 	createCurrentDate,
-	dateDiffInSeconds,
+	dateDiff,
 	getErrorMessage,
 	getFileNameWithoutExtension,
 	listDirectories,
@@ -73,9 +73,10 @@ async function executeCron<R extends Record<string, unknown>>(
 				}
 			} finally {
 				cronHistoryEntity.end_at = createCurrentDate();
-				cronHistoryEntity.run_time = dateDiffInSeconds(
+				cronHistoryEntity.run_time = dateDiff(
 					cronHistoryEntity.end_at,
 					cronHistoryEntity.start_at,
+					'seconds',
 				);
 
 				if (

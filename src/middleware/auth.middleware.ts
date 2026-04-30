@@ -10,7 +10,7 @@ import {
 	compareMetaDataValue,
 	createCurrentDate,
 	createFutureDate,
-	dateDiffInSeconds,
+	dateDiff,
 	tokenMetaData,
 } from '@/helpers';
 import { cacheProvider } from '@/providers/cache.provider';
@@ -48,8 +48,8 @@ async function getUserPermissions(user_id: number): Promise<string[]> {
 			userPermissions.forEach((userPermission) => {
 				results.push(
 					userPermission.permission_entity +
-						'.' +
-						userPermission.permission_operation,
+					'.' +
+					userPermission.permission_operation,
 				);
 			});
 
@@ -182,9 +182,10 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		}
 
 		// Refresh the token if it's close to expiration
-		const diffInSeconds = dateDiffInSeconds(
+		const diffInSeconds = dateDiff(
 			activeToken.expire_at,
 			createCurrentDate(),
+			'seconds',
 		);
 
 		if (
@@ -219,9 +220,9 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			error:
 				err instanceof Error
 					? {
-							message: err.message,
-							stack: err.stack,
-						}
+						message: err.message,
+						stack: err.stack,
+					}
 					: 'Unknown system error',
 		});
 

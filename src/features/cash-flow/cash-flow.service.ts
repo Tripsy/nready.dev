@@ -24,7 +24,7 @@ import {
 	paramsUpdateList,
 } from '@/features/cash-flow/cash-flow.validator';
 import { arrayHasValue } from '@/helpers';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 
 export class CashFlowService {

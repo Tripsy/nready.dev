@@ -3,7 +3,7 @@ import type { Express } from 'express';
 import request, { type Response } from 'supertest';
 import type { z } from 'zod';
 import { createApp } from '@/app';
-import type { ValidatorInput, ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorInput, ValidatorOutput } from '@/shared/types/mock.type';
 import { cacheProvider } from '@/providers/cache.provider';
 import type PolicyAbstract from '@/shared/abstracts/policy.abstract';
 import {

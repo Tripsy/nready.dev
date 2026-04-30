@@ -14,7 +14,7 @@ import {
 	type ClientValidator,
 	paramsUpdateList,
 } from '@/features/client/client.validator';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 
 export class ClientService {

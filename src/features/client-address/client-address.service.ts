@@ -15,7 +15,7 @@ import {
 	type PlaceService,
 	placeService,
 } from '@/features/place/place.service';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { PlaceTypeEnum } from '@/shared/types/place.type';
 
 export class ClientAddressService {

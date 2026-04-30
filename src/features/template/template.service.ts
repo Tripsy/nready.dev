@@ -8,7 +8,7 @@ import {
 	paramsUpdateList,
 	type TemplateValidator,
 } from '@/features/template/template.validator';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class TemplateService {
 	constructor(private repository: ReturnType<typeof getTemplateRepository>) {}
