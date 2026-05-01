@@ -55,14 +55,10 @@ export class AccountService {
 		user: UserEntity,
 		password: string,
 	): Promise<void> {
-		user.password = password; // Encryption it handled in subscriber
+		user.password = password; // subscriber hashes it
 		user.password_updated_at = createCurrentDate();
 
-		await this.userService.update({
-			id: user.id,
-			password: password,
-			password_updated_at: createCurrentDate(),
-		});
+		await this.userService.update(user);
 
 		await this.accountRecoveryService.removeAccountRecoveryForUser(user.id);
 	}

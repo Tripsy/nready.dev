@@ -47,9 +47,39 @@ export class UserQuery extends RepositoryAbstract<UserEntity> {
 	}
 }
 
-export const getUserRepository = () =>
-	dataSource.getRepository(UserEntity).extend({
+export const getUserRepository = () => {
+	const repo = dataSource.getRepository(UserEntity);
+
+	return repo.extend({
 		createQuery() {
 			return new UserQuery(this);
 		},
+
+		// async doSave(data: Partial<UserEntity>) {
+		// 	const { id, ...saveData } = data;
+		//
+		// 	let entity: UserEntity;
+		//
+		// 	if (id) {
+		// 		// Update existing entity
+		// 		entity = await repo.findOneByOrFail({ id });
+		// 		Object.assign(entity, saveData);
+		// 	} else {
+		// 		// Create new entity
+		// 		entity = repo.create(saveData);
+		// 	}
+		//
+		// 	return this.forceSave(entity);
+		// },
+		//
+		// async forceSave(entity: UserEntity) {
+		// 	return repo.save(entity);
+		// },
+
+		// save() {
+		// 	throw new Error(
+		// 		'Direct save() is not allowed. Use updateById() or safeSave().',
+		// 	);
+		// },
 	});
+};

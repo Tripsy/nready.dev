@@ -984,17 +984,21 @@ export abstract class BaseValidator<
 			invalid_meta_keywords: 'Invalid keywords',
 		},
 	) {
-		return z.object({
-			title: this.validateString(message.invalid_meta_title, {
-				required: false,
+		return z.preprocess(
+			(val) => val ?? {},
+			z.object({
+				title: this.validateString(message.invalid_meta_title, {
+					required: false,
+				}),
+				description: this.validateString(
+					message.invalid_meta_description,
+					{ required: false },
+				),
+				keywords: this.validateString(message.invalid_meta_keywords, {
+					required: false,
+				}),
 			}),
-			description: this.validateString(message.invalid_meta_description, {
-				required: false,
-			}),
-			keywords: this.validateString(message.invalid_meta_keywords, {
-				required: false,
-			}),
-		});
+		);
 	}
 
 	// Overload signatures

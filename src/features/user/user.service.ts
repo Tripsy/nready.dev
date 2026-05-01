@@ -15,8 +15,8 @@ import {
 	paramsUpdateList,
 	type UserValidator,
 } from '@/features/user/user.validator';
-import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
 
 export class UserService {
@@ -111,16 +111,16 @@ export class UserService {
 			}
 		}
 
-		const updateData = {
-			...Object.fromEntries(
+		Object.assign(
+			entry,
+			Object.fromEntries(
 				paramsUpdateList
 					.filter((key) => key in data)
 					.map((key) => [key, data[key as keyof typeof data]]),
 			),
-			id,
-		};
+		);
 
-		return this.update(updateData);
+		return this.update(entry);
 	}
 
 	public async updateStatus(
@@ -138,7 +138,7 @@ export class UserService {
 
 		entry.status = newStatus;
 
-		await this.repository.save(entry);
+		await this.update(entry);
 	}
 
 	public async delete(id: number) {

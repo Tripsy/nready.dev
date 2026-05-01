@@ -14,8 +14,8 @@ import {
 	type ClientValidator,
 	paramsUpdateList,
 } from '@/features/client/client.validator';
-import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class ClientService {
 	constructor(private repository: ReturnType<typeof getClientRepository>) {}
@@ -120,7 +120,10 @@ export class ClientService {
 	public async updateData(
 		id: number,
 		data: ValidatorOutput<ClientValidator, 'update'>,
+		withDeleted: boolean,
 	) {
+		const entry = await this.findById(id, withDeleted);
+
 		const identityData: ClientIdentityData =
 			data.client_type === ClientTypeEnum.COMPANY
 				? {
@@ -137,16 +140,16 @@ export class ClientService {
 
 		await this.checkDuplicate(identityData, id);
 
-		const updateData = {
-			...Object.fromEntries(
+		Object.assign(
+			entry,
+			Object.fromEntries(
 				paramsUpdateList
 					.filter((key) => key in data)
 					.map((key) => [key, data[key as keyof typeof data]]),
 			),
-			id,
-		};
+		);
 
-		return this.update(updateData);
+		return this.update(entry);
 	}
 
 	public async updateStatus(
@@ -164,7 +167,7 @@ export class ClientService {
 
 		entry.status = newStatus;
 
-		await this.repository.save(entry);
+		await this.update(entry);
 	}
 
 	public async delete(id: number) {

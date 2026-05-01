@@ -52,7 +52,7 @@ export class CarrierService {
 		data: ValidatorOutput<CarrierValidator, 'update'>,
 		withDeleted: boolean = true,
 	) {
-		await this.findById(id, withDeleted); // Returns 404 inside if entry is not found
+		const entry = await this.findById(id, withDeleted); // Returns 404 inside if entry is not found
 
 		if (data.name) {
 			const existingCarrier = await this.findByName(
@@ -69,16 +69,16 @@ export class CarrierService {
 			}
 		}
 
-		const updateData = {
-			...Object.fromEntries(
+		Object.assign(
+			entry,
+			Object.fromEntries(
 				paramsUpdateList
 					.filter((key) => key in data)
 					.map((key) => [key, data[key as keyof typeof data]]),
 			),
-			id,
-		};
+		);
 
-		return this.update(updateData);
+		return this.update(entry);
 	}
 
 	public async delete(id: number) {

@@ -1,4 +1,4 @@
-import type { EntityManager, Repository } from 'typeorm';
+import type { DeepPartial, EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
@@ -13,8 +13,8 @@ import {
 	paramsUpdateList,
 } from '@/features/brand/brand.validator';
 import BrandContentRepository from '@/features/brand/brand-content.repository';
-import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class BrandService {
 	constructor(
@@ -62,19 +62,25 @@ export class BrandService {
 	}
 
 	/**
-	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
+	 * @description Update any data
 	 */
+	public update(
+		data: DeepPartial<BrandEntity> & { id: number },
+	): Promise<BrandEntity> {
+		return this.repository.save(data);
+	}
+
 	public async updateDataWithContent(
 		id: number,
 		data: ValidatorOutput<BrandValidator, 'update'>,
 		withDeleted: boolean,
 	) {
-		const brand = await this.findById(id, withDeleted);
+		const entry = await this.findById(id, withDeleted);
 
 		if (data.slug || data.brand_type) {
 			const existing = await this.findBySlug(
-				data.slug || brand.slug,
-				data.brand_type || brand.brand_type,
+				data.slug || entry.slug,
+				data.brand_type || entry.brand_type,
 				true,
 				undefined,
 				id,
@@ -86,18 +92,18 @@ export class BrandService {
 		}
 
 		return dataSource.transaction(async (manager) => {
-			const repository = manager.getRepository(BrandEntity); // We use the manager -> `getBrandRepository` is not bound to the transaction
+			const repository = manager.getRepository(BrandEntity);
 
-			const updateData = {
-				...Object.fromEntries(
+			Object.assign(
+				entry,
+				Object.fromEntries(
 					paramsUpdateList
 						.filter((key) => key in data)
 						.map((key) => [key, data[key as keyof typeof data]]),
 				),
-				id,
-			};
+			);
 
-			const updatedEntity = await repository.save(updateData);
+			const updatedEntity = await repository.save(entry);
 
 			if (data.contents) {
 				await BrandContentRepository.saveContent(
@@ -126,7 +132,7 @@ export class BrandService {
 
 		entry.status = newStatus;
 
-		await this.repository.save(entry);
+		await this.update(entry);
 	}
 
 	public async updateOrder(

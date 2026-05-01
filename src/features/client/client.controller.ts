@@ -77,7 +77,7 @@ class ClientController extends BaseController {
 		const data = await this.validateAsync(
 			this.validator.update,
 			{
-				client_type: req.body.client_type ?? client.client_type,
+				client_type: req.body.client_type ?? client.client_type, // Because `client_type` is not required but needed for validation
 				...req.body, // client_type (DB value will be overwritten by the one in the body if it exists)
 			},
 			res,
@@ -86,6 +86,7 @@ class ClientController extends BaseController {
 		const entry = await this.clientService.updateData(
 			res.locals.validated.id,
 			data,
+			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('client.success.update'));

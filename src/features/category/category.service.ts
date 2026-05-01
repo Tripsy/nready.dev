@@ -82,10 +82,10 @@ export class CategoryService {
 		data: ValidatorOutput<CategoryValidator, 'update'>,
 		withDeleted: boolean,
 	) {
-		const category = await this.findById(id, withDeleted);
+		const entry = await this.findById(id, withDeleted);
 
 		if (data.parent_id) {
-			if (category.parent && category.parent.id === data.parent_id) {
+			if (entry.parent && entry.parent.id === data.parent_id) {
 				throw new CustomError(400, lang('category.error.parent_same'));
 			}
 
@@ -98,7 +98,7 @@ export class CategoryService {
 				);
 			}
 
-			if (newParent.deleted_at && !category.deleted_at) {
+			if (newParent.deleted_at && !entry.deleted_at) {
 				throw new CustomError(
 					400,
 					lang('category.error.parent_deleted'),
@@ -107,7 +107,7 @@ export class CategoryService {
 
 			if (
 				newParent.status !== CategoryStatusEnum.ACTIVE &&
-				category.status === CategoryStatusEnum.ACTIVE
+				entry.status === CategoryStatusEnum.ACTIVE
 			) {
 				throw new CustomError(
 					400,
@@ -115,18 +115,18 @@ export class CategoryService {
 				);
 			}
 
-			if (category.type !== newParent.type) {
+			if (entry.type !== newParent.type) {
 				throw new CustomError(
 					400,
 					lang('category.error.invalid_parent_type', {
-						type: category.type,
+						type: entry.type,
 					}),
 				);
 			}
 
 			const treeRepository =
 				RepositoryAbstract.getTreeRepository(CategoryEntity);
-			const descendants = await treeRepository.findDescendants(category);
+			const descendants = await treeRepository.findDescendants(entry);
 
 			if (descendants.some((d) => d.id === data.parent_id)) {
 				throw new CustomError(
@@ -137,14 +137,14 @@ export class CategoryService {
 		}
 
 		return dataSource.transaction(async (manager) => {
-			if (category.parent && 'parent_id' in data) {
+			if (entry.parent && 'parent_id' in data) {
 				let flagUpdate = false;
 
 				if (data.parent_id === null) {
-					category.parent = null;
+					entry.parent = null;
 					flagUpdate = true;
-				} else if (category.parent.id !== data.parent_id) {
-					category.parent = {
+				} else if (entry.parent.id !== data.parent_id) {
+					entry.parent = {
 						id: data.parent_id,
 					} as CategoryEntity;
 					flagUpdate = true;
@@ -153,7 +153,7 @@ export class CategoryService {
 				if (flagUpdate) {
 					const repository = manager.getRepository(CategoryEntity); // We use the manager -> `getCategoryRepository` is not bound to the transaction
 
-					await repository.save(category);
+					await repository.save(entry);
 				}
 			}
 
@@ -161,12 +161,12 @@ export class CategoryService {
 				await CategoryContentRepository.saveContent(
 					manager,
 					data.contents,
-					category.id,
-					category.type,
+					entry.id,
+					entry.type,
 				);
 			}
 
-			return category;
+			return entry;
 		});
 	}
 

@@ -24,8 +24,8 @@ import {
 	paramsUpdateList,
 } from '@/features/cash-flow/cash-flow.validator';
 import { arrayHasValue } from '@/helpers';
-import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class CashFlowService {
 	constructor(private repository: ReturnType<typeof getCashFlowRepository>) {}
@@ -99,7 +99,7 @@ export class CashFlowService {
 		if (!arrayHasValue(deps.parentEntry.status, REFUNDABLE_STATUSES)) {
 			throw new CustomError(
 				409,
-				lang('cash-flow.error.refund_parent_status_invalid', {
+				lang('cash-flow.error.invalid_refund_parent_status', {
 					status: deps.parentEntry.status,
 				}),
 			);
@@ -293,16 +293,16 @@ export class CashFlowService {
 			});
 		}
 
-		const updateData = {
-			...Object.fromEntries(
+		Object.assign(
+			entry,
+			Object.fromEntries(
 				paramsUpdateList
 					.filter((key) => key in data)
 					.map((key) => [key, data[key as keyof typeof data]]),
 			),
-			id,
-		};
+		);
 
-		return this.update(updateData);
+		return this.update(entry);
 	}
 
 	public async updateStatus(
@@ -320,7 +320,7 @@ export class CashFlowService {
 
 		entry.status = newStatus;
 
-		await this.repository.save(entry);
+		await this.update(entry);
 	}
 
 	public async delete(id: number, force: boolean) {

@@ -113,20 +113,20 @@ export class PlaceService {
 		data: ValidatorOutput<PlaceValidator, 'update'>,
 		withDeleted: boolean,
 	) {
-		const place = await this.findById(id, withDeleted);
+		const entry = await this.findById(id, withDeleted);
 
 		await this.checkParentId(
 			'update',
-			data.place_type || place.place_type,
-			data.parent_id || place.parent_id,
+			data.place_type || entry.place_type,
+			data.parent_id || entry.parent_id,
 		);
 
 		const isTypeChange =
 			data.place_type !== undefined &&
-			data.place_type !== place.place_type;
+			data.place_type !== entry.place_type;
 
 		if (isTypeChange) {
-			const hasChildren = await this.hasChildren(place.id);
+			const hasChildren = await this.hasChildren(entry.id);
 
 			if (hasChildren) {
 				throw new BadRequestError(
@@ -138,16 +138,16 @@ export class PlaceService {
 		return dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(PlaceEntity); // We use the manager -> `getPlaceRepository` is not bound to the transaction
 
-			const updateData = {
-				...Object.fromEntries(
+			Object.assign(
+				entry,
+				Object.fromEntries(
 					paramsUpdateList
 						.filter((key) => key in data)
 						.map((key) => [key, data[key as keyof typeof data]]),
 				),
-				id,
-			};
+			);
 
-			const updatedEntity = await repository.save(updateData);
+			const updatedEntity = await repository.save(entry);
 
 			if (data.contents) {
 				await PlaceContentRepository.saveContent(

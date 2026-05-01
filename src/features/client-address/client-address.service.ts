@@ -80,22 +80,22 @@ export class ClientAddressService {
 		withDeleted: boolean,
 		client_id: number,
 	) {
-		await this.findById(id, withDeleted, client_id); // Returns 404 inside if entry is not found
+		const entry = await this.findById(id, withDeleted, client_id); // Returns 404 inside if entry is not found
 
 		if (data.city_id) {
 			await this.checkCityId(data.city_id);
 		}
 
-		const updateData = {
-			...Object.fromEntries(
+		Object.assign(
+			entry,
+			Object.fromEntries(
 				paramsUpdateList
 					.filter((key) => key in data)
 					.map((key) => [key, data[key as keyof typeof data]]),
 			),
-			id,
-		};
+		);
 
-		return this.update(updateData);
+		return this.update(entry);
 	}
 
 	public async delete(id: number, client_id: number) {
