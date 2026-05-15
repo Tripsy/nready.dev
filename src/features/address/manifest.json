@@ -1,0 +1,8 @@
+{
+	"name": "address",
+	"version": "1.0.0",
+	"relativePath": "/address",
+	"entities": ["address"],
+	"depends_on": ["place"],
+	"depends_off": ["address"]
+}

@@ -1,0 +1,24 @@
+{
+	"validation": {
+		"invalid_city_id": "Invalid address city ID",
+		"invalid_details": "Invalid address info",
+		"invalid_postal_code": "Invalid address postal code"
+	},
+	"error": {
+		"not_found": "Address not found",
+		"address_city_invalid_type": "Provided address ID is not a city"
+	},
+	"success": {
+		"create": "Address added successfully",
+		"update": "Address updated successfully",
+		"delete": "Address deleted successfully",
+		"restore": "Address restored successfully"
+	},
+	"history": {
+		"created": "Address #{{entity_id}} created by user #{{auth_id}}",
+		"updated": "Address #{{entity_id}} updated by user #{{auth_id}}",
+		"deleted": "Address(s) {{entity_ids}} marked as deleted by user #{{auth_id}}",
+		"removed": "Address(s) {{entity_ids}} removed by user #{{auth_id}}",
+		"restored": "Address(s) {{entity_ids}} restored by user #{{auth_id}}"
+	}
+}

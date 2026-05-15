@@ -1,3 +1,4 @@
+import { getAddressEntityMock } from '@/features/address/address.mock';
 import { getClientEntityMock } from '@/features/client/client.mock';
 import type ClientAddressEntity from '@/features/client-address/client-address.entity';
 import { ClientAddressTypeEnum } from '@/features/client-address/client-address.entity';
@@ -12,14 +13,13 @@ export function getClientAddressEntityMock(): ClientAddressEntity {
 	return {
 		id: 1,
 		client_id: 1,
+		address_id: 1,
 		address_type: ClientAddressTypeEnum.DELIVERY,
-		city_id: 1,
-		details: 'Str Florio nr 3',
-		postal_code: '636231',
 		notes: 'The address',
 		created_at: createPastDate(28800),
 		updated_at: null,
 		deleted_at: null,
+		address: getAddressEntityMock(),
 		client: getClientEntityMock(),
 	};
 }
@@ -27,16 +27,12 @@ export function getClientAddressEntityMock(): ClientAddressEntity {
 export const clientAddressInputPayloads = {
 	create: {
 		address_type: ClientAddressTypeEnum.DELIVERY,
-		city_id: 1,
-		details: 'Str Florio nr 3',
-		postal_code: '636231',
+		address_id: 1,
 		notes: 'The address',
 	},
 	update: {
 		address_type: ClientAddressTypeEnum.DELIVERY,
-		city_id: 1,
-		details: 'Str Florio nr 4',
-		postal_code: '636231',
+		address_id: 1,
 		notes: 'The address -updated',
 	},
 	find: {

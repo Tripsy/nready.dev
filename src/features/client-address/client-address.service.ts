@@ -1,6 +1,8 @@
 import type { DeepPartial } from 'typeorm';
-import { lang } from '@/config/i18n.setup';
-import { CustomError } from '@/exceptions';
+import {
+	type AddressService,
+	addressService,
+} from '@/features/address/address.service';
 import {
 	type ClientService,
 	clientService,
@@ -11,35 +13,14 @@ import {
 	type ClientAddressValidator,
 	paramsUpdateList,
 } from '@/features/client-address/client-address.validator';
-import {
-	type PlaceService,
-	placeService,
-} from '@/features/place/place.service';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
-import { PlaceTypeEnum } from '@/shared/types/place.type';
 
 export class ClientAddressService {
 	constructor(
 		private repository: ReturnType<typeof getClientAddressRepository>,
 		private clientService: ClientService,
-		private placeService: PlaceService,
+		private addressService: AddressService,
 	) {}
-
-	public async checkCityId(city_id?: number) {
-		if (city_id) {
-			const address_city = await this.placeService.findById(
-				city_id,
-				true,
-			);
-
-			if (address_city.place_type !== PlaceTypeEnum.CITY) {
-				throw new CustomError(
-					409,
-					lang('client-address.error.address_city_invalid_type'),
-				);
-			}
-		}
-	}
 
 	/**
 	 * @description Used in `create` method from controller;
@@ -48,14 +29,10 @@ export class ClientAddressService {
 		data: ValidatorOutput<ClientAddressValidator, 'create'>,
 		client_id: number,
 	): Promise<ClientAddressEntity> {
-		await this.checkCityId(data.city_id);
-
 		const entry = {
-			client_id: client_id,
 			address_type: data.address_type,
-			city_id: data.city_id,
-			details: data.details,
-			postal_code: data.postal_code,
+			client_id: client_id,
+			address_id: data.address_id,
 			notes: data.notes,
 		};
 
@@ -81,10 +58,6 @@ export class ClientAddressService {
 		client_id: number,
 	) {
 		const entry = await this.findById(id, withDeleted, client_id); // Returns 404 inside if entry is not found
-
-		if (data.city_id) {
-			await this.checkCityId(data.city_id);
-		}
 
 		Object.assign(
 			entry,
@@ -148,8 +121,8 @@ export class ClientAddressService {
 			withDeleted,
 		);
 
-		const address_city = await this.placeService.getDataById(
-			entry.city_id,
+		const address = await this.addressService.getDataById(
+			entry.address_id,
 			data,
 			withDeleted,
 		);
@@ -157,7 +130,7 @@ export class ClientAddressService {
 		return {
 			...entry,
 			client: client,
-			address_city: address_city,
+			address: address,
 		};
 	}
 
@@ -168,16 +141,7 @@ export class ClientAddressService {
 		return this.repository
 			.createQuery()
 			.joinAndSelect('client_address.client', 'client', 'INNER')
-			.joinAndSelect('client_address.city', 'address_city', 'LEFT')
-			.joinAndSelect(
-				'address_city.contents',
-				'address_city_content',
-				'LEFT',
-				'address_city_content.language = :language',
-				{
-					language: data.filter.language,
-				},
-			)
+			.joinAndSelect('client_address.address', 'address', 'INNER')
 			.filterById(data.filter.id)
 			.filterBy('client_address.client_id', data.filter.client_id)
 			.filterByTerm(data.filter.term)
@@ -191,5 +155,5 @@ export class ClientAddressService {
 export const clientAddressService = new ClientAddressService(
 	getClientAddressRepository(),
 	clientService,
-	placeService,
+	addressService,
 );

@@ -1,4 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import type AddressEntity from '@/features/address/address.entity';
 import type ClientEntity from '@/features/client/client.entity';
 import type PlaceEntity from '@/features/place/place.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
@@ -34,14 +35,8 @@ export default class ClientAddressEntity extends EntityAbstract {
 	@Index('IDX_client_address_address_type')
 	address_type!: ClientAddressType;
 
-	@Column('int', { nullable: true })
-	city_id!: number | null;
-
-	@Column('text')
-	details!: string;
-
-	@Column('varchar', { nullable: true })
-	postal_code!: string | null;
+	@Column('int', { nullable: false })
+	address_id!: number | null;
 
 	// OTHER
 	@Column('text', { nullable: true })
@@ -53,6 +48,12 @@ export default class ClientAddressEntity extends EntityAbstract {
 	})
 	@JoinColumn({ name: 'client_id' })
 	client!: ClientEntity;
+
+	@ManyToOne('AddressEntity', {
+		onDelete: 'CASCADE',
+	})
+	@JoinColumn({ name: 'address_id' })
+	address!: AddressEntity;
 
 	@ManyToOne('PlaceEntity', {
 		onDelete: 'SET NULL',

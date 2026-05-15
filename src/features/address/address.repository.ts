@@ -1,12 +1,12 @@
 import type { Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { Configuration } from '@/config/settings.config';
-import ClientAddressEntity from '@/features/client-address/client-address.entity';
+import AddressEntity from '@/features/address/address.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
-export class ClientAddressQuery extends RepositoryAbstract<ClientAddressEntity> {
-	constructor(repository: Repository<ClientAddressEntity>) {
-		super(repository, ClientAddressEntity.NAME);
+export class AddressQuery extends RepositoryAbstract<AddressEntity> {
+	constructor(repository: Repository<AddressEntity>) {
+		super(repository, AddressEntity.NAME);
 	}
 
 	filterByTerm(term?: string): this {
@@ -18,7 +18,6 @@ export class ClientAddressQuery extends RepositoryAbstract<ClientAddressEntity> 
 					term.length >
 					(Configuration.get('filter.termMinLength') as number)
 				) {
-					// TODO test
 					this.filterAny([
 						{
 							column: 'details',
@@ -27,11 +26,6 @@ export class ClientAddressQuery extends RepositoryAbstract<ClientAddressEntity> 
 						},
 						{
 							column: 'postal_code',
-							value: term,
-							operator: 'ILIKE',
-						},
-						{
-							column: 'notes',
 							value: term,
 							operator: 'ILIKE',
 						},
@@ -44,9 +38,9 @@ export class ClientAddressQuery extends RepositoryAbstract<ClientAddressEntity> 
 	}
 }
 
-export const getClientAddressRepository = () =>
-	dataSource.getRepository(ClientAddressEntity).extend({
+export const getAddressRepository = () =>
+	dataSource.getRepository(AddressEntity).extend({
 		createQuery() {
-			return new ClientAddressQuery(this);
+			return new AddressQuery(this);
 		},
 	});

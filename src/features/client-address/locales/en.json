@@ -1,13 +1,11 @@
 {
 	"validation": {
 		"invalid_address_type": "Address type is invalid",
-		"invalid_city_id": "Invalid address city ID",
-		"invalid_details": "Invalid address info",
-		"invalid_postal_code": "Invalid address postal code"
+		"invalid_address_id": "Invalid address ID",
+		"invalid_notes": "Invalid notes"
 	},
 	"error": {
-		"not_found": "Client address not found",
-		"address_city_invalid_type": "Provided address ID is not a city"
+		"not_found": "Client address not found"
 	},
 	"success": {
 		"create": "Client address added successfully",
