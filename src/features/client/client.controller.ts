@@ -162,23 +162,9 @@ class ClientController extends BaseController {
 	});
 }
 
-export function createClientController(deps: {
-	policy: ClientPolicy;
-	validator: ClientValidator;
-	cache: CacheProvider;
-	clientService: ClientService;
-}) {
-	return new ClientController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.clientService,
-	);
-}
-
-export const clientController = createClientController({
-	policy: clientPolicy,
-	validator: clientValidator,
-	cache: cacheProvider,
-	clientService: clientService,
-});
+export const clientController = new ClientController(
+	clientPolicy,
+	clientValidator,
+	cacheProvider,
+	clientService,
+);

@@ -16,6 +16,9 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
+import {userPolicy} from "@/features/user/user.policy";
+import {userValidator} from "@/features/user/user.validator";
+import {userService} from "@/features/user/user.service";
 
 class ClientAddressController extends BaseController {
 	constructor(
@@ -151,23 +154,9 @@ class ClientAddressController extends BaseController {
 	});
 }
 
-export function createClientAddressController(deps: {
-	policy: ClientAddressPolicy;
-	validator: ClientAddressValidator;
-	cache: CacheProvider;
-	clientAddressService: ClientAddressService;
-}) {
-	return new ClientAddressController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.clientAddressService,
-	);
-}
-
-export const clientAddressController = createClientAddressController({
-	policy: clientAddressPolicy,
-	validator: clientAddressValidator,
-	cache: cacheProvider,
-	clientAddressService: clientAddressService,
-});
+export const clientAddressController = new ClientAddressController(
+	clientAddressPolicy,
+	clientAddressValidator,
+	cacheProvider,
+	clientAddressService,
+);

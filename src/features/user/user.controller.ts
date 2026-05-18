@@ -140,23 +140,9 @@ class UserController extends BaseController {
 	});
 }
 
-export function createUserController(deps: {
-	policy: UserPolicy;
-	validator: UserValidator;
-	cache: CacheProvider;
-	userService: UserService;
-}) {
-	return new UserController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.userService,
-	);
-}
-
-export const userController = createUserController({
-	policy: userPolicy,
-	validator: userValidator,
-	cache: cacheProvider,
-	userService: userService,
-});
+export const userController = new UserController(
+	userPolicy,
+	userValidator,
+	cacheProvider,
+	userService,
+);

@@ -83,20 +83,8 @@ class LogHistoryController extends BaseController {
 	});
 }
 
-export function createLogHistoryController(deps: {
-	policy: LogHistoryPolicy;
-	validator: LogHistoryValidator;
-	logHistoryService: LogHistoryService;
-}) {
-	return new LogHistoryController(
-		deps.policy,
-		deps.validator,
-		deps.logHistoryService,
-	);
-}
-
-export const logHistoryController = createLogHistoryController({
-	policy: logHistoryPolicy,
-	validator: logHistoryValidator,
-	logHistoryService: logHistoryService,
-});
+export const logHistoryController = new LogHistoryController(
+	logHistoryPolicy,
+	logHistoryValidator,
+	logHistoryService,
+);

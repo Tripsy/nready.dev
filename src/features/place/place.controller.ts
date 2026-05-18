@@ -139,23 +139,9 @@ class PlaceController extends BaseController {
 	});
 }
 
-export function createPlaceController(deps: {
-	policy: PlacePolicy;
-	validator: PlaceValidator;
-	cache: CacheProvider;
-	placeService: PlaceService;
-}) {
-	return new PlaceController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.placeService,
-	);
-}
-
-export const placeController = createPlaceController({
-	policy: placePolicy,
-	validator: placeValidator,
-	cache: cacheProvider,
-	placeService: placeService,
-});
+export const placeController = new PlaceController(
+	placePolicy,
+	placeValidator,
+	cacheProvider,
+	placeService,
+);

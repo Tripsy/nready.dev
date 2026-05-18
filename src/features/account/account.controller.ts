@@ -644,32 +644,12 @@ class AccountController extends BaseController {
 	});
 }
 
-export function createAccountController(deps: {
-	policy: AccountPolicy;
-	validator: AccountValidator;
-	accountService: AccountService;
-	accountTokenService: AccountTokenService;
-	accountRecoveryService: AccountRecoveryService;
-	accountEmailService: AccountEmailService;
-	userService: UserService;
-}) {
-	return new AccountController(
-		deps.policy,
-		deps.validator,
-		deps.accountService,
-		deps.accountTokenService,
-		deps.accountRecoveryService,
-		deps.accountEmailService,
-		deps.userService,
-	);
-}
-
-export const accountController = createAccountController({
-	policy: accountPolicy,
-	validator: accountValidator,
-	accountService: accountService,
-	accountTokenService: accountTokenService,
-	accountRecoveryService: accountRecoveryService,
-	accountEmailService: accountEmailService,
-	userService: userService,
-});
+export const accountController = new AccountController(
+	accountPolicy,
+	accountValidator,
+	accountService,
+	accountTokenService,
+	accountRecoveryService,
+	accountEmailService,
+	userService,
+);

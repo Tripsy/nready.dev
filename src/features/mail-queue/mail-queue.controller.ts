@@ -102,23 +102,9 @@ class MailQueueController extends BaseController {
 	});
 }
 
-export function createMailQueueController(deps: {
-	policy: MailQueuePolicy;
-	validator: MailQueueValidator;
-	cache: CacheProvider;
-	mailQueueService: MailQueueService;
-}) {
-	return new MailQueueController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.mailQueueService,
-	);
-}
-
-export const mailQueueController = createMailQueueController({
-	policy: mailQueuePolicy,
-	validator: mailQueueValidator,
-	cache: cacheProvider,
-	mailQueueService: mailQueueService,
-});
+export const mailQueueController = new MailQueueController(
+	mailQueuePolicy,
+	mailQueueValidator,
+	cacheProvider,
+	mailQueueService,
+);

@@ -132,23 +132,9 @@ class DiscountController extends BaseController {
 	});
 }
 
-export function createDiscountController(deps: {
-	policy: DiscountPolicy;
-	validator: DiscountValidator;
-	cache: CacheProvider;
-	discountService: DiscountService;
-}) {
-	return new DiscountController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.discountService,
-	);
-}
-
-export const discountController = createDiscountController({
-	policy: discountPolicy,
-	validator: discountValidator,
-	cache: cacheProvider,
-	discountService: discountService,
-});
+export const discountController = new DiscountController(
+	discountPolicy,
+	discountValidator,
+	cacheProvider,
+	discountService,
+);

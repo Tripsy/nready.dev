@@ -140,23 +140,9 @@ class AddressController extends BaseController {
 	});
 }
 
-export function createAddressController(deps: {
-	policy: AddressPolicy;
-	validator: AddressValidator;
-	cache: CacheProvider;
-	addressService: AddressService;
-}) {
-	return new AddressController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.addressService,
-	);
-}
-
-export const addressController = createAddressController({
-	policy: addressPolicy,
-	validator: addressValidator,
-	cache: cacheProvider,
-	addressService: addressService,
-});
+export const addressController = new AddressController(
+	addressPolicy,
+	addressValidator,
+	cacheProvider,
+	addressService,
+);

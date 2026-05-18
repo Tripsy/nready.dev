@@ -16,6 +16,9 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
+import {userPolicy} from "@/features/user/user.policy";
+import {userValidator} from "@/features/user/user.validator";
+import {userService} from "@/features/user/user.service";
 
 class CategoryController extends BaseController {
 	constructor(
@@ -161,23 +164,9 @@ class CategoryController extends BaseController {
 	});
 }
 
-export function createCategoryController(deps: {
-	policy: CategoryPolicy;
-	validator: CategoryValidator;
-	cache: CacheProvider;
-	categoryService: CategoryService;
-}) {
-	return new CategoryController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.categoryService,
-	);
-}
-
-export const categoryController = createCategoryController({
-	policy: categoryPolicy,
-	validator: categoryValidator,
-	cache: cacheProvider,
-	categoryService: categoryService,
-});
+export const categoryController = new CategoryController(
+	categoryPolicy,
+	categoryValidator,
+	cacheProvider,
+	categoryService,
+);

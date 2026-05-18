@@ -100,20 +100,8 @@ class UserPermissionController extends BaseController {
 	});
 }
 
-export function createUserPermissionController(deps: {
-	policy: PermissionPolicy;
-	validator: UserPermissionValidator;
-	userPermissionService: UserPermissionService;
-}) {
-	return new UserPermissionController(
-		deps.policy,
-		deps.validator,
-		deps.userPermissionService,
-	);
-}
-
-export const userPermissionController = createUserPermissionController({
-	policy: permissionPolicy,
-	validator: userPermissionValidator,
-	userPermissionService: userPermissionService,
-});
+export const userPermissionController = new UserPermissionController(
+	permissionPolicy,
+	userPermissionValidator,
+	userPermissionService,
+);

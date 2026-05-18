@@ -21,6 +21,9 @@ import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { getSystemLogger } from '@/providers/logger.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
+import {userPolicy} from "@/features/user/user.policy";
+import {userValidator} from "@/features/user/user.validator";
+import {userService} from "@/features/user/user.service";
 
 class CashFlowController extends BaseController {
 	constructor(
@@ -176,23 +179,9 @@ class CashFlowController extends BaseController {
 	});
 }
 
-export function createCashFlowController(deps: {
-	policy: CashFlowPolicy;
-	validator: CashFlowValidator;
-	cache: CacheProvider;
-	cashFlowService: CashFlowService;
-}) {
-	return new CashFlowController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.cashFlowService,
-	);
-}
-
-export const cashFlowController = createCashFlowController({
-	policy: cashFlowPolicy,
-	validator: cashFlowValidator,
-	cache: cacheProvider,
-	cashFlowService: cashFlowService,
-});
+export const cashFlowController = new CashFlowController(
+	cashFlowPolicy,
+	cashFlowValidator,
+	cacheProvider,
+	cashFlowService,
+);

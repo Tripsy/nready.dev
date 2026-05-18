@@ -94,23 +94,9 @@ class LogDataController extends BaseController {
 	});
 }
 
-export function createLogDataController(deps: {
-	policy: LogDataPolicy;
-	validator: LogDataValidator;
-	cache: CacheProvider;
-	logDataService: LogDataService;
-}) {
-	return new LogDataController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.logDataService,
-	);
-}
-
-export const logDataController = createLogDataController({
-	policy: logDataPolicy,
-	validator: logDataValidator,
-	cache: cacheProvider,
-	logDataService: logDataService,
-});
+export const logDataController = new LogDataController(
+	logDataPolicy,
+	logDataValidator,
+	cacheProvider,
+	logDataService,
+);

@@ -553,6 +553,14 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 		return this;
 	}
 
+	prepareTsTerm(term: string): string {
+		return term
+			.toLowerCase()
+			.trim()
+			.split(/\s+/)
+			.join(' & ');
+	}
+
 	static isUniqueViolation(e: unknown): boolean {
 		return e instanceof QueryFailedError && e.driverError?.code === '23505';
 	}

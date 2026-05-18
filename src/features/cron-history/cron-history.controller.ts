@@ -95,23 +95,9 @@ class CronHistoryController extends BaseController {
 	});
 }
 
-export function createCronHistoryController(deps: {
-	policy: CronHistoryPolicy;
-	validator: CronHistoryValidator;
-	cache: CacheProvider;
-	cronHistoryService: CronHistoryService;
-}) {
-	return new CronHistoryController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.cronHistoryService,
-	);
-}
-
-export const cronHistoryController = createCronHistoryController({
-	policy: cronHistoryPolicy,
-	validator: cronHistoryValidator,
-	cache: cacheProvider,
-	cronHistoryService: cronHistoryService,
-});
+export const cronHistoryController = new CronHistoryController(
+	cronHistoryPolicy,
+	cronHistoryValidator,
+	cacheProvider,
+	cronHistoryService,
+);

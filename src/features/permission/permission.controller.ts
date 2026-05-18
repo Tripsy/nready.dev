@@ -139,23 +139,9 @@ class PermissionController extends BaseController {
 	});
 }
 
-export function createPermissionController(deps: {
-	policy: PermissionPolicy;
-	validator: PermissionValidator;
-	cache: CacheProvider;
-	permissionService: PermissionService;
-}) {
-	return new PermissionController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.permissionService,
-	);
-}
-
-export const permissionController = createPermissionController({
-	policy: permissionPolicy,
-	validator: permissionValidator,
-	cache: cacheProvider,
-	permissionService: permissionService,
-});
+export const permissionController = new PermissionController(
+	permissionPolicy,
+	permissionValidator,
+	cacheProvider,
+	permissionService,
+);

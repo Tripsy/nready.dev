@@ -13,6 +13,9 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
+import {userPolicy} from "@/features/user/user.policy";
+import {userValidator} from "@/features/user/user.validator";
+import {userService} from "@/features/user/user.service";
 
 class BrandController extends BaseController {
 	constructor(
@@ -169,23 +172,9 @@ class BrandController extends BaseController {
 	});
 }
 
-export function createBrandController(deps: {
-	policy: BrandPolicy;
-	validator: BrandValidator;
-	cache: CacheProvider;
-	brandService: BrandService;
-}) {
-	return new BrandController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.brandService,
-	);
-}
-
-export const brandController = createBrandController({
-	policy: brandPolicy,
-	validator: brandValidator,
-	cache: cacheProvider,
-	brandService: brandService,
-});
+export const brandController = new BrandController(
+	brandPolicy,
+	brandValidator,
+	cacheProvider,
+	brandService,
+);

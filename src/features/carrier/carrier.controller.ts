@@ -16,6 +16,9 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
+import {brandPolicy} from "@/features/brand/brand.policy";
+import {brandValidator} from "@/features/brand/brand.validator";
+import {brandService} from "@/features/brand/brand.service";
 
 class CarrierController extends BaseController {
 	constructor(
@@ -132,23 +135,9 @@ class CarrierController extends BaseController {
 	});
 }
 
-export function createCarrierController(deps: {
-	policy: CarrierPolicy;
-	validator: CarrierValidator;
-	cache: CacheProvider;
-	carrierService: CarrierService;
-}) {
-	return new CarrierController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.carrierService,
-	);
-}
-
-export const carrierController = createCarrierController({
-	policy: carrierPolicy,
-	validator: carrierValidator,
-	cache: cacheProvider,
-	carrierService: carrierService,
-});
+export const carrierController = new CarrierController(
+	carrierPolicy,
+	carrierValidator,
+	cacheProvider,
+	carrierService,
+);

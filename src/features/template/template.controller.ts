@@ -158,23 +158,9 @@ class TemplateController extends BaseController {
 	});
 }
 
-export function createTemplateController(deps: {
-	policy: TemplatePolicy;
-	validator: TemplateValidator;
-	cache: CacheProvider;
-	templateService: TemplateService;
-}) {
-	return new TemplateController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.templateService,
-	);
-}
-
-export const templateController = createTemplateController({
-	policy: templatePolicy,
-	validator: templateValidator,
-	cache: cacheProvider,
-	templateService: templateService,
-});
+export const templateController = new TemplateController(
+	templatePolicy,
+	templateValidator,
+	cacheProvider,
+	templateService,
+);
