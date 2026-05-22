@@ -1,5 +1,4 @@
 import { expect, jest } from '@jest/globals';
-import type { EntityManager, Repository } from 'typeorm';
 import { CustomError } from '@/exceptions';
 import type AddressEntity from '@/features/address/address.entity';
 import {
@@ -30,16 +29,7 @@ describe('ClientService', () => {
 
 	const mockPlace = createMockRepository<PlaceEntity, PlaceQuery>();
 
-	const getScopedPlaceRepository = jest
-		.fn()
-		.mockReturnValue(mockPlace.repository) as jest.MockedFunction<
-		(manager?: EntityManager) => Repository<PlaceEntity>
-	>;
-
-	const servicePlace = new PlaceService(
-		mockPlace.repository,
-		getScopedPlaceRepository,
-	);
+	const servicePlace = new PlaceService(mockPlace.repository);
 
 	const mockAddress = createMockRepository<AddressEntity, AddressQuery>();
 

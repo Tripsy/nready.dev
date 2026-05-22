@@ -1,5 +1,4 @@
 import { expect, jest } from '@jest/globals';
-import type { EntityManager, Repository } from 'typeorm';
 
 import type PlaceEntity from '@/features/place/place.entity';
 import {
@@ -26,16 +25,7 @@ describe('PlaceService', () => {
 
 	const mockPlace = createMockRepository<PlaceEntity, PlaceQuery>();
 
-	const getScopedPlaceRepository = jest
-		.fn()
-		.mockReturnValue(mockPlace.repository) as jest.MockedFunction<
-		(manager?: EntityManager) => Repository<PlaceEntity>
-	>;
-
-	const servicePlace = new PlaceService(
-		mockPlace.repository,
-		getScopedPlaceRepository,
-	);
+	const servicePlace = new PlaceService(mockPlace.repository);
 
 	it('should create entry inside transaction and save content', async () => {
 		const entity = getPlaceEntityMock();

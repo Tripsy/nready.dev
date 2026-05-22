@@ -1,4 +1,3 @@
-import type { EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
@@ -13,12 +12,7 @@ import type { ValidatorOutput } from '@/shared/types/mock.type';
 import type { PlaceType } from '@/shared/types/place.type';
 
 export class PlaceService {
-	constructor(
-		private repository: ReturnType<typeof getPlaceRepository>,
-		private getScopedPlaceRepository: (
-			manager?: EntityManager,
-		) => Repository<PlaceEntity>,
-	) {}
+	constructor(private repository: ReturnType<typeof getPlaceRepository>) {}
 
 	public async checkParentId(
 		action: 'create' | 'update',
@@ -85,7 +79,7 @@ export class PlaceService {
 		await this.checkParentId('create', data.place_type, data.parent_id);
 
 		return dataSource.transaction(async (manager) => {
-			const repository = this.getScopedPlaceRepository(manager);
+			const repository = manager.getRepository(PlaceEntity);
 
 			const entry = {
 				place_type: data.place_type,
@@ -286,11 +280,4 @@ export class PlaceService {
 	}
 }
 
-export function getScopedPlaceRepository(manager?: EntityManager) {
-	return (manager ?? dataSource.manager).getRepository(PlaceEntity);
-}
-
-export const placeService = new PlaceService(
-	getPlaceRepository(),
-	getScopedPlaceRepository,
-);
+export const placeService = new PlaceService(getPlaceRepository());

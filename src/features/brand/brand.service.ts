@@ -1,4 +1,4 @@
-import type { DeepPartial, EntityManager, Repository } from 'typeorm';
+import type { DeepPartial } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
@@ -17,12 +17,7 @@ import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class BrandService {
-	constructor(
-		private repository: ReturnType<typeof getBrandRepository>,
-		private getScopedBrandRepository: (
-			manager?: EntityManager,
-		) => Repository<BrandEntity>,
-	) {}
+	constructor(private repository: ReturnType<typeof getBrandRepository>) {}
 
 	/**
 	 * @description Used in `create` method from controller;
@@ -41,7 +36,7 @@ export class BrandService {
 		}
 
 		return dataSource.transaction(async (manager) => {
-			const repository = this.getScopedBrandRepository(manager);
+			const repository = manager.getRepository(BrandEntity);
 
 			const entry = {
 				name: data.name,
@@ -293,12 +288,4 @@ export class BrandService {
 			.all(true);
 	}
 }
-
-export function getScopedBrandRepository(manager?: EntityManager) {
-	return (manager ?? dataSource.manager).getRepository(BrandEntity);
-}
-
-export const brandService = new BrandService(
-	getBrandRepository(),
-	getScopedBrandRepository,
-);
+export const brandService = new BrandService(getBrandRepository());
