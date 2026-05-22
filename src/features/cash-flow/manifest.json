@@ -1,0 +1,8 @@
+{
+	"name": "cash-flow",
+	"version": "1.0.0",
+	"relativePath": "/cash-flow",
+	"entities": ["cash-flow", "operational-record"],
+	"depends_on": ["client", "vendor", "user"],
+	"depends_off": ["invoice"]
+}

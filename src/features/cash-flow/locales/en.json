@@ -1,0 +1,46 @@
+{
+	"validation": {
+		"invalid_direction": "Cash flow direction is invalid",
+		"invalid_category_type": "Category type is invalid",
+		"invalid_category": "Category is invalid",
+		"invalid_gateway": "Payment gateway is invalid",
+		"invalid_method": "Payment method is invalid",
+		"invalid_amount": "Invalid amount value",
+		"invalid_vat_rate": "VAT rate must be a valid number",
+		"invalid_currency": "Currency is invalid",
+		"invalid_exchange_rate": "Exchange rate must be a valid number",
+		"invalid_notes": "Notes are invalid",
+		"invalid_status": "Status is invalid",
+		"invalid_external_reference": "External reference invalid",
+		"invalid_parent_id": "Parent payment ID is invalid",
+		"required_operational_record_type": "For selected category operational record is required (e.g.: {{operational_record_type}})"
+	},
+	"error": {
+		"not_found": "Cash flow entry not found",
+		"invalid_parent_id": "Parent payment ID is invalid",
+		"category_type_mismatch": "Category '{{category}}' requires type '{{category_type}}'",
+		"direction_mismatch": "Category '{{category}}' requires direction '{{direction}}'",
+		"direction_expected_from_category_type": "Type '{{category_type}}' requires direction '{{direction}}'",
+		"refund_parent_required": "Refund must have a parent payment",
+		"invalid_refund_parent_status": "The refunded payment status is invalid (eg: {{status}})",
+		"refund_parent_same_currency": "Refunds have to created with the same currency used in the parent",
+		"refund_parent_invalid_category_type": "Cannot refund from selected payment",
+		"refund_parent_invalid_category": "Cannot refund from selected payment",
+		"refund_amount_mismatch": "The refunded amount is bigger than the available amount for refund; Maximum amount available for refund is {{max_amount}}",
+		"cannot_delete_with_refunds": "This cash flow operation has refunds linked",
+		"update_not_allowed": "This cash flow operation is not available for update"
+	},
+	"success": {
+		"create": "Cash flow created successfully",
+		"update": "Cash flow updated successfully",
+		"delete": "Cash flow deleted successfully",
+		"status_update": "Cash flow status updated successfully"
+	},
+	"history": {
+		"created": "Cash flow #{{entity_id}} created by user #{{auth_id}}",
+		"updated": "Cash flow #{{entity_id}} updated by user #{{auth_id}}",
+		"deleted": "Cash flow(s) {{entity_ids}} marked as deleted by user #{{auth_id}}",
+		"removed": "Cash flow(s) {{entity_ids}} removed by user #{{auth_id}}",
+		"status": "Cash flow entry #{{entity_id}} updated from {{oldStatus}} to {{newStatus}} by user #{{auth_id}}"
+	}
+}
