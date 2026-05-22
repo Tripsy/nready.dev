@@ -1,0 +1,23 @@
+{
+	"validation": {
+		"invalid_name": "Invalid name"
+	},
+	"error": {
+		"not_found": "Vendor not found"
+	},
+	"success": {
+		"create": "Vendor created successfully",
+		"update": "Vendor updated successfully",
+		"delete": "Vendor deleted successfully",
+		"restore": "Vendor restored successfully",
+		"status_update": "Vendor status updated successfully"
+	},
+	"history": {
+		"created": "Vendor #{{entity_id}} created by user #{{auth_id}}",
+		"updated": "Vendor #{{entity_id}} updated by user #{{auth_id}}",
+		"deleted": "Vendor(s) {{entity_ids}} marked as deleted by user #{{auth_id}}",
+		"removed": "Vendor(s) {{entity_ids}} removed by user #{{auth_id}}",
+		"restored": "Vendor(s) {{entity_ids}} restored by user #{{auth_id}}",
+		"status": "Vendor #{{entity_id}} updated from {{oldStatus}} to {{newStatus}} by user #{{auth_id}}"
+	}
+}
