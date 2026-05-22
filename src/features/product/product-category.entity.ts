@@ -2,6 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type CategoryEntity from '@/features/category/category.entity';
 import type ProductEntity from '@/features/product/product.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'product_category';
 
@@ -10,6 +11,7 @@ const ENTITY_TABLE_NAME = 'product_category';
 	schema: 'public',
 	comment: 'Links products to categories (multilingual via term)',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_product_category_unique', ['product_id', 'category_id'], {
 	unique: true,
 })

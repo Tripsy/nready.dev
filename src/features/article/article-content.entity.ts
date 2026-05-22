@@ -1,6 +1,7 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type ArticleEntity from './article.entity';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export type ArticleAuthorType = {
 	name: string;
@@ -17,6 +18,7 @@ const ENTITY_TABLE_NAME = 'article_content';
 	comment:
 		'Language-specific content for articles (title, slug, brief, content, meta)',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_article_content_unique_per_lang', ['article_id', 'language'])
 @Index('IDX_article_content_slug_lang', ['slug', 'language'], { unique: true })
 export default class ArticleContentEntity extends EntityAbstract {

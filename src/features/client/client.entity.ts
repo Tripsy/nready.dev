@@ -1,6 +1,7 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const ClientStatusEnum = {
 	ACTIVE: 'active',
@@ -47,6 +48,7 @@ const ENTITY_TABLE_NAME = 'client';
 	schema: 'public',
 	comment: 'Stores client information for persons OR companies',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_client_company_name_unique', ['company_name'], {
 	unique: true,
 	where: "company_name IS NOT NULL AND client_type = 'company'",

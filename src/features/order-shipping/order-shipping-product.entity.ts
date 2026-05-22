@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import type OrderProductEntity from '@/features/order/order-product.entity';
 import type OrderShippingEntity from '@/features/order-shipping/order-shipping.entity';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'order_shipping_product';
 
@@ -16,6 +17,7 @@ const ENTITY_TABLE_NAME = 'order_shipping_product';
 	schema: 'public',
 	comment: 'Allocation of ordered products to specific shipments',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index(
 	'IDX_order_shipping_product_unique',
 	['order_shipping_id', 'order_product_id'],

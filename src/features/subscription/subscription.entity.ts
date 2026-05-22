@@ -2,6 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type OrderEntity from '@/features/order/order.entity';
 import type UserEntity from '@/features/user/user.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const SubscriptionStatusEnum = {
 	ACTIVE: 'active',
@@ -20,6 +21,7 @@ const ENTITY_TABLE_NAME = 'subscription';
 	schema: 'public',
 	comment: 'Recurring subscriptions created from orders',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_subscription_end_at', ['end_at', 'status'], {
 	unique: true,
 })

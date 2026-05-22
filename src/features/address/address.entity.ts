@@ -1,6 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import type PlaceEntity from '@/features/place/place.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'address';
 
@@ -9,6 +10,7 @@ const ENTITY_TABLE_NAME = 'address';
 	schema: 'public',
 	comment: 'Addresses',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class AddressEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

@@ -2,6 +2,7 @@ import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
 import { type UserRole, UserRoleEnum } from '@/shared/types/user-role.type';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const UserStatusEnum = {
 	ACTIVE: 'active',
@@ -33,6 +34,7 @@ const ENTITY_TABLE_NAME = 'user';
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class UserEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

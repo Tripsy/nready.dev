@@ -14,6 +14,7 @@ import {
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const CategoryStatusEnum = {
 	ACTIVE: 'active',
@@ -58,6 +59,7 @@ const ENTITY_TABLE_NAME = 'category';
 	comment: 'Hierarchical product categories',
 })
 @Tree('closure-table')
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_category_type', ['type', 'status'])
 export default class CategoryEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

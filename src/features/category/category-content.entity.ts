@@ -5,6 +5,7 @@ import {
 } from '@/shared/abstracts/entity.abstract';
 import type CategoryEntity from './category.entity';
 import { type CategoryType, CategoryTypeEnum } from './category.entity';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'category_content';
 
@@ -13,6 +14,7 @@ const ENTITY_TABLE_NAME = 'category_content';
 	schema: 'public',
 	comment: 'Language-specific category content (slug, description, metadata)',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index(
 	'IDX_category_content_category_id_language',
 	['category_id', 'language'],

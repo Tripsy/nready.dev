@@ -1,6 +1,7 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import type PlaceEntity from './place.entity';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'place_content';
 
@@ -9,6 +10,7 @@ const ENTITY_TABLE_NAME = 'place_content';
 	schema: 'public',
 	comment: 'Language-specific content for places',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_place_content_unique_per_lang', ['place_id', 'language'], {
 	unique: true,
 })

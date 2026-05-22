@@ -1,5 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const TemplateTypeEnum = {
 	PAGE: 'page',
@@ -47,6 +48,7 @@ const ENTITY_TABLE_NAME = 'template';
 	schema: 'system',
 	comment: 'Stores email & page templates',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_label_language_type', ['label', 'language', 'type'], {
 	unique: true,
 })

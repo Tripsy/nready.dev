@@ -1,6 +1,7 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import ImageEntity from './image.entity';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export type ImageFilePropsType = {
 	width?: number; // pixel
@@ -30,6 +31,7 @@ const ENTITY_TABLE_NAME = 'image_content';
 	schema: 'public',
 	comment: 'Language-specific content for images',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_image_content_unique_per_lang', ['image_id', 'language'])
 export default class ImageContentEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

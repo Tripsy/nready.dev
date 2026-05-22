@@ -11,6 +11,7 @@ import type ProductAttributeEntity from '@/features/product/product-attribute.en
 import type ProductCategoryEntity from '@/features/product/product-category.entity';
 import type ProductTagEntity from '@/features/product/product-tag.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const ProductWorkflowEnum = {
 	DRAFT: 'draft', // Initial creation
@@ -61,6 +62,7 @@ const ENTITY_TABLE_NAME = 'product';
 	comment:
 		'Stores core product information; textual content is saved in a product-content.entity',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class ProductEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

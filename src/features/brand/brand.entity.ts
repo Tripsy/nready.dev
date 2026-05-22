@@ -5,6 +5,7 @@ import {
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
 import type { StatusTransitions } from '@/shared/types/common.type';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const BrandStatusEnum = {
 	ACTIVE: 'active',
@@ -38,7 +39,7 @@ const ENTITY_TABLE_NAME = 'brand';
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
 })
-
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_brand_slug', ['slug', 'brand_type'], {
 	unique: true,
 })

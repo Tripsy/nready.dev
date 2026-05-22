@@ -1,5 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export type ImageEntityType = 'product' | 'category' | 'brand';
 
@@ -13,6 +14,7 @@ export type ImageKind = (typeof ImageKindEnum)[keyof typeof ImageKindEnum];
 const ENTITY_TABLE_NAME = 'image';
 
 @Entity({ name: ENTITY_TABLE_NAME, schema: 'public' })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_image_type_id', ['entity_type', 'entity_id', 'kind'])
 export default class ImageEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

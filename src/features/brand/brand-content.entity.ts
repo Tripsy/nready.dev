@@ -4,6 +4,7 @@ import {
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
 import type BrandEntity from './brand.entity';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'brand_content';
 
@@ -15,6 +16,7 @@ const ENTITY_TABLE_NAME = 'brand_content';
 @Index('IDX_brand_content_unique_per_lang', ['brand_id', 'language'], {
 	unique: true,
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class BrandContentEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

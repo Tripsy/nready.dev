@@ -1,5 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const TermTypeEnum = {
 	TAG: 'tag',
@@ -18,6 +19,7 @@ const ENTITY_TABLE_NAME = 'term';
 	comment:
 		'Multilingual taxonomy terms: categories, tags, attribute labels/values',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class TermEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

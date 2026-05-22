@@ -2,6 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type ProductEntity from '@/features/product/product.entity';
 import type TermEntity from '@/features/term/term.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'product_attribute';
 
@@ -10,6 +11,7 @@ const ENTITY_TABLE_NAME = 'product_attribute';
 	schema: 'public',
 	comment: 'Key/value attributes for products, using multilingual terms',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index(
 	'IDX_product_attribute_unique',
 	['product_id', 'attribute_label_id', 'attribute_value_id'],

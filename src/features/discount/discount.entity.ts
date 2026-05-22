@@ -1,5 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const DiscountScopeEnum = {
 	CLIENT: 'client',
@@ -64,6 +65,7 @@ const ENTITY_TABLE_NAME = 'discount';
 	comment:
 		'Stores discount definitions. Note: Discount applied only for prices without VAT before exchange rate conversion',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_discount_active', ['start_at', 'end_at', 'scope'])
 export default class DiscountEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

@@ -1,5 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'carrier';
 
@@ -8,6 +9,7 @@ const ENTITY_TABLE_NAME = 'carrier';
 	schema: 'public',
 	comment: 'Stores shipping carriers',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class CarrierEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
