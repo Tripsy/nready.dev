@@ -49,7 +49,7 @@ class ClientController extends BaseController {
 
 		const cacheKey = this.cache.buildKey(
 			ClientEntity.NAME,
-			res.locals.id,
+			res.locals.validated.id,
 			'read',
 		);
 

@@ -45,7 +45,7 @@ class VendorController extends BaseController {
 
 		const cacheKey = this.cache.buildKey(
 			VendorEntity.NAME,
-			res.locals.id,
+			res.locals.validated.id,
 			'read',
 		);
 

@@ -39,10 +39,9 @@ function getRoutesFilePath(feature: string) {
 }
 
 function buildRoutes<C>({
-	basePath,
-	controller,
-	routes,
-}: {
+							controller,
+							routes,
+						}: {
 	basePath: string;
 	controller: C;
 	routes: RoutesType<C>;
@@ -53,22 +52,18 @@ function buildRoutes<C>({
 		const config = routes[action];
 		const { path, method, handlers = [] } = config;
 
-		const fullPath = `${basePath}${path}`;
 		const middleware = [...handlers];
 
-		// Check if any handler / middleware name ends with "RateLimiter"
-		const hasRateLimiter = middleware.some((f) => {
-			const functionName = f.name || '';
-
-			return functionName.endsWith('RateLimiter');
-		});
+		const hasRateLimiter = middleware.some((f) =>
+			(f.name || '').endsWith('RateLimiter'),
+		);
 
 		if (!hasRateLimiter) {
 			middleware.push(apiRateLimiter);
 		}
 
 		router[method](
-			fullPath,
+			path,
 			...middleware,
 			controller[action] as RequestHandler,
 		);
@@ -123,7 +118,7 @@ function findRouteFiles(featuresDirectory: string) {
 	return routeFiles;
 }
 
-export const initRoutes = async (apiPrefix: string = ''): Promise<Router> => {
+export const initRoutes = async (): Promise<Router> => {
 	const router = Router();
 
 	const featuresPath = buildSrcPath(
@@ -132,7 +127,7 @@ export const initRoutes = async (apiPrefix: string = ''): Promise<Router> => {
 	const routeFiles = findRouteFiles(featuresPath);
 
 	for (const routeFilePath of routeFiles) {
-		await loadRoutes(router, routeFilePath, apiPrefix);
+		await loadRoutes(router, routeFilePath);
 	}
 
 	getSystemLogger().debug('Routes initialized');
@@ -143,7 +138,6 @@ export const initRoutes = async (apiPrefix: string = ''): Promise<Router> => {
 async function loadRoutes(
 	router: Router,
 	routeFilePath: string,
-	apiPrefix: string,
 ): Promise<void> {
 	const feature = path.basename(routeFilePath).split('.')[0];
 
@@ -159,11 +153,10 @@ async function loadRoutes(
 			getSystemLogger().warn(
 				`Feature ${feature} does not export default routes config`,
 			);
-
 			return;
 		}
 
-		router.use(apiPrefix, buildRoutes(def));
+		router.use(def.basePath, buildRoutes(def));
 
 		if (Configuration.isEnvironment('development')) {
 			pushRouteInfo(feature, def);

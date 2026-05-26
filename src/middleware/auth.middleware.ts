@@ -3,7 +3,9 @@ import { Configuration } from '@/config/settings.config';
 import type AccountTokenEntity from '@/features/account/account-token.entity';
 import { getAccountTokenRepository } from '@/features/account/account-token.repository';
 import { accountTokenService } from '@/features/account/account-token.service';
-import UserEntity, { UserStatusEnum } from '@/features/user/user.entity';
+import UserEntity, {
+	UserStatusEnum,
+} from '@/features/user/user.entity';
 import { getUserRepository } from '@/features/user/user.repository';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import {
@@ -14,7 +16,8 @@ import {
 	tokenMetaData,
 } from '@/helpers';
 import { cacheProvider } from '@/providers/cache.provider';
-import { UserRoleEnum } from '@/shared/types/user-role.type';
+import type { AuthContextPermissions } from '@/shared/types/express';
+import { type UserRole, UserRoleEnum } from '@/shared/types/user-role.type';
 
 export const AuthFailureReason = {
 	NO_TOKEN: 'NO_TOKEN',
@@ -30,35 +33,34 @@ export const AuthFailureReason = {
 export type AuthFailureReason =
 	(typeof AuthFailureReason)[keyof typeof AuthFailureReason];
 
-async function getUserPermissions(user_id: number): Promise<string[]> {
+async function getUserPermissions(user_id: number, user_role: UserRole) {
 	const cacheKey = cacheProvider.buildKey(
 		UserEntity.NAME,
 		user_id.toString(),
 		'permissions',
 	);
 
-	const cacheGetResults = await cacheProvider.get(
-		cacheKey,
-		async () => {
-			const userPermissions =
-				await getUserPermissionRepository().getUserPermissions(user_id);
+	const cacheGetResults = await cacheProvider.get(cacheKey, async () => {
+		const userPermissions =
+			await getUserPermissionRepository().getUserPermissions(user_id);
 
-			const results: string[] = [];
+		const results = userPermissions.reduce<AuthContextPermissions>(
+			(acc, { permission_entity, permission_operation }) => {
+				if (!acc[permission_entity]) {
+					acc[permission_entity] = [];
+				}
 
-			userPermissions.forEach((userPermission) => {
-				results.push(
-					userPermission.permission_entity +
-					'.' +
-					userPermission.permission_operation,
-				);
-			});
+				acc[permission_entity].push(permission_operation);
 
-			return results;
-		},
-		1800,
-	);
+				return acc;
+			},
+			{},
+		);
 
-	return cacheGetResults.data as string[];
+		return results;
+	});
+
+	return cacheGetResults.data as AuthContextPermissions;
 }
 
 function setAuthFailure(
@@ -80,7 +82,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			language: Configuration.language(),
 			role: 'visitor',
 			operator_type: null,
-			permissions: [],
+			permissions: {},
 			activeToken: '',
 		};
 
@@ -165,18 +167,9 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		if (user.status !== UserStatusEnum.ACTIVE) {
 			getAccountTokenRepository().removeTokenById(activeToken.id);
 
-			setAuthFailure(AuthFailureReason.USER_NOT_FOUND, {
+			setAuthFailure(AuthFailureReason.USER_INACTIVE, {
 				...activeToken,
 			});
-
-			return next();
-		}
-
-		// User was not found or inactive
-		if (!user || user.status !== UserStatusEnum.ACTIVE) {
-			getAccountTokenRepository().removeTokenById(activeToken.id);
-
-			setAuthFailure(AuthFailureReason.USER_INACTIVE, { ...activeToken });
 
 			return next();
 		}
@@ -207,10 +200,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		// Attach user information to the request object
 		res.locals.auth = {
 			...user,
-			permissions:
-				user.role === UserRoleEnum.OPERATOR
-					? await getUserPermissions(user.id)
-					: [],
+			permissions: await getUserPermissions(user.id, user.role),
 			activeToken: activeToken.ident,
 		};
 
@@ -220,9 +210,9 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			error:
 				err instanceof Error
 					? {
-						message: err.message,
-						stack: err.stack,
-					}
+							message: err.message,
+							stack: err.stack,
+						}
 					: 'Unknown system error',
 		});
 

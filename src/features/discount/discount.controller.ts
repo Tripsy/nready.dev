@@ -45,7 +45,7 @@ class DiscountController extends BaseController {
 
 		const cacheKey = this.cache.buildKey(
 			DiscountEntity.NAME,
-			res.locals.id,
+			res.locals.validated.id,
 			'read',
 		);
 

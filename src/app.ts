@@ -140,7 +140,7 @@ export async function createApp() {
 
 	// Routes
 	const router = await initRoutes();
-	app.use('/', router);
+	app.use(router);
 
 	// Route - health
 	app.get('/health', (_req, res) => {
