@@ -8,7 +8,6 @@ import CashFlowEntity, {
 	type CashFlowCategoryType,
 	CashFlowCategoryTypeEnum,
 	type CashFlowDirection,
-	CashFlowDirectionEnum,
 	type CashFlowStatus,
 	type Currency,
 	getExpectedCategoryType,
@@ -34,8 +33,6 @@ import {
 } from '@/features/cash-flow/operational-record.entity';
 import { getOperationalRecordRepository } from '@/features/cash-flow/operational-record.repository';
 import { clientService } from '@/features/client/client.service';
-import { cmrService } from '@/features/cmr/cmr.service';
-import { companyVehicleService } from '@/features/company-vehicle/company-vehicle.service';
 import { userService } from '@/features/user/user.service';
 import { vendorService } from '@/features/vendor/vendor.service';
 import { arrayHasValue } from '@/helpers';
@@ -48,14 +45,6 @@ export class CashFlowService {
 	// `amount` represent the value coming through request; this method returns the value to be stored in database
 	public inputAmount(amount: number) {
 		return Math.abs(amount) * 10 ** AMOUNT_DECIMALS;
-	}
-
-	// `inputAmount` represent the value coming from database; this method returns the value to returned on requests (eg: read, find)
-	public outputAmount(inputAmount: number, direction: CashFlowDirection) {
-		return (
-			((CashFlowDirectionEnum.IN === direction ? 1 : -1) * inputAmount) /
-			10 ** AMOUNT_DECIMALS
-		);
 	}
 
 	public checkDirection(
@@ -497,12 +486,38 @@ export class CashFlowService {
 		await this.repository.createQuery().filterById(id).delete();
 	}
 
-	public findById(id: number, withDeleted: boolean): Promise<CashFlowEntity> {
-		return this.repository
+	/**
+	 * Find a cash flow entry by ID
+	 * IF `userId` is provided, the `cash-flow` entry must have an `operational_record` with the `entity_id` matching the `userId`
+	 *
+	 * @param id
+	 * @param withDeleted
+	 * @param userId
+	 */
+	public findById(
+		id: number,
+		withDeleted: boolean,
+		userId?: number,
+	): Promise<CashFlowEntity> {
+		const query = this.repository
 			.createQuery()
 			.filterById(id)
-			.withDeleted(withDeleted)
-			.firstOrFail();
+			.withDeleted(withDeleted);
+
+		if (userId) {
+			query.join(
+				'cash_flow.operational_records',
+				'operational_records',
+				'INNER',
+				'operational_records.entity_id = :entity_id AND operational_records.operational_record_type = :operational_record_type',
+				{
+					entity_id: userId,
+					operational_record_type: OperationalRecordTypeEnum.EMPLOYEE,
+				},
+			);
+		}
+
+		return query.firstOrFail();
 	}
 
 	public findByFilter(
@@ -615,7 +630,7 @@ export class CashFlowService {
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit);
 
-		return query.debug().all(true);
+		return query.all(true);
 	}
 
 	public async findOperationalRecords(cash_flow_id: number) {
@@ -641,19 +656,6 @@ export class CashFlowService {
 						break;
 					case OperationalRecordTypeEnum.VENDOR:
 						entry.vendor = await vendorService.getDataById(
-							entry.entity_id,
-							false,
-						);
-						break;
-					case OperationalRecordTypeEnum.COMPANY_VEHICLE:
-						entry.company_vehicle =
-							await companyVehicleService.getDataById(
-								entry.entity_id,
-								false,
-							);
-						break;
-					case OperationalRecordTypeEnum.CMR:
-						entry.cmr = await cmrService.findById(
 							entry.entity_id,
 							false,
 						);

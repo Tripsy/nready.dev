@@ -9,7 +9,6 @@ import {
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { CustomError, NotFoundError } from '@/exceptions';
-import { formatDate } from '@/helpers';
 import {
 	type OrderDirection,
 	OrderDirectionEnum,
@@ -272,7 +271,9 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 	all(): Promise<TEntity[]>;
 	all(withCount: false): Promise<TEntity[]>;
 	all(withCount: true): Promise<[TEntity[], number]>;
-	all(withCount: boolean = false) {
+	all(
+		withCount: boolean = false,
+	): Promise<TEntity[]> | Promise<[TEntity[], number]> {
 		if (withCount) {
 			if (this.hasGroup) {
 				throw new CustomError(
@@ -311,33 +312,35 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 			);
 		}
 
-		const results = await this.query.getMany();
+		return dataSource.transaction(async (manager) => {
+			const results = await this.query.getMany();
 
-		if (results.length === 0) {
-			throw new NotFoundError(
-				lang(
-					`${this.entity}.error.not_found`,
-					{},
-					'Record(s) not found',
-				),
-			);
-		}
+			if (results.length === 0) {
+				throw new NotFoundError(
+					lang(
+						`${this.entity}.error.not_found`,
+						{},
+						'Record(s) not found',
+					),
+				);
+			}
 
-		if (!multiple && results.length > 1) {
-			throw new CustomError(500, lang('shared.error.db_delete_one'));
-		}
+			if (!multiple && results.length > 1) {
+				throw new CustomError(500, lang('shared.error.db_delete_one'));
+			}
 
-		if (isSoftDelete) {
-			await Promise.all(
-				results.map((entity) => this.repository.softRemove(entity)),
-			);
-		} else {
-			await Promise.all(
-				results.map((entity) => this.repository.remove(entity)),
-			);
-		}
+			const repo = manager.getRepository<TEntity>(this.repository.target);
 
-		return results.length;
+			if (isSoftDelete) {
+				await Promise.all(
+					results.map((entity) => repo.softRemove(entity)),
+				);
+			} else {
+				await Promise.all(results.map((entity) => repo.remove(entity)));
+			}
+
+			return results.length;
+		});
 	}
 
 	async restore(
@@ -351,39 +354,103 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 			);
 		}
 
-		const results = await this.query.withDeleted().getMany();
+		return dataSource.transaction(async (manager) => {
+			const results = await this.query.withDeleted().getMany();
 
-		if (results.length === 0) {
-			throw new NotFoundError(
-				lang(
-					`${this.entity}.error.not_found`,
-					{},
-					'Record(s) not found',
-				),
+			if (results.length === 0) {
+				throw new NotFoundError(
+					lang(
+						`${this.entity}.error.not_found`,
+						{},
+						'Record(s) not found',
+					),
+				);
+			}
+
+			if (!multiple && results.length > 1) {
+				throw new CustomError(500, lang('shared.error.db_restore_one'));
+			}
+
+			for (const entity of results) {
+				(entity as ObjectLiteral).deleted_at = null;
+			}
+
+			const repo = manager.getRepository<TEntity>(this.repository.target);
+			await repo.save(results);
+
+			return results.length;
+		});
+	}
+
+	// Overload: default scalar operators
+	filterBy(
+		column: string,
+		value?: string | number | null,
+		operator?: Exclude<string, 'IN'>,
+	): this;
+	// Overload: IN operator requires array
+	filterBy(column: string, value: (string | number)[], operator: 'IN'): this;
+	// Implementation
+	filterBy(column: string, value?: QueryValue, operator: string = '='): this {
+		if (value === undefined || value === null) {
+			return this;
+		}
+
+		if (operator !== 'IN' && Array.isArray(value)) {
+			throw new CustomError(
+				500,
+				'`value` cannot be an array for operator other than `IN`',
 			);
 		}
 
-		if (!multiple && results.length > 1) {
-			throw new CustomError(500, lang('shared.error.db_restore_one'));
+		switch (operator) {
+			case '=':
+				if (column.endsWith('_id') || column.endsWith('.id')) {
+					this.hasFilter = true;
+				}
+				break;
+			case 'IN':
+				if (column.endsWith('_id') || column.endsWith('.id')) {
+					this.hasFilter = true;
+				}
+				break;
+			case 'LIKE':
+			case 'ILIKE':
+				value = `%${value}%`;
+				break;
+			case 'START_LIKE':
+			case 'START_ILIKE':
+				operator = 'LIKE';
+				value = `${value}%`;
+				break;
+			case 'END_LIKE':
+			case 'END_ILIKE':
+				operator = 'LIKE';
+				value = `%${value}`;
+				break;
 		}
 
-		for (const entity of results) {
-			(entity as ObjectLiteral).deleted_at = null;
-		}
+		const columnKey = this.safeColumnKey(column);
 
-		await this.repository.save(results);
+		this.query.andWhere(
+			this.buildWhereCondition(column, columnKey, operator),
+			{ [columnKey]: value },
+		);
 
-		return results.length;
+		return this;
 	}
 
-	filterBy(column: string, value?: QueryValue, operator: string = '='): this {
-		if (value) {
-			if (operator === 'IN' && !Array.isArray(value)) {
-				throw new CustomError(
-					500,
-					'IN operator requires an array for `value`',
-				);
+	filterAny(filters: FilterByPropsType[]): this {
+		const conditions: string[] = [];
+		const params: QueryParams = {};
+
+		filters.forEach((filter) => {
+			if (filter.value === undefined || filter.value === null) {
+				return;
 			}
+
+			let operator = filter.operator;
+			let value = filter.value;
 
 			if (operator !== 'IN' && Array.isArray(value)) {
 				throw new CustomError(
@@ -393,16 +460,6 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 			}
 
 			switch (operator) {
-				case '=':
-					if (column.endsWith('_id') || column.endsWith('.id')) {
-						this.hasFilter = true;
-					}
-					break;
-				case 'IN':
-					if (column.endsWith('_id') || column.endsWith('.id')) {
-						this.hasFilter = true;
-					}
-					break;
 				case 'LIKE':
 				case 'ILIKE':
 					value = `%${value}%`;
@@ -419,69 +476,13 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 					break;
 			}
 
-			const columnKey = this.safeColumnKey(column);
+			const columnKey = this.safeColumnKey(filter.column);
 
-			this.query.andWhere(
-				this.buildWhereCondition(column, columnKey, operator),
-				{ [columnKey]: value },
+			conditions.push(
+				this.buildWhereCondition(filter.column, columnKey, operator),
 			);
-		}
 
-		return this;
-	}
-
-	filterAny(filters: FilterByPropsType[]): this {
-		const conditions: string[] = [];
-		const params: QueryParams = {};
-
-		filters.forEach((filter) => {
-			if (filter.value) {
-				let operator = filter.operator;
-				let value = filter.value;
-
-				if (operator === 'IN' && !Array.isArray(value)) {
-					throw new CustomError(
-						500,
-						'IN operator requires an array for `value`',
-					);
-				}
-
-				if (operator !== 'IN' && Array.isArray(value)) {
-					throw new CustomError(
-						500,
-						'`value` cannot be an array for operator other than `IN`',
-					);
-				}
-
-				switch (operator) {
-					case 'LIKE':
-					case 'ILIKE':
-						value = `%${value}%`;
-						break;
-					case 'START_LIKE':
-					case 'START_ILIKE':
-						operator = 'LIKE';
-						value = `${value}%`;
-						break;
-					case 'END_LIKE':
-					case 'END_ILIKE':
-						operator = 'LIKE';
-						value = `%${value}`;
-						break;
-				}
-
-				const columnKey = this.safeColumnKey(filter.column);
-
-				conditions.push(
-					this.buildWhereCondition(
-						filter.column,
-						columnKey,
-						operator,
-					),
-				);
-
-				params[columnKey] = value;
-			}
+			params[columnKey] = value;
 		});
 
 		if (conditions.length > 0) {
@@ -513,24 +514,24 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 		min?: Date | number | null,
 		max?: Date | number | null,
 	): this {
-		const minValue = min instanceof Date ? formatDate(min) : min;
-		const maxValue = max instanceof Date ? formatDate(max) : max;
+		const minValue = min ?? undefined;
+		const maxValue = max ?? undefined;
 
-		if (minValue && maxValue) {
+		if (minValue !== undefined && maxValue !== undefined) {
 			const stringColumn = this.safeColumnKey(column);
-			column = this.prepareColumn(column);
+			const preparedColumn = this.prepareColumn(column);
 
 			this.query.andWhere(
-				`${column} BETWEEN :min${stringColumn} AND :max${stringColumn}`,
+				`${preparedColumn} BETWEEN :min${stringColumn} AND :max${stringColumn}`,
 				{
 					[`min${stringColumn}`]: minValue,
 					[`max${stringColumn}`]: maxValue,
 				},
 			);
-		} else if (minValue) {
-			this.filterBy(column, minValue, '>=');
-		} else if (maxValue) {
-			this.filterBy(column, maxValue, '<=');
+		} else if (minValue !== undefined) {
+			this.filterBy(column, minValue as number, '>=');
+		} else if (maxValue !== undefined) {
+			this.filterBy(column, maxValue as number, '<=');
 		}
 
 		return this;
@@ -554,11 +555,7 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 	}
 
 	prepareTsTerm(term: string): string {
-		return term
-			.toLowerCase()
-			.trim()
-			.split(/\s+/)
-			.join(' & ');
+		return term.toLowerCase().trim().split(/\s+/).join(' & ');
 	}
 
 	static isUniqueViolation(e: unknown): boolean {

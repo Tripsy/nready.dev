@@ -6,6 +6,7 @@ import {
 	JoinColumn,
 	ManyToOne,
 	OneToMany,
+	VirtualColumn,
 } from 'typeorm';
 import { Configuration } from '@/config/settings.config';
 import {
@@ -169,7 +170,7 @@ export type CashFlowMethod =
 	(typeof CashFlowMethodEnum)[keyof typeof CashFlowMethodEnum];
 
 // Define number of decimals allowed for amount value
-export const AMOUNT_DECIMALS = 2;
+export const AMOUNT_DECIMALS = 4;
 
 /**
  * Hard-rules:
@@ -257,7 +258,7 @@ export default class CashFlowEntity extends EntityAbstract {
 	@Column('int', {
 		nullable: false,
 		comment:
-			'Amount intended to be charged; Note: It store cents; always divide by 100 for value',
+			'Amount intended to be charged; Note: Divide by 10000 for actual value. e.g. 806452 = 80.6452',
 	})
 	amount!: number;
 
@@ -321,4 +322,33 @@ export default class CashFlowEntity extends EntityAbstract {
 		(operationalRecord) => operationalRecord.cash_flow,
 	)
 	operational_records!: OperationalRecordEntity[];
+
+	// VIRTUAL
+	@VirtualColumn({
+		type: 'decimal',
+		query: (alias) => `
+        CAST(
+            CASE 
+                WHEN ${alias}.direction = '${CashFlowDirectionEnum.IN}' 
+                THEN CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}
+                ELSE -(CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS})
+            END
+        AS FLOAT)
+    `,
+	})
+	netAmount!: number;
+
+	@VirtualColumn({
+		type: 'decimal',
+		query: (alias) => `
+        CAST(
+            CASE 
+                WHEN ${alias}.direction = '${CashFlowDirectionEnum.IN}' 
+                THEN (CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}) * (1 + CAST(${alias}.vat_rate AS FLOAT) / 100)
+                ELSE -((CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}) * (1 + CAST(${alias}.vat_rate AS FLOAT) / 100))
+            END
+        AS FLOAT)
+    `,
+	})
+	grossAmount!: number;
 }

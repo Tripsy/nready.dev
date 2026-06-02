@@ -5,8 +5,6 @@ import {
 	CashFlowCategoryEnum,
 } from '@/features/cash-flow/cash-flow-category.enum';
 import type ClientEntity from '@/features/client/client.entity';
-import type CmrEntity from '@/features/cmr/cmr.entity';
-import type CompanyVehicleEntity from '@/features/company-vehicle/company-vehicle.entity';
 import type UserEntity from '@/features/user/user.entity';
 import type VendorEntity from '@/features/vendor/vendor.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
@@ -152,6 +150,4 @@ export type OperationalRecordWithRelations = OperationalRecordEntity & {
 	[OperationalRecordTypeEnum.CLIENT]?: ClientEntity | null;
 	[OperationalRecordTypeEnum.VENDOR]?: VendorEntity | null;
 	[OperationalRecordTypeEnum.EMPLOYEE]?: UserEntity | null;
-	[OperationalRecordTypeEnum.COMPANY_VEHICLE]?: CompanyVehicleEntity | null;
-	[OperationalRecordTypeEnum.CMR]?: CmrEntity | null;
 };

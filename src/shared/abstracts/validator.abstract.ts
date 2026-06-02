@@ -542,8 +542,8 @@ export abstract class BaseValidator<
 			| {
 			invalid_date: string;
 			invalid_date_format: string;
-			invalid_past_date: string;
-			invalid_future_date: string;
+			invalid_past_date?: string;
+			invalid_future_date?: string;
 		},
 		optionsData?: {
 			required?: true;
@@ -560,8 +560,8 @@ export abstract class BaseValidator<
 			| {
 			invalid_date: string;
 			invalid_date_format: string;
-			invalid_past_date: string;
-			invalid_future_date: string;
+			invalid_past_date?: string;
+			invalid_future_date?: string;
 		},
 		optionsData: {
 			required: false;
@@ -579,8 +579,8 @@ export abstract class BaseValidator<
 			| {
 			invalid_date: string;
 			invalid_date_format: string;
-			invalid_past_date: string;
-			invalid_future_date: string;
+			invalid_past_date?: string;
+			invalid_future_date?: string;
 		},
 		optionsData?: {
 			required?: boolean;

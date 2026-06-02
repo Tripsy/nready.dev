@@ -10,16 +10,14 @@ export class CashFlowPolicy extends PolicyAbstract {
 		super(entity);
 	}
 
-	public canRefund(auth: AuthContext, entity?: string): void {
+	public canRefund(auth: AuthContext): void {
 		this.requiredAuth(auth);
 
 		if (this.isAdmin(auth)) {
 			return;
 		}
 
-		const permission: string = this.permission('refund', entity);
-
-		if (!this.hasPermission(auth, permission)) {
+		if (!this.hasPermission(auth, this.entity, 'refund')) {
 			throw new NotAllowedError();
 		}
 	}

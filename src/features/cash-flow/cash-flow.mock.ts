@@ -25,6 +25,8 @@ export function getCashFlowEntityMock(
 		method: CashFlowMethodEnum.CASH,
 		status: CashFlowStatusEnum.COMPLETED,
 		amount: 10000, // $100.00 in cents
+		netAmount: 100,
+		grossAmount: 119,
 		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		exchange_rate: 1,
@@ -52,6 +54,8 @@ export function getCashFlowRefundEntityMock(
 		method: CashFlowMethodEnum.BANK_TRANSFER,
 		status: CashFlowStatusEnum.COMPLETED,
 		amount: 5000, // $50.00 in cents (refund)
+		netAmount: 50,
+		grossAmount: 59.5,
 		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		exchange_rate: 1,
