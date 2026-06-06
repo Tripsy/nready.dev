@@ -3,7 +3,7 @@ import type { ClientTypeEnum } from '@/features/client/client.entity';
 import type { DiscountSnapshot } from '@/features/discount/discount.entity';
 import type OrderEntity from '@/features/order/order.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 export const InvoiceStatusEnum = {
 	DRAFT: 'draft', // Initial state, not sent to customer

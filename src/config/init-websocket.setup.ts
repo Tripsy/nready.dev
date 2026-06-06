@@ -1,51 +1,43 @@
 import fs from 'node:fs';
+import type { Server } from 'node:http';
 import { Configuration } from '@/config/settings.config';
 import { ModuleError } from '@/exceptions/module.error';
 import {
 	getErrorMessage,
-	getFeaturesFilePathByExtension,
+	getFeaturesFilesPathByFolderAndExtension,
 	getFileNameWithoutExtension,
-	getSharedFilePathsByExtension,
 } from '@/helpers';
 import { getSystemLogger } from '@/providers/logger.provider';
 
-async function registerListener(filePath: string) {
+async function startWebSocket(filePath: string, server: Server) {
 	if (!fs.existsSync(filePath)) {
 		throw new ModuleError();
 	}
 
 	const module = await import(filePath);
 
-	if (module.default && typeof module.default === 'function') {
-		module.default();
+	if (module.init && typeof module.init === 'function') {
+		module.init(server);
 	} else {
-		throw new Error(
-			`There is no 'export default' listener found in ${filePath}`,
-		);
+		throw new Error(`There is no 'init' function found in ${filePath}`);
 	}
 }
 
-export async function setupListeners() {
-	const sharedFolder = `${Configuration.get('folder.shared') as string}/listeners`;
+export async function setupWebSockets(server: Server): Promise<void> {
 	const featuresFolder = Configuration.get<string>(
 		'folder.features',
 	) as string;
-	const fileExtension = `listener.${Configuration.resolveExtension()}`;
+	const fileExtension = `gateway.${Configuration.resolveExtension()}`;
 
-	const sharedPaths = getSharedFilePathsByExtension(
-		sharedFolder,
-		fileExtension,
-	);
-	const featurePaths = getFeaturesFilePathByExtension(
+	const webSocketPaths = getFeaturesFilesPathByFolderAndExtension(
 		featuresFolder,
+		'/websocket',
 		fileExtension,
 	);
 
-	const listenerPaths = [...featurePaths, ...sharedPaths];
-
-	const promises = listenerPaths.map(async (filePath) => {
+	const promises = webSocketPaths.map(async (filePath) => {
 		try {
-			await registerListener(filePath);
+			await startWebSocket(filePath, server);
 
 			return {
 				name: getFileNameWithoutExtension(filePath),
@@ -53,7 +45,7 @@ export async function setupListeners() {
 			} as const;
 		} catch (error) {
 			const skip = error instanceof ModuleError;
-			const errorMsg = `${getErrorMessage(error) || `Listeners setup errors`}`;
+			const errorMsg = `${getErrorMessage(error) || `Web sockets start errors`}`;
 
 			return {
 				name: filePath,
@@ -76,11 +68,11 @@ export async function setupListeners() {
 
 	if (successful.length) {
 		getSystemLogger().debug(
-			`Listeners registered successfully for: ${successful.join(', ')}`,
+			`Web sockets started successfully for: ${successful.join(', ')}`,
 		);
 	}
 
 	if (failed.length) {
-		getSystemLogger().error(failed, `Failed listeners setup`);
+		getSystemLogger().error(failed, `Failed web sockets setup`);
 	}
 }

@@ -4,8 +4,8 @@ import {
 	EntityAbstract,
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type { StatusTransitions } from '@/shared/types/common.type';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const BrandStatusEnum = {
 	ACTIVE: 'active',

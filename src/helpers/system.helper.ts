@@ -84,3 +84,74 @@ export function getFileNameWithoutExtension(s: string): string {
 
 	return match ? match[1] : 'unknown';
 }
+
+/**
+ * Return shared files path by extension
+ * ex: /shared/listeners/cache.listener.js
+ *
+ * @param sharedFolder (ex: /shared/listeners)
+ * @param extension (ex: listener.js)
+ */
+export function getSharedFilePathsByExtension(
+	sharedFolder: string,
+	extension: string,
+) {
+	const sharedPath = buildSrcPath(sharedFolder);
+	const files = listFiles(sharedPath);
+
+	return files
+		.filter((f) => f.endsWith(`.${extension}`))
+		.map((f) => buildSrcPath(sharedFolder, f));
+}
+
+/**
+ * This method will pick one file per feature (assuming it exists)
+ * ex: /features/<feature>/<feature>.listener.js
+ *
+ * @param featuresFolder (eg: /features)
+ * @param fileExtension (ex: listener.js)
+ */
+export function getFeaturesFilePathByExtension(
+	featuresFolder: string,
+	fileExtension: string,
+) {
+	const featuresPath = buildSrcPath(featuresFolder);
+	const features = listDirectories(featuresPath);
+
+	// Assuming each feature has a corresponding listener
+	const possibleFiles = features.map((n) =>
+		buildSrcPath(featuresFolder, n, `${n}.${fileExtension}`),
+	);
+
+	// Return only the actual existing listeners files path
+	return possibleFiles.filter((p) => fs.existsSync(p));
+}
+
+/**
+ * Return multiple files per feature based on a folder and extension
+ * ex: /features/<feature>/cron-jobs/<feature>.cron.js
+ *
+ * @param featuresFolder (eg: /features)
+ * @param innerFolder (ex: /cron-jobs)
+ * @param fileExtension (ex: cron.js)
+ */
+export function getFeaturesFilesPathByFolderAndExtension(
+	featuresFolder: string,
+	innerFolder: string,
+	fileExtension: string,
+) {
+	const featuresPath = buildSrcPath(featuresFolder);
+	const features = listDirectories(featuresPath);
+
+	const listFolders = features
+		.map((n) => buildSrcPath(featuresFolder, n, innerFolder))
+		.filter((p) => fs.existsSync(p));
+
+	return listFolders.flatMap((f) => {
+		const files = listFiles(f);
+
+		return files
+			.filter((file) => file.endsWith(`.${fileExtension}`))
+			.map((file) => path.join(f, file));
+	});
+}

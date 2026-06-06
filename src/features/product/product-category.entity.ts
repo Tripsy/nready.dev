@@ -2,7 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type CategoryEntity from '@/features/category/category.entity';
 import type ProductEntity from '@/features/product/product.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 const ENTITY_TABLE_NAME = 'product_category';
 

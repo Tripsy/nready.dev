@@ -3,9 +3,7 @@ import { Configuration } from '@/config/settings.config';
 import type AccountTokenEntity from '@/features/account/account-token.entity';
 import { getAccountTokenRepository } from '@/features/account/account-token.repository';
 import { accountTokenService } from '@/features/account/account-token.service';
-import UserEntity, {
-	UserStatusEnum,
-} from '@/features/user/user.entity';
+import UserEntity, { UserStatusEnum } from '@/features/user/user.entity';
 import { getUserRepository } from '@/features/user/user.repository';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import {

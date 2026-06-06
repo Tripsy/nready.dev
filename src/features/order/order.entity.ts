@@ -9,7 +9,7 @@ import {
 import type ClientEntity from '@/features/client/client.entity';
 import type OrderProductEntity from '@/features/order/order-product.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 export const OrderStatusEnum = {
 	DRAFT: 'draft',

@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 import type PlaceContentEntity from '@/features/place/place-content.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import { type PlaceType, PlaceTypeEnum } from '@/shared/types/place.type';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export { PlaceTypeEnum };
 

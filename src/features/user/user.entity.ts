@@ -1,8 +1,8 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type { StatusTransitions } from '@/shared/types/common.type';
 import { type UserRole, UserRoleEnum } from '@/shared/types/user-role.type';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export const UserStatusEnum = {
 	ACTIVE: 'active',

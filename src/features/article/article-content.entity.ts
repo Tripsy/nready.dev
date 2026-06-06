@@ -1,7 +1,7 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type ArticleEntity from './article.entity';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 export type ArticleAuthorType = {
 	name: string;

@@ -39,9 +39,9 @@ function getRoutesFilePath(feature: string) {
 }
 
 function buildRoutes<C>({
-							controller,
-							routes,
-						}: {
+	controller,
+	routes,
+}: {
 	basePath: string;
 	controller: C;
 	routes: RoutesType<C>;

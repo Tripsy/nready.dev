@@ -11,7 +11,7 @@ import type ProductAttributeEntity from '@/features/product/product-attribute.en
 import type ProductCategoryEntity from '@/features/product/product-category.entity';
 import type ProductTagEntity from '@/features/product/product-tag.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 export const ProductWorkflowEnum = {
 	DRAFT: 'draft', // Initial creation

@@ -44,7 +44,7 @@ export class CashFlowService {
 
 	// `amount` represent the value coming through request; this method returns the value to be stored in database
 	public inputAmount(amount: number) {
-		return Math.abs(amount) * 10 ** AMOUNT_DECIMALS;
+		return Math.round(Math.abs(amount) * 10 ** AMOUNT_DECIMALS);
 	}
 
 	public checkDirection(
@@ -265,7 +265,7 @@ export class CashFlowService {
 		this.checkDirection(data.category_type, data.direction);
 		this.checkCategoryType(data.category_type, data.category);
 		this.checkCategory(data.category, data.parent_id);
-		this.checkOperationalRecords(data.category, data.operational_records); // TODO  - implement for update
+		this.checkOperationalRecords(data.category, data.operational_records);
 
 		if (data.parent_id) {
 			const parentEntry = await this.findById(data.parent_id, false);

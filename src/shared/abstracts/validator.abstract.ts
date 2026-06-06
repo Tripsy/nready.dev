@@ -274,11 +274,11 @@ export abstract class BaseValidator<
 		messageData?:
 			| string
 			| {
-			invalid?: string;
-			only_positive?: string;
-			no_decimals?: string;
-			max_decimals?: string;
-		},
+					invalid?: string;
+					only_positive?: string;
+					no_decimals?: string;
+					max_decimals?: string;
+			  },
 		optionsData?: {
 			required?: true;
 			onlyPositive?: boolean;
@@ -290,11 +290,11 @@ export abstract class BaseValidator<
 		messageData?:
 			| string
 			| {
-			invalid?: string;
-			only_positive?: string;
-			no_decimals?: string;
-			max_decimals?: string;
-		},
+					invalid?: string;
+					only_positive?: string;
+					no_decimals?: string;
+					max_decimals?: string;
+			  },
 		optionsData?: {
 			required: false;
 			onlyPositive?: boolean;
@@ -307,11 +307,11 @@ export abstract class BaseValidator<
 		messageData?:
 			| string
 			| {
-			invalid?: string;
-			only_positive?: string;
-			no_decimals?: string;
-			max_decimals?: string;
-		},
+					invalid?: string;
+					only_positive?: string;
+					no_decimals?: string;
+					max_decimals?: string;
+			  },
 		optionsData?: {
 			required?: boolean;
 			onlyPositive?: boolean;
@@ -540,11 +540,11 @@ export abstract class BaseValidator<
 		messageData?:
 			| string
 			| {
-			invalid_date: string;
-			invalid_date_format: string;
-			invalid_past_date?: string;
-			invalid_future_date?: string;
-		},
+					invalid_date: string;
+					invalid_date_format: string;
+					invalid_past_date?: string;
+					invalid_future_date?: string;
+			  },
 		optionsData?: {
 			required?: true;
 			dateFormat?: RegExp;
@@ -558,11 +558,11 @@ export abstract class BaseValidator<
 		messageData:
 			| string
 			| {
-			invalid_date: string;
-			invalid_date_format: string;
-			invalid_past_date?: string;
-			invalid_future_date?: string;
-		},
+					invalid_date: string;
+					invalid_date_format: string;
+					invalid_past_date?: string;
+					invalid_future_date?: string;
+			  },
 		optionsData: {
 			required: false;
 			dateFormat?: RegExp;
@@ -577,11 +577,11 @@ export abstract class BaseValidator<
 		messageData?:
 			| string
 			| {
-			invalid_date: string;
-			invalid_date_format: string;
-			invalid_past_date?: string;
-			invalid_future_date?: string;
-		},
+					invalid_date: string;
+					invalid_date_format: string;
+					invalid_past_date?: string;
+					invalid_future_date?: string;
+			  },
 		optionsData?: {
 			required?: boolean;
 			dateFormat?: RegExp;
@@ -732,11 +732,11 @@ export abstract class BaseValidator<
 		messageData?:
 			| string
 			| {
-			invalid?: string;
-			invalid_format?: string;
-			invalid_interval?: string;
-			invalid_range?: string;
-		},
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
 		optionsData?: {
 			required?: true;
 			minuteInterval?: number;
@@ -749,11 +749,11 @@ export abstract class BaseValidator<
 		messageData?:
 			| string
 			| {
-			invalid?: string;
-			invalid_format?: string;
-			invalid_interval?: string;
-			invalid_range?: string;
-		},
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
 		optionsData?: {
 			required: false;
 			minuteInterval?: number;
@@ -767,11 +767,11 @@ export abstract class BaseValidator<
 		messageData?:
 			| string
 			| {
-			invalid?: string;
-			invalid_format?: string;
-			invalid_interval?: string;
-			invalid_range?: string;
-		},
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
 		optionsData?: {
 			required?: boolean;
 			minuteInterval?: number;
@@ -882,23 +882,23 @@ export abstract class BaseValidator<
 		const timeSchema =
 			options.minuteInterval && options.minuteInterval > 1
 				? baseSchema.transform((val) => {
-					const minutes = parseTimeToMinutes(val);
+						const minutes = parseTimeToMinutes(val);
 
-					if (minutes === null) {
-						return val;
-					}
+						if (minutes === null) {
+							return val;
+						}
 
-					// Round to nearest interval
-					const remainder = minutes % options.minuteInterval;
+						// Round to nearest interval
+						const remainder = minutes % options.minuteInterval;
 
-					if (remainder === 0) {
-						return val;
-					}
+						if (remainder === 0) {
+							return val;
+						}
 
-					const roundedMinutes = minutes - remainder;
+						const roundedMinutes = minutes - remainder;
 
-					return formatMinutesToTime(roundedMinutes);
-				})
+						return formatMinutesToTime(roundedMinutes);
+					})
 				: baseSchema;
 
 		if (options.required) {

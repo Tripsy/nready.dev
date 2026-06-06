@@ -3,9 +3,9 @@ import {
 	EntityAbstract,
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type CategoryEntity from './category.entity';
 import { type CategoryType, CategoryTypeEnum } from './category.entity';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'category_content';
 

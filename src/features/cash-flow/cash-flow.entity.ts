@@ -179,9 +179,27 @@ export const AMOUNT_DECIMALS = 4;
  * 	- `restore` functionality should not be implemented
  * 	- On `delete` if entry has refunds the operation is blocked unless `force` argument is present and then refunds are also deleted
  * 	- Status update is controlled via STATUS_TRANSITIONS
- * 	- Amounts are stored as positive number without decimals (defined by AMOUNT_DECIMALS)
+ * 	- `amount` is stored as positive number without decimals
+ * 	- `gross_amount` is calculated based on `amount` and `vat_rate` (depends on AMOUNT_DECIMALS)
+ * 	- `net_amount` is calculated based on `amount` and `vat_rate` (depends on AMOUNT_DECIMALS)
  */
 const ENTITY_TABLE_NAME = 'cash_flow';
+
+export const NET_AMOUNT_EXPRESSION = (alias: string) => `
+	CASE 
+		WHEN ${alias}.direction = '${CashFlowDirectionEnum.IN}' 
+		THEN CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}
+		ELSE -(CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS})
+	END
+`;
+
+export const GROSS_AMOUNT_EXPRESSION = (alias: string) => `
+    CASE 
+        WHEN ${alias}.direction = '${CashFlowDirectionEnum.IN}' 
+        THEN (CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}) * (1 + CAST(${alias}.vat_rate AS FLOAT) / 100)
+        ELSE -((CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}) * (1 + CAST(${alias}.vat_rate AS FLOAT) / 100))
+    END
+`;
 
 @Entity({
 	name: ENTITY_TABLE_NAME,
@@ -326,29 +344,13 @@ export default class CashFlowEntity extends EntityAbstract {
 	// VIRTUAL
 	@VirtualColumn({
 		type: 'decimal',
-		query: (alias) => `
-        CAST(
-            CASE 
-                WHEN ${alias}.direction = '${CashFlowDirectionEnum.IN}' 
-                THEN CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}
-                ELSE -(CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS})
-            END
-        AS FLOAT)
-    `,
+		query: (alias) => ` CAST(${NET_AMOUNT_EXPRESSION(alias)} AS FLOAT)`,
 	})
 	netAmount!: number;
 
 	@VirtualColumn({
 		type: 'decimal',
-		query: (alias) => `
-        CAST(
-            CASE 
-                WHEN ${alias}.direction = '${CashFlowDirectionEnum.IN}' 
-                THEN (CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}) * (1 + CAST(${alias}.vat_rate AS FLOAT) / 100)
-                ELSE -((CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}) * (1 + CAST(${alias}.vat_rate AS FLOAT) / 100))
-            END
-        AS FLOAT)
-    `,
+		query: (alias) => `CAST(${GROSS_AMOUNT_EXPRESSION(alias)} AS FLOAT)`,
 	})
 	grossAmount!: number;
 }

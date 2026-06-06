@@ -205,6 +205,12 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 		return this.query;
 	}
 
+	setParameter(key: string, value: QueryValue): this {
+		this.query.setParameter(key, value);
+
+		return this;
+	}
+
 	withDeleted(condition: boolean = true) {
 		if (condition) {
 			this.query.withDeleted();
@@ -382,24 +388,38 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 		});
 	}
 
-	// Overload: default scalar operators
+	// IN operator requires array
+	filterBy(
+		column: string,
+		value: (string | number)[],
+		operator: 'IN' | 'NOT IN',
+	): this;
+	// All other operators require scalar
 	filterBy(
 		column: string,
 		value?: string | number | null,
-		operator?: Exclude<string, 'IN'>,
+		operator?:
+			| '='
+			| '!='
+			| '>='
+			| '<='
+			| '>'
+			| '<'
+			| 'LIKE'
+			| 'ILIKE'
+			| 'START_LIKE'
+			| 'END_LIKE',
 	): this;
-	// Overload: IN operator requires array
-	filterBy(column: string, value: (string | number)[], operator: 'IN'): this;
 	// Implementation
 	filterBy(column: string, value?: QueryValue, operator: string = '='): this {
 		if (value === undefined || value === null) {
 			return this;
 		}
 
-		if (operator !== 'IN' && Array.isArray(value)) {
+		if (!['IN', 'NOT IN'].includes(operator) && Array.isArray(value)) {
 			throw new CustomError(
 				500,
-				'`value` cannot be an array for operator other than `IN`',
+				'`value` cannot be an array for operator other than `IN` or `NOT IN`',
 			);
 		}
 
@@ -410,6 +430,7 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 				}
 				break;
 			case 'IN':
+			case 'NOT IN':
 				if (column.endsWith('_id') || column.endsWith('.id')) {
 					this.hasFilter = true;
 				}
@@ -455,7 +476,7 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 			if (operator !== 'IN' && Array.isArray(value)) {
 				throw new CustomError(
 					500,
-					'`value` cannot be an array for operator other than `IN`',
+					'`value` cannot be an array for operator other than `IN` or `NOT IN`',
 				);
 			}
 
@@ -503,8 +524,17 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 	 * @param parameters - Parameters for the SQL condition
 	 * @returns this instance for chaining
 	 */
-	filterRaw(sql: string, parameters: Record<string, QueryValue> = {}): this {
-		this.query.andWhere(sql, parameters);
+	filterRaw(
+		sql: string | ((qb: SelectQueryBuilder<TEntity>) => string),
+		parameters: Record<string, QueryValue> = {},
+	): this {
+		if (typeof sql === 'function') {
+			this.query.andWhere(
+				sql as (qb: SelectQueryBuilder<TEntity>) => string,
+			);
+		} else {
+			this.query.andWhere(sql, parameters);
+		}
 
 		return this;
 	}
@@ -514,6 +544,7 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 		min?: Date | number | null,
 		max?: Date | number | null,
 	): this {
+		// Pass Date objects directly to TypeORM — avoids timezone issues from string formatting
 		const minValue = min ?? undefined;
 		const maxValue = max ?? undefined;
 

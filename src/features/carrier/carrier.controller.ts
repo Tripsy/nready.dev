@@ -1,5 +1,8 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
+import { brandPolicy } from '@/features/brand/brand.policy';
+import { brandService } from '@/features/brand/brand.service';
+import { brandValidator } from '@/features/brand/brand.validator';
 import CarrierEntity from '@/features/carrier/carrier.entity';
 import {
 	type CarrierPolicy,
@@ -16,9 +19,6 @@ import {
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
-import {brandPolicy} from "@/features/brand/brand.policy";
-import {brandValidator} from "@/features/brand/brand.validator";
-import {brandService} from "@/features/brand/brand.service";
 
 class CarrierController extends BaseController {
 	constructor(

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 export const TemplateTypeEnum = {
 	PAGE: 'page',

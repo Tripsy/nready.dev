@@ -3,7 +3,7 @@ import type ArticleCategoryEntity from '@/features/article/article-category.enti
 import type ArticleTagEntity from '@/features/article/article-tag.entity';
 import type ArticleTrackEntity from '@/features/article/article-track.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 export const ArticleStatusEnum = {
 	DRAFT: 'draft', // Initial creation

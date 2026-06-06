@@ -3,8 +3,8 @@ import {
 	EntityAbstract,
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type BrandEntity from './brand.entity';
-import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
 const ENTITY_TABLE_NAME = 'brand_content';
 

@@ -73,7 +73,7 @@ class CashFlowController extends BaseController {
 		const cacheGetResults = await this.cache.get(cacheKey, async () => {
 			return await this.cashFlowService.findById(
 				res.locals.validated.id,
-				this.policy.allowDeleted(res.locals.auth)
+				this.policy.allowDeleted(res.locals.auth),
 			);
 		});
 

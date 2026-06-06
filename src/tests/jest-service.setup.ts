@@ -1,8 +1,8 @@
 import { expect, jest } from '@jest/globals';
 import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import type { ValidatorOutput } from '@/shared/types/mock.type';
 import type RepositoryAbstract from '@/shared/abstracts/repository.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export function createMockQuery() {
 	return {
