@@ -9,6 +9,10 @@ import {
 } from '@/helpers';
 import { getSystemLogger } from '@/providers/logger.provider';
 
+type CleanupFn = () => void;
+
+const registeredCleanups: CleanupFn[] = [];
+
 async function startWebSocket(filePath: string, server: Server) {
 	if (!fs.existsSync(filePath)) {
 		throw new ModuleError();
@@ -16,10 +20,15 @@ async function startWebSocket(filePath: string, server: Server) {
 
 	const module = await import(filePath);
 
-	if (module.init && typeof module.init === 'function') {
-		module.init(server);
-	} else {
+	if (!module.init || typeof module.init !== 'function') {
 		throw new Error(`There is no 'init' function found in ${filePath}`);
+	}
+
+	module.init(server);
+
+	// Register cleanup if the gateway exports one
+	if (module.cleanup && typeof module.cleanup === 'function') {
+		registeredCleanups.push(module.cleanup);
 	}
 }
 
@@ -45,13 +54,13 @@ export async function setupWebSockets(server: Server): Promise<void> {
 			} as const;
 		} catch (error) {
 			const skip = error instanceof ModuleError;
-			const errorMsg = `${getErrorMessage(error) || `Web sockets start errors`}`;
+			const errorMsg = getErrorMessage(error) || 'Web socket start error';
 
 			return {
 				name: filePath,
 				status: 'rejected',
 				reason: errorMsg,
-				skip: skip,
+				skip,
 			} as const;
 		}
 	});
@@ -73,6 +82,18 @@ export async function setupWebSockets(server: Server): Promise<void> {
 	}
 
 	if (failed.length) {
-		getSystemLogger().error(failed, `Failed web sockets setup`);
+		getSystemLogger().error(failed, 'Failed web sockets setup');
 	}
+}
+
+export function cleanupWebSockets(): void {
+	for (const cleanup of registeredCleanups) {
+		try {
+			cleanup();
+		} catch (err) {
+			getSystemLogger().warn(err, 'WebSocket cleanup error');
+		}
+	}
+
+	registeredCleanups.length = 0;
 }

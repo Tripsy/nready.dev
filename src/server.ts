@@ -3,7 +3,10 @@ import type { Server } from 'node:http';
 import { createApp } from '@/app';
 import { bootstrap } from '@/bootstrap';
 import { redisClose } from '@/config/init-redis.config';
-import { setupWebSockets } from '@/config/init-websocket.setup';
+import {
+	cleanupWebSockets,
+	setupWebSockets,
+} from '@/config/init-websocket.setup';
 import { getRoutesInfo } from '@/config/routes.setup';
 import { Configuration } from '@/config/settings.config';
 import { destroyDatabase } from '@/providers/database.provider';
@@ -115,6 +118,7 @@ export async function closeHandler(): Promise<void> {
 		{ name: 'Queues', fn: () => queueFactory.closeAll() },
 		{ name: 'Database', fn: destroyDatabase },
 		{ name: 'Log streams', fn: () => new LogStream().closeFileStreams() },
+		{ name: 'WebSockets', fn: () => cleanupWebSockets() },
 	];
 
 	await Promise.allSettled(
