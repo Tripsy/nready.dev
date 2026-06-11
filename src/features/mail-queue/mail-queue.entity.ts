@@ -34,7 +34,7 @@ export default class MailQueueEntity {
 	@PrimaryGeneratedColumn({ type: 'int' })
 	id!: number;
 
-	@Column({ type: 'int', unsigned: false, nullable: true })
+	@Column({ type: 'int', nullable: true })
 	@Index('IDX_mail_queue_template_id')
 	template_id?: number | null;
 

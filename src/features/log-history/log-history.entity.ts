@@ -24,7 +24,7 @@ export default class LogHistoryEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
 
-	@PrimaryGeneratedColumn({ type: 'int', unsigned: false })
+	@PrimaryGeneratedColumn({ type: 'int' })
 	id!: number;
 
 	@Column('varchar', { nullable: false })
