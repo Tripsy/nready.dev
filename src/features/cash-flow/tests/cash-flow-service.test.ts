@@ -24,6 +24,8 @@ import { CashFlowService } from '@/features/cash-flow/cash-flow.service';
 import type { CashFlowValidator } from '@/features/cash-flow/cash-flow.validator';
 import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.enum';
 import {
+	createMockRepository,
+	setupTransactionMock,
 	testServiceFindByFilter,
 	testServiceFindById,
 	testServiceUpdateStatus,
@@ -34,24 +36,13 @@ describe('CashFlowService', () => {
 		jest.restoreAllMocks();
 	});
 
-	const query = jest.fn(() => {
-		return query;
-	}) as unknown as jest.Mocked<CashFlowQuery>;
+	const mockCashFlow = createMockRepository<CashFlowEntity, CashFlowQuery>();
 
-	const createQueryMock = jest.fn(() => {
-		return query;
-	});
-
-	const mockCashFlow = {
-		query,
-		repository: {
-			createQuery: createQueryMock,
-			save: jest.fn() as jest.MockedFunction<
-				(entity: CashFlowEntity) => Promise<CashFlowEntity>
-			>,
-			setupOperationalRecord: jest.fn(),
-		},
-	};
+	(
+		mockCashFlow.repository as unknown as {
+			setupOperationalRecord: jest.Mock;
+		}
+	).setupOperationalRecord = jest.fn();
 
 	const serviceCashFlow = new CashFlowService(
 		mockCashFlow.repository as unknown as ReturnType<
@@ -218,6 +209,11 @@ describe('CashFlowService', () => {
 
 		const createData = cashFlowOutputPayloads.create;
 
+		const { manager } = setupTransactionMock();
+		(manager.getRepository as jest.Mock).mockReturnValue(
+			mockCashFlow.repository,
+		);
+
 		jest.spyOn(serviceCashFlow, 'checkDirection').mockImplementationOnce(
 			() => null,
 		);
@@ -227,15 +223,11 @@ describe('CashFlowService', () => {
 		jest.spyOn(serviceCashFlow, 'checkCategory').mockImplementationOnce(
 			() => null,
 		);
-
 		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(
 			getCashFlowEntityMock(),
 		);
-
 		jest.spyOn(serviceCashFlow, 'checkRefund').mockImplementationOnce(
-			async () => {
-				return;
-			},
+			async () => {},
 		);
 
 		mockCashFlow.repository.save.mockResolvedValue(entity);
@@ -254,26 +246,39 @@ describe('CashFlowService', () => {
 		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entity);
 
 		await expect(
-			serviceCashFlow.updateData(entity.id, cashFlowInputPayloads.update),
+			serviceCashFlow.updateData(entity.id, {
+				...cashFlowInputPayloads.update,
+			}),
 		).rejects.toThrow('cash-flow.error.update_not_allowed');
 	});
 
-	it('should call update when status is mutable', async () => {
-		const entity = getCashFlowEntityMock({
+	it('should call save with merged data when status is mutable', async () => {
+		const entry = getCashFlowEntityMock({
 			status: CashFlowStatusEnum.PENDING,
 		});
+		const payload = { ...cashFlowInputPayloads.update };
 
-		const payload = cashFlowInputPayloads.update;
+		const { manager } = setupTransactionMock();
+		(manager.getRepository as jest.Mock).mockReturnValue(
+			mockCashFlow.repository,
+		);
 
-		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entity);
+		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entry);
 
-		const updateSpy = jest
-			.spyOn(serviceCashFlow, 'update')
-			.mockResolvedValue(entity);
+		const expectedAmount = serviceCashFlow.inputAmount(payload.amount);
 
-		await serviceCashFlow.updateData(entity.id, payload);
+		mockCashFlow.repository.save.mockImplementation(async (data) => data);
 
-		expect(updateSpy).toHaveBeenCalled();
+		const result = await serviceCashFlow.updateData(entry.id, payload);
+
+		expect(mockCashFlow.repository.save).toHaveBeenCalledWith(
+			expect.objectContaining({ ...payload, amount: expectedAmount }),
+		);
+		expect(result).toEqual({
+			...entry,
+			...payload,
+			amount: expectedAmount,
+		});
 	});
 
 	testServiceUpdateStatus<CashFlowEntity, CashFlowStatus>(

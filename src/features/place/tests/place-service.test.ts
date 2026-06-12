@@ -31,7 +31,11 @@ describe('PlaceService', () => {
 		const entity = getPlaceEntityMock();
 		const createData = placeOutputPayloads.create;
 
-		const { transaction } = setupTransactionMock();
+		const { manager, transaction } = setupTransactionMock();
+
+		(manager.getRepository as jest.Mock).mockReturnValue(
+			mockPlace.repository,
+		);
 
 		mockPlace.repository.save.mockResolvedValue(entity);
 

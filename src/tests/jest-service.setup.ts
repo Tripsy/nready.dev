@@ -86,7 +86,7 @@ export function setupTransactionMock() {
 	const manager = {
 		query: jest.fn(),
 		getRepository: jest.fn(),
-	} as unknown as EntityManager;
+	};
 
 	const transaction = jest
 		.spyOn(dataSource, 'transaction')
@@ -98,14 +98,14 @@ export function setupTransactionMock() {
 				maybeCb?: (manager: EntityManager) => Promise<T>,
 			): Promise<T> => {
 				if (typeof isolationOrCb === 'function') {
-					return isolationOrCb(manager);
+					return isolationOrCb(manager as unknown as EntityManager);
 				} else {
 					if (!maybeCb) {
 						throw new Error(
 							'Callback is required when isolation level is provided',
 						);
 					}
-					return maybeCb(manager);
+					return maybeCb(manager as unknown as EntityManager);
 				}
 			},
 		);

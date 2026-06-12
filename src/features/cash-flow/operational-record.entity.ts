@@ -31,9 +31,7 @@ const CashFlowCategoryOperationalRecord: CashFlowCategoryOperationalRecordType =
 	{
 		[CashFlowCategoryEnum.CUSTOMER]: {
 			required: [OperationalRecordTypeEnum.CLIENT],
-			optional: [
-				OperationalRecordTypeEnum.EMPLOYEE,
-			],
+			optional: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
 		[CashFlowCategoryEnum.EMPLOYEE_SALARY]: {
 			required: [OperationalRecordTypeEnum.EMPLOYEE],
@@ -46,21 +44,15 @@ const CashFlowCategoryOperationalRecord: CashFlowCategoryOperationalRecordType =
 		},
 		[CashFlowCategoryEnum.VENDOR]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
-			optional: [
-				OperationalRecordTypeEnum.EMPLOYEE,
-			],
+			optional: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
 		[CashFlowCategoryEnum.INSURANCE]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
-			optional: [
-				OperationalRecordTypeEnum.EMPLOYEE,
-			],
+			optional: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
 		[CashFlowCategoryEnum.TAXES]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
-			optional: [
-				OperationalRecordTypeEnum.EMPLOYEE,
-			],
+			optional: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
 	};
 

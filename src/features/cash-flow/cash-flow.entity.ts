@@ -56,9 +56,7 @@ export const getExpectedCategoryType = (
 		CashFlowCategoryEnum.INSURANCE,
 		CashFlowCategoryEnum.TAXES,
 	];
-	const correctionCategories = [
-		CashFlowCategoryEnum.REFUND,
-	];
+	const correctionCategories = [CashFlowCategoryEnum.REFUND];
 
 	if (arrayHasValue(category, revenueCategories)) {
 		return CashFlowCategoryTypeEnum.REVENUE;

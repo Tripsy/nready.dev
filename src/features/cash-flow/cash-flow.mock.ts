@@ -88,14 +88,14 @@ export const cashFlowInputPayloads = {
 			client: 1,
 			vendor: null,
 			employee: null,
-		}
+		},
 	},
 	update: {
 		direction: CashFlowDirectionEnum.IN,
 		category_type: CashFlowCategoryTypeEnum.REVENUE,
 		category: CashFlowCategoryEnum.CUSTOMER,
 		method: CashFlowMethodEnum.CREDIT_CARD,
-		amount: 12000,
+		amount: 120000000,
 		vat_rate: 19.0,
 		currency: CurrencyEnum.RON,
 		external_reference: 'REF-12345',
