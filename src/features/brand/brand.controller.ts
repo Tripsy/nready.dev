@@ -10,9 +10,6 @@ import {
 	type BrandValidator,
 	brandValidator,
 } from '@/features/brand/brand.validator';
-import { userPolicy } from '@/features/user/user.policy';
-import { userService } from '@/features/user/user.service';
-import { userValidator } from '@/features/user/user.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';

@@ -84,6 +84,11 @@ export const cashFlowInputPayloads = {
 		external_reference: 'REF-12345',
 		parent_id: null,
 		notes: 'Test cash flow entry',
+		operational_records: {
+			client: 1,
+			vendor: null,
+			employee: null,
+		}
 	},
 	update: {
 		direction: CashFlowDirectionEnum.IN,

@@ -15,7 +15,6 @@ import {
 } from '@/helpers';
 import { cacheProvider } from '@/providers/cache.provider';
 import type { AuthContextPermissions } from '@/shared/types/express';
-import { type UserRole, UserRoleEnum } from '@/shared/types/user-role.type';
 
 export const AuthFailureReason = {
 	NO_TOKEN: 'NO_TOKEN',
@@ -31,7 +30,7 @@ export const AuthFailureReason = {
 export type AuthFailureReason =
 	(typeof AuthFailureReason)[keyof typeof AuthFailureReason];
 
-async function getUserPermissions(user_id: number, user_role: UserRole) {
+async function getUserPermissions(user_id: number) {
 	const cacheKey = cacheProvider.buildKey(
 		UserEntity.NAME,
 		user_id.toString(),
@@ -42,7 +41,7 @@ async function getUserPermissions(user_id: number, user_role: UserRole) {
 		const userPermissions =
 			await getUserPermissionRepository().getUserPermissions(user_id);
 
-		const results = userPermissions.reduce<AuthContextPermissions>(
+		return userPermissions.reduce<AuthContextPermissions>(
 			(acc, { permission_entity, permission_operation }) => {
 				if (!acc[permission_entity]) {
 					acc[permission_entity] = [];
@@ -54,8 +53,6 @@ async function getUserPermissions(user_id: number, user_role: UserRole) {
 			},
 			{},
 		);
-
-		return results;
 	});
 
 	return cacheGetResults.data as AuthContextPermissions;
@@ -198,7 +195,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		// Attach user information to the request object
 		res.locals.auth = {
 			...user,
-			permissions: await getUserPermissions(user.id, user.role),
+			permissions: await getUserPermissions(user.id),
 			activeToken: activeToken.ident,
 		};
 

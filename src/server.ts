@@ -55,7 +55,7 @@ start().catch((error) => {
 	console.error(error);
 
 	// Logger can also generate errors (e.g: DB related, etc.), there is no error throw from here, just check alternative logs
-	getSystemLogger().fatal('Application startup failed:', error);
+	getSystemLogger().fatal(error, 'Application startup failed');
 
 	process.exit(1);
 });

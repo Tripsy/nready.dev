@@ -107,7 +107,7 @@ describe('CashFlowService', () => {
 	it('checkRefund - should throw when invalid category is set', async () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
-				category: CashFlowCategoryEnum.FUEL,
+				category: CashFlowCategoryEnum.CUSTOMER,
 				inputAmount: 2500,
 				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock(),

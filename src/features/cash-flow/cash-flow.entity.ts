@@ -49,9 +49,6 @@ export const getExpectedCategoryType = (
 ): CashFlowCategoryType => {
 	const revenueCategories = [CashFlowCategoryEnum.CUSTOMER];
 	const expenseCategories = [
-		CashFlowCategoryEnum.FUEL,
-		CashFlowCategoryEnum.MAINTENANCE,
-		CashFlowCategoryEnum.TOLLS,
 		CashFlowCategoryEnum.EMPLOYEE_SALARY,
 		CashFlowCategoryEnum.EMPLOYEE_EXPENSE_ADVANCE,
 		CashFlowCategoryEnum.EMPLOYEE_TRAVEL_ALLOWANCE,
@@ -61,7 +58,6 @@ export const getExpectedCategoryType = (
 	];
 	const correctionCategories = [
 		CashFlowCategoryEnum.REFUND,
-		CashFlowCategoryEnum.EMPLOYEE_REIMBURSEMENT,
 	];
 
 	if (arrayHasValue(category, revenueCategories)) {

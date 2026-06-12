@@ -81,14 +81,6 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_number'),
 				{ required: false },
 			),
-			[OperationalRecordTypeEnum.COMPANY_VEHICLE]: this.validateId(
-				this.getMessage('invalid_number'),
-				{ required: false },
-			),
-			[OperationalRecordTypeEnum.CMR]: this.validateId(
-				this.getMessage('invalid_number'),
-				{ required: false },
-			),
 		})
 		.optional();
 

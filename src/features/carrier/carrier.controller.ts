@@ -1,8 +1,5 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/i18n.setup';
-import { brandPolicy } from '@/features/brand/brand.policy';
-import { brandService } from '@/features/brand/brand.service';
-import { brandValidator } from '@/features/brand/brand.validator';
 import CarrierEntity from '@/features/carrier/carrier.entity';
 import {
 	type CarrierPolicy,

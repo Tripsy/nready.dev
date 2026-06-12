@@ -1,5 +1,5 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
+import type CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
 import {
 	type CashFlowCategory,
 	CashFlowCategoryEnum,
@@ -13,8 +13,6 @@ export const OperationalRecordTypeEnum = {
 	CLIENT: 'client',
 	VENDOR: 'vendor',
 	EMPLOYEE: 'employee',
-	COMPANY_VEHICLE: 'company_vehicle',
-	CMR: 'cmr',
 } as const;
 
 export type OperationalRecordType =
@@ -35,29 +33,6 @@ const CashFlowCategoryOperationalRecord: CashFlowCategoryOperationalRecordType =
 			required: [OperationalRecordTypeEnum.CLIENT],
 			optional: [
 				OperationalRecordTypeEnum.EMPLOYEE,
-				OperationalRecordTypeEnum.CMR,
-			],
-		},
-		[CashFlowCategoryEnum.FUEL]: {
-			required: [OperationalRecordTypeEnum.COMPANY_VEHICLE],
-			optional: [
-				OperationalRecordTypeEnum.VENDOR,
-				OperationalRecordTypeEnum.EMPLOYEE,
-			],
-		},
-		[CashFlowCategoryEnum.MAINTENANCE]: {
-			required: [OperationalRecordTypeEnum.COMPANY_VEHICLE],
-			optional: [
-				OperationalRecordTypeEnum.VENDOR,
-				OperationalRecordTypeEnum.EMPLOYEE,
-			],
-		},
-		[CashFlowCategoryEnum.TOLLS]: {
-			required: [OperationalRecordTypeEnum.COMPANY_VEHICLE],
-			optional: [
-				OperationalRecordTypeEnum.VENDOR,
-				OperationalRecordTypeEnum.EMPLOYEE,
-				OperationalRecordTypeEnum.CMR,
 			],
 		},
 		[CashFlowCategoryEnum.EMPLOYEE_SALARY]: {
@@ -69,28 +44,22 @@ const CashFlowCategoryOperationalRecord: CashFlowCategoryOperationalRecordType =
 		[CashFlowCategoryEnum.EMPLOYEE_TRAVEL_ALLOWANCE]: {
 			required: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
-		[CashFlowCategoryEnum.EMPLOYEE_REIMBURSEMENT]: {
-			required: [OperationalRecordTypeEnum.EMPLOYEE],
-		},
 		[CashFlowCategoryEnum.VENDOR]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
 			optional: [
 				OperationalRecordTypeEnum.EMPLOYEE,
-				OperationalRecordTypeEnum.COMPANY_VEHICLE,
 			],
 		},
 		[CashFlowCategoryEnum.INSURANCE]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
 			optional: [
 				OperationalRecordTypeEnum.EMPLOYEE,
-				OperationalRecordTypeEnum.COMPANY_VEHICLE,
 			],
 		},
 		[CashFlowCategoryEnum.TAXES]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
 			optional: [
 				OperationalRecordTypeEnum.EMPLOYEE,
-				OperationalRecordTypeEnum.COMPANY_VEHICLE,
 			],
 		},
 	};
@@ -139,7 +108,7 @@ export default class OperationalRecordEntity extends EntityAbstract {
 	notes!: string | null;
 
 	// RELATIONS
-	@ManyToOne(() => CashFlowEntity, {
+	@ManyToOne('CashFlowEntity', {
 		onDelete: 'CASCADE',
 	})
 	@JoinColumn({ name: 'cash_flow_id' })
