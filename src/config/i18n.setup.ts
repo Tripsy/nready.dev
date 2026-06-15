@@ -51,13 +51,12 @@ export async function initializeI18next() {
 		.init({
 			fallbackLng: 'en',
 			supportedLngs: Configuration.get(
-				'app.languageSupported',
+				'language.supported',
 			) as string[], // List of supported languages
 			interpolation: {
 				escapeValue: false, // Disable escaping for HTML (if needed)
 			},
 			saveMissing: false, // Disable saving missing translations
-			// ns: Configuration.get('app.languageNamespaces') as string[],
 			ns: namespaces,
 			backend: {
 				loadPath: (_lng: string, ns: string) => {

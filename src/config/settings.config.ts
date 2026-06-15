@@ -19,11 +19,15 @@ function loadSettings(): Settings {
 			name: process.env.APP_NAME || 'sample-node-api',
 			email: process.env.APP_EMAIL || 'hello@example.com',
 			timezone: process.env.APP_TIMEZONE || 'UTC',
-			language: process.env.APP_LANGUAGE || 'en',
-			languageSupported: (process.env.APP_LANGUAGE_SUPPORTED || 'en')
+			currency: process.env.APP_CURRENCY || 'RON',
+		},
+		language: {
+			default: process.env.APP_LANGUAGE_DEFAULT || 'ro',
+			supported: (
+				process.env.APP_LANGUAGE_SUPPORTED || 'ro,en'
+			)
 				.trim()
 				.split(','),
-			currency: process.env.APP_CURRENCY || 'RON',
 		},
 		folder: {
 			features: '/features',
@@ -117,12 +121,6 @@ export const Configuration = {
 		}
 	},
 
-	isSupportedLanguage: (language: string): boolean => {
-		const languages = Configuration.get<string[]>('app.languageSupported');
-
-		return Array.isArray(languages) && languages.includes(language);
-	},
-
 	environment: () => {
 		return Configuration.get('app.environment') as string;
 	},
@@ -132,7 +130,13 @@ export const Configuration = {
 	},
 
 	language: () => {
-		return Configuration.get('app.language') as string;
+		return Configuration.get('language.default') as string;
+	},
+
+	isSupportedLanguage: (language: string): boolean => {
+		const languages = Configuration.get<string[]>('language.supported');
+
+		return Array.isArray(languages) && languages.includes(language);
 	},
 
 	currency: () => {

@@ -21,11 +21,7 @@ async function languageMiddleware(
 	}
 
 	// Attach lang value to the request object
-	if (
-		(Configuration.get('app.languageSupported') as string[]).includes(
-			language,
-		)
-	) {
+	if (Configuration.isSupportedLanguage(language)) {
 		res.locals.language = language;
 	} else {
 		res.locals.language = Configuration.language();

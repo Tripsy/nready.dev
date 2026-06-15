@@ -3,7 +3,7 @@ import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import BrandEntity, {
-	type BrandStatus,
+	type BrandStatus, BrandStatusEnum,
 	type BrandType,
 	STATUS_TRANSITIONS,
 } from '@/features/brand/brand.entity';
@@ -126,6 +126,7 @@ export class BrandService {
 		);
 
 		entry.status = newStatus;
+		entry.sort_order = 0;
 
 		await this.update(entry);
 	}
@@ -139,7 +140,7 @@ export class BrandService {
 		const count = await this.repository
 			.createQuery()
 			.filterBy('brand_type', brand_type)
-			// .filterBy('id', ids, 'IN') // In case we want to allow partial sorting
+			.filterBy('status', BrandStatusEnum.ACTIVE)
 			.withDeleted(withDeleted)
 			.count();
 
