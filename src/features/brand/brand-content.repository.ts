@@ -1,7 +1,8 @@
 import type { EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import type { BrandContentType } from '@/features/brand/brand.entity';
-import BrandContentEntity from '@/features/brand/brand-content.entity';
+import BrandContentEntity, {
+	type BrandContentType,
+} from '@/features/brand/brand-content.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
 export class BrandContentQuery extends RepositoryAbstract<BrandContentEntity> {

@@ -43,11 +43,18 @@ class CategoryController extends BaseController {
 	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
 
-		const data = this.validate(this.validator.read, req.query, res);
+		const data = this.validate(
+			this.validator.read,
+			{
+				...req.query,
+				id: req.params.id,
+			},
+			res,
+		);
 
 		const cacheKey = this.cache.buildKey(
 			CategoryEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			data.with_ancestors ? 'with_ancestors' : 'no_ancestors',
 			data.with_children ? 'with_children' : 'no_children',
 			data.language ?? '',
@@ -57,11 +64,13 @@ class CategoryController extends BaseController {
 		const cacheGetResults = await this.cache.get(
 			cacheKey,
 			async () =>
-				await this.categoryService.getDataById(
-					res.locals.validated.id,
-					data,
-					this.policy.allowDeleted(res.locals.auth),
-				),
+				await this.categoryService.getEntryData({
+					id: data.id,
+					language: data.language,
+					with_ancestors: data.with_ancestors,
+					with_children: data.with_children,
+					withDeleted: this.policy.allowDeleted(res.locals.auth),
+				}),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -73,12 +82,23 @@ class CategoryController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
+		);
+
+		const existingEntry = await this.categoryService.findById(
+			data.id,
+			false,
+		);
 
 		const entry = await this.categoryService.updateDataWithContent(
-			res.locals.validated.id,
+			existingEntry,
 			data,
-			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('category.success.update'));
@@ -87,20 +107,24 @@ class CategoryController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.categoryService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete, req.params, res);
+
+		await this.categoryService.delete(data.id);
 
 		res.locals.output.message(lang('category.success.delete'));
 
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.categoryService.restore(res.locals.validated.id);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.categoryService.restore(data.id);
 
 		res.locals.output.message(lang('category.success.restore'));
 
@@ -110,16 +134,7 @@ class CategoryController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		if (!data.filter.language) {
 			data.filter.language = res.locals.language;
@@ -148,10 +163,14 @@ class CategoryController extends BaseController {
 
 		const data = this.validate(this.validator.statusUpdate, req.query, res);
 
+		const existingEntry = await this.categoryService.findById(
+			data.id,
+			false,
+		);
+
 		await this.categoryService.updateStatus(
-			res.locals.validated.id,
-			res.locals.validated.status,
-			this.policy.allowDeleted(res.locals.auth),
+			existingEntry,
+			data.status,
 			data.force,
 		);
 

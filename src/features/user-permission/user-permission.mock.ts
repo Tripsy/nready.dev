@@ -18,9 +18,11 @@ export function getUserPermissionEntityMock(): UserPermissionEntity {
 
 export const userPermissionInputPayloads = {
 	create: {
+		user_id: 1,
 		permission_ids: [1, 2],
 	},
 	find: {
+		user_id: 1,
 		page: 1,
 		limit: 10,
 		order_by: OrderByEnum.ID,

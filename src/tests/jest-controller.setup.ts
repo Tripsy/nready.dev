@@ -50,7 +50,7 @@ export type CreateValidator = {
 };
 
 type CreateService<E, V extends CreateValidator> = {
-	create(data: ValidatorOutput<V, 'create'>, relatedId?: number): Promise<E>;
+	create(data: ValidatorOutput<V, 'create'>): Promise<E>;
 };
 
 type ControllerCreateType<E, V extends CreateValidator> = {
@@ -172,10 +172,8 @@ export type UpdateValidator = {
 
 type UpdateService<E, V extends UpdateValidator> = {
 	updateData(
-		id: number,
+		entry: E,
 		data: ValidatorOutput<V, 'update'>,
-		withDeleted: boolean,
-		relatedId?: number,
 	): Promise<Partial<E>>;
 };
 
@@ -237,9 +235,8 @@ export function testControllerUpdate<E, V extends UpdateValidator>(
 
 type UpdateWithContentService<E, V extends UpdateValidator> = {
 	updateDataWithContent(
-		id: number,
+		entry: E,
 		data: ValidatorOutput<V, 'update'>,
-		withDeleted: boolean,
 	): Promise<Partial<E>>;
 };
 
@@ -361,7 +358,7 @@ export function testControllerDeleteMultiple<V extends DeleteValidator>(
 }
 
 type DeleteSingleService = {
-	delete(id: number, relatedId?: number): Promise<void>;
+	delete(id: number): Promise<void>;
 };
 
 type ControllerDeleteSingleType = {
@@ -407,7 +404,7 @@ export function testControllerDeleteSingle(config: ControllerDeleteSingleType) {
 
 // Controller test - Restore
 type RestoreSingleService = {
-	restore(id: number, relatedId?: number): Promise<void>;
+	restore(id: number): Promise<void>;
 };
 
 type ControllerRestoreSingleType = {
@@ -517,12 +514,8 @@ export function testControllerFind<E, V extends FindValidator>(
 }
 
 // Controller test - Update
-type StatusUpdateService = {
-	updateStatus(
-		id: number,
-		status: string,
-		withDeleted: boolean,
-	): Promise<void>;
+type StatusUpdateService<E> = {
+	updateStatus(entry: E, status: string): Promise<void>;
 };
 
 type ControllerStatusUpdateType<E> = {
@@ -532,7 +525,7 @@ type ControllerStatusUpdateType<E> = {
 		id: number;
 	};
 	policy: PolicyAbstract;
-	service: StatusUpdateService;
+	service: StatusUpdateService<E>;
 };
 
 export function testControllerStatusUpdate<E>(

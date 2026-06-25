@@ -1,6 +1,5 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { carrierController } from '@/features/carrier/carrier.controller';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof carrierController> = {
@@ -34,7 +33,6 @@ const routesModule: FeatureRoutesModule<typeof carrierController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 	},
 };

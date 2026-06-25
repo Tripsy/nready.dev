@@ -5,6 +5,7 @@ import {
 	type DiscountValidator,
 	paramsUpdateList,
 } from '@/features/discount/discount.validator';
+import { pickValuesFromObject } from '@/helpers';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class DiscountService {
@@ -45,20 +46,10 @@ export class DiscountService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateData(
-		id: number,
+		entry: DiscountEntity,
 		data: ValidatorOutput<DiscountValidator, 'update'>,
-		withDeleted: boolean,
 	) {
-		const entry = await this.findById(id, withDeleted); // Returns 404 inside if entry is not found
-
-		Object.assign(
-			entry,
-			Object.fromEntries(
-				paramsUpdateList
-					.filter((key) => key in data)
-					.map((key) => [key, data[key as keyof typeof data]]),
-			),
-		);
+		Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
 		return this.update(entry);
 	}

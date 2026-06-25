@@ -52,6 +52,7 @@ export const discountInputPayloads = {
 		notes: 'Applied to all orders during January',
 	},
 	update: {
+		id: 1,
 		label: 'Black Friday Discount',
 		scope: DiscountScopeEnum.ORDER,
 		reason: DiscountReasonEnum.BIRTHDAY_DISCOUNT,

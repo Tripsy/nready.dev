@@ -1,10 +1,6 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { templateController } from '@/features/template/template.controller';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
-import {
-	validateParamsWhenId,
-	validateParamsWhenString,
-} from '@/middleware/validate-params.middleware';
+import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof templateController> = {
 	basePath: '/templates',
@@ -22,7 +18,6 @@ const routesModule: FeatureRoutesModule<typeof templateController> = {
 		readPage: {
 			path: '/:label/page',
 			method: 'get',
-			handlers: [validateParamsWhenString('label')],
 		},
 		update: {
 			path: '/:id',
@@ -42,7 +37,6 @@ const routesModule: FeatureRoutesModule<typeof templateController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 	},
 };

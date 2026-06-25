@@ -33,9 +33,8 @@ import {
 } from '@/features/cash-flow/operational-record.entity';
 import { getOperationalRecordRepository } from '@/features/cash-flow/operational-record.repository';
 import { clientService } from '@/features/client/client.service';
-import { userService } from '@/features/user/user.service';
 import { vendorService } from '@/features/vendor/vendor.service';
-import { arrayHasValue } from '@/helpers';
+import { arrayHasValue, pickValuesFromObject } from '@/helpers';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
@@ -123,17 +122,6 @@ export class CashFlowService {
 			throw new CustomError(
 				409,
 				lang('cash-flow.error.refund_parent_invalid_category_type'),
-			);
-		}
-
-		if (
-			arrayHasValue(deps.parentEntry.category, [
-				CashFlowCategoryEnum.EMPLOYEE_SALARY,
-			])
-		) {
-			throw new CustomError(
-				409,
-				lang('cash-flow.error.refund_parent_invalid_category'),
 			);
 		}
 
@@ -338,12 +326,9 @@ export class CashFlowService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateData(
-		id: number,
+		entry: CashFlowEntity,
 		data: ValidatorOutput<CashFlowValidator, 'update'>,
-		withDeleted: boolean = true,
 	) {
-		const entry = await this.findById(id, withDeleted);
-
 		if (data.amount) {
 			data.amount = this.inputAmount(data.amount);
 		}
@@ -410,16 +395,9 @@ export class CashFlowService {
 		return dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(CashFlowEntity);
 
-			const updatedEntry = {
-				...entry,
-				...Object.fromEntries(
-					paramsUpdateList
-						.filter((key) => key in data)
-						.map((key) => [key, data[key as keyof typeof data]]),
-				),
-			};
+			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
-			const resultEntry = await repository.save(updatedEntry);
+			const resultEntry = await repository.save(entry);
 
 			if (operationalRecords) {
 				await Promise.all(
@@ -440,12 +418,9 @@ export class CashFlowService {
 	}
 
 	public async updateStatus(
-		id: number,
+		entry: CashFlowEntity,
 		newStatus: CashFlowStatus,
-		withDeleted: boolean,
 	): Promise<void> {
-		const entry = await this.findById(id, withDeleted);
-
 		assertValidStatusTransition(
 			STATUS_TRANSITIONS,
 			entry.status,
@@ -462,7 +437,6 @@ export class CashFlowService {
 			.createQuery()
 			.joinAndSelect('cash_flow.refunds', 'refunds', 'LEFT')
 			.filterById(id)
-			.withDeleted(false)
 			.first();
 
 		if (!entry) {
@@ -492,30 +466,12 @@ export class CashFlowService {
 	 *
 	 * @param id
 	 * @param withDeleted
-	 * @param userId
 	 */
-	public findById(
-		id: number,
-		withDeleted: boolean,
-		userId?: number,
-	): Promise<CashFlowEntity> {
+	public findById(id: number, withDeleted: boolean): Promise<CashFlowEntity> {
 		const query = this.repository
 			.createQuery()
 			.filterById(id)
 			.withDeleted(withDeleted);
-
-		if (userId) {
-			query.join(
-				'cash_flow.operational_records',
-				'operational_records',
-				'INNER',
-				'operational_records.entity_id = :entity_id AND operational_records.operational_record_type = :operational_record_type',
-				{
-					entity_id: userId,
-					operational_record_type: OperationalRecordTypeEnum.EMPLOYEE,
-				},
-			);
-		}
 
 		return query.firstOrFail();
 	}
@@ -557,23 +513,6 @@ export class CashFlowService {
 				);
 		}
 
-		if (data.filter.employee_id) {
-			query
-				.joinAndSelect(
-					'cash_flow.operational_records',
-					'operational_records_employee',
-					'INNER',
-				)
-				.filterBy(
-					'operational_records_employee.entity_id',
-					data.filter.employee_id,
-				)
-				.filterBy(
-					'operational_records_employee.operational_record_type',
-					'employee',
-				);
-		}
-
 		if (data.filter.vendor_id) {
 			query
 				.joinAndSelect(
@@ -588,40 +527,6 @@ export class CashFlowService {
 				.filterBy(
 					'operational_records_vendor.operational_record_type',
 					'vendor',
-				);
-		}
-
-		if (data.filter.company_vehicle_id) {
-			query
-				.joinAndSelect(
-					'cash_flow.operational_records',
-					'operational_records_company_vehicle',
-					'INNER',
-				)
-				.filterBy(
-					'operational_records_company_vehicle.entity_id',
-					data.filter.company_vehicle_id,
-				)
-				.filterBy(
-					'operational_records_company_vehicle.operational_record_type',
-					'company_vehicle',
-				);
-		}
-
-		if (data.filter.cmr_id) {
-			query
-				.joinAndSelect(
-					'cash_flow.operational_records',
-					'operational_records_cmr',
-					'INNER',
-				)
-				.filterBy(
-					'operational_records_cmr.entity_id',
-					data.filter.cmr_id,
-				)
-				.filterBy(
-					'operational_records_cmr.operational_record_type',
-					'cmr',
 				);
 		}
 
@@ -643,22 +548,16 @@ export class CashFlowService {
 			entries.map(async (entry) => {
 				switch (entry.operational_record_type) {
 					case OperationalRecordTypeEnum.CLIENT:
-						entry.client = await clientService.getDataById(
-							entry.entity_id,
-							false,
-						);
-						break;
-					case OperationalRecordTypeEnum.EMPLOYEE:
-						entry.employee = await userService.findById(
-							entry.entity_id,
-							false,
-						);
+						entry.client = await clientService.getEntryData({
+							id: entry.entity_id,
+							withDeleted: false,
+						});
 						break;
 					case OperationalRecordTypeEnum.VENDOR:
-						entry.vendor = await vendorService.getDataById(
-							entry.entity_id,
-							false,
-						);
+						entry.vendor = await vendorService.getEntryData({
+							id: entry.entity_id,
+							withDeleted: false,
+						});
 						break;
 				}
 			}),

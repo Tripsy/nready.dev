@@ -19,8 +19,8 @@ export class PermissionService {
 	 * @description Used in `create` method from controller;
 	 */
 	public async create(
+		data: ValidatorOutput<PermissionValidator, 'create'>,
 		withDeleted: boolean,
-		data: ValidatorOutput<PermissionValidator, 'manage'>,
 	): Promise<PermissionCreateResult> {
 		const existingPermission = await this.checkIfExist(
 			data.entity,
@@ -69,14 +69,14 @@ export class PermissionService {
 	 * @description Used in `update` method from controller
 	 */
 	public async updateData(
-		id: number,
-		data: ValidatorOutput<PermissionValidator, 'manage'>,
+		entry: PermissionEntity,
+		data: ValidatorOutput<PermissionValidator, 'update'>,
 	) {
 		const existingPermission = await this.checkIfExist(
 			data.entity,
 			data.operation,
 			['id', 'deleted_at'],
-			id,
+			entry.id,
 		);
 
 		if (existingPermission) {
@@ -91,7 +91,7 @@ export class PermissionService {
 		}
 
 		return this.repository.save({
-			id: id,
+			id: entry.id,
 			entity: data.entity,
 			operation: data.operation,
 		});
@@ -120,7 +120,7 @@ export class PermissionService {
 		entity: string,
 		operation: string,
 		fields?: string[],
-		excludeId?: number,
+		withoutId?: number,
 	) {
 		const q = this.repository
 			.createQuery()
@@ -129,8 +129,8 @@ export class PermissionService {
 			.filterBy('operation', operation)
 			.withDeleted(true);
 
-		if (excludeId) {
-			q.filterBy('id', excludeId, '!=');
+		if (withoutId) {
+			q.filterBy('id', withoutId, '!=');
 		}
 
 		if (fields) {

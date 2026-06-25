@@ -58,6 +58,7 @@ export const categoryInputPayloads = {
 		with_children: false,
 	},
 	update: {
+		id: 1,
 		parent_id: 3,
 		contents: [
 			{

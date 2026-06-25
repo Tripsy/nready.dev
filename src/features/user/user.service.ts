@@ -15,6 +15,7 @@ import {
 	paramsUpdateList,
 	type UserValidator,
 } from '@/features/user/user.validator';
+import { pickValuesFromObject } from '@/helpers';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
@@ -31,9 +32,9 @@ export class UserService {
 	public async create(
 		data: ValidatorOutput<UserValidator, 'create'>,
 	): Promise<UserEntity> {
-		const existing = await this.findByEmail(data.email, true);
+		const existingEntry = await this.findByEmail(data.email);
 
-		if (existing) {
+		if (existingEntry) {
 			throw new CustomError(409, lang('user.error.already_exists'));
 		}
 
@@ -79,22 +80,17 @@ export class UserService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateData(
-		id: number,
+		entry: UserEntity,
 		data: ValidatorOutput<UserValidator, 'update'>,
-		withDeleted: boolean,
 	) {
-		const entry = await this.findById(id, withDeleted);
-
 		if (data.email) {
-			const existing = await this.findByEmail(
-				data.email,
-				true,
-				undefined,
-				id,
-			);
+			const existing = await this.findByEmail(data.email, entry.id);
 
 			if (existing) {
-				throw new CustomError(409, lang('user.error.already_exists'));
+				throw new CustomError(
+					409,
+					lang('user.error.email_already_used'),
+				);
 			}
 		}
 
@@ -111,25 +107,15 @@ export class UserService {
 			}
 		}
 
-		Object.assign(
-			entry,
-			Object.fromEntries(
-				paramsUpdateList
-					.filter((key) => key in data)
-					.map((key) => [key, data[key as keyof typeof data]]),
-			),
-		);
+		Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
 		return this.update(entry);
 	}
 
 	public async updateStatus(
-		id: number,
+		entry: UserEntity,
 		newStatus: UserStatus,
-		withDeleted: boolean,
 	): Promise<void> {
-		const entry = await this.findById(id, withDeleted);
-
 		assertValidStatusTransition(
 			STATUS_TRANSITIONS,
 			entry.status,
@@ -160,23 +146,18 @@ export class UserService {
 			.firstOrFail();
 	}
 
-	public findByEmail(
-		email: string,
-		withDeleted: boolean,
-		fields?: string[],
-		excludeId?: number,
-	) {
+	public findByEmail(email: string, withoutId?: number, select?: string[]) {
 		const q = this.repository
 			.createQuery()
 			.filterByEmail(email)
-			.withDeleted(withDeleted);
+			.withDeleted(true);
 
-		if (excludeId) {
-			q.filterBy('id', excludeId, '!=');
+		if (withoutId) {
+			q.filterBy('id', withoutId, '!=');
 		}
 
-		if (fields) {
-			q.select(fields);
+		if (select) {
+			q.select(select);
 		}
 
 		return q.first();

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import {
 	UserOperatorTypeEnum,
@@ -7,7 +6,10 @@ import {
 } from '@/features/user/user.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
 
 export const paramsUpdateList: string[] = [
@@ -26,45 +28,23 @@ export const OrderByEnum = {
 	UPDATED_AT: 'updated_at',
 } as const;
 
-const validatorMessages = {
-	invalid_name: lang('user.validation.invalid_name'),
-	name_min: lang('user.validation.name_min'),
-	invalid_email: lang('user.validation.invalid_email'),
-	invalid_password: lang('user.validation.invalid_password'),
-	password_min: lang('user.validation.password_min'),
-	password_condition_capital_letter: lang(
-		'user.validation.password_condition_capital_letter',
-	),
-	password_condition_number: lang(
-		'user.validation.password_condition_number',
-	),
-	password_condition_special_character: lang(
-		'user.validation.password_condition_special_character',
-	),
-	password_confirm_mismatch: lang(
-		'user.validation.password_confirm_mismatch',
-	),
-	password_confirm_required: lang(
-		'user.validation.password_confirm_required',
-	),
-	invalid_language: lang('shared.validation.invalid_language'),
-	invalid_role: lang('user.validation.invalid_role'),
-	invalid_status: lang('user.validation.invalid_status'),
-	invalid_operator_type: lang('user.validation.invalid_operator_type'),
-	operator_type_required: lang('user.validation.operator_type_required'),
-	operator_type_only_for_operator: lang(
-		'user.validation.operator_type_only_for_operator',
-	),
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-	invalid_date: lang('shared.validation.invalid_date'),
-	invalid_date_format: lang('shared.validation.invalid_date_format'),
-	invalid_past_date: lang('shared.validation.invalid_past_date'),
-	invalid_future_date: lang('shared.validation.invalid_future_date'),
-	invalid_date_range: lang('shared.validation.invalid_date_range'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_name',
+	'name_min',
+	'invalid_email',
+	'invalid_password',
+	'password_min',
+	'password_condition_capital_letter',
+	'password_condition_number',
+	'password_condition_special_character',
+	'password_confirm_mismatch',
+	'password_confirm_required',
+	'invalid_role',
+	'invalid_operator_type',
+	'operator_type_required',
+	'operator_type_only_for_operator',
+] as const;
 
 export class UserValidator extends BaseValidator<typeof validatorMessages> {
 	readonly create = z
@@ -151,8 +131,13 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 			}
 		});
 
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly update = z
 		.object({
+			id: this.validateId(this.getMessage('invalid_id', { id: 'id' })),
 			name: this.validateString(
 				{
 					invalid: this.getMessage('invalid_name'),
@@ -256,6 +241,14 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 			}
 		});
 
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly find = this.validateFind({
 		orderByEnum: OrderByEnum,
 		defaultOrderBy: OrderByEnum.ID,
@@ -266,7 +259,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -320,6 +313,14 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 			});
 		}
 	});
+
+	readonly statusUpdate = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		status: this.validateEnum(
+			UserStatusEnum,
+			this.getMessage('invalid_status'),
+		),
+	});
 }
 
-export const userValidator = new UserValidator(validatorMessages);
+export const userValidator = new UserValidator('user');

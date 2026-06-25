@@ -1,4 +1,6 @@
 import { EventEmitter } from 'node:events';
+import type UserEntity from '@/features/user/user.entity';
+import type { UserStatus } from '@/features/user/user.entity';
 import type { LogHistoryAction } from '@/shared/types/log-history.type';
 
 export type LogHistoryEventPayload = {
@@ -12,9 +14,18 @@ export type CacheCleanEventPayload = {
 	cacheKeyArgs: string[];
 };
 
+export type UserRegisteredEventPayload = Partial<UserEntity> & {
+	id: number;
+	name: string;
+	email: string;
+	language: string;
+	status: UserStatus;
+};
+
 type Events = {
 	history: LogHistoryEventPayload;
 	cacheClean: CacheCleanEventPayload;
+	userRegistered: UserRegisteredEventPayload;
 };
 
 class TypedEmitter extends EventEmitter {

@@ -23,9 +23,7 @@ function loadSettings(): Settings {
 		},
 		language: {
 			default: process.env.APP_LANGUAGE_DEFAULT || 'ro',
-			supported: (
-				process.env.APP_LANGUAGE_SUPPORTED || 'ro,en'
-			)
+			supported: (process.env.APP_LANGUAGE_SUPPORTED || 'ro,en')
 				.trim()
 				.split(','),
 		},

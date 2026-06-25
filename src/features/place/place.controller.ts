@@ -40,11 +40,18 @@ class PlaceController extends BaseController {
 	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
 
-		const data = this.validate(this.validator.read, req.query, res);
+		const data = this.validate(
+			this.validator.read,
+			{
+				...req.query,
+				id: req.params.id,
+			},
+			res,
+		);
 
 		const cacheKey = this.cache.buildKey(
 			PlaceEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			data.language ?? '',
 			'read',
 		);
@@ -52,11 +59,11 @@ class PlaceController extends BaseController {
 		const cacheGetResults = await this.cache.get(
 			cacheKey,
 			async () =>
-				await this.placeService.getDataById(
-					res.locals.validated.id,
-					data,
-					this.policy.allowDeleted(res.locals.auth),
-				),
+				await this.placeService.getEntryData({
+					id: data.id,
+					language: data.language,
+					withDeleted: this.policy.allowDeleted(res.locals.auth),
+				}),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -68,12 +75,20 @@ class PlaceController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
+		);
+
+		const existingEntry = await this.placeService.findById(data.id, false);
 
 		const entry = await this.placeService.updateDataWithContent(
-			res.locals.validated.id,
+			existingEntry,
 			data,
-			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('place.success.update'));
@@ -82,20 +97,24 @@ class PlaceController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.placeService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete, req.params, res);
+
+		await this.placeService.delete(data.id);
 
 		res.locals.output.message(lang('place.success.delete'));
 
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.placeService.restore(res.locals.validated.id);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.placeService.restore(data.id);
 
 		res.locals.output.message(lang('place.success.restore'));
 
@@ -105,16 +124,7 @@ class PlaceController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		if (!data.filter.language) {
 			data.filter.language = res.locals.language;

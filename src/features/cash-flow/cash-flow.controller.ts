@@ -61,18 +61,20 @@ class CashFlowController extends BaseController {
 		}
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			CashFlowEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () => {
 			return await this.cashFlowService.findById(
-				res.locals.validated.id,
+				data.id,
 				this.policy.allowDeleted(res.locals.auth),
 			);
 		});
@@ -86,12 +88,23 @@ class CashFlowController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
+		);
+
+		const existingEntry = await this.cashFlowService.findById(
+			data.id,
+			false,
+		);
 
 		const entry = await this.cashFlowService.updateData(
-			res.locals.validated.id,
+			existingEntry,
 			data,
-			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('cash-flow.success.update'));
@@ -105,7 +118,7 @@ class CashFlowController extends BaseController {
 
 		const data = this.validate(this.validator.delete, req.query, res);
 
-		await this.cashFlowService.delete(res.locals.validated.id, data.force);
+		await this.cashFlowService.delete(data.id, data.force);
 
 		res.locals.output.message(lang('cash-flow.success.delete'));
 
@@ -115,16 +128,7 @@ class CashFlowController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] = await this.cashFlowService.findByFilter(
 			data,
@@ -144,14 +148,21 @@ class CashFlowController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public statusUpdate = asyncHandler(async (_req: Request, res: Response) => {
+	public statusUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		await this.cashFlowService.updateStatus(
-			res.locals.validated.id,
-			res.locals.validated.status,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.statusUpdate,
+			req.params,
+			res,
 		);
+
+		const existingEntry = await this.cashFlowService.findById(
+			data.id,
+			false,
+		);
+
+		await this.cashFlowService.updateStatus(existingEntry, data.status);
 
 		res.locals.output.message(lang('cash-flow.success.status_update'));
 
@@ -159,19 +170,23 @@ class CashFlowController extends BaseController {
 	});
 
 	public operationalRecords = asyncHandler(
-		async (_req: Request, res: Response) => {
+		async (req: Request, res: Response) => {
 			this.policy.canRead(res.locals.auth);
+
+			const data = this.validate(
+				this.validator.operationalRecords,
+				req.params,
+				res,
+			);
 
 			const cacheKey = this.cache.buildKey(
 				CashFlowEntity.NAME,
 				'operational-records',
-				res.locals.validated.id,
+				data.id.toString(),
 			);
 
 			const cacheGetResults = await this.cache.get(cacheKey, async () =>
-				this.cashFlowService.findOperationalRecords(
-					res.locals.validated.id,
-				),
+				this.cashFlowService.findOperationalRecords(data.id),
 			);
 
 			res.locals.output.meta(cacheGetResults.isCached, 'isCached');

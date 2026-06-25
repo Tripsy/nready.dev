@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import {
 	AMOUNT_DECIMALS,
@@ -13,7 +12,10 @@ import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.en
 import { OperationalRecordTypeEnum } from '@/features/cash-flow/operational-record.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = [
 	'direction',
@@ -29,8 +31,6 @@ export const paramsUpdateList: string[] = [
 	// operational record
 	'client_id',
 	'vendor_id',
-	'employee_id',
-	'company_vehicle_id',
 ];
 
 export const OrderByEnum = {
@@ -40,44 +40,30 @@ export const OrderByEnum = {
 	CREATED_AT: 'created_at',
 } as const;
 
-const validatorMessages = {
-	invalid_direction: lang('cash-flow.validation.invalid_direction'),
-	invalid_category_type: lang('cash-flow.validation.invalid_category_type'),
-	invalid_category: lang('cash-flow.validation.invalid_category'),
-	invalid_gateway: lang('cash-flow.validation.invalid_gateway'),
-	invalid_method: lang('cash-flow.validation.invalid_method'),
-	invalid_amount: lang('cash-flow.validation.invalid_amount'),
-	invalid_vat_rate: lang('cash-flow.validation.invalid_vat_rate'),
-	invalid_currency: lang('cash-flow.validation.invalid_currency'),
-	invalid_exchange_rate: lang('cash-flow.validation.invalid_exchange_rate'),
-	invalid_external_reference: lang(
-		'cash-flow.validation.invalid_external_reference',
-	),
-	invalid_parent_id: lang('cash-flow.validation.invalid_parent_id'),
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_notes: lang('shared.validation.invalid_notes'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-	invalid_status: lang('cash-flow.validation.invalid_status'),
-	invalid_date: lang('shared.validation.invalid_date'),
-	invalid_date_format: lang('shared.validation.invalid_date_format'),
-	invalid_past_date: lang('shared.validation.invalid_past_date'),
-	invalid_future_date: lang('shared.validation.invalid_future_date'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_direction',
+	'invalid_category_type',
+	'invalid_category',
+	'invalid_gateway',
+	'invalid_method',
+	'invalid_amount',
+	'invalid_vat_rate',
+	'invalid_currency',
+	'invalid_exchange_rate',
+	'invalid_external_reference',
+	'invalid_parent_id',
+	'invalid_status',
+] as const;
 
 export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
-	readonly operationalRecords = z
+	readonly operationalRecordsSchema = z
 		.object({
 			[OperationalRecordTypeEnum.CLIENT]: this.validateId(
 				this.getMessage('invalid_number'),
 				{ required: false },
 			),
 			[OperationalRecordTypeEnum.VENDOR]: this.validateId(
-				this.getMessage('invalid_number'),
-				{ required: false },
-			),
-			[OperationalRecordTypeEnum.EMPLOYEE]: this.validateId(
 				this.getMessage('invalid_number'),
 				{ required: false },
 			),
@@ -125,11 +111,16 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 		notes: this.validateString(this.getMessage('invalid_notes'), {
 			required: false,
 		}),
-		operational_records: this.operationalRecords,
+		operational_records: this.operationalRecordsSchema,
+	});
+
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 	});
 
 	readonly update = z
 		.object({
+			id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 			direction: this.validateEnum(
 				CashFlowDirectionEnum,
 				this.getMessage('invalid_direction'),
@@ -172,7 +163,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),
-			operational_records: this.operationalRecords,
+			operational_records: this.operationalRecordsSchema,
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
 			message: this.getMessage('params_at_least_one', {
@@ -182,6 +173,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 		});
 
 	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 		// Used to force deletion even when selected entry has refunds (which will also be deleted)
 		force: this.validateBoolean(this.getMessage('invalid_boolean'), {
 			required: false,
@@ -198,7 +190,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -255,19 +247,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			client_id: this.validateId(this.getMessage('invalid_number'), {
 				required: false,
 			}),
-			employee_id: this.validateId(this.getMessage('invalid_number'), {
-				required: false,
-			}),
 			vendor_id: this.validateId(this.getMessage('invalid_number'), {
-				required: false,
-			}),
-			company_vehicle_id: this.validateId(
-				this.getMessage('invalid_number'),
-				{
-					required: false,
-				},
-			),
-			cmr_id: this.validateId(this.getMessage('invalid_number'), {
 				required: false,
 			}),
 			is_deleted: this.validateBoolean(
@@ -276,6 +256,18 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			).default(false),
 		},
 	});
+
+	readonly statusUpdate = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		status: this.validateEnum(
+			CashFlowStatusEnum,
+			this.getMessage('invalid_status'),
+		),
+	});
+
+	readonly operationalRecords = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
 }
 
-export const cashFlowValidator = new CashFlowValidator(validatorMessages);
+export const cashFlowValidator = new CashFlowValidator('cash-flow');

@@ -38,6 +38,7 @@ export const brandInputPayloads = {
 		],
 	},
 	update: {
+		id: 1,
 		name: 'Pepsi',
 		slug: 'pepsi',
 		brand_type: BrandTypeEnum.PRODUCT,

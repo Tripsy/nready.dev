@@ -1,10 +1,12 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { TemplateTypeEnum } from '@/features/template/template.entity';
 import { hasAtLeastOneValue, safeHtml } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = [
 	'label',
@@ -20,22 +22,18 @@ export const OrderByEnum = {
 	UPDATED_AT: 'updated_at',
 } as const;
 
-const validatorMessages = {
-	invalid_label: lang('template.validation.invalid_label'),
-	invalid_language: lang('template.validation.invalid_language'),
-	invalid_type: lang('template.validation.invalid_type'),
-	invalid_email_subject: lang('template.validation.invalid_email_subject'),
-	invalid_email_text: lang('template.validation.invalid_email_text'),
-	invalid_email_html: lang('template.validation.invalid_email_html'),
-	invalid_email_layout: lang('template.validation.invalid_email_layout'),
-	invalid_page_title: lang('template.validation.invalid_page_title'),
-	invalid_page_html: lang('template.validation.invalid_page_html'),
-	invalid_page_layout: lang('template.validation.invalid_page_layout'),
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_label',
+	'invalid_type',
+	'invalid_email_subject',
+	'invalid_email_text',
+	'invalid_email_html',
+	'invalid_email_layout',
+	'invalid_page_title',
+	'invalid_page_html',
+	'invalid_page_layout',
+] as const;
 
 export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 	readonly baseCreateSchema = {
@@ -96,11 +94,22 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 			.extend(this.baseCreateSchema),
 	]);
 
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly readPage = z.object({
+		label: this.validateString(this.getMessage('invalid_label')),
+	});
+
 	readonly update = z
 		.discriminatedUnion('type', [
 			// Email schema
 			z
 				.object({
+					id: this.validateId(
+						this.getMessage('invalid_id', { name: 'id' }),
+					),
 					type: z.literal(TemplateTypeEnum.EMAIL),
 					content: z
 						.object({
@@ -130,6 +139,9 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 			// Page schema
 			z
 				.object({
+					id: this.validateId(
+						this.getMessage('invalid_id', { name: 'id' }),
+					),
 					type: z.literal(TemplateTypeEnum.PAGE),
 					content: z
 						.object({
@@ -159,6 +171,14 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 			path: ['_global'],
 		});
 
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly find = this.validateFind({
 		orderByEnum: OrderByEnum,
 		defaultOrderBy: OrderByEnum.ID,
@@ -169,7 +189,7 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -194,4 +214,4 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 	});
 }
 
-export const templateValidator = new TemplateValidator(validatorMessages);
+export const templateValidator = new TemplateValidator('template');

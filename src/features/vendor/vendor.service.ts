@@ -9,6 +9,7 @@ import {
 	paramsUpdateList,
 	type VendorValidator,
 } from '@/features/vendor/vendor.validator';
+import { pickValuesFromObject } from '@/helpers';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
@@ -41,31 +42,18 @@ export class VendorService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateData(
-		id: number,
+		entry: VendorEntity,
 		data: ValidatorOutput<VendorValidator, 'update'>,
-		withDeleted: boolean,
 	) {
-		const entry = await this.findById(id, withDeleted); // Returns 404 inside if entry is not found
-
-		Object.assign(
-			entry,
-			Object.fromEntries(
-				paramsUpdateList
-					.filter((key) => key in data)
-					.map((key) => [key, data[key as keyof typeof data]]),
-			),
-		);
+		Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
 		return this.update(entry);
 	}
 
 	public async updateStatus(
-		id: number,
+		entry: VendorEntity,
 		newStatus: VendorStatus,
-		withDeleted: boolean,
 	): Promise<void> {
-		const entry = await this.findById(id, withDeleted);
-
 		assertValidStatusTransition(
 			STATUS_TRANSITIONS,
 			entry.status,
@@ -96,7 +84,7 @@ export class VendorService {
 	/**
 	 * @description Used in `read` method from controller; this will return a custom shape
 	 */
-	public async getDataById(id: number, withDeleted: boolean) {
+	public async getEntryData(data: { id: number; withDeleted: boolean }) {
 		return await this.repository
 			.createQuery()
 			.select([
@@ -107,8 +95,8 @@ export class VendorService {
 				'vendor.updated_at',
 				'vendor.deleted_at',
 			])
-			.filterById(id)
-			.withDeleted(withDeleted)
+			.filterById(data.id)
+			.withDeleted(data.withDeleted)
 			.firstOrFail();
 	}
 

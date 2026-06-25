@@ -62,7 +62,6 @@ describe('UserPermissionService', () => {
 
 		const result = await serviceUserPermission.create(
 			userPermissionOutputPayloads.create,
-			1,
 		);
 
 		expect(result).toHaveLength(2);
@@ -81,7 +80,6 @@ describe('UserPermissionService', () => {
 
 		const result = await serviceUserPermission.create(
 			userPermissionInputPayloads.create,
-			1,
 		);
 
 		expect(mockUserPermission.repository.restore).toHaveBeenCalledWith(1);
@@ -97,10 +95,12 @@ describe('UserPermissionService', () => {
 			'user_id',
 			1,
 		);
+
 		expect(mockUserPermission.query.filterBy).toHaveBeenCalledWith(
 			'permission_id',
 			2,
 		);
+
 		expect(mockUserPermission.query.delete).toHaveBeenCalledWith(
 			true,
 			false,
@@ -113,10 +113,10 @@ describe('UserPermissionService', () => {
 
 		await serviceUserPermission.restore(1, 2);
 
-		expect(mockUserPermission.query.filterById).toHaveBeenCalledWith(2);
+		expect(mockUserPermission.query.filterById).toHaveBeenCalledWith(1);
 		expect(mockUserPermission.query.filterBy).toHaveBeenCalledWith(
 			'user_id',
-			1,
+			2,
 		);
 		expect(mockUserPermission.query.restore).toHaveBeenCalledWith();
 	});
@@ -126,8 +126,8 @@ describe('UserPermissionService', () => {
 
 		const result = await serviceUserPermission.findByFilter(
 			userPermissionInputPayloads.find,
-			1,
 			false,
+			1,
 		);
 
 		expect(mockUserPermission.query.filterBy).toHaveBeenCalledWith(

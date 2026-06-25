@@ -9,8 +9,6 @@
 		"invalid_vat_rate": "VAT rate must be a valid number",
 		"invalid_currency": "Currency is invalid",
 		"invalid_exchange_rate": "Exchange rate must be a valid number",
-		"invalid_notes": "Notes are invalid",
-		"invalid_status": "Status is invalid",
 		"invalid_external_reference": "External reference invalid",
 		"invalid_parent_id": "Parent payment ID is invalid",
 		"required_operational_record_type": "For selected category operational record is required (e.g.: {{operational_record_type}})"

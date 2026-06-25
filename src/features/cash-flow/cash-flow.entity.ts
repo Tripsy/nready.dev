@@ -49,9 +49,6 @@ export const getExpectedCategoryType = (
 ): CashFlowCategoryType => {
 	const revenueCategories = [CashFlowCategoryEnum.CUSTOMER];
 	const expenseCategories = [
-		CashFlowCategoryEnum.EMPLOYEE_SALARY,
-		CashFlowCategoryEnum.EMPLOYEE_EXPENSE_ADVANCE,
-		CashFlowCategoryEnum.EMPLOYEE_TRAVEL_ALLOWANCE,
 		CashFlowCategoryEnum.VENDOR,
 		CashFlowCategoryEnum.INSURANCE,
 		CashFlowCategoryEnum.TAXES,

@@ -1,7 +1,8 @@
 import type { EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import type { PlaceContentType } from '@/features/place/place.entity';
-import PlaceContentEntity from '@/features/place/place-content.entity';
+import PlaceContentEntity, {
+	type PlaceContentType,
+} from '@/features/place/place-content.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
 export class PlaceContentQuery extends RepositoryAbstract<PlaceContentEntity> {

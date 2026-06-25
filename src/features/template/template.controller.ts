@@ -42,18 +42,20 @@ class TemplateController extends BaseController {
 		res.status(201).json(res.locals.output);
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			TemplateEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
 			this.templateService.findById(
-				res.locals.validated.id,
+				data.id,
 				this.policy.allowDeleted(res.locals.auth),
 			),
 		);
@@ -64,15 +66,51 @@ class TemplateController extends BaseController {
 		res.json(res.locals.output);
 	});
 
+	public readPage = asyncHandler(async (req: Request, res: Response) => {
+		const data = this.validate(this.validator.readPage, req.params, res);
+
+		const cacheKey = this.cache.buildKey(
+			TemplateEntity.NAME,
+			data.label,
+			res.locals.language,
+			TemplateTypeEnum.PAGE,
+			'read',
+		);
+
+		const entry = await this.cache.get(cacheKey, async () =>
+			this.templateService.findByLabel(
+				data.label,
+				res.locals.language,
+				TemplateTypeEnum.PAGE,
+			),
+		);
+
+		res.locals.output.meta(res.locals.outputder.isCached, 'isCached');
+		res.locals.output.data(entry);
+
+		res.json(res.locals.output);
+	});
+
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
+		);
+
+		const existingEntry = await this.templateService.findById(
+			data.id,
+			false,
+		);
 
 		const entry = await this.templateService.updateData(
-			res.locals.validated.id,
+			existingEntry,
 			data,
-			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('template.success.update'));
@@ -81,20 +119,24 @@ class TemplateController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.templateService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete, req.params, res);
+
+		await this.templateService.delete(data.id);
 
 		res.locals.output.message(lang('template.success.delete'));
 
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.templateService.restore(res.locals.validated.id);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.templateService.restore(data.id);
 
 		res.locals.output.message(lang('template.success.restore'));
 
@@ -104,16 +146,7 @@ class TemplateController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] = await this.templateService.findByFilter(
 			data,
@@ -129,30 +162,6 @@ class TemplateController extends BaseController {
 			},
 			query: data,
 		});
-
-		res.json(res.locals.output);
-	});
-
-	public readPage = asyncHandler(async (_req: Request, res: Response) => {
-		const cacheKey = this.cache.buildKey(
-			TemplateEntity.NAME,
-			res.locals.validated.label,
-			res.locals.language,
-			TemplateTypeEnum.PAGE,
-			'read',
-		);
-
-		const entry = await this.cache.get(cacheKey, async () =>
-			this.templateService.findByLabel(
-				res.locals.validated.label,
-				res.locals.language,
-				TemplateTypeEnum.PAGE,
-				this.policy.allowDeleted(res.locals.auth),
-			),
-		);
-
-		res.locals.output.meta(res.locals.outputder.isCached, 'isCached');
-		res.locals.output.data(entry);
 
 		res.json(res.locals.output);
 	});

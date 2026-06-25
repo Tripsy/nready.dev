@@ -1,6 +1,5 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { logHistoryController } from '@/features/log-history/log-history.controller';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof logHistoryController> = {
@@ -19,7 +18,6 @@ const routesModule: FeatureRoutesModule<typeof logHistoryController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 	},
 };

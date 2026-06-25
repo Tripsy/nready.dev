@@ -133,7 +133,7 @@ export function testServiceUpdate<E extends ObjectLiteral>(
 
 interface IUpdateStatusService<E, S> {
 	findById(id: number, withDeleted?: boolean): Promise<E>;
-	updateStatus(id: number, newStatus: S, withDeleted: boolean): Promise<void>;
+	updateStatus(entry: E, newStatus: S): Promise<void>;
 }
 
 export function testServiceUpdateStatus<
@@ -156,7 +156,7 @@ export function testServiceUpdateStatus<
 		jest.spyOn(service, 'findById').mockResolvedValue(entity);
 
 		await expect(
-			service.updateStatus(entity.id, statusTransitions.good.from, false),
+			service.updateStatus(entity.id, statusTransitions.good.from),
 		).rejects.toThrow('shared.error.status_unchanged');
 	});
 
@@ -172,7 +172,7 @@ export function testServiceUpdateStatus<
 			jest.spyOn(service, 'findById').mockResolvedValue(entity);
 
 			await expect(
-				service.updateStatus(entity.id, badTransition.to, false),
+				service.updateStatus(entity.id, badTransition.to),
 			).rejects.toThrow('shared.error.status_update_not_allowed');
 		});
 	}
@@ -187,14 +187,14 @@ export function testServiceUpdateStatus<
 
 		repository.save.mockResolvedValue(entity);
 
-		await service.updateStatus(entity.id, statusTransitions.good.to, false);
+		await service.updateStatus(entity.id, statusTransitions.good.to);
 
 		expect(repository.save).toHaveBeenCalled();
 	});
 }
 
 interface IDeleteService {
-	delete(id: number, relatedId?: number): Promise<void>;
+	delete(id: number): Promise<void>;
 }
 
 export function testServiceDelete<
@@ -234,7 +234,7 @@ export function testServiceDeleteMultiple<
 }
 
 interface IRestoreService {
-	restore(id: number, relatedId?: number): Promise<void>;
+	restore(id: number): Promise<void>;
 }
 
 export function testServiceRestore<
@@ -252,7 +252,7 @@ export function testServiceRestore<
 }
 
 interface IFindByIdService<E extends ObjectLiteral> {
-	findById(id: number, withDeleted?: boolean, relatedId?: number): Promise<E>;
+	findById(id: number, withDeleted: boolean): Promise<E>;
 }
 
 export function testServiceFindById<

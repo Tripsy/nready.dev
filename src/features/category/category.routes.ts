@@ -1,7 +1,6 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { categoryController } from '@/features/category/category.controller';
 import { CategoryStatusEnum } from '@/features/category/category.entity';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
@@ -38,7 +37,6 @@ const routesModule: FeatureRoutesModule<typeof categoryController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 		statusUpdate: {
 			path: '/:id/status/:status',

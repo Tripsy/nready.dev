@@ -2,11 +2,6 @@ export const CashFlowCategoryEnum = {
 	// Revenue
 	CUSTOMER: 'customer', // When company receive money from customer (invoice based)
 
-	// Employee
-	EMPLOYEE_SALARY: 'employee_salary',
-	EMPLOYEE_EXPENSE_ADVANCE: 'employee_advance',
-	EMPLOYEE_TRAVEL_ALLOWANCE: 'employee_allowance',
-
 	// Business Expenses
 	VENDOR: 'vendor', // Third-party services
 	INSURANCE: 'insurance',

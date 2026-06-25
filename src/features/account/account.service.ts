@@ -32,13 +32,6 @@ export class AccountService {
 	) {}
 
 	/**
-	 * @description Encrypts a password
-	 */
-	public async encryptPassword(password: string): Promise<string> {
-		return await bcrypt.hash(password, 10);
-	}
-
-	/**
 	 * @description Checks if a password matches a hashed password
 	 */
 	public async checkPassword(
@@ -55,7 +48,7 @@ export class AccountService {
 		user: UserEntity,
 		password: string,
 	): Promise<void> {
-		user.password = password; // subscriber hashes it
+		user.password = password; // Subscriber hashes it
 		user.password_updated_at = createCurrentDate();
 
 		await this.userService.update(user);
@@ -66,10 +59,13 @@ export class AccountService {
 	public async register(
 		data: ValidatorOutput<AccountValidator, 'register'>,
 	): Promise<UserEntity> {
-		const existing = await this.userService.findByEmail(data.email, true);
+		const existing = await this.userService.findByEmail(data.email);
 
 		if (existing) {
-			if (existing.status === UserStatusEnum.PENDING) {
+			if (
+				!existing.deleted_at &&
+				existing.status === UserStatusEnum.PENDING
+			) {
 				throw new CustomError(
 					409,
 					lang('account.error.pending_account'),

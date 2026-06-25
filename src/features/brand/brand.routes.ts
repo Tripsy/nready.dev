@@ -1,11 +1,9 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { brandController } from '@/features/brand/brand.controller';
 import { BrandStatusEnum, BrandTypeEnum } from '@/features/brand/brand.entity';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
-	validateParamsWhenString,
 } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof brandController> = {
@@ -19,10 +17,7 @@ const routesModule: FeatureRoutesModule<typeof brandController> = {
 		read: {
 			path: '/:id',
 			method: 'get',
-			handlers: [
-				validateParamsWhenId('id'),
-				validateParamsWhenString('language'),
-			],
+			handlers: [validateParamsWhenId('id')],
 		},
 		update: {
 			path: '/:id',
@@ -42,7 +37,6 @@ const routesModule: FeatureRoutesModule<typeof brandController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 		statusUpdate: {
 			path: '/:id/status/:status',

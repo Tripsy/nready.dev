@@ -1,15 +1,18 @@
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
-import PlaceEntity, { PlaceTypeEnum } from '@/features/place/place.entity';
+import PlaceEntity, {
+	type PlaceType,
+	PlaceTypeEnum,
+} from '@/features/place/place.entity';
 import { getPlaceRepository } from '@/features/place/place.repository';
 import {
 	type PlaceValidator,
 	paramsUpdateList,
 } from '@/features/place/place.validator';
 import PlaceContentRepository from '@/features/place/place-content.repository';
+import { pickValuesFromObject } from '@/helpers';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
-import type { PlaceType } from '@/shared/types/place.type';
 
 export class PlaceService {
 	constructor(private repository: ReturnType<typeof getPlaceRepository>) {}
@@ -103,12 +106,9 @@ export class PlaceService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateDataWithContent(
-		id: number,
+		entry: PlaceEntity,
 		data: ValidatorOutput<PlaceValidator, 'update'>,
-		withDeleted: boolean,
 	) {
-		const entry = await this.findById(id, withDeleted);
-
 		await this.checkParentId(
 			'update',
 			data.place_type || entry.place_type,
@@ -132,14 +132,7 @@ export class PlaceService {
 		return dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(PlaceEntity); // We use the manager -> `getPlaceRepository` is not bound to the transaction
 
-			Object.assign(
-				entry,
-				Object.fromEntries(
-					paramsUpdateList
-						.filter((key) => key in data)
-						.map((key) => [key, data[key as keyof typeof data]]),
-				),
-			);
+			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
 			const updatedEntity = await repository.save(entry);
 
@@ -147,7 +140,7 @@ export class PlaceService {
 				await PlaceContentRepository.saveContent(
 					manager,
 					data.contents,
-					id,
+					entry.id,
 				);
 			}
 
@@ -182,11 +175,11 @@ export class PlaceService {
 	/**
 	 * @description Used in `read` method from controller; this will return a custom shape
 	 */
-	public async getDataById(
-		id: number,
-		data: ValidatorOutput<PlaceValidator, 'read'>,
-		withDeleted: boolean,
-	) {
+	public async getEntryData(data: {
+		id: number;
+		language?: string;
+		withDeleted: boolean;
+	}) {
 		const query = this.repository
 			.createQuery()
 			.select([
@@ -201,8 +194,8 @@ export class PlaceService {
 				'content.name',
 				'content.type_label',
 			])
-			.filterById(id)
-			.withDeleted(withDeleted);
+			.filterById(data.id)
+			.withDeleted(data.withDeleted);
 
 		if (data.language) {
 			query.joinAndSelect(

@@ -31,12 +31,12 @@ describe('PermissionService', () => {
 
 	it('should create entry', async () => {
 		const entity = getPermissionEntityMock();
-		const createData = permissionOutputPayloads.manage;
+		const createData = permissionOutputPayloads.create;
 
 		mockPermission.query.first.mockResolvedValue(null);
 		mockPermission.repository.save.mockResolvedValue(entity);
 
-		const result = await servicePermission.create(false, createData);
+		const result = await servicePermission.create(createData, false);
 
 		expect(result).toHaveProperty('permission', entity);
 		expect(result).toHaveProperty('action', 'create');
@@ -47,25 +47,25 @@ describe('PermissionService', () => {
 			...getPermissionEntityMock(),
 			deleted_at: createCurrentDate(),
 		};
-		const createData = permissionOutputPayloads.manage;
+		const createData = permissionOutputPayloads.create;
 
 		mockPermission.query.first.mockResolvedValue(entity);
 		mockPermission.query.restore.mockReturnThis();
 
-		const result = await servicePermission.create(true, createData);
+		const result = await servicePermission.create(createData, false);
 
 		expect(result.action).toBe('restore');
 		expect(mockPermission.query.restore).toHaveBeenCalled();
 	});
 
 	it('should updateData', async () => {
-		const entity = getPermissionEntityMock();
-		const updateData = permissionOutputPayloads.manage;
+		const entry = getPermissionEntityMock();
+		const updateData = permissionOutputPayloads.update;
 
 		mockPermission.query.first.mockResolvedValue(null);
-		mockPermission.repository.save.mockResolvedValue(entity);
+		mockPermission.repository.save.mockResolvedValue(entry);
 
-		const result = await servicePermission.updateData(1, updateData);
+		const result = await servicePermission.updateData(entry, updateData);
 
 		expect(mockPermission.repository.save).toHaveBeenCalledWith(
 			expect.objectContaining({
@@ -74,7 +74,7 @@ describe('PermissionService', () => {
 				operation: 'create',
 			}),
 		);
-		expect(result).toBe(entity);
+		expect(result).toBe(entry);
 	});
 
 	testServiceFindById<PermissionEntity, PermissionQuery>(

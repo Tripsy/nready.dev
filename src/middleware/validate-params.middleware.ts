@@ -4,7 +4,6 @@ import { BadRequestError } from '@/exceptions';
 
 export const validateParamsWhenId = (...args: string[]) => {
 	return (req: Request, res: Response, next: NextFunction) => {
-		const validated: Record<string, number> = {};
 		const errors: Record<string, unknown>[] = [];
 
 		for (const name of args) {
@@ -14,8 +13,6 @@ export const validateParamsWhenId = (...args: string[]) => {
 				errors.push({
 					[name]: lang('shared.validation.invalid_id', { name }),
 				});
-			} else {
-				validated[name] = value;
 			}
 		}
 
@@ -25,19 +22,12 @@ export const validateParamsWhenId = (...args: string[]) => {
 			throw new BadRequestError();
 		}
 
-		// Attach the validated IDs to the response object for later use
-		res.locals.validated = {
-			...(res.locals.validated || {}),
-			...validated,
-		};
-
 		next(); // Proceed to the next middleware or route handler
 	};
 };
 
 export const validateParamsWhenEnum = (data: Record<string, unknown[]>) => {
 	return (req: Request, res: Response, next: NextFunction) => {
-		const validated: Record<string, string> = {};
 		const errors: Record<string, unknown>[] = [];
 
 		for (const [name, allowedValues] of Object.entries(data)) {
@@ -50,8 +40,6 @@ export const validateParamsWhenEnum = (data: Record<string, unknown[]>) => {
 						allowedValues: allowedValues.join(', '),
 					}),
 				});
-			} else {
-				validated[name] = value;
 			}
 		}
 
@@ -60,30 +48,6 @@ export const validateParamsWhenEnum = (data: Record<string, unknown[]>) => {
 
 			throw new BadRequestError();
 		}
-
-		// Attach the validated IDs to the response object for later use
-		res.locals.validated = {
-			...(res.locals.validated || {}),
-			...validated,
-		};
-
-		next(); // Proceed to the next middleware or route handler
-	};
-};
-
-export const validateParamsWhenString = (...args: string[]) => {
-	return (req: Request, res: Response, next: NextFunction) => {
-		const validated: Record<string, string> = {};
-
-		for (const name of args) {
-			validated[name] = req.params[name];
-		}
-
-		// Attach the validated IDs to the response object for later use
-		res.locals.validated = {
-			...(res.locals.validated || {}),
-			...validated,
-		};
 
 		next(); // Proceed to the next middleware or route handler
 	};

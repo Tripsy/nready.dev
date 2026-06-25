@@ -35,6 +35,7 @@ export const userInputPayloads = {
 		operator_type: null, // correct for non-operator
 	},
 	update: {
+		id: 1,
 		name: 'Updated User',
 		email: 'updated.user@example.com',
 		password: 'Secure@123',

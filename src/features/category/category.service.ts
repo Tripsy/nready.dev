@@ -78,12 +78,9 @@ export class CategoryService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateDataWithContent(
-		id: number,
+		entry: CategoryEntity,
 		data: ValidatorOutput<CategoryValidator, 'update'>,
-		withDeleted: boolean,
 	) {
-		const entry = await this.findById(id, withDeleted);
-
 		if (data.parent_id) {
 			if (entry.parent && entry.parent.id === data.parent_id) {
 				throw new CustomError(400, lang('category.error.parent_same'));
@@ -142,11 +139,13 @@ export class CategoryService {
 
 				if (data.parent_id === null) {
 					entry.parent = null;
+
 					flagUpdate = true;
 				} else if (entry.parent.id !== data.parent_id) {
 					entry.parent = {
 						id: data.parent_id,
 					} as CategoryEntity;
+
 					flagUpdate = true;
 				}
 
@@ -171,25 +170,12 @@ export class CategoryService {
 	}
 
 	public async updateStatus(
-		id: number,
+		entry: CategoryEntity,
 		newStatus: CategoryStatus,
-		withDeleted: boolean,
 		forceUpdate?: boolean, // When `true` & newStatus is CategoryStatusEnum.INACTIVE the active descendants will also be marked as inactive
 	): Promise<void> {
 		await dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(CategoryEntity); // We use the manager -> `getCategoryRepository` is not bound to the transaction
-
-			const qCategory = repository
-				.createQueryBuilder()
-				.where('id = :id', {
-					id: id,
-				});
-
-			if (withDeleted) {
-				qCategory.withDeleted();
-			}
-
-			const entry = await qCategory.getOneOrFail();
 
 			assertValidStatusTransition(
 				STATUS_TRANSITIONS,
@@ -301,15 +287,17 @@ export class CategoryService {
 	/**
 	 * @description Used in `read` method from controller; this will return a custom shape
 	 */
-	public async getDataById(
-		id: number,
-		data: ValidatorOutput<CategoryValidator, 'read'>,
-		withDeleted: boolean,
-	) {
+	public async getEntryData(data: {
+		id: number;
+		with_ancestors: boolean;
+		with_children: boolean;
+		language: string | undefined;
+		withDeleted: boolean;
+	}) {
 		const categoryQuery = this.repository
 			.createQuery()
-			.filterById(id)
-			.withDeleted(withDeleted);
+			.filterById(data.id)
+			.withDeleted(data.withDeleted);
 
 		if (data.language) {
 			categoryQuery.joinAndSelect(
@@ -343,7 +331,7 @@ export class CategoryService {
 				const ancestorsWithContentDataQuery = getCategoryRepository()
 					.createQuery()
 					.filterBy('id', orderedIds, 'IN')
-					.withDeleted(withDeleted);
+					.withDeleted(data.withDeleted);
 
 				if (data.language) {
 					ancestorsWithContentDataQuery.joinAndSelect(
@@ -376,7 +364,7 @@ export class CategoryService {
 				const childrenWithContentQuery = getCategoryRepository()
 					.createQuery()
 					.filterBy('parent_id', categoryEntry.id)
-					.withDeleted(withDeleted);
+					.withDeleted(data.withDeleted);
 
 				if (data.language) {
 					childrenWithContentQuery.joinAndSelect(

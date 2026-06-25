@@ -1,6 +1,5 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { placeController } from '@/features/place/place.controller';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof placeController> = {
@@ -34,7 +33,6 @@ const routesModule: FeatureRoutesModule<typeof placeController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 	},
 };

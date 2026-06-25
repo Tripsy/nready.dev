@@ -1,7 +1,6 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { vendorController } from '@/features/vendor/vendor.controller';
 import { VendorStatusEnum } from '@/features/vendor/vendor.entity';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
@@ -38,7 +37,6 @@ const routesModule: FeatureRoutesModule<typeof vendorController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 		statusUpdate: {
 			path: '/:id/status/:status',

@@ -1,7 +1,6 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { discountController } from '@/features/discount/discount.controller';
 import { setupDevelopmentDocumentation } from '@/helpers/api-documentation.helper';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof discountController> = {
@@ -35,7 +34,6 @@ const routesModule: FeatureRoutesModule<typeof discountController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 	},
 };

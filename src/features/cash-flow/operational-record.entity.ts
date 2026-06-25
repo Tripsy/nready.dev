@@ -5,14 +5,12 @@ import {
 	CashFlowCategoryEnum,
 } from '@/features/cash-flow/cash-flow-category.enum';
 import type ClientEntity from '@/features/client/client.entity';
-import type UserEntity from '@/features/user/user.entity';
 import type VendorEntity from '@/features/vendor/vendor.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 
 export const OperationalRecordTypeEnum = {
 	CLIENT: 'client',
 	VENDOR: 'vendor',
-	EMPLOYEE: 'employee',
 } as const;
 
 export type OperationalRecordType =
@@ -31,28 +29,15 @@ const CashFlowCategoryOperationalRecord: CashFlowCategoryOperationalRecordType =
 	{
 		[CashFlowCategoryEnum.CUSTOMER]: {
 			required: [OperationalRecordTypeEnum.CLIENT],
-			optional: [OperationalRecordTypeEnum.EMPLOYEE],
-		},
-		[CashFlowCategoryEnum.EMPLOYEE_SALARY]: {
-			required: [OperationalRecordTypeEnum.EMPLOYEE],
-		},
-		[CashFlowCategoryEnum.EMPLOYEE_EXPENSE_ADVANCE]: {
-			required: [OperationalRecordTypeEnum.EMPLOYEE],
-		},
-		[CashFlowCategoryEnum.EMPLOYEE_TRAVEL_ALLOWANCE]: {
-			required: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
 		[CashFlowCategoryEnum.VENDOR]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
-			optional: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
 		[CashFlowCategoryEnum.INSURANCE]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
-			optional: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
 		[CashFlowCategoryEnum.TAXES]: {
 			required: [OperationalRecordTypeEnum.VENDOR],
-			optional: [OperationalRecordTypeEnum.EMPLOYEE],
 		},
 	};
 
@@ -110,5 +95,4 @@ export default class OperationalRecordEntity extends EntityAbstract {
 export type OperationalRecordWithRelations = OperationalRecordEntity & {
 	[OperationalRecordTypeEnum.CLIENT]?: ClientEntity | null;
 	[OperationalRecordTypeEnum.VENDOR]?: VendorEntity | null;
-	[OperationalRecordTypeEnum.EMPLOYEE]?: UserEntity | null;
 };

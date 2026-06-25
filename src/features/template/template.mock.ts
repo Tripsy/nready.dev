@@ -1,4 +1,3 @@
-import type { z } from 'zod';
 import type TemplateEntity from '@/features/template/template.entity';
 import { TemplateTypeEnum } from '@/features/template/template.entity';
 import {
@@ -7,12 +6,6 @@ import {
 } from '@/features/template/template.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-
-type CreateInput = z.input<typeof templateValidator.create>;
-type CreateEmailInput = Extract<
-	CreateInput,
-	{ type: typeof TemplateTypeEnum.EMAIL }
->;
 
 export function getTemplateEntityMock(): TemplateEntity {
 	return {
@@ -41,8 +34,9 @@ export const templateInputPayloads = {
 			text: 'Hello',
 			html: '<p>Hello {{ name }}</p>',
 		},
-	} as CreateEmailInput,
+	},
 	update: {
+		id: 1,
 		label: 'email-welcome',
 		language: 'en',
 		type: TemplateTypeEnum.EMAIL,
@@ -51,7 +45,7 @@ export const templateInputPayloads = {
 			text: 'Hello',
 			html: '<p>Hello {{ name }}</p>',
 		},
-	} as CreateEmailInput,
+	},
 	find: {
 		page: 1,
 		limit: 10,

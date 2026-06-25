@@ -1,7 +1,6 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { cashFlowController } from '@/features/cash-flow/cash-flow.controller';
 import { CashFlowStatusEnum } from '@/features/cash-flow/cash-flow.entity';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
@@ -33,7 +32,6 @@ const routesModule: FeatureRoutesModule<typeof cashFlowController> = {
 		find: {
 			path: '',
 			method: 'get',
-			handlers: [parseFilterMiddleware],
 		},
 		statusUpdate: {
 			path: '/:id/status/:status',

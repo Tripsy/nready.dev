@@ -7,6 +7,7 @@ import {
 	type CarrierValidator,
 	paramsUpdateList,
 } from '@/features/carrier/carrier.validator';
+import { pickValuesFromObject } from '@/helpers';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class CarrierService {
@@ -18,7 +19,7 @@ export class CarrierService {
 	public async create(
 		data: ValidatorOutput<CarrierValidator, 'create'>,
 	): Promise<CarrierEntity> {
-		const existingCarrier = await this.findByName(data.name, true);
+		const existingCarrier = await this.findByName(data.name);
 
 		if (existingCarrier) {
 			throw new CustomError(409, lang('carrier.error.name_already_used'));
@@ -48,18 +49,11 @@ export class CarrierService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateData(
-		id: number,
+		entry: CarrierEntity,
 		data: ValidatorOutput<CarrierValidator, 'update'>,
-		withDeleted: boolean = true,
 	) {
-		const entry = await this.findById(id, withDeleted); // Returns 404 inside if entry is not found
-
 		if (data.name) {
-			const existingCarrier = await this.findByName(
-				data.name,
-				withDeleted,
-				id,
-			);
+			const existingCarrier = await this.findByName(data.name, entry.id);
 
 			if (existingCarrier) {
 				throw new CustomError(
@@ -69,14 +63,7 @@ export class CarrierService {
 			}
 		}
 
-		Object.assign(
-			entry,
-			Object.fromEntries(
-				paramsUpdateList
-					.filter((key) => key in data)
-					.map((key) => [key, data[key as keyof typeof data]]),
-			),
-		);
+		Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
 		return this.update(entry);
 	}
@@ -97,14 +84,11 @@ export class CarrierService {
 			.firstOrFail();
 	}
 
-	public findByName(name: string, withDeleted: boolean, excludeId?: number) {
-		const q = this.repository
-			.createQuery()
-			.filterBy('name', name)
-			.withDeleted(withDeleted);
+	public findByName(name: string, withoutId?: number) {
+		const q = this.repository.createQuery().filterBy('name', name);
 
-		if (excludeId) {
-			q.filterBy('id', excludeId, '!=');
+		if (withoutId) {
+			q.filterBy('id', withoutId, '!=');
 		}
 
 		return q.first();

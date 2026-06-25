@@ -3,7 +3,7 @@ import path from 'node:path';
 import { type RequestHandler, Router } from 'express';
 import { apiRateLimiter } from '@/config/rate-limit.config';
 import { Configuration } from '@/config/settings.config';
-import { buildSrcPath } from '@/helpers';
+import { buildSrcPath, getErrorMessage } from '@/helpers';
 import { getSystemLogger } from '@/providers/logger.provider';
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
@@ -39,6 +39,7 @@ function getRoutesFilePath(feature: string) {
 }
 
 function buildRoutes<C>({
+	basePath,
 	controller,
 	routes,
 }: {
@@ -50,7 +51,7 @@ function buildRoutes<C>({
 
 	for (const action in routes) {
 		const config = routes[action];
-		const { path, method, handlers = [] } = config;
+		const { path: routePath, method, handlers = [] } = config;
 
 		const middleware = [...handlers];
 
@@ -62,8 +63,10 @@ function buildRoutes<C>({
 			middleware.push(apiRateLimiter);
 		}
 
+		const fullPath = `${basePath}${routePath}`;
+
 		router[method](
-			path,
+			fullPath,
 			...middleware,
 			controller[action] as RequestHandler,
 		);
@@ -156,14 +159,19 @@ async function loadRoutes(
 			return;
 		}
 
-		router.use(def.basePath, buildRoutes(def));
+		router.use(buildRoutes(def));
 
 		if (Configuration.isEnvironment('development')) {
 			pushRouteInfo(feature, def);
 		}
 	} catch (error) {
 		getSystemLogger().error(
-			{ err: error, feature, path: getRoutesFilePath(feature) },
+			{
+				err: error,
+				msg: getErrorMessage(error),
+				feature,
+				path: getRoutesFilePath(feature),
+			},
 			`Failed to load routes for feature "${feature}"`,
 		);
 	}

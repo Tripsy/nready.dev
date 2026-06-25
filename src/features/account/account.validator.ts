@@ -1,39 +1,30 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
-const validatorMessages = {
-	invalid_name: lang('account.validation.invalid_name'),
-	name_min: lang('account.validation.name_min', {
-		min: Configuration.get('user.nameMinChars') as string,
-	}),
-	invalid_email: lang('account.validation.invalid_email'),
-	invalid_password: lang('account.validation.invalid_password'),
-	password_min: lang('account.validation.password_min', {
-		min: Configuration.get('user.passwordMinChars') as string,
-	}),
-	password_condition_capital_letter: lang(
-		'account.validation.password_condition_capital_letter',
-	),
-	password_condition_number: lang(
-		'account.validation.password_condition_number',
-	),
-	password_condition_special_character: lang(
-		'account.validation.password_condition_special_character',
-	),
-	password_confirm_required: lang(
-		'account.validation.password_confirm_required',
-	),
-	password_confirm_mismatch: lang(
-		'account.validation.password_confirm_mismatch',
-	),
-	invalid_language: lang('account.validation.invalid_language'),
-	invalid_password_current: lang(
-		'account.validation.invalid_password_current',
-	),
-	invalid_ident: lang('account.validation.invalid_ident'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_name',
+	'name_min',
+	'invalid_email',
+	'invalid_password',
+	'password_min',
+	'password_condition_capital_letter',
+	'password_condition_number',
+	'password_condition_special_character',
+	'password_confirm_mismatch',
+	'password_confirm_required',
+	'invalid_role',
+	'invalid_operator_type',
+	'operator_type_required',
+	'operator_type_only_for_operator',
+	'invalid_ident',
+	'invalid_token',
+	'invalid_password_current',
+] as const;
 
 export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 	readonly register = z
@@ -101,6 +92,9 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 
 	readonly passwordRecoverChange = z
 		.object({
+			ident: z.uuid({
+				message: this.getMessage('invalid_ident'),
+			}),
 			password: this.validatePassword(
 				{
 					invalid_password: this.getMessage('invalid_password'),
@@ -176,6 +170,10 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 			}
 		});
 
+	readonly emailConfirm = z.object({
+		token: this.validateString(this.getMessage('invalid_token')),
+	});
+
 	readonly emailConfirmSend = z.object({
 		email: this.validateEmail(this.getMessage('invalid_email')),
 	});
@@ -213,4 +211,4 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 	});
 }
 
-export const accountValidator = new AccountValidator(validatorMessages);
+export const accountValidator = new AccountValidator('account');

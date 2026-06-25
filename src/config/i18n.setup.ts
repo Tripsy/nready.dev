@@ -50,9 +50,7 @@ export async function initializeI18next() {
 		.use(LanguageDetector)
 		.init({
 			fallbackLng: 'en',
-			supportedLngs: Configuration.get(
-				'language.supported',
-			) as string[], // List of supported languages
+			supportedLngs: Configuration.get('language.supported') as string[], // List of supported languages
 			interpolation: {
 				escapeValue: false, // Disable escaping for HTML (if needed)
 			},

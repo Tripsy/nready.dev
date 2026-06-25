@@ -4,7 +4,6 @@ import {
 } from '@/config/rate-limit.config';
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { accountController } from '@/features/account/account.controller';
-import { validateParamsWhenString } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof accountController> = {
 	basePath: '/account',
@@ -36,7 +35,6 @@ const routesModule: FeatureRoutesModule<typeof accountController> = {
 		passwordRecoverChange: {
 			path: '/password-recover-change/:ident',
 			method: 'post',
-			handlers: [validateParamsWhenString('ident')],
 		},
 		passwordUpdate: {
 			path: '/password-update',
@@ -45,7 +43,6 @@ const routesModule: FeatureRoutesModule<typeof accountController> = {
 		emailConfirm: {
 			path: '/email-confirm/:token',
 			method: 'post',
-			handlers: [validateParamsWhenString('token')],
 		},
 		emailConfirmSend: {
 			path: '/email-confirm-send',

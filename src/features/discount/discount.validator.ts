@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import {
 	DiscountReasonEnum,
@@ -9,7 +8,10 @@ import {
 } from '@/features/discount/discount.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = [
 	'label',
@@ -33,34 +35,20 @@ export const OrderByEnum = {
 	UPDATED_AT: 'updated_at',
 } as const;
 
-const validatorMessages = {
-	invalid_label: lang('discount.validation.invalid_label'),
-	invalid_scope: lang('discount.validation.invalid_scope'),
-	invalid_reason: lang('discount.validation.invalid_reason'),
-	invalid_reference: lang('discount.validation.invalid_reference'),
-	invalid_type: lang('discount.validation.invalid_type'),
-	invalid_rules: lang('discount.validation.invalid_rules'),
-	invalid_value: lang('discount.validation.invalid_value'),
-	invalid_start_at: lang('discount.validation.invalid_start_at'),
-	invalid_end_at: lang('discount.validation.invalid_end_at'),
-	end_at_must_be_after_start_at: lang(
-		'discount.validation.end_at_must_be_after_start_at',
-	),
-	percent_must_be_between_0_and_100: lang(
-		'discount.validation.percent_must_be_between_0_and_100',
-	),
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_notes: lang('shared.validation.invalid_notes'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-	invalid_status: lang('cash-flow.validation.invalid_status'),
-	invalid_date: lang('shared.validation.invalid_date'),
-	invalid_date_format: lang('shared.validation.invalid_date_format'),
-	invalid_past_date: lang('shared.validation.invalid_past_date'),
-	invalid_future_date: lang('shared.validation.invalid_future_date'),
-	invalid_date_range: lang('shared.validation.invalid_date_range'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_label',
+	'invalid_scope',
+	'invalid_reason',
+	'invalid_reference',
+	'invalid_type',
+	'invalid_rules',
+	'invalid_value',
+	'invalid_start_at',
+	'invalid_end_at',
+	'end_at_must_be_after_start_at',
+	'percent_must_be_between_0_and_100',
+] as const;
 
 export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 	rulesSchema: z.ZodType<DiscountRules> = z.record(
@@ -133,8 +121,13 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 			}
 		});
 
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly update = z
 		.object({
+			id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 			label: this.validateString(this.getMessage('invalid_label'), {
 				required: false,
 			}),
@@ -206,6 +199,14 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 			}
 		});
 
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly find = this.validateFind({
 		orderByEnum: OrderByEnum,
 		defaultOrderBy: OrderByEnum.ID,
@@ -216,7 +217,7 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -280,4 +281,4 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 	});
 }
 
-export const discountValidator = new DiscountValidator(validatorMessages);
+export const discountValidator = new DiscountValidator('discount');

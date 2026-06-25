@@ -1,10 +1,12 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { VendorStatusEnum } from '@/features/vendor/vendor.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = ['name'];
 
@@ -13,23 +15,20 @@ export const OrderByEnum = {
 	MODEL: 'model',
 } as const;
 
-const validatorMessages = {
-	invalid_name: lang('vendor.validation.invalid_name'),
-
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_status: lang('shared.validation.invalid_status'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-};
+const validatorMessages = [...sharedValidatorMessages, 'invalid_name'] as const;
 
 export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 	readonly create = z.object({
 		name: this.validateString(this.getMessage('invalid_name')),
 	});
 
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly update = z
 		.object({
+			id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 			name: this.validateString(this.getMessage('invalid_name'), {
 				required: false,
 			}),
@@ -41,6 +40,14 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 			path: ['_global'],
 		});
 
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly find = this.validateFind({
 		orderByEnum: OrderByEnum,
 		defaultOrderBy: OrderByEnum.ID,
@@ -51,7 +58,7 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -70,6 +77,14 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 			).default(false),
 		},
 	});
+
+	readonly statusUpdate = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		status: this.validateEnum(
+			VendorStatusEnum,
+			this.getMessage('invalid_status'),
+		),
+	});
 }
 
-export const vendorValidator = new VendorValidator(validatorMessages);
+export const vendorValidator = new VendorValidator('vendor');

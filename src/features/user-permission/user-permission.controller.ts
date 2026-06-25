@@ -29,10 +29,7 @@ class UserPermissionController extends BaseController {
 
 		const data = this.validate(this.validator.create, req.body, res);
 
-		const results = await this.userPermissionService.create(
-			data,
-			res.locals.validated.user_id,
-		);
+		const results = await this.userPermissionService.create(data);
 
 		res.locals.output.data(results);
 		res.locals.output.message(lang('user-permission.success.update'));
@@ -40,12 +37,14 @@ class UserPermissionController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
+		const data = this.validate(this.validator.delete, req.params, res);
+
 		await this.userPermissionService.delete(
-			res.locals.validated.user_id,
-			res.locals.validated.permission_id,
+			data.user_id,
+			data.permission_id,
 		);
 
 		res.locals.output.message(lang('user-permission.success.delete'));
@@ -53,13 +52,12 @@ class UserPermissionController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.userPermissionService.restore(
-			res.locals.validated.user_id,
-			res.locals.validated.id,
-		);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.userPermissionService.restore(data.id, data.user_id);
 
 		res.locals.output.message(lang('user-permission.success.restore'));
 
@@ -73,17 +71,15 @@ class UserPermissionController extends BaseController {
 			this.validator.find,
 			{
 				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
+				user_id: req.params.user_id,
 			},
 			res,
 		);
 
 		const [entries, total] = await this.userPermissionService.findByFilter(
 			data,
-			res.locals.validated.user_id,
 			this.policy.allowDeleted(res.locals.auth),
+			data.user_id,
 		);
 
 		res.locals.output.data({

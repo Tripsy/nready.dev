@@ -10,8 +10,7 @@
 		"percent_must_be_between_0_and_100": "Percent discount must be between 0 and 100",
 		"invalid_start_at": "Start date is invalid",
 		"invalid_end_at": "End date is invalid",
-		"end_at_must_be_after_start_at": "End date must be after start date",
-		"invalid_notes": "Notes is invalid"
+		"end_at_must_be_after_start_at": "End date must be after start date"
 	},
 	"error": {
 		"not_found": "Discount not found"

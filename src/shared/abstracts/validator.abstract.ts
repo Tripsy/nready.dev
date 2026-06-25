@@ -1,11 +1,35 @@
 import { z } from 'zod';
+import { lang } from '@/config/i18n.setup';
 import {
 	createCurrentDate,
 	dateDiff,
 	isValidDate,
-	replaceVars,
 	stringToDate,
 } from '@/helpers';
+
+export const sharedValidatorMessages = [
+	'invalid_enum',
+	'invalid_string',
+	'invalid_number',
+	'invalid_boolean',
+	'invalid_filter',
+	'string_min',
+	'array_min',
+	'invalid_id',
+	'invalid_ids',
+	'invalid_notes',
+	'invalid_language',
+	'invalid_status',
+	'invalid_date',
+	'invalid_meta_title',
+	'invalid_meta_description',
+	'invalid_meta_keywords',
+	'invalid_date_format',
+	'invalid_past_date',
+	'invalid_future_date',
+	'invalid_date_range',
+	'params_at_least_one',
+] as const;
 
 export abstract class IsValidator {
 	/**
@@ -71,13 +95,13 @@ export abstract class IsValidator {
 type EmptyValue = null | undefined;
 
 export abstract class BaseValidator<
-	TMessage extends Record<string, string>,
+	TMessage extends ReadonlyArray<string>,
 	TEmpty extends EmptyValue = undefined, // null - for FE; undefined - for BE
 > extends IsValidator {
 	private readonly emptyValue: TEmpty;
 
 	constructor(
-		private readonly message: TMessage,
+		private readonly entity: string,
 		options?: { emptyValue?: TEmpty },
 	) {
 		super();
@@ -85,14 +109,17 @@ export abstract class BaseValidator<
 		this.emptyValue = options?.emptyValue ?? (undefined as TEmpty);
 	}
 
-	protected getMessage(key: keyof TMessage, vars?: Record<string, string>) {
-		const message = this.message[key];
+	protected getMessage(
+		key: TMessage[number],
+		replacements?: Record<string, string>,
+	) {
+		const langKey = (
+			sharedValidatorMessages as ReadonlyArray<string>
+		).includes(key)
+			? `shared.validation.${key}`
+			: `${this.entity}.validation.${key}`;
 
-		if (!vars) {
-			return message;
-		}
-
-		return replaceVars(message, vars);
+		return lang(langKey, replacements);
 	}
 
 	/**
@@ -464,6 +491,18 @@ export abstract class BaseValidator<
 	/**
 	 * Validate ID
 	 */
+	// Overload signatures
+	protected validateId(
+		message?: string,
+		optionsData?: { required?: true },
+	): z.ZodType<number>;
+
+	protected validateId(
+		message?: string,
+		optionsData?: { required: false },
+	): z.ZodType<number | TEmpty>;
+
+	// Implementation signature
 	protected validateId(
 		message: string = 'Invalid ID',
 		optionsData?: { required?: boolean },
@@ -919,6 +958,7 @@ export abstract class BaseValidator<
 		TOrderBy extends Record<string, string>,
 		TDirection extends Record<string, string>,
 		TFilter extends z.ZodRawShape,
+		TQuery extends z.ZodRawShape = Record<never, never>,
 	>(
 		options: {
 			orderByEnum: TOrderBy;
@@ -927,7 +967,8 @@ export abstract class BaseValidator<
 			defaultDirection: TDirection[keyof TDirection];
 			defaultLimit: number;
 			defaultPage: number;
-			filterShape: TFilter;
+			filterSchema: TFilter;
+			querySchema?: TQuery;
 		},
 		messageData?: {
 			invalid_limit: string;
@@ -941,7 +982,8 @@ export abstract class BaseValidator<
 			defaultDirection,
 			defaultLimit,
 			defaultPage,
-			filterShape,
+			filterSchema,
+			querySchema = {} as TQuery,
 		} = options;
 
 		const message = this.buildMessage(
@@ -973,7 +1015,11 @@ export abstract class BaseValidator<
 				.default(defaultPage),
 
 			// Note: Do not add `optional()` types will break in *.service.ts files
-			filter: z.object(filterShape).partial(),
+			filter: z.preprocess(
+				(val) => val ?? {},
+				z.object(filterSchema).partial(),
+			),
+			...querySchema,
 		});
 	}
 

@@ -1,10 +1,16 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import type BrandEntity from '@/features/brand/brand.entity';
 import {
 	EntityAbstract,
 	type PageMeta,
 } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
-import type BrandEntity from './brand.entity';
+
+export type BrandContentType = {
+	language: string;
+	description?: string;
+	meta: PageMeta;
+};
 
 const ENTITY_TABLE_NAME = 'brand_content';
 

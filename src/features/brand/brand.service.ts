@@ -3,7 +3,8 @@ import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import BrandEntity, {
-	type BrandStatus, BrandStatusEnum,
+	type BrandStatus,
+	BrandStatusEnum,
 	type BrandType,
 	STATUS_TRANSITIONS,
 } from '@/features/brand/brand.entity';
@@ -13,6 +14,7 @@ import {
 	paramsUpdateList,
 } from '@/features/brand/brand.validator';
 import BrandContentRepository from '@/features/brand/brand-content.repository';
+import { pickValuesFromObject } from '@/helpers';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
@@ -25,11 +27,7 @@ export class BrandService {
 	public async create(
 		data: ValidatorOutput<BrandValidator, 'create'>,
 	): Promise<BrandEntity> {
-		const existing = await this.findBySlug(
-			data.slug,
-			data.brand_type,
-			true,
-		);
+		const existing = await this.findBySlug(data.slug, data.brand_type);
 
 		if (existing) {
 			throw new CustomError(409, lang('brand.error.already_exist'));
@@ -66,19 +64,14 @@ export class BrandService {
 	}
 
 	public async updateDataWithContent(
-		id: number,
+		entry: BrandEntity,
 		data: ValidatorOutput<BrandValidator, 'update'>,
-		withDeleted: boolean,
 	) {
-		const entry = await this.findById(id, withDeleted);
-
 		if (data.slug || data.brand_type) {
 			const existing = await this.findBySlug(
 				data.slug || entry.slug,
 				data.brand_type || entry.brand_type,
-				true,
-				undefined,
-				id,
+				entry.id,
 			);
 
 			if (existing) {
@@ -89,14 +82,7 @@ export class BrandService {
 		return dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(BrandEntity);
 
-			Object.assign(
-				entry,
-				Object.fromEntries(
-					paramsUpdateList
-						.filter((key) => key in data)
-						.map((key) => [key, data[key as keyof typeof data]]),
-				),
-			);
+			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
 			const updatedEntity = await repository.save(entry);
 
@@ -104,7 +90,7 @@ export class BrandService {
 				await BrandContentRepository.saveContent(
 					manager,
 					data.contents,
-					id,
+					entry.id,
 				);
 			}
 
@@ -113,12 +99,9 @@ export class BrandService {
 	}
 
 	public async updateStatus(
-		id: number,
+		entry: BrandEntity,
 		newStatus: BrandStatus,
-		withDeleted: boolean,
 	): Promise<void> {
-		const entry = await this.findById(id, withDeleted);
-
 		assertValidStatusTransition(
 			STATUS_TRANSITIONS,
 			entry.status,
@@ -134,14 +117,12 @@ export class BrandService {
 	public async updateOrder(
 		brand_type: BrandType,
 		ids: number[], // Array of IDs in the desired order
-		withDeleted: boolean,
 	): Promise<void> {
 		// We make sure all the available IDs are present in the sorting (eg: ids)
 		const count = await this.repository
 			.createQuery()
 			.filterBy('brand_type', brand_type)
 			.filterBy('status', BrandStatusEnum.ACTIVE)
-			.withDeleted(withDeleted)
 			.count();
 
 		if (count !== ids.length) {
@@ -181,25 +162,14 @@ export class BrandService {
 			.firstOrFail();
 	}
 
-	public findBySlug(
-		slug: string,
-		brand_type: BrandType,
-		withDeleted: boolean,
-		fields?: string[],
-		excludeId?: number,
-	) {
+	public findBySlug(slug: string, brand_type: BrandType, withoutId?: number) {
 		const q = this.repository
 			.createQuery()
 			.filterBy('slug', slug)
-			.filterBy('brand_type', brand_type)
-			.withDeleted(withDeleted);
+			.filterBy('brand_type', brand_type);
 
-		if (excludeId) {
-			q.filterBy('id', excludeId, '!=');
-		}
-
-		if (fields) {
-			q.select(fields);
+		if (withoutId) {
+			q.filterBy('id', withoutId, '!=');
 		}
 
 		return q.first();
@@ -208,11 +178,11 @@ export class BrandService {
 	/**
 	 * @description Used in `read` method from controller; this will return a custom shape
 	 */
-	public async getDataById(
-		id: number,
-		data: ValidatorOutput<BrandValidator, 'read'>,
-		withDeleted: boolean,
-	) {
+	public async getEntryData(data: {
+		id: number;
+		language?: string;
+		withDeleted: boolean;
+	}) {
 		const query = this.repository
 			.createQuery()
 			.select([
@@ -229,8 +199,8 @@ export class BrandService {
 				'content.description',
 				'content.meta',
 			])
-			.filterById(id)
-			.withDeleted(withDeleted);
+			.filterById(data.id)
+			.withDeleted(data.withDeleted);
 
 		if (data.language) {
 			query.joinAndSelect(
@@ -274,6 +244,7 @@ export class BrandService {
 				'brand.created_at',
 				'brand.updated_at',
 				'brand.deleted_at',
+				'brand.sort_order',
 
 				'content.language',
 				'content.description',

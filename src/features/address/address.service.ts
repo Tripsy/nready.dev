@@ -7,12 +7,13 @@ import {
 	type AddressValidator,
 	paramsUpdateList,
 } from '@/features/address/address.validator';
+import { PlaceTypeEnum } from '@/features/place/place.entity';
 import {
 	type PlaceService,
 	placeService,
 } from '@/features/place/place.service';
+import { pickValuesFromObject } from '@/helpers';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
-import { PlaceTypeEnum } from '@/shared/types/place.type';
 
 export class AddressService {
 	constructor(
@@ -66,24 +67,14 @@ export class AddressService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateData(
-		id: number,
+		entry: AddressEntity,
 		data: ValidatorOutput<AddressValidator, 'update'>,
-		withDeleted: boolean,
 	) {
-		const entry = await this.findById(id, withDeleted); // Returns 404 inside if entry is not found
-
 		if (data.city_id) {
 			await this.checkCityId(data.city_id);
 		}
 
-		Object.assign(
-			entry,
-			Object.fromEntries(
-				paramsUpdateList
-					.filter((key) => key in data)
-					.map((key) => [key, data[key as keyof typeof data]]),
-			),
-		);
+		Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
 		return this.update(entry);
 	}
@@ -107,27 +98,24 @@ export class AddressService {
 	/**
 	 * @description Used in `read` method from controller; this will return a custom shape
 	 */
-	public async getDataById(
-		id: number,
-		data: ValidatorOutput<AddressValidator, 'read'>,
-		withDeleted: boolean,
-	) {
-		const entry = await this.repository
+	public async getEntryData(data: {
+		id: number;
+		language: string;
+		withDeleted: boolean;
+	}) {
+		return await this.repository
 			.createQuery()
-			.filterById(id)
-			.withDeleted(withDeleted)
+			.joinAndSelect('address.city', 'address_city', 'LEFT')
+			.joinAndSelect(
+				'address_city.contents',
+				'content',
+				'INNER',
+				'content.language = :language',
+				{ language: data.language },
+			)
+			.filterById(data.id)
+			.withDeleted(data.withDeleted)
 			.firstOrFail();
-
-		const address_city = await this.placeService.getDataById(
-			entry.city_id,
-			data,
-			withDeleted,
-		);
-
-		return {
-			...entry,
-			address_city: address_city,
-		};
 	}
 
 	public findByFilter(

@@ -3,7 +3,6 @@
 		"invalid_name": "Invalid name",
 		"invalid_slug": "Invalid slug",
 		"invalid_brand_type": "Invalid type",
-		"invalid_status": "Invalid status",
 		"invalid_description": "Invalid description",
 		"invalid_ids_provided": "Invalid ids provided for ordering"
 	},

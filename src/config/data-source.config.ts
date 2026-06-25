@@ -2,13 +2,6 @@ import 'dotenv/config';
 import { DataSource } from 'typeorm';
 import { buildSrcPath } from '@/helpers';
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename);
-//
-// function buildSrcPath(...segments: string[]): string {
-// 	return join(__dirname, '..', ...segments);
-// }
-
 const filesExtension = process.env.APP_ENV === 'production' ? 'js' : 'ts';
 
 const dataSource = new DataSource({

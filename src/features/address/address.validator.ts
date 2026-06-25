@@ -1,9 +1,11 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = ['details', 'postal_code'];
 
@@ -11,24 +13,14 @@ export const OrderByEnum = {
 	ID: 'id',
 } as const;
 
-const validatorMessages = {
-	invalid_city_id: lang('address.validation.invalid_city_id'),
-	invalid_details: lang('address.validation.invalid_details'),
-	invalid_postal_code: lang('address.validation.invalid_postal_code'),
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_language: lang('shared.validation.invalid_language'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_city_id',
+	'invalid_details',
+	'invalid_postal_code',
+] as const;
 
 export class AddressValidator extends BaseValidator<typeof validatorMessages> {
-	readonly read = z.object({
-		language: this.validateLanguage(this.getMessage('invalid_language'), {
-			required: false,
-		}).default(Configuration.language()),
-	});
-
 	readonly create = z.object({
 		city_id: this.validateId(this.getMessage('invalid_city_id'), {
 			required: false,
@@ -40,8 +32,16 @@ export class AddressValidator extends BaseValidator<typeof validatorMessages> {
 		),
 	});
 
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}).default(Configuration.language()),
+	});
+
 	readonly update = z
 		.object({
+			id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 			city_id: this.validateId(this.getMessage('invalid_city_id'), {
 				required: false,
 			}),
@@ -60,6 +60,14 @@ export class AddressValidator extends BaseValidator<typeof validatorMessages> {
 			path: ['_global'],
 		});
 
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly find = this.validateFind({
 		orderByEnum: OrderByEnum,
 		defaultOrderBy: OrderByEnum.ID,
@@ -70,7 +78,7 @@ export class AddressValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -90,4 +98,4 @@ export class AddressValidator extends BaseValidator<typeof validatorMessages> {
 	});
 }
 
-export const addressValidator = new AddressValidator(validatorMessages);
+export const addressValidator = new AddressValidator('address');

@@ -1,6 +1,5 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { userPermissionController } from '@/features/user-permission/user-permission.controller';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
 const routesModule: FeatureRoutesModule<typeof userPermissionController> = {
@@ -25,7 +24,7 @@ const routesModule: FeatureRoutesModule<typeof userPermissionController> = {
 		find: {
 			path: '/:user_id/permissions',
 			method: 'get',
-			handlers: [validateParamsWhenId('user_id'), parseFilterMiddleware],
+			handlers: [validateParamsWhenId('user_id')],
 		},
 	},
 };

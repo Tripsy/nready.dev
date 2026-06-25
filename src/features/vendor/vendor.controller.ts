@@ -40,20 +40,22 @@ class VendorController extends BaseController {
 		res.status(201).json(res.locals.output);
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			VendorEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.vendorService.getDataById(
-				res.locals.validated.id,
-				this.policy.allowDeleted(res.locals.auth),
-			),
+			this.vendorService.getEntryData({
+				id: data.id,
+				withDeleted: this.policy.allowDeleted(res.locals.auth),
+			}),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -65,13 +67,18 @@ class VendorController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
-
-		const entry = await this.vendorService.updateData(
-			res.locals.validated.id,
-			data,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
 		);
+
+		const existingEntry = await this.vendorService.findById(data.id, false);
+
+		const entry = await this.vendorService.updateData(existingEntry, data);
 
 		res.locals.output.message(lang('vendor.success.update'));
 		res.locals.output.data(entry);
@@ -79,20 +86,24 @@ class VendorController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.vendorService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete, req.params, res);
+
+		await this.vendorService.delete(data.id);
 
 		res.locals.output.message(lang('vendor.success.delete'));
 
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.vendorService.restore(res.locals.validated.id);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.vendorService.restore(data.id);
 
 		res.locals.output.message(lang('vendor.success.restore'));
 
@@ -102,16 +113,7 @@ class VendorController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] = await this.vendorService.findByFilter(
 			data,
@@ -131,14 +133,18 @@ class VendorController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public statusUpdate = asyncHandler(async (_req: Request, res: Response) => {
+	public statusUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		await this.vendorService.updateStatus(
-			res.locals.validated.id,
-			res.locals.validated.status,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.statusUpdate,
+			req.params,
+			res,
 		);
+
+		const existingEntry = await this.vendorService.findById(data.id, false);
+
+		await this.vendorService.updateStatus(existingEntry, data.status);
 
 		res.locals.output.message(lang('vendor.success.status_update'));
 

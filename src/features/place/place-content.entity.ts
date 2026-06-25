@@ -1,7 +1,13 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import type PlaceEntity from '@/features/place/place.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
-import type PlaceEntity from './place.entity';
+
+export type PlaceContentType = {
+	language: string;
+	name: string;
+	type_label: string;
+};
 
 const ENTITY_TABLE_NAME = 'place_content';
 

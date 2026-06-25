@@ -25,6 +25,7 @@ export const addressInputPayloads = {
 		postal_code: '636231',
 	},
 	update: {
+		id: 1,
 		city_id: 1,
 		details: 'Str Florio nr 4',
 		postal_code: '636231',

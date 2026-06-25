@@ -43,21 +43,28 @@ class AddressController extends BaseController {
 	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
 
-		const data = this.validate(this.validator.read, req.query, res);
+		const data = this.validate(
+			this.validator.read,
+			{
+				...req.query,
+				id: req.params.id,
+			},
+			res,
+		);
 
 		const cacheKey = this.cache.buildKey(
 			AddressEntity.NAME,
-			res.locals.validated.id,
-			data.language ?? '',
+			data.id.toString(),
+			data.language,
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.addressService.getDataById(
-				res.locals.validated.id,
-				data,
-				this.policy.allowDeleted(res.locals.auth),
-			),
+			this.addressService.getEntryData({
+				id: data.id,
+				language: data.language ?? res.locals.language,
+				withDeleted: this.policy.allowDeleted(res.locals.auth),
+			}),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -69,13 +76,21 @@ class AddressController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
-
-		const entry = await this.addressService.updateData(
-			res.locals.validated.id,
-			data,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
 		);
+
+		const existingEntry = await this.addressService.findById(
+			data.id,
+			false,
+		);
+
+		const entry = await this.addressService.updateData(existingEntry, data);
 
 		res.locals.output.message(lang('address.success.update'));
 		res.locals.output.data(entry);
@@ -83,20 +98,24 @@ class AddressController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.addressService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete, req.params, res);
+
+		await this.addressService.delete(data.id);
 
 		res.locals.output.message(lang('address.success.delete'));
 
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.addressService.restore(res.locals.validated.id);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.addressService.restore(data.id);
 
 		res.locals.output.message(lang('address.success.restore'));
 
@@ -106,16 +125,7 @@ class AddressController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		if (!data.filter.language) {
 			data.filter.language = res.locals.language;

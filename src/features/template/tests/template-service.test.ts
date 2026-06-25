@@ -72,7 +72,6 @@ describe('TemplateService', () => {
 			'email-welcome',
 			'en',
 			entity.type,
-			false,
 		);
 
 		expect(mockTemplate.query.filterBy).toHaveBeenCalledWith(

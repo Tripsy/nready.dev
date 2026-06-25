@@ -91,6 +91,7 @@ export const cashFlowInputPayloads = {
 		},
 	},
 	update: {
+		id: 1,
 		direction: CashFlowDirectionEnum.IN,
 		category_type: CashFlowCategoryTypeEnum.REVENUE,
 		category: CashFlowCategoryEnum.CUSTOMER,

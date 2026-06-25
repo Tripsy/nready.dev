@@ -74,7 +74,7 @@ describe('BrandService', () => {
 
 		const { transaction, manager } = setupTransactionMock();
 
-		await serviceBrand.updateOrder(BrandTypeEnum.PRODUCT, [1, 2], true);
+		await serviceBrand.updateOrder(BrandTypeEnum.PRODUCT, [1, 2]);
 
 		expect(transaction).toHaveBeenCalled();
 		expect(manager.query).toHaveBeenCalled();
@@ -90,7 +90,6 @@ describe('BrandService', () => {
 		const result = await serviceBrand.findBySlug(
 			entity.slug,
 			entity.brand_type,
-			true,
 		);
 
 		expect(mockBrand.query.first).toHaveBeenCalled();

@@ -1,8 +1,10 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -10,20 +12,36 @@ export const OrderByEnum = {
 	OPERATION: 'operation',
 } as const;
 
-const validatorMessages = {
-	invalid_entity: lang('permission.validation.invalid_entity'),
-	invalid_operation: lang('permission.validation.invalid_operation'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_entity',
+	'invalid_operation',
+] as const;
 
 export class PermissionValidator extends BaseValidator<
 	typeof validatorMessages
 > {
-	readonly manage = z.object({
+	readonly create = z.object({
 		entity: this.validateString(this.getMessage('invalid_entity')),
 		operation: this.validateString(this.getMessage('invalid_operation')),
+	});
+
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly update = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		entity: this.validateString(this.getMessage('invalid_entity')),
+		operation: this.validateString(this.getMessage('invalid_operation')),
+	});
+
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 	});
 
 	readonly find = this.validateFind({
@@ -36,7 +54,7 @@ export class PermissionValidator extends BaseValidator<
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -52,4 +70,4 @@ export class PermissionValidator extends BaseValidator<
 	});
 }
 
-export const permissionValidator = new PermissionValidator(validatorMessages);
+export const permissionValidator = new PermissionValidator('permission');

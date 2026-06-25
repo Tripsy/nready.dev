@@ -32,6 +32,7 @@ export const placeInputPayloads = {
 		],
 	},
 	update: {
+		id: 1,
 		place_type: PlaceTypeEnum.COUNTRY,
 		code: 'RO',
 		parent_id: undefined,
