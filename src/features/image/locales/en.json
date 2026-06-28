@@ -16,7 +16,7 @@
 		"invalid_ids_provided": "Invalid ids provided for ordering"
 	},
 	"error": {
-		"not_found": "Image not found",
+		"not_found": "Image not found"
 	},
 	"success": {
 		"create": "Image created successfully",
