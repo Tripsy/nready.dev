@@ -155,5 +155,3 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	});
 }
-
-export const placeValidator = new PlaceValidator('place');

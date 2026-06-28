@@ -104,5 +104,3 @@ export class MailQueueValidator extends BaseValidator<
 		}
 	});
 }
-
-export const mailQueueValidator = new MailQueueValidator('mail-queue');

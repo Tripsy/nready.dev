@@ -5,7 +5,7 @@ import {
 	getCarrierEntityMock,
 } from '@/features/carrier/carrier.mock';
 import { carrierPolicy } from '@/features/carrier/carrier.policy';
-import carrierRoutes from '@/features/carrier/carrier.routes';
+import CarrierRoutes from '@/features/carrier/carrier.routes';
 import { carrierService } from '@/features/carrier/carrier.service';
 import type { CarrierValidator } from '@/features/carrier/carrier.validator';
 import {
@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 const controller = 'CarrierController';
-const basePath = carrierRoutes.basePath;
+const basePath = (await CarrierRoutes()).basePath;
 
 testControllerCreate<CarrierEntity, CarrierValidator>({
 	controller: controller,

@@ -9,10 +9,7 @@ import {
 	type CarrierService,
 	carrierService,
 } from '@/features/carrier/carrier.service';
-import {
-	type CarrierValidator,
-	carrierValidator,
-} from '@/features/carrier/carrier.validator';
+import { CarrierValidator } from '@/features/carrier/carrier.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -139,7 +136,7 @@ class CarrierController extends BaseController {
 
 export const carrierController = new CarrierController(
 	carrierPolicy,
-	carrierValidator,
+	new CarrierValidator('carrier'),
 	cacheProvider,
 	carrierService,
 );

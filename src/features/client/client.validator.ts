@@ -265,5 +265,3 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 		),
 	});
 }
-
-export const clientValidator = new ClientValidator('client');

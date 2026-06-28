@@ -42,7 +42,7 @@ afterAll(async () => {
 });
 
 const controller = 'AccountController';
-const basePath = accountRoutes.basePath;
+const basePath = (await accountRoutes()).basePath;
 
 describe(`${controller} - register`, () => {
 	const link = `${basePath}/register`;

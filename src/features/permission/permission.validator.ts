@@ -69,5 +69,3 @@ export class PermissionValidator extends BaseValidator<
 		},
 	});
 }
-
-export const permissionValidator = new PermissionValidator('permission');

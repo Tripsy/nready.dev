@@ -11,10 +11,7 @@ import {
 	type CashFlowService,
 	cashFlowService,
 } from '@/features/cash-flow/cash-flow.service';
-import {
-	type CashFlowValidator,
-	cashFlowValidator,
-} from '@/features/cash-flow/cash-flow.validator';
+import { CashFlowValidator } from '@/features/cash-flow/cash-flow.validator';
 import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.enum';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
@@ -199,7 +196,7 @@ class CashFlowController extends BaseController {
 
 export const cashFlowController = new CashFlowController(
 	cashFlowPolicy,
-	cashFlowValidator,
+	new CashFlowValidator('cash-flow'),
 	cacheProvider,
 	cashFlowService,
 );

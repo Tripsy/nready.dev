@@ -110,5 +110,3 @@ export class CarrierValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	});
 }
-
-export const carrierValidator = new CarrierValidator('carrier');

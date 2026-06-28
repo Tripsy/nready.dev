@@ -155,5 +155,3 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 	});
 }
-
-export const brandValidator = new BrandValidator('brand');

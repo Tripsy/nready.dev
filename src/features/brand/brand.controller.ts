@@ -6,10 +6,7 @@ import {
 	type BrandService,
 	brandService,
 } from '@/features/brand/brand.service';
-import {
-	type BrandValidator,
-	brandValidator,
-} from '@/features/brand/brand.validator';
+import { BrandValidator } from '@/features/brand/brand.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -188,7 +185,7 @@ class BrandController extends BaseController {
 
 export const brandController = new BrandController(
 	brandPolicy,
-	brandValidator,
+	new BrandValidator('brand'),
 	cacheProvider,
 	brandService,
 );

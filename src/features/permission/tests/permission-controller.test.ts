@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 const controller = 'PermissionController';
-const basePath = permissionRoutes.basePath;
+const basePath = (await permissionRoutes()).basePath;
 
 describe(`${controller} - create`, () => {
 	const route = basePath;

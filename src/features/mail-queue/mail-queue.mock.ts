@@ -1,7 +1,7 @@
 import type MailQueueEntity from '@/features/mail-queue/mail-queue.entity';
 import { MailQueueStatusEnum } from '@/features/mail-queue/mail-queue.entity';
 import {
-	mailQueueValidator,
+	MailQueueValidator,
 	OrderByEnum,
 } from '@/features/mail-queue/mail-queue.validator';
 import { createPastDate, formatDate } from '@/helpers';
@@ -52,5 +52,7 @@ export const mailQueueInputPayloads = {
 };
 
 export const mailQueueOutputPayloads = {
-	find: mailQueueValidator.find.parse(mailQueueInputPayloads.find),
+	find: new MailQueueValidator('mail-queue').find.parse(
+		mailQueueInputPayloads.find,
+	),
 };

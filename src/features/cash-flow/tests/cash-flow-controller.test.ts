@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 const controller = 'CashFlowController';
-const basePath = cashFlowRoutes.basePath;
+const basePath = (await cashFlowRoutes()).basePath;
 
 testControllerCreate<CashFlowEntity, CashFlowValidator>({
 	controller: controller,

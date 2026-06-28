@@ -269,5 +269,3 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 	});
 }
-
-export const cashFlowValidator = new CashFlowValidator('cash-flow');

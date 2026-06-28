@@ -5,11 +5,13 @@ import {
 	DiscountTypeEnum,
 } from '@/features/discount/discount.entity';
 import {
-	discountValidator,
+	DiscountValidator,
 	OrderByEnum,
 } from '@/features/discount/discount.validator';
 import { createFutureDate, createPastDate, formatDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const discountValidator = new DiscountValidator('discount');
 
 export function getDiscountEntityMock(): DiscountEntity {
 	return {

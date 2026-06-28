@@ -95,5 +95,3 @@ export class CronHistoryValidator extends BaseValidator<
 		}
 	});
 }
-
-export const cronHistoryValidator = new CronHistoryValidator('cron-history');

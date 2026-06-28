@@ -6,10 +6,7 @@ import {
 	type PlaceService,
 	placeService,
 } from '@/features/place/place.service';
-import {
-	type PlaceValidator,
-	placeValidator,
-} from '@/features/place/place.validator';
+import { PlaceValidator } from '@/features/place/place.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -151,7 +148,7 @@ class PlaceController extends BaseController {
 
 export const placeController = new PlaceController(
 	placePolicy,
-	placeValidator,
+	new PlaceValidator('place'),
 	cacheProvider,
 	placeService,
 );

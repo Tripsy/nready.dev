@@ -86,5 +86,3 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 		),
 	});
 }
-
-export const vendorValidator = new VendorValidator('vendor');

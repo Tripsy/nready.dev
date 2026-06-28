@@ -105,5 +105,3 @@ export class LogDataValidator extends BaseValidator<typeof validatorMessages> {
 		}
 	});
 }
-
-export const logDataValidator = new LogDataValidator('log-data');

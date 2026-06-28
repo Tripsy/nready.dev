@@ -222,5 +222,3 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 	});
 }
-
-export const imageValidator = new ImageValidator('image');

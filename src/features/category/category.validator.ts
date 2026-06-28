@@ -144,5 +144,3 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 		}).default(false),
 	});
 }
-
-export const categoryValidator = new CategoryValidator('category');

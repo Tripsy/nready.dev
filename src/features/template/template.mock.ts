@@ -2,10 +2,12 @@ import type TemplateEntity from '@/features/template/template.entity';
 import { TemplateTypeEnum } from '@/features/template/template.entity';
 import {
 	OrderByEnum,
-	templateValidator,
+	TemplateValidator,
 } from '@/features/template/template.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const templateValidator = new TemplateValidator('template');
 
 export function getTemplateEntityMock(): TemplateEntity {
 	return {

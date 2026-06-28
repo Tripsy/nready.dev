@@ -1,10 +1,12 @@
 import type AddressEntity from '@/features/address/address.entity';
 import {
-	addressValidator,
+	AddressValidator,
 	OrderByEnum,
 } from '@/features/address/address.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const addressValidator = new AddressValidator('address');
 
 export function getAddressEntityMock(): AddressEntity {
 	return {

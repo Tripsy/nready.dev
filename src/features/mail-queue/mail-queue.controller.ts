@@ -10,10 +10,7 @@ import {
 	type MailQueueService,
 	mailQueueService,
 } from '@/features/mail-queue/mail-queue.service';
-import {
-	type MailQueueValidator,
-	mailQueueValidator,
-} from '@/features/mail-queue/mail-queue.validator';
+import { MailQueueValidator } from '@/features/mail-queue/mail-queue.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -97,7 +94,7 @@ class MailQueueController extends BaseController {
 
 export const mailQueueController = new MailQueueController(
 	mailQueuePolicy,
-	mailQueueValidator,
+	new MailQueueValidator('mail-queue'),
 	cacheProvider,
 	mailQueueService,
 );

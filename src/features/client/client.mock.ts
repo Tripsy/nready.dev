@@ -5,12 +5,13 @@ import {
 	ClientTypeEnum,
 } from '@/features/client/client.entity';
 import {
-	clientValidator,
+	ClientValidator,
 	OrderByEnum,
 } from '@/features/client/client.validator';
 import { createPastDate, formatDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
+const clientValidator = new ClientValidator('client');
 type CreateInput = z.input<typeof clientValidator.create>;
 type CreateCompanyInput = Extract<
 	CreateInput,

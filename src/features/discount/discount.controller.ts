@@ -9,10 +9,7 @@ import {
 	type DiscountService,
 	discountService,
 } from '@/features/discount/discount.service';
-import {
-	type DiscountValidator,
-	discountValidator,
-} from '@/features/discount/discount.validator';
+import { DiscountValidator } from '@/features/discount/discount.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -142,7 +139,7 @@ class DiscountController extends BaseController {
 
 export const discountController = new DiscountController(
 	discountPolicy,
-	discountValidator,
+	new DiscountValidator('discount'),
 	cacheProvider,
 	discountService,
 );

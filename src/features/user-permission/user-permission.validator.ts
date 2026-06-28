@@ -88,7 +88,3 @@ export class UserPermissionValidator extends BaseValidator<
 		},
 	});
 }
-
-export const userPermissionValidator = new UserPermissionValidator(
-	'user-permission',
-);

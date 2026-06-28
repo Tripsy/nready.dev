@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 const controller = 'DiscountController';
-const basePath = discountRoutes.basePath;
+const basePath = (await discountRoutes()).basePath;
 
 testControllerCreate<DiscountEntity, DiscountValidator>({
 	controller: controller,

@@ -4,11 +4,13 @@ import {
 	CategoryTypeEnum,
 } from '@/features/category/category.entity';
 import {
-	categoryValidator,
+	CategoryValidator,
 	OrderByEnum,
 } from '@/features/category/category.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const categoryValidator = new CategoryValidator('category');
 
 export function getCategoryEntityMock(): CategoryEntity {
 	return {

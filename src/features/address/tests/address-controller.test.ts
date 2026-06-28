@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 const controller = 'AddressController';
-const basePath = addressRoutes.basePath;
+const basePath = (await addressRoutes()).basePath;
 
 testControllerCreate<AddressEntity, AddressValidator>({
 	controller: controller,

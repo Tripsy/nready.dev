@@ -8,10 +8,7 @@ import {
 	type UserPermissionService,
 	userPermissionService,
 } from '@/features/user-permission/user-permission.service';
-import {
-	type UserPermissionValidator,
-	userPermissionValidator,
-} from '@/features/user-permission/user-permission.validator';
+import { UserPermissionValidator } from '@/features/user-permission/user-permission.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
@@ -98,6 +95,6 @@ class UserPermissionController extends BaseController {
 
 export const userPermissionController = new UserPermissionController(
 	permissionPolicy,
-	userPermissionValidator,
+	new UserPermissionValidator('user-permission'),
 	userPermissionService,
 );

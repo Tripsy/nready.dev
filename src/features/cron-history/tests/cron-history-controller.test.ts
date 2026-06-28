@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 
 const controller = 'CronHistoryController';
-const basePath = cronHistoryRoutes.basePath;
+const basePath = (await cronHistoryRoutes()).basePath;
 
 testControllerRead<CronHistoryEntity>({
 	controller: controller,

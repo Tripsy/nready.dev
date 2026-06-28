@@ -23,7 +23,7 @@ beforeEach(() => {
 });
 
 const controller = 'CategoryController';
-const basePath = categoryRoutes.basePath;
+const basePath = (await categoryRoutes()).basePath;
 
 testControllerCreate<CategoryEntity, CategoryValidator>({
 	controller: controller,

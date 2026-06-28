@@ -9,10 +9,7 @@ import {
 	type CronHistoryService,
 	cronHistoryService,
 } from '@/features/cron-history/cron-history.service';
-import {
-	type CronHistoryValidator,
-	cronHistoryValidator,
-} from '@/features/cron-history/cron-history.validator';
+import { CronHistoryValidator } from '@/features/cron-history/cron-history.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -90,7 +87,7 @@ class CronHistoryController extends BaseController {
 
 export const cronHistoryController = new CronHistoryController(
 	cronHistoryPolicy,
-	cronHistoryValidator,
+	new CronHistoryValidator('cron-history'),
 	cacheProvider,
 	cronHistoryService,
 );

@@ -9,10 +9,7 @@ import {
 	type LogDataService,
 	logDataService,
 } from '@/features/log-data/log-data.service';
-import {
-	type LogDataValidator,
-	logDataValidator,
-} from '@/features/log-data/log-data.validator';
+import { LogDataValidator } from '@/features/log-data/log-data.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -89,7 +86,7 @@ class LogDataController extends BaseController {
 
 export const logDataController = new LogDataController(
 	logDataPolicy,
-	logDataValidator,
+	new LogDataValidator('log-data'),
 	cacheProvider,
 	logDataService,
 );

@@ -8,10 +8,7 @@ import {
 	type LogHistoryService,
 	logHistoryService,
 } from '@/features/log-history/log-history.service';
-import {
-	type LogHistoryValidator,
-	logHistoryValidator,
-} from '@/features/log-history/log-history.validator';
+import { LogHistoryValidator } from '@/features/log-history/log-history.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
@@ -78,6 +75,6 @@ class LogHistoryController extends BaseController {
 
 export const logHistoryController = new LogHistoryController(
 	logHistoryPolicy,
-	logHistoryValidator,
+	new LogHistoryValidator('log-history'),
 	logHistoryService,
 );

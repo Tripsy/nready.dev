@@ -11,10 +11,7 @@ import {
 	type TemplateService,
 	templateService,
 } from '@/features/template/template.service';
-import {
-	type TemplateValidator,
-	templateValidator,
-} from '@/features/template/template.validator';
+import { TemplateValidator } from '@/features/template/template.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -169,7 +166,7 @@ class TemplateController extends BaseController {
 
 export const templateController = new TemplateController(
 	templatePolicy,
-	templateValidator,
+	new TemplateValidator('template'),
 	cacheProvider,
 	templateService,
 );

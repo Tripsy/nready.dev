@@ -1,29 +1,30 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
-import { cronHistoryController } from '@/features/cron-history/cron-history.controller';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
-const routesModule: FeatureRoutesModule<typeof cronHistoryController> = {
-	basePath: '/cron-history',
-	controller: cronHistoryController,
-	routes: {
-		read: {
-			path: '/:id',
-			method: 'get',
-			handlers: [validateParamsWhenId('id')],
-		},
-		delete: {
-			path: '',
-			method: 'delete',
-		},
-		find: {
-			path: '',
-			method: 'get',
-		},
-	},
-};
+export default async () => {
+	const { cronHistoryController } = await import(
+		'@/features/cron-history/cron-history.controller'
+	);
 
-const routesConfiguration: FeatureRoutesModule<typeof cronHistoryController> = {
-	...routesModule,
-};
+	const config: FeatureRoutesModule<typeof cronHistoryController> = {
+		basePath: '/cron-history',
+		controller: cronHistoryController,
+		routes: {
+			read: {
+				path: '/:id',
+				method: 'get',
+				handlers: [validateParamsWhenId('id')],
+			},
+			delete: {
+				path: '',
+				method: 'delete',
+			},
+			find: {
+				path: '',
+				method: 'get',
+			},
+		},
+	};
 
-export default routesConfiguration;
+	return config;
+};

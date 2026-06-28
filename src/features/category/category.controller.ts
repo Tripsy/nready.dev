@@ -9,10 +9,7 @@ import {
 	type CategoryService,
 	categoryService,
 } from '@/features/category/category.service';
-import {
-	type CategoryValidator,
-	categoryValidator,
-} from '@/features/category/category.validator';
+import { CategoryValidator } from '@/features/category/category.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -182,7 +179,7 @@ class CategoryController extends BaseController {
 
 export const categoryController = new CategoryController(
 	categoryPolicy,
-	categoryValidator,
+	new CategoryValidator('category'),
 	cacheProvider,
 	categoryService,
 );

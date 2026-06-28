@@ -16,10 +16,7 @@ import {
 	type AccountService,
 	accountService,
 } from '@/features/account/account.service';
-import {
-	type AccountValidator,
-	accountValidator,
-} from '@/features/account/account.validator';
+import { AccountValidator } from '@/features/account/account.validator';
 import {
 	type AccountEmailService,
 	accountEmailService,
@@ -651,7 +648,7 @@ class AccountController extends BaseController {
 
 export const accountController = new AccountController(
 	accountPolicy,
-	accountValidator,
+	new AccountValidator('account'),
 	accountService,
 	accountTokenService,
 	accountRecoveryService,

@@ -1,10 +1,12 @@
 import type UserPermissionEntity from '@/features/user-permission/user-permission.entity';
 import {
 	OrderByEnum,
-	userPermissionValidator,
+	UserPermissionValidator,
 } from '@/features/user-permission/user-permission.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const userPermissionValidator = new UserPermissionValidator('user_permission');
 
 export function getUserPermissionEntityMock(): UserPermissionEntity {
 	return {

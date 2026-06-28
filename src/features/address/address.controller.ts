@@ -9,10 +9,7 @@ import {
 	type AddressService,
 	addressService,
 } from '@/features/address/address.service';
-import {
-	type AddressValidator,
-	addressValidator,
-} from '@/features/address/address.validator';
+import { AddressValidator } from '@/features/address/address.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -152,7 +149,7 @@ class AddressController extends BaseController {
 
 export const addressController = new AddressController(
 	addressPolicy,
-	addressValidator,
+	new AddressValidator('address'),
 	cacheProvider,
 	addressService,
 );

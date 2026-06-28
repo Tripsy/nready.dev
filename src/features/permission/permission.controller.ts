@@ -9,10 +9,7 @@ import {
 	type PermissionService,
 	permissionService,
 } from '@/features/permission/permission.service';
-import {
-	type PermissionValidator,
-	permissionValidator,
-} from '@/features/permission/permission.validator';
+import { PermissionValidator } from '@/features/permission/permission.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -150,7 +147,7 @@ class PermissionController extends BaseController {
 
 export const permissionController = new PermissionController(
 	permissionPolicy,
-	permissionValidator,
+	new PermissionValidator('permission'),
 	cacheProvider,
 	permissionService,
 );

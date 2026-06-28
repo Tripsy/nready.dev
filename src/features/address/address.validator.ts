@@ -97,5 +97,3 @@ export class AddressValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	});
 }
-
-export const addressValidator = new AddressValidator('address');

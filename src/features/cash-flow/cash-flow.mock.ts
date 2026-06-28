@@ -7,12 +7,14 @@ import {
 	CurrencyEnum,
 } from '@/features/cash-flow/cash-flow.entity';
 import {
-	cashFlowValidator,
+	CashFlowValidator,
 	OrderByEnum,
 } from '@/features/cash-flow/cash-flow.validator';
 import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.enum';
 import { createPastDate, formatDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const cashFlowValidator = new CashFlowValidator('cash_flow');
 
 export function getCashFlowEntityMock(
 	overrides?: Partial<CashFlowEntity>,

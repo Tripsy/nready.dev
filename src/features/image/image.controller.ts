@@ -6,10 +6,7 @@ import {
 	type ImageService,
 	imageService,
 } from '@/features/image/image.service';
-import {
-	type ImageValidator,
-	imageValidator,
-} from '@/features/image/image.validator';
+import { ImageValidator } from '@/features/image/image.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -203,7 +200,7 @@ class ImageController extends BaseController {
 
 export const imageController = new ImageController(
 	imagePolicy,
-	imageValidator,
+	new ImageValidator('image'),
 	cacheProvider,
 	imageService,
 );

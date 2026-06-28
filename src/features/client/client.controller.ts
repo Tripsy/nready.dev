@@ -10,10 +10,7 @@ import {
 	type ClientService,
 	clientService,
 } from '@/features/client/client.service';
-import {
-	type ClientValidator,
-	clientValidator,
-} from '@/features/client/client.validator';
+import { ClientValidator } from '@/features/client/client.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -168,7 +165,7 @@ class ClientController extends BaseController {
 
 export const clientController = new ClientController(
 	clientPolicy,
-	clientValidator,
+	new ClientValidator('client'),
 	cacheProvider,
 	clientService,
 );

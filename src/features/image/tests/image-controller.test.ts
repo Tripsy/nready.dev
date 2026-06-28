@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 const controller = 'ImageController';
-const basePath = imageRoutes.basePath;
+const basePath = (await imageRoutes()).basePath;
 
 testControllerCreate<ImageEntity, ImageValidator>({
 	controller: controller,

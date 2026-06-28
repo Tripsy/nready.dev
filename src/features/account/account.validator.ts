@@ -210,5 +210,3 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 		),
 	});
 }
-
-export const accountValidator = new AccountValidator('account');

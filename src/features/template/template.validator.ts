@@ -213,5 +213,3 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	});
 }
-
-export const templateValidator = new TemplateValidator('template');

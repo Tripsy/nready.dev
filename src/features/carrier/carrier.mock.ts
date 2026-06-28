@@ -1,10 +1,12 @@
 import type CarrierEntity from '@/features/carrier/carrier.entity';
 import {
-	carrierValidator,
+	CarrierValidator,
 	OrderByEnum,
 } from '@/features/carrier/carrier.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const carrierValidator = new CarrierValidator('carrier');
 
 export function getCarrierEntityMock(): CarrierEntity {
 	return {

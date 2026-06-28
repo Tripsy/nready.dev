@@ -4,13 +4,15 @@ import {
 	ImageStatusEnum,
 	ImageTypeEnum,
 } from '@/features/image/image.entity';
-import { imageValidator, OrderByEnum } from '@/features/image/image.validator';
+import { ImageValidator, OrderByEnum } from '@/features/image/image.validator';
 import {
 	ImageMimeEnum,
 	ImageStorageEnum,
 } from '@/features/image/image-content.entity';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const imageValidator = new ImageValidator('image');
 
 export function getImageEntityMock(): ImageEntity {
 	return {

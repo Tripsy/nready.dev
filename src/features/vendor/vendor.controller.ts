@@ -9,10 +9,7 @@ import {
 	type VendorService,
 	vendorService,
 } from '@/features/vendor/vendor.service';
-import {
-	type VendorValidator,
-	vendorValidator,
-} from '@/features/vendor/vendor.validator';
+import { VendorValidator } from '@/features/vendor/vendor.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -154,7 +151,7 @@ class VendorController extends BaseController {
 
 export const vendorController = new VendorController(
 	vendorPolicy,
-	vendorValidator,
+	new VendorValidator('vendor'),
 	cacheProvider,
 	vendorService,
 );

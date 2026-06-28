@@ -1,7 +1,7 @@
 import type LogDataEntity from '@/features/log-data/log-data.entity';
 import { LogDataCategoryEnum } from '@/features/log-data/log-data.entity';
 import {
-	logDataValidator,
+	LogDataValidator,
 	OrderByEnum,
 } from '@/features/log-data/log-data.validator';
 import { createPastDate, formatDate } from '@/helpers';
@@ -40,5 +40,7 @@ export const logDataInputPayloads = {
 };
 
 export const logDataOutputPayloads = {
-	find: logDataValidator.find.parse(logDataInputPayloads.find),
+	find: new LogDataValidator('log-data').find.parse(
+		logDataInputPayloads.find,
+	),
 };

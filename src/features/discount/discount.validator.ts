@@ -280,5 +280,3 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 		}
 	});
 }
-
-export const discountValidator = new DiscountValidator('discount');

@@ -4,6 +4,7 @@ import { type RequestHandler, Router } from 'express';
 import { apiRateLimiter } from '@/config/rate-limit.config';
 import { Configuration } from '@/config/settings.config';
 import { buildSrcPath, getErrorMessage } from '@/helpers';
+import { setupDevelopmentDocumentation } from '@/helpers/api-documentation.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
@@ -150,14 +151,21 @@ async function loadRoutes(
 		}
 
 		const module = await import(routeFilePath);
-		const def = module.default;
+		const defOrFactory = module.default;
 
-		if (!def) {
+		if (!defOrFactory) {
 			getSystemLogger().warn(
 				`Feature ${feature} does not export default routes config`,
 			);
 			return;
 		}
+
+		let def =
+			typeof defOrFactory === 'function'
+				? await defOrFactory()
+				: defOrFactory;
+
+		def = await setupDevelopmentDocumentation(def, feature);
 
 		router.use(buildRoutes(def));
 

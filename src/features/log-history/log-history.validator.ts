@@ -105,5 +105,3 @@ export class LogHistoryValidator extends BaseValidator<
 		}
 	});
 }
-
-export const logHistoryValidator = new LogHistoryValidator('log-history');
