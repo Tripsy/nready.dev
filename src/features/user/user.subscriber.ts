@@ -1,17 +1,14 @@
 import { EventSubscriber, type InsertEvent, type UpdateEvent } from 'typeorm';
+import { eventEmitter } from '@/config/event.config';
 import { Configuration } from '@/config/settings.config';
-import {
-	type AccountService,
-	accountService,
-} from '@/features/account/account.service';
 import UserEntity, { UserStatusEnum } from '@/features/user/user.entity';
+import { createCurrentDate, encryptPassword } from '@/helpers';
 import SubscriberAbstract from '@/shared/abstracts/subscriber.abstract';
 import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 
 @EventSubscriber()
 export class UserSubscriber extends SubscriberAbstract<UserEntity> {
 	protected readonly Entity = UserEntity;
-	private accountService: AccountService;
 
 	constructor() {
 		super();
@@ -20,14 +17,12 @@ export class UserSubscriber extends SubscriberAbstract<UserEntity> {
 			beforeRemove: true,
 			afterSoftRemove: true,
 		};
-
-		this.accountService = accountService;
 	}
 
 	async beforeInsert(event: InsertEvent<UserEntity>) {
 		// Hash password before inserting a new user.
 		if (event.entity.password) {
-			event.entity.password = await this.accountService.encryptPassword(
+			event.entity.password = await encryptPassword(
 				event.entity.password,
 			);
 		}
@@ -37,13 +32,13 @@ export class UserSubscriber extends SubscriberAbstract<UserEntity> {
 			event.entity.language = Configuration.language();
 		}
 
-		event.entity.password_updated_at = new Date();
+		event.entity.password_updated_at = createCurrentDate();
 	}
 
 	async beforeUpdate(event: UpdateEvent<UserEntity>) {
 		// Hash the password before updating if it has changed.
 		if (event.entity?.password) {
-			event.entity.password = await this.accountService.encryptPassword(
+			event.entity.password = await encryptPassword(
 				event.entity.password,
 			);
 		}
@@ -54,7 +49,7 @@ export class UserSubscriber extends SubscriberAbstract<UserEntity> {
 
 		this.logHistory(id, LogHistoryActionEnum.CREATED);
 
-		void this.accountService.processRegistration(event.entity);
+		eventEmitter.emit('userRegistered', event.entity);
 	}
 
 	async afterUpdate(event: UpdateEvent<UserEntity>) {
@@ -81,7 +76,7 @@ export class UserSubscriber extends SubscriberAbstract<UserEntity> {
 			});
 
 			if (event.entity.status === UserStatusEnum.ACTIVE) {
-				this.accountService.processRegistration({
+				eventEmitter.emit('userRegistered', {
 					id: id,
 					name: event.entity.name || event.databaseEntity.name,
 					email: event.entity.email || event.databaseEntity.email,

@@ -122,14 +122,14 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 ### Modular features
 
 - [ ] article: 
-- [x] brand: create, read, update, delete, restore, find
+- [x] brand: create, read, update, delete, restore, find, statusUpdate, orderUpdate
 - [x] carrier: create, read, update, delete, restore, find
 - [x] cash-flow: create, read, update, delete, find, statusUpdate
 - [x] category: create, read, update, delete, restore, find, statusUpdate
 - [x] client: create, read, update, delete, restore, find, statusUpdate
 - [x] client_address: create, read, update, delete, restore, find
 - [x] discount: create, read, update, delete, restore, find
-- [ ] image:
+- [x] image: create, read, update, delete, restore, find, statusUpdate, orderUpdate
 - [ ] invoice:
 - [ ] order:
 - [ ] order-shipping:
@@ -274,11 +274,12 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 │   ├── shared/
 │   │   ├── abstracts/     # Base / abstract classes
 │   │   ├── cron-jobs/     # System cron-jobs
+│   │   ├── decorators/    
 │   │   ├── listeners/     # Core event listeners
 │   │   ├── locales/       # Shared language
+│   │   ├── types/         # Shared types
 │   ├── templates/         # Email layout templates
 │   └── tests/             # Jest & Supertest tests
-│   └── types/             # Global/shared TypeScript types
 │   └── workers/           # Background workers
 │   └── app.ts          
 │   └── bootstrap.ts          
@@ -295,13 +296,24 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Go on FE → cash-flow
-2. Go on FE → category
-3. Deploy on AWS
-4. API documentation
+commit 
+    - dropped res.locals.validated; replaced with validator schema; validateWhenString - obsolete
+    - dropped parse-filter.middleware 
+    - fixed lang related errors triggered when running migrations > new event userRegistered - used in user.subscriber
+    - refactored validatorMessages from *.validator.ts
+    - routest.setup bug fix
+    - 
+
+1. test image
+2. feature - images  (image-content)
+3. Go on FE #3 → image (multer - File upload handling)
+4. Category needs ordering too
+5. Go on FE → category
+6. Deploy on AWS
+7. API documentation
     > done for discounts
     > do for: account, category, carrier, cash-flow, client, cron-history, log-history, mail-queue, permission, place, template, user-permission
-5. create CLI script which should generate something like:
+8. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -323,11 +335,9 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-6. Tests for account-recovery.service.ts are missing 
-7. feature - images  (image-content)
-8. Go on FE #3 → image (multer - File upload handling)
-9. Go on FE #2 → carrier, discount,
-10. Prepared entities:
+9. Tests for account-recovery.service.ts are missing 
+10. Go on FE #2 → carrier, discount,
+11. Prepared entities:
      - article
          - article-category
          - article-content
@@ -346,8 +356,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
      - subscription
          - subscription-evidence
      - term
-11. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-12. cron hanging / delaying / semaphore 
+12. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+13. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

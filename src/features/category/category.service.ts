@@ -10,9 +10,9 @@ import CategoryEntity, {
 import { getCategoryRepository } from '@/features/category/category.repository';
 import type { CategoryValidator } from '@/features/category/category.validator';
 import CategoryContentRepository from '@/features/category/category-content.repository';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class CategoryService {
 	constructor(
@@ -78,14 +78,11 @@ export class CategoryService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateDataWithContent(
-		id: number,
+		entry: CategoryEntity,
 		data: ValidatorOutput<CategoryValidator, 'update'>,
-		withDeleted: boolean,
 	) {
-		const category = await this.findById(id, withDeleted);
-
 		if (data.parent_id) {
-			if (category.parent && category.parent.id === data.parent_id) {
+			if (entry.parent && entry.parent.id === data.parent_id) {
 				throw new CustomError(400, lang('category.error.parent_same'));
 			}
 
@@ -98,7 +95,7 @@ export class CategoryService {
 				);
 			}
 
-			if (newParent.deleted_at && !category.deleted_at) {
+			if (newParent.deleted_at && !entry.deleted_at) {
 				throw new CustomError(
 					400,
 					lang('category.error.parent_deleted'),
@@ -107,7 +104,7 @@ export class CategoryService {
 
 			if (
 				newParent.status !== CategoryStatusEnum.ACTIVE &&
-				category.status === CategoryStatusEnum.ACTIVE
+				entry.status === CategoryStatusEnum.ACTIVE
 			) {
 				throw new CustomError(
 					400,
@@ -115,18 +112,18 @@ export class CategoryService {
 				);
 			}
 
-			if (category.type !== newParent.type) {
+			if (entry.type !== newParent.type) {
 				throw new CustomError(
 					400,
 					lang('category.error.invalid_parent_type', {
-						type: category.type,
+						type: entry.type,
 					}),
 				);
 			}
 
 			const treeRepository =
 				RepositoryAbstract.getTreeRepository(CategoryEntity);
-			const descendants = await treeRepository.findDescendants(category);
+			const descendants = await treeRepository.findDescendants(entry);
 
 			if (descendants.some((d) => d.id === data.parent_id)) {
 				throw new CustomError(
@@ -137,23 +134,25 @@ export class CategoryService {
 		}
 
 		return dataSource.transaction(async (manager) => {
-			if (category.parent && 'parent_id' in data) {
+			if (entry.parent && 'parent_id' in data) {
 				let flagUpdate = false;
 
 				if (data.parent_id === null) {
-					category.parent = null;
+					entry.parent = null;
+
 					flagUpdate = true;
-				} else if (category.parent.id !== data.parent_id) {
-					category.parent = {
+				} else if (entry.parent.id !== data.parent_id) {
+					entry.parent = {
 						id: data.parent_id,
 					} as CategoryEntity;
+
 					flagUpdate = true;
 				}
 
 				if (flagUpdate) {
 					const repository = manager.getRepository(CategoryEntity); // We use the manager -> `getCategoryRepository` is not bound to the transaction
 
-					await repository.save(category);
+					await repository.save(entry);
 				}
 			}
 
@@ -161,35 +160,22 @@ export class CategoryService {
 				await CategoryContentRepository.saveContent(
 					manager,
 					data.contents,
-					category.id,
-					category.type,
+					entry.id,
+					entry.type,
 				);
 			}
 
-			return category;
+			return entry;
 		});
 	}
 
 	public async updateStatus(
-		id: number,
+		entry: CategoryEntity,
 		newStatus: CategoryStatus,
-		withDeleted: boolean,
 		forceUpdate?: boolean, // When `true` & newStatus is CategoryStatusEnum.INACTIVE the active descendants will also be marked as inactive
 	): Promise<void> {
 		await dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(CategoryEntity); // We use the manager -> `getCategoryRepository` is not bound to the transaction
-
-			const qCategory = repository
-				.createQueryBuilder()
-				.where('id = :id', {
-					id: id,
-				});
-
-			if (withDeleted) {
-				qCategory.withDeleted();
-			}
-
-			const entry = await qCategory.getOneOrFail();
 
 			assertValidStatusTransition(
 				STATUS_TRANSITIONS,
@@ -301,15 +287,17 @@ export class CategoryService {
 	/**
 	 * @description Used in `read` method from controller; this will return a custom shape
 	 */
-	public async getDataById(
-		id: number,
-		data: ValidatorOutput<CategoryValidator, 'read'>,
-		withDeleted: boolean,
-	) {
+	public async getEntryData(data: {
+		id: number;
+		with_ancestors: boolean;
+		with_children: boolean;
+		language: string | undefined;
+		withDeleted: boolean;
+	}) {
 		const categoryQuery = this.repository
 			.createQuery()
-			.filterById(id)
-			.withDeleted(withDeleted);
+			.filterById(data.id)
+			.withDeleted(data.withDeleted);
 
 		if (data.language) {
 			categoryQuery.joinAndSelect(
@@ -343,7 +331,7 @@ export class CategoryService {
 				const ancestorsWithContentDataQuery = getCategoryRepository()
 					.createQuery()
 					.filterBy('id', orderedIds, 'IN')
-					.withDeleted(withDeleted);
+					.withDeleted(data.withDeleted);
 
 				if (data.language) {
 					ancestorsWithContentDataQuery.joinAndSelect(
@@ -376,7 +364,7 @@ export class CategoryService {
 				const childrenWithContentQuery = getCategoryRepository()
 					.createQuery()
 					.filterBy('parent_id', categoryEntry.id)
-					.withDeleted(withDeleted);
+					.withDeleted(data.withDeleted);
 
 				if (data.language) {
 					childrenWithContentQuery.joinAndSelect(

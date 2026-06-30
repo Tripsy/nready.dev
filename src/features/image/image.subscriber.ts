@@ -1,10 +1,10 @@
 import { EventSubscriber } from 'typeorm';
-import ClientAddressEntity from '@/features/client-address/client-address.entity';
+import ImageEntity from '@/features/image/image.entity';
 import SubscriberAbstract from '@/shared/abstracts/subscriber.abstract';
 
 @EventSubscriber()
-export class ClientAddressSubscriber extends SubscriberAbstract<ClientAddressEntity> {
-	protected readonly Entity = ClientAddressEntity;
+export class ImageSubscriber extends SubscriberAbstract<ImageEntity> {
+	protected readonly Entity = ImageEntity;
 
 	constructor() {
 		super();

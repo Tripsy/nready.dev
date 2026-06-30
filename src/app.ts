@@ -9,8 +9,8 @@ import i18next from 'i18next';
 import { handle as i18nextMiddleware } from 'i18next-http-middleware';
 import qs from 'qs';
 import { v4 as uuid } from 'uuid';
-import { initRoutes } from '@/config/routes.setup';
 import { Configuration } from '@/config/settings.config';
+import { createCurrentDate } from '@/helpers';
 import authMiddleware from '@/middleware/auth.middleware';
 import { corsHandler } from '@/middleware/cors-handler.middleware';
 import { errorHandler } from '@/middleware/error-handler.middleware';
@@ -129,7 +129,7 @@ export async function createApp() {
 		app.use(i18nextMiddleware(i18next));
 	}
 
-	app.use(languageMiddleware); // Set `res.locals.lang`
+	app.use(languageMiddleware); // Set `res.locals.language`
 
 	if (!Configuration.isEnvironment('test')) {
 		app.use(authMiddleware); // Set `res.locals.auth`
@@ -138,14 +138,15 @@ export async function createApp() {
 	app.use(requestContextMiddleware); // Prepare `requestContext`
 
 	// Routes
+	const { initRoutes } = await import('@/config/routes.setup');
 	const router = await initRoutes();
-	app.use('/', router);
+	app.use(router);
 
 	// Route - health
 	app.get('/health', (_req, res) => {
 		res.status(200).json({
 			status: 'OK',
-			timestamp: new Date().toISOString(),
+			timestamp: createCurrentDate().toISOString(),
 			uptime: process.uptime(),
 		});
 	});

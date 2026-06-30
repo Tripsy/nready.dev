@@ -2,6 +2,7 @@ import { Worker } from 'bullmq';
 import { Configuration } from '@/config/settings.config';
 import { MailQueueStatusEnum } from '@/features/mail-queue/mail-queue.entity';
 import { getMailQueueRepository } from '@/features/mail-queue/mail-queue.repository';
+import { createCurrentDate } from '@/helpers';
 import { type EmailQueueData, sendEmail } from '@/providers/email.provider';
 import { getSystemLogger } from '@/providers/logger.provider';
 
@@ -25,7 +26,7 @@ const emailWorker = new Worker(
 			await getMailQueueRepository().update(mailQueueId, {
 				status: MailQueueStatusEnum.SENT,
 				error: null,
-				sent_at: new Date(),
+				sent_at: createCurrentDate(),
 			});
 
 			getSystemLogger().info(
@@ -42,7 +43,7 @@ const emailWorker = new Worker(
 			await getMailQueueRepository().update(mailQueueId, {
 				status: MailQueueStatusEnum.ERROR,
 				error: errorMessage,
-				sent_at: new Date(),
+				sent_at: createCurrentDate(),
 			});
 		}
 	},

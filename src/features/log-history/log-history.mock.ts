@@ -1,7 +1,7 @@
 import { RequestContextSourceEnum } from '@/config/request.context';
 import type LogHistoryEntity from '@/features/log-history/log-history.entity';
 import {
-	logHistoryValidator,
+	LogHistoryValidator,
 	OrderByEnum,
 } from '@/features/log-history/log-history.validator';
 import { createPastDate, formatDate } from '@/helpers';
@@ -42,5 +42,7 @@ export const logHistoryInputPayloads = {
 };
 
 export const logHistoryOutputPayloads = {
-	find: logHistoryValidator.find.parse(logHistoryInputPayloads.find),
+	find: new LogHistoryValidator('log-history').find.parse(
+		logHistoryInputPayloads.find,
+	),
 };

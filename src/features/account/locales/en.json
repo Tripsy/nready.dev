@@ -34,7 +34,8 @@
 	},
 	"validation": {
 		"ident_required": "Ident is required",
-		"invalid_ident": "Ident is invalid",
+		"invalid_ident": "Invalid ident",
+		"invalid_token": "Invalid token",
 		"invalid_name": "Name is invalid",
 		"name_min": "Name must be at least {{min}} characters long",
 		"email_required": "Email is required",

@@ -1,35 +1,28 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { BrandStatusEnum, BrandTypeEnum } from '@/features/brand/brand.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = ['name', 'slug', 'brand_type'];
 
 export const OrderByEnum = {
 	ID: 'id',
 	NAME: 'name',
+	SORT_ORDER: 'sort_order',
 } as const;
 
-const validatorMessages = {
-	invalid_description: lang('brand.validation.invalid_description'),
-	invalid_name: lang('brand.validation.invalid_name'),
-	invalid_slug: lang('brand.validation.invalid_slug'),
-	invalid_brand_type: lang('brand.validation.invalid_brand_type'),
-	invalid_status: lang('brand.validation.invalid_status'),
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_language: lang('shared.validation.invalid_language'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-	invalid_meta_title: lang('shared.validation.invalid_meta_title'),
-	invalid_meta_description: lang(
-		'shared.validation.invalid_meta_description',
-	),
-	invalid_meta_keywords: lang('shared.validation.invalid_meta_keywords'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_description',
+	'invalid_name',
+	'invalid_slug',
+	'invalid_brand_type',
+] as const;
 
 export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 	readonly contentsSchema = z.object({
@@ -47,12 +40,6 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 		}),
 	});
 
-	readonly read = z.object({
-		language: this.validateLanguage(this.getMessage('invalid_language'), {
-			required: false,
-		}),
-	});
-
 	readonly create = z.object({
 		name: this.validateString(this.getMessage('invalid_name')),
 		slug: this.validateString(this.getMessage('invalid_slug')).transform(
@@ -65,8 +52,16 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 		contents: this.contentsSchema.array(),
 	});
 
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}),
+	});
+
 	readonly update = z
 		.object({
+			id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 			name: this.validateString(this.getMessage('invalid_name'), {
 				required: false,
 			}),
@@ -87,6 +82,14 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 			path: ['_global'],
 		});
 
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly find = this.validateFind({
 		orderByEnum: OrderByEnum,
 		defaultOrderBy: OrderByEnum.ID,
@@ -97,7 +100,7 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -126,7 +129,19 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	});
 
+	readonly statusUpdate = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		status: this.validateEnum(
+			BrandStatusEnum,
+			this.getMessage('invalid_status'),
+		),
+	});
+
 	readonly orderUpdate = z.object({
+		brand_type: this.validateEnum(
+			BrandTypeEnum,
+			this.getMessage('invalid_brand_type'),
+		),
 		positions: z
 			.array(
 				z.number({
@@ -134,11 +149,9 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 				}),
 			)
 			.min(2, {
-				message: lang('shared.validation.array_min', {
+				message: this.getMessage('array_min', {
 					length: '2',
 				}),
 			}),
 	});
 }
-
-export const brandValidator = new BrandValidator(validatorMessages);

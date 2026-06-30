@@ -22,7 +22,7 @@ export type PageMeta = {
 
 @Entity()
 export abstract class EntityAbstract {
-	@PrimaryGeneratedColumn({ type: 'int', unsigned: false })
+	@PrimaryGeneratedColumn({ type: 'int' })
 	id!: number;
 
 	@CreateDateColumn({ type: 'timestamp', nullable: false })

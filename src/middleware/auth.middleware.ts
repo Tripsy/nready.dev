@@ -8,12 +8,13 @@ import { getUserRepository } from '@/features/user/user.repository';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import {
 	compareMetaDataValue,
+	createCurrentDate,
 	createFutureDate,
-	dateDiffInSeconds,
+	dateDiff,
 	tokenMetaData,
 } from '@/helpers';
 import { cacheProvider } from '@/providers/cache.provider';
-import { UserRoleEnum } from '@/shared/types/user-role.type';
+import type { AuthContextPermissions } from '@/shared/types/express';
 
 export const AuthFailureReason = {
 	NO_TOKEN: 'NO_TOKEN',
@@ -29,35 +30,32 @@ export const AuthFailureReason = {
 export type AuthFailureReason =
 	(typeof AuthFailureReason)[keyof typeof AuthFailureReason];
 
-async function getUserPermissions(user_id: number): Promise<string[]> {
+async function getUserPermissions(user_id: number) {
 	const cacheKey = cacheProvider.buildKey(
 		UserEntity.NAME,
 		user_id.toString(),
 		'permissions',
 	);
 
-	const cacheGetResults = await cacheProvider.get(
-		cacheKey,
-		async () => {
-			const userPermissions =
-				await getUserPermissionRepository().getUserPermissions(user_id);
+	const cacheGetResults = await cacheProvider.get(cacheKey, async () => {
+		const userPermissions =
+			await getUserPermissionRepository().getUserPermissions(user_id);
 
-			const results: string[] = [];
+		return userPermissions.reduce<AuthContextPermissions>(
+			(acc, { permission_entity, permission_operation }) => {
+				if (!acc[permission_entity]) {
+					acc[permission_entity] = [];
+				}
 
-			userPermissions.forEach((userPermission) => {
-				results.push(
-					userPermission.permission_entity +
-						'.' +
-						userPermission.permission_operation,
-				);
-			});
+				acc[permission_entity].push(permission_operation);
 
-			return results;
-		},
-		1800,
-	);
+				return acc;
+			},
+			{},
+		);
+	});
 
-	return cacheGetResults.data as string[];
+	return cacheGetResults.data as AuthContextPermissions;
 }
 
 function setAuthFailure(
@@ -65,7 +63,7 @@ function setAuthFailure(
 	details?: Record<string, unknown>,
 ) {
 	if (Configuration.isEnvironment('development')) {
-		console.error(`[Auth] ${new Date()} ${reason}`, details);
+		console.error(`[Auth] ${createCurrentDate()} ${reason}`, details);
 	}
 }
 
@@ -79,7 +77,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			language: Configuration.language(),
 			role: 'visitor',
 			operator_type: null,
-			permissions: [],
+			permissions: {},
 			activeToken: '',
 		};
 
@@ -106,7 +104,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		}
 
 		// Check if the token is expired
-		if (activeToken.expire_at < new Date()) {
+		if (activeToken.expire_at < createCurrentDate()) {
 			getAccountTokenRepository().removeTokenById(activeToken.id);
 
 			setAuthFailure(AuthFailureReason.TOKEN_EXPIRED, { ...activeToken });
@@ -164,26 +162,18 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		if (user.status !== UserStatusEnum.ACTIVE) {
 			getAccountTokenRepository().removeTokenById(activeToken.id);
 
-			setAuthFailure(AuthFailureReason.USER_NOT_FOUND, {
+			setAuthFailure(AuthFailureReason.USER_INACTIVE, {
 				...activeToken,
 			});
 
 			return next();
 		}
 
-		// User was not found or inactive
-		if (!user || user.status !== UserStatusEnum.ACTIVE) {
-			getAccountTokenRepository().removeTokenById(activeToken.id);
-
-			setAuthFailure(AuthFailureReason.USER_INACTIVE, { ...activeToken });
-
-			return next();
-		}
-
 		// Refresh the token if it's close to expiration
-		const diffInSeconds = dateDiffInSeconds(
+		const diffInSeconds = dateDiff(
 			activeToken.expire_at,
-			new Date(),
+			createCurrentDate(),
+			'seconds',
 		);
 
 		if (
@@ -191,24 +181,21 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			(Configuration.get('user.authRefreshExpiresIn') as number)
 		) {
 			await getAccountTokenRepository().update(activeToken.id, {
-				used_at: new Date(),
+				used_at: createCurrentDate(),
 				expire_at: createFutureDate(
 					Configuration.get('user.authExpiresIn') as number,
 				),
 			});
 		} else {
 			await getAccountTokenRepository().update(activeToken.id, {
-				used_at: new Date(),
+				used_at: createCurrentDate(),
 			});
 		}
 
 		// Attach user information to the request object
 		res.locals.auth = {
 			...user,
-			permissions:
-				user.role === UserRoleEnum.OPERATOR
-					? await getUserPermissions(user.id)
-					: [],
+			permissions: await getUserPermissions(user.id),
 			activeToken: activeToken.ident,
 		};
 

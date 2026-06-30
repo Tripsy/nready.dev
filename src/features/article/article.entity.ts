@@ -3,6 +3,7 @@ import type ArticleCategoryEntity from '@/features/article/article-category.enti
 import type ArticleTagEntity from '@/features/article/article-tag.entity';
 import type ArticleTrackEntity from '@/features/article/article-track.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 export const ArticleStatusEnum = {
 	DRAFT: 'draft', // Initial creation
@@ -37,6 +38,7 @@ const ENTITY_TABLE_NAME = 'article';
 	comment:
 		'Stores core article information; textual content is saved in article-content.entity',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class ArticleEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

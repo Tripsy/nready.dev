@@ -35,6 +35,7 @@ export const userInputPayloads = {
 		operator_type: null, // correct for non-operator
 	},
 	update: {
+		id: 1,
 		name: 'Updated User',
 		email: 'updated.user@example.com',
 		password: 'Secure@123',
@@ -53,8 +54,8 @@ export const userInputPayloads = {
 			term: 'test',
 			status: UserStatusEnum.ACTIVE,
 			role: UserRoleEnum.MEMBER,
-			create_date_start: formatDate(createPastDate(14400)),
-			create_date_end: formatDate(createPastDate(7200)),
+			create_at_start: formatDate(createPastDate(14400)),
+			create_at_end: formatDate(createPastDate(7200)),
 			is_deleted: true,
 		},
 	},

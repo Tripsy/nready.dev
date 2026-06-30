@@ -1,8 +1,10 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -11,32 +13,47 @@ export const OrderByEnum = {
 	OPERATION: 'permission.operation',
 } as const;
 
-const validatorMessages = {
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-};
+const validatorMessages = [...sharedValidatorMessages] as const;
 
 export class UserPermissionValidator extends BaseValidator<
 	typeof validatorMessages
 > {
 	readonly create = z.object({
+		user_id: this.validateId(
+			this.getMessage('invalid_id', { name: 'user_id' }),
+		),
 		permission_ids: z
 			.array(
 				z
 					.number({
-						message: lang('shared.validation.invalid_ids', {
+						message: this.getMessage('invalid_ids', {
 							name: 'ids',
 						}),
 					})
 					.positive(),
 			)
 			.min(1, {
-				message: lang('shared.validation.array_min', {
+				message: this.getMessage('array_min', {
 					name: 'permission_ids',
 					length: '1',
 				}),
 			}),
+	});
+
+	readonly delete = z.object({
+		user_id: this.validateId(
+			this.getMessage('invalid_id', { name: 'user_id' }),
+		),
+		permission_id: this.validateId(
+			this.getMessage('invalid_id', { name: 'permission_id' }),
+		),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		user_id: this.validateId(
+			this.getMessage('invalid_id', { name: 'user_id' }),
+		),
 	});
 
 	readonly find = this.validateFind({
@@ -49,10 +66,7 @@ export class UserPermissionValidator extends BaseValidator<
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
-			user_id: this.validateId(this.getMessage('invalid_number'), {
-				required: false,
-			}),
+		filterSchema: {
 			entity: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
@@ -66,9 +80,11 @@ export class UserPermissionValidator extends BaseValidator<
 				{ required: false },
 			).default(false),
 		},
+
+		querySchema: {
+			user_id: this.validateId(
+				this.getMessage('invalid_id', { name: 'user_id' }),
+			),
+		},
 	});
 }
-
-export const userPermissionValidator = new UserPermissionValidator(
-	validatorMessages,
-);

@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 const controller = 'TemplateController';
-const basePath = templateRoutes.basePath;
+const basePath = (await templateRoutes()).basePath;
 
 testControllerCreate<TemplateEntity, TemplateValidator>({
 	controller: controller,

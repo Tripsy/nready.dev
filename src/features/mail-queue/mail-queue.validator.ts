@@ -1,9 +1,11 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { MailQueueStatusEnum } from '@/features/mail-queue/mail-queue.entity';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -11,33 +13,26 @@ export const OrderByEnum = {
 	SENT_AT: 'sent_at',
 } as const;
 
-const validatorMessages = {
-	invalid_language: lang('shared.validation.invalid_language'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-	invalid_status: lang('cash-flow.validation.invalid_status'),
-	invalid_date: lang('shared.validation.invalid_date'),
-	invalid_date_format: lang('shared.validation.invalid_date_format'),
-	invalid_past_date: lang('shared.validation.invalid_past_date'),
-	invalid_future_date: lang('shared.validation.invalid_future_date'),
-	invalid_date_range: lang('shared.validation.invalid_date_range'),
-};
+const validatorMessages = [...sharedValidatorMessages] as const;
 
 export class MailQueueValidator extends BaseValidator<
 	typeof validatorMessages
 > {
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly delete = z.object({
 		ids: z.array(
 			z.coerce
 				.number({
-					message: lang('shared.validation.invalid_ids', {
+					message: this.getMessage('invalid_ids', {
 						name: 'ids',
 					}),
 				})
 				.positive(),
 			{
-				message: lang('shared.validation.invalid_ids', {
+				message: this.getMessage('invalid_ids', {
 					name: 'ids',
 				}),
 			},
@@ -54,7 +49,7 @@ export class MailQueueValidator extends BaseValidator<
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -109,5 +104,3 @@ export class MailQueueValidator extends BaseValidator<
 		}
 	});
 }
-
-export const mailQueueValidator = new MailQueueValidator(validatorMessages);

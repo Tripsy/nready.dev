@@ -9,10 +9,7 @@ import {
 	type CronHistoryService,
 	cronHistoryService,
 } from '@/features/cron-history/cron-history.service';
-import {
-	type CronHistoryValidator,
-	cronHistoryValidator,
-} from '@/features/cron-history/cron-history.validator';
+import { CronHistoryValidator } from '@/features/cron-history/cron-history.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -27,17 +24,19 @@ class CronHistoryController extends BaseController {
 		super();
 	}
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			CronHistoryEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.cronHistoryService.findById(res.locals.validated.id),
+			this.cronHistoryService.findById(data.id),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -67,16 +66,7 @@ class CronHistoryController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] =
 			await this.cronHistoryService.findByFilter(data);
@@ -95,23 +85,9 @@ class CronHistoryController extends BaseController {
 	});
 }
 
-export function createCronHistoryController(deps: {
-	policy: CronHistoryPolicy;
-	validator: CronHistoryValidator;
-	cache: CacheProvider;
-	cronHistoryService: CronHistoryService;
-}) {
-	return new CronHistoryController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.cronHistoryService,
-	);
-}
-
-export const cronHistoryController = createCronHistoryController({
-	policy: cronHistoryPolicy,
-	validator: cronHistoryValidator,
-	cache: cacheProvider,
-	cronHistoryService: cronHistoryService,
-});
+export const cronHistoryController = new CronHistoryController(
+	cronHistoryPolicy,
+	new CronHistoryValidator('cron-history'),
+	cacheProvider,
+	cronHistoryService,
+);

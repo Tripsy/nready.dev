@@ -2,44 +2,12 @@ import fs from 'node:fs';
 import { Configuration } from '@/config/settings.config';
 import { ModuleError } from '@/exceptions/module.error';
 import {
-	buildSrcPath,
 	getErrorMessage,
+	getFeaturesFilePathByExtension,
 	getFileNameWithoutExtension,
-	listDirectories,
-	listFiles,
+	getSharedFilePathsByExtension,
 } from '@/helpers';
 import { getSystemLogger } from '@/providers/logger.provider';
-
-function getCoreListenerPaths() {
-	const sharedFolder = Configuration.get('folder.shared') as string;
-	const sharedListenersPath = buildSrcPath(sharedFolder, '/listeners');
-
-	const files = listFiles(sharedListenersPath);
-	const filesExtension = Configuration.resolveExtension();
-
-	// Return listeners files path
-	return files
-		.filter((f) => f.endsWith(`.listener.${filesExtension}`))
-		.map((f) => buildSrcPath(sharedFolder, '/listeners', f));
-}
-
-function getFeatureListenerPaths() {
-	const featuresFolder = Configuration.get<string>(
-		'folder.features',
-	) as string;
-	const featuresPath = buildSrcPath(featuresFolder);
-	const features = listDirectories(featuresPath);
-
-	const filesExtension = Configuration.resolveExtension();
-
-	// Assuming each feature has a corresponding listener
-	const possibleListeners = features.map((n) =>
-		buildSrcPath(featuresFolder, n, `${n}.listener.${filesExtension}`),
-	);
-
-	// Return only the actual existing listeners files path
-	return possibleListeners.filter((p) => fs.existsSync(p));
-}
 
 async function registerListener(filePath: string) {
 	if (!fs.existsSync(filePath)) {
@@ -57,12 +25,23 @@ async function registerListener(filePath: string) {
 	}
 }
 
-// Setup event listeners
 export async function setupListeners() {
-	const featureListenerPaths = getFeatureListenerPaths();
-	const coreListenerPaths = getCoreListenerPaths();
+	const sharedFolder = `${Configuration.get('folder.shared') as string}/listeners`;
+	const featuresFolder = Configuration.get<string>(
+		'folder.features',
+	) as string;
+	const fileExtension = `listener.${Configuration.resolveExtension()}`;
 
-	const listenerPaths = [...featureListenerPaths, ...coreListenerPaths];
+	const sharedPaths = getSharedFilePathsByExtension(
+		sharedFolder,
+		fileExtension,
+	);
+	const featurePaths = getFeaturesFilePathByExtension(
+		featuresFolder,
+		fileExtension,
+	);
+
+	const listenerPaths = [...featurePaths, ...sharedPaths];
 
 	const promises = listenerPaths.map(async (filePath) => {
 		try {

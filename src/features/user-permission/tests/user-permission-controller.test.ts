@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 
 const controller = 'UserPermissionController';
-const basePath = userPermissionRoutes.basePath;
+const basePath = (await userPermissionRoutes()).basePath;
 
 describe(`${controller} - create`, () => {
 	const route = `${basePath}/${getUserEntityMock().id}/permissions`;

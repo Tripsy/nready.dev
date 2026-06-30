@@ -66,6 +66,27 @@ export function safeHtml(dirtyHtml: string): string {
 	});
 }
 
+/**
+ * Convert a string to kebab-case
+ *
+ * toKebabCase("hello world")           // "hello-world"
+ * toKebabCase("HelloWorld")             // "hello-world"
+ * toKebabCase("helloWorld")             // "hello-world"
+ * toKebabCase("hello_world")            // "hello_world"
+ * toKebabCase("hello__world")           // "hello__world"
+ * toKebabCase("Hello World!")           // "hello-world"
+ * toKebabCase("myVariableName")         // "my-variable-name"
+ * toKebabCase("This is a test")         // "this-is-a-test"
+ * toKebabCase("  leading trailing  ")   // "leading-trailing"
+ *
+ * toKebabCase("hello_world", { preserveUnderscores: false })   // "hello-world"
+ * toKebabCase("hello__world", { preserveUnderscores: false })  // "hello-world"
+ * toKebabCase("hello_world test", { preserveUnderscores: false }) // "hello-world-test"
+ *
+ * toKebabCase("HelloWorld", { preserveCase: true })     // "Hello-World" (keeps case)
+ * toKebabCase("myXMLParser", { preserveCase: true })    // "my-XML-Parser"
+ * toKebabCase("HelloWorld", { preserveCase: true, preserveUnderscores: false }) // "Hello-World"
+ */
 export function toKebabCase(
 	str: string,
 	options: {
@@ -102,4 +123,57 @@ export function toKebabCase(
 	result = result.replace(/^-+|-+$/g, '');
 
 	return result;
+}
+
+/**
+ * Convert a string to title case
+ * Ex: 'cash-flow' → 'Cash Flow'
+ */
+export function toTitleCase(str: string): string {
+	return str
+		.replace(/[_-]/g, ' ')
+		.split(' ')
+		.map((word) => {
+			if (!word) {
+				return '';
+			}
+
+			// Capitalize the first letter, lowercase the rest
+			return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+		})
+		.join(' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+}
+
+/**
+ * Convert a string to camelCase (or PascalCase if capitalizeFirst is true)
+ * Ex: 'cash-flow' → 'cashFlow'
+ * Ex: 'cash-flow' with capitalizeFirst: true → 'CashFlow'
+ */
+export function toCamelCase(
+	str: string,
+	options: { capitalizeFirst?: boolean } = {},
+): string {
+	const { capitalizeFirst = false } = options;
+
+	return str
+		.replace(/[_-]/g, ' ')
+		.split(' ')
+		.map((word, index) => {
+			if (!word) return '';
+
+			// If capitalizeFirst is true, capitalize even the first word
+			if (capitalizeFirst) {
+				return (
+					word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+				);
+			}
+
+			// Default behavior: first word lowercase, rest capitalized
+			return index === 0
+				? word.toLowerCase()
+				: word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+		})
+		.join('');
 }

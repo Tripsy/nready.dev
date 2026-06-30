@@ -20,7 +20,7 @@ export class PlaceQuery extends RepositoryAbstract<PlaceEntity> {
 				) {
 					this.filterRaw(
 						`to_tsvector('simple', COALESCE(content.name, '')) @@ to_tsquery('simple', :term || ':*')`,
-						{ term: term.toLowerCase() },
+						{ term: this.prepareTsTerm(term) },
 					);
 				}
 			}

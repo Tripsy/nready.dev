@@ -10,10 +10,7 @@ import {
 	type MailQueueService,
 	mailQueueService,
 } from '@/features/mail-queue/mail-queue.service';
-import {
-	type MailQueueValidator,
-	mailQueueValidator,
-} from '@/features/mail-queue/mail-queue.validator';
+import { MailQueueValidator } from '@/features/mail-queue/mail-queue.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -29,17 +26,19 @@ class MailQueueController extends BaseController {
 		super();
 	}
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			MailQueueEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.mailQueueService.findById(res.locals.validated.id),
+			this.mailQueueService.findById(data.id),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -75,16 +74,7 @@ class MailQueueController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] = await this.mailQueueService.findByFilter(data);
 
@@ -102,23 +92,9 @@ class MailQueueController extends BaseController {
 	});
 }
 
-export function createMailQueueController(deps: {
-	policy: MailQueuePolicy;
-	validator: MailQueueValidator;
-	cache: CacheProvider;
-	mailQueueService: MailQueueService;
-}) {
-	return new MailQueueController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.mailQueueService,
-	);
-}
-
-export const mailQueueController = createMailQueueController({
-	policy: mailQueuePolicy,
-	validator: mailQueueValidator,
-	cache: cacheProvider,
-	mailQueueService: mailQueueService,
-});
+export const mailQueueController = new MailQueueController(
+	mailQueuePolicy,
+	new MailQueueValidator('mail-queue'),
+	cacheProvider,
+	mailQueueService,
+);

@@ -1,7 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import cron from 'node-cron';
-import { v4 as uuid } from 'uuid';
+import { v7 as uuid } from 'uuid';
 import {
 	RequestContextSourceEnum,
 	requestContext,
@@ -14,14 +13,72 @@ import CronHistoryEntity, {
 } from '@/features/cron-history/cron-history.entity';
 import { getCronHistoryRepository } from '@/features/cron-history/cron-history.repository';
 import {
-	buildSrcPath,
-	dateDiffInSeconds,
+	createCurrentDate,
+	dateDiff,
 	getErrorMessage,
+	getFeaturesFilesPathByFolderAndExtension,
 	getFileNameWithoutExtension,
-	listDirectories,
-	listFiles,
+	getSharedFilePathsByExtension,
 } from '@/helpers';
 import { getCronLogger, getSystemLogger } from '@/providers/logger.provider';
+
+export async function startCronJobs() {
+	const sharedFolder = `${Configuration.get('folder.shared') as string}/cron-jobs`;
+	const featuresFolder = Configuration.get<string>(
+		'folder.features',
+	) as string;
+	const fileExtension = `cron.${Configuration.resolveExtension()}`;
+
+	const sharedPaths = getSharedFilePathsByExtension(
+		sharedFolder,
+		fileExtension,
+	);
+	const featurePaths = getFeaturesFilesPathByFolderAndExtension(
+		featuresFolder,
+		'/cron-jobs',
+		fileExtension,
+	);
+
+	const cronJobsPaths = [...sharedPaths, ...featurePaths];
+
+	const promises = cronJobsPaths.map(async (filePath) => {
+		try {
+			const cronJobData = await loadCronJob(filePath);
+
+			scheduleCronJob(cronJobData);
+
+			return { name: cronJobData.name, status: 'fulfilled' } as const;
+		} catch (error) {
+			const skip = error instanceof ModuleError;
+			const errorMsg = `${getErrorMessage(error) || `CronJobs setup errors`}`;
+
+			return {
+				name: filePath,
+				status: 'rejected',
+				reason: errorMsg,
+				skip: skip,
+			} as const;
+		}
+	});
+
+	const results = await Promise.all(promises);
+
+	const successful = results
+		.filter((r) => r.status === 'fulfilled')
+		.map((r) => r.name);
+
+	const failed = results
+		.filter((r) => r.status === 'rejected' && !r.skip)
+		.map((r) => r.reason ?? 'unknown');
+
+	if (successful.length) {
+		getSystemLogger().debug(`Cron jobs started: ${successful.join(', ')}`);
+	}
+
+	if (failed.length) {
+		getSystemLogger().error(failed, `Cron jobs errors`);
+	}
+}
 
 /**
  * Execute a cron job and save history
@@ -44,7 +101,7 @@ async function executeCron<R extends Record<string, unknown>>(
 		async () => {
 			const cronHistoryEntity = new CronHistoryEntity();
 			cronHistoryEntity.label = action.name;
-			cronHistoryEntity.start_at = new Date();
+			cronHistoryEntity.start_at = createCurrentDate();
 
 			try {
 				cronHistoryEntity.content = await action();
@@ -71,10 +128,11 @@ async function executeCron<R extends Record<string, unknown>>(
 					getCronLogger().error(error, 'Unknown error');
 				}
 			} finally {
-				cronHistoryEntity.end_at = new Date();
-				cronHistoryEntity.run_time = dateDiffInSeconds(
+				cronHistoryEntity.end_at = createCurrentDate();
+				cronHistoryEntity.run_time = dateDiff(
 					cronHistoryEntity.end_at,
 					cronHistoryEntity.start_at,
+					'seconds',
 				);
 
 				if (
@@ -88,42 +146,6 @@ async function executeCron<R extends Record<string, unknown>>(
 			}
 		},
 	);
-}
-
-export function getCoreCronJobsPaths() {
-	const sharedFolder = Configuration.get('folder.shared') as string;
-	const sharedCronJobsPath = buildSrcPath(sharedFolder, '/cron-jobs');
-
-	const files = listFiles(sharedCronJobsPath);
-	const filesExtension = Configuration.resolveExtension();
-
-	// Return cron jobs files path
-	return files
-		.filter((f) => f.endsWith(`.cron.${filesExtension}`))
-		.map((f) => buildSrcPath(sharedFolder, '/cron-jobs', f));
-}
-
-export function getFeatureCronJobsPaths() {
-	const featuresFolder = Configuration.get<string>(
-		'folder.features',
-	) as string;
-	const featuresPath = buildSrcPath(featuresFolder);
-	const features = listDirectories(featuresPath);
-
-	const filesExtension = Configuration.resolveExtension();
-
-	// Find existing `cron-jobs` folders per feature
-	const cronJobsFolders = features
-		.map((n) => buildSrcPath(featuresFolder, n, '/cron-jobs'))
-		.filter((p) => fs.existsSync(p));
-
-	return cronJobsFolders.flatMap((f) => {
-		const files = listFiles(f);
-
-		return files
-			.filter((file) => file.endsWith(`.cron.${filesExtension}`))
-			.map((file) => path.join(f, file));
-	});
 }
 
 type CronJobData = {
@@ -187,51 +209,6 @@ function scheduleCronJob(data: CronJobData) {
 			timezone: Configuration.get<string>('app.timezone') || 'UTC',
 		},
 	);
-}
-
-export async function startCronJobs() {
-	const featureCronJobPaths = getFeatureCronJobsPaths();
-	const coreCronJobPaths = getCoreCronJobsPaths();
-
-	const cronJobsPaths = [...featureCronJobPaths, ...coreCronJobPaths];
-
-	const promises = cronJobsPaths.map(async (filePath) => {
-		try {
-			const cronJobData = await loadCronJob(filePath);
-
-			scheduleCronJob(cronJobData);
-
-			return { name: cronJobData.name, status: 'fulfilled' } as const;
-		} catch (error) {
-			const skip = error instanceof ModuleError;
-			const errorMsg = `${getErrorMessage(error) || `CronJobs setup errors`}`;
-
-			return {
-				name: filePath,
-				status: 'rejected',
-				reason: errorMsg,
-				skip: skip,
-			} as const;
-		}
-	});
-
-	const results = await Promise.all(promises);
-
-	const successful = results
-		.filter((r) => r.status === 'fulfilled')
-		.map((r) => r.name);
-
-	const failed = results
-		.filter((r) => r.status === 'rejected' && !r.skip)
-		.map((r) => r.reason ?? 'unknown');
-
-	if (successful.length) {
-		getSystemLogger().debug(`Cron jobs started: ${successful.join(', ')}`);
-	}
-
-	if (failed.length) {
-		getSystemLogger().error(failed, `Cron jobs errors`);
-	}
 }
 
 export default startCronJobs;

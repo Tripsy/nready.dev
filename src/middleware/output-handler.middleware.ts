@@ -167,7 +167,7 @@ export class OutputWrapper {
 			return filteredResult as OutputWrapperInterface;
 		}
 
-		return JSON.parse(JSON.stringify(this.result));
+		return structuredClone(this.result);
 	}
 
 	/**

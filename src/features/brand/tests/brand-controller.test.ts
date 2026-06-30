@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 const controller = 'BrandController';
-const basePath = brandRoutes.basePath;
+const basePath = (await brandRoutes()).basePath;
 
 testControllerCreate<BrandEntity, BrandValidator>({
 	controller: controller,

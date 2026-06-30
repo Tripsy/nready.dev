@@ -1,8 +1,8 @@
 import { expect, jest } from '@jest/globals';
 import type { EntityManager, ObjectLiteral, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
 import type RepositoryAbstract from '@/shared/abstracts/repository.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export function createMockQuery() {
 	return {
@@ -86,7 +86,7 @@ export function setupTransactionMock() {
 	const manager = {
 		query: jest.fn(),
 		getRepository: jest.fn(),
-	} as unknown as EntityManager;
+	};
 
 	const transaction = jest
 		.spyOn(dataSource, 'transaction')
@@ -98,14 +98,14 @@ export function setupTransactionMock() {
 				maybeCb?: (manager: EntityManager) => Promise<T>,
 			): Promise<T> => {
 				if (typeof isolationOrCb === 'function') {
-					return isolationOrCb(manager);
+					return isolationOrCb(manager as unknown as EntityManager);
 				} else {
 					if (!maybeCb) {
 						throw new Error(
 							'Callback is required when isolation level is provided',
 						);
 					}
-					return maybeCb(manager);
+					return maybeCb(manager as unknown as EntityManager);
 				}
 			},
 		);
@@ -133,7 +133,7 @@ export function testServiceUpdate<E extends ObjectLiteral>(
 
 interface IUpdateStatusService<E, S> {
 	findById(id: number, withDeleted?: boolean): Promise<E>;
-	updateStatus(id: number, newStatus: S, withDeleted: boolean): Promise<void>;
+	updateStatus(entry: E, newStatus: S): Promise<void>;
 }
 
 export function testServiceUpdateStatus<
@@ -156,7 +156,7 @@ export function testServiceUpdateStatus<
 		jest.spyOn(service, 'findById').mockResolvedValue(entity);
 
 		await expect(
-			service.updateStatus(entity.id, statusTransitions.good.from, false),
+			service.updateStatus(entity.id, statusTransitions.good.from),
 		).rejects.toThrow('shared.error.status_unchanged');
 	});
 
@@ -172,7 +172,7 @@ export function testServiceUpdateStatus<
 			jest.spyOn(service, 'findById').mockResolvedValue(entity);
 
 			await expect(
-				service.updateStatus(entity.id, badTransition.to, false),
+				service.updateStatus(entity.id, badTransition.to),
 			).rejects.toThrow('shared.error.status_update_not_allowed');
 		});
 	}
@@ -187,14 +187,14 @@ export function testServiceUpdateStatus<
 
 		repository.save.mockResolvedValue(entity);
 
-		await service.updateStatus(entity.id, statusTransitions.good.to, false);
+		await service.updateStatus(entity.id, statusTransitions.good.to);
 
 		expect(repository.save).toHaveBeenCalled();
 	});
 }
 
 interface IDeleteService {
-	delete(id: number, relatedId?: number): Promise<void>;
+	delete(id: number): Promise<void>;
 }
 
 export function testServiceDelete<
@@ -234,7 +234,7 @@ export function testServiceDeleteMultiple<
 }
 
 interface IRestoreService {
-	restore(id: number, relatedId?: number): Promise<void>;
+	restore(id: number): Promise<void>;
 }
 
 export function testServiceRestore<
@@ -252,7 +252,7 @@ export function testServiceRestore<
 }
 
 interface IFindByIdService<E extends ObjectLiteral> {
-	findById(id: number, withDeleted?: boolean, relatedId?: number): Promise<E>;
+	findById(id: number, withDeleted: boolean): Promise<E>;
 }
 
 export function testServiceFindById<

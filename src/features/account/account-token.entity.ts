@@ -20,7 +20,7 @@ export default class AccountTokenEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = false;
 
-	@PrimaryGeneratedColumn({ type: 'int', unsigned: false })
+	@PrimaryGeneratedColumn({ type: 'int' })
 	id!: number;
 
 	@Column('int', { unsigned: false, nullable: false })

@@ -1,5 +1,4 @@
 import { expect, jest } from '@jest/globals';
-import type { EntityManager, Repository } from 'typeorm';
 import type BrandEntity from '@/features/brand/brand.entity';
 import {
 	type BrandStatus,
@@ -31,17 +30,7 @@ describe('BrandService', () => {
 	});
 
 	const mockBrand = createMockRepository<BrandEntity, BrandQuery>();
-
-	const getScopedBrandRepository = jest
-		.fn()
-		.mockReturnValue(mockBrand.repository) as jest.MockedFunction<
-		(manager?: EntityManager) => Repository<BrandEntity>
-	>;
-
-	const serviceBrand = new BrandService(
-		mockBrand.repository,
-		getScopedBrandRepository,
-	);
+	const serviceBrand = new BrandService(mockBrand.repository);
 
 	it('should create entry inside transaction and save content', async () => {
 		const entity = getBrandEntityMock();
@@ -85,7 +74,7 @@ describe('BrandService', () => {
 
 		const { transaction, manager } = setupTransactionMock();
 
-		await serviceBrand.updateOrder(BrandTypeEnum.PRODUCT, [1, 2], true);
+		await serviceBrand.updateOrder(BrandTypeEnum.PRODUCT, [1, 2]);
 
 		expect(transaction).toHaveBeenCalled();
 		expect(manager.query).toHaveBeenCalled();
@@ -101,7 +90,6 @@ describe('BrandService', () => {
 		const result = await serviceBrand.findBySlug(
 			entity.slug,
 			entity.brand_type,
-			true,
 		);
 
 		expect(mockBrand.query.first).toHaveBeenCalled();

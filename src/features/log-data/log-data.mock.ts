@@ -1,7 +1,7 @@
 import type LogDataEntity from '@/features/log-data/log-data.entity';
 import { LogDataCategoryEnum } from '@/features/log-data/log-data.entity';
 import {
-	logDataValidator,
+	LogDataValidator,
 	OrderByEnum,
 } from '@/features/log-data/log-data.validator';
 import { createPastDate, formatDate } from '@/helpers';
@@ -31,8 +31,8 @@ export const logDataInputPayloads = {
 			id: 1,
 			category: LogDataCategoryEnum.SYSTEM,
 			level: LogDataLevelEnum.ERROR,
-			create_date_start: formatDate(createPastDate(14400)),
-			create_date_end: formatDate(createPastDate(7200)),
+			create_at_start: formatDate(createPastDate(14400)),
+			create_at_end: formatDate(createPastDate(7200)),
 			term: 'timeout',
 		},
 	},
@@ -40,5 +40,7 @@ export const logDataInputPayloads = {
 };
 
 export const logDataOutputPayloads = {
-	find: logDataValidator.find.parse(logDataInputPayloads.find),
+	find: new LogDataValidator('log-data').find.parse(
+		logDataInputPayloads.find,
+	),
 };

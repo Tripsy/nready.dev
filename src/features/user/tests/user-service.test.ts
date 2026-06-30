@@ -79,7 +79,7 @@ describe('UserService', () => {
 
 		mockUser.query.first.mockResolvedValue(entity);
 
-		const result = await serviceUser.findByEmail(entity.email, true);
+		const result = await serviceUser.findByEmail(entity.email);
 
 		expect(mockUser.query.filterByEmail).toHaveBeenCalledWith(entity.email);
 		expect(mockUser.query.first).toHaveBeenCalled();

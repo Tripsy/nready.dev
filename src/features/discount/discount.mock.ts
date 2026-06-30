@@ -5,11 +5,13 @@ import {
 	DiscountTypeEnum,
 } from '@/features/discount/discount.entity';
 import {
-	discountValidator,
+	DiscountValidator,
 	OrderByEnum,
 } from '@/features/discount/discount.validator';
 import { createFutureDate, createPastDate, formatDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const discountValidator = new DiscountValidator('discount');
 
 export function getDiscountEntityMock(): DiscountEntity {
 	return {
@@ -52,6 +54,7 @@ export const discountInputPayloads = {
 		notes: 'Applied to all orders during January',
 	},
 	update: {
+		id: 1,
 		label: 'Black Friday Discount',
 		scope: DiscountScopeEnum.ORDER,
 		reason: DiscountReasonEnum.BIRTHDAY_DISCOUNT,

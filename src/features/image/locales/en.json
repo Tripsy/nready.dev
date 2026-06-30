@@ -1,0 +1,37 @@
+{
+	"validation": {
+		"invalid_image_type": "Invalid image type",
+		"invalid_storage": "Invalid storage",
+		"invalid_path": "Invalid path",
+		"invalid_language": "Invalid language",
+		"invalid_width": "Invalid width",
+		"invalid_height": "Invalid height",
+		"invalid_size": "Invalid size",
+		"invalid_mime": "Invalid mime type",
+		"invalid_alt": "Invalid alt text",
+		"invalid_title": "Invalid title",
+		"invalid_description": "Invalid description",
+		"invalid_entity_id": "Invalid entity id",
+		"invalid_section": "Invalid section",
+		"invalid_ids_provided": "Invalid ids provided for ordering"
+	},
+	"error": {
+		"not_found": "Image not found"
+	},
+	"success": {
+		"create": "Image created successfully",
+		"update": "Image updated successfully",
+		"delete": "Image deleted successfully",
+		"restore": "Image restored successfully",
+		"status_update": "Image status updated successfully",
+		"order_update": "Image order updated successfully"
+	},
+	"history": {
+		"created": "Image #{{entity_id}} created by user #{{auth_id}}",
+		"updated": "Image #{{entity_id}} updated by user #{{auth_id}}",
+		"deleted": "Image(s) {{entity_ids}} marked as deleted by user #{{auth_id}}",
+		"removed": "Image(s) {{entity_ids}} removed by user #{{auth_id}}",
+		"restored": "Image(s) {{entity_ids}}restored by user #{{auth_id}}",
+		"status": "Image #{{entity_id}} updated from {{oldStatus}} to {{newStatus}} by user #{{auth_id}}"
+	}
+}

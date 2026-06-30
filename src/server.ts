@@ -3,6 +3,10 @@ import type { Server } from 'node:http';
 import { createApp } from '@/app';
 import { bootstrap } from '@/bootstrap';
 import { redisClose } from '@/config/init-redis.config';
+import {
+	cleanupWebSockets,
+	setupWebSockets,
+} from '@/config/init-websocket.setup';
 import { getRoutesInfo } from '@/config/routes.setup';
 import { Configuration } from '@/config/settings.config';
 import { destroyDatabase } from '@/providers/database.provider';
@@ -37,10 +41,13 @@ async function start() {
 		});
 	});
 
-	// 4. Setup signal handlers
+	// 4. Setup WebSockets
+	await setupWebSockets(server);
+
+	// 5. Setup signal handlers
 	setupSignalHandlers();
 
-	// 5. Print startup banner
+	// 6. Print startup banner
 	printStartupInfo();
 }
 
@@ -48,7 +55,7 @@ start().catch((error) => {
 	console.error(error);
 
 	// Logger can also generate errors (e.g: DB related, etc.), there is no error throw from here, just check alternative logs
-	getSystemLogger().fatal('Application startup failed:', error);
+	getSystemLogger().fatal(error, 'Application startup failed');
 
 	process.exit(1);
 });
@@ -111,6 +118,7 @@ export async function closeHandler(): Promise<void> {
 		{ name: 'Queues', fn: () => queueFactory.closeAll() },
 		{ name: 'Database', fn: destroyDatabase },
 		{ name: 'Log streams', fn: () => new LogStream().closeFileStreams() },
+		{ name: 'WebSockets', fn: () => cleanupWebSockets() },
 	];
 
 	await Promise.allSettled(
@@ -125,25 +133,6 @@ export async function closeHandler(): Promise<void> {
 		}),
 	);
 }
-
-// // Stop the server gracefully (used for tests)
-// export async function stopServer(): Promise<void> {
-//     if (isShuttingDown) {
-//         return;
-//     }
-//
-//     isShuttingDown = true;
-//
-//     if (!server) {
-//         return;
-//     }
-//
-//     await new Promise<void>((resolve) => {
-//         server.close(() => resolve());
-//     });
-//
-//     await closeHandler();
-// }
 
 // Print startup info
 function printStartupInfo(): void {

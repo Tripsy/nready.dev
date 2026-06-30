@@ -1,9 +1,7 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import type BrandContentEntity from '@/features/brand/brand-content.entity';
-import {
-	EntityAbstract,
-	type PageMeta,
-} from '@/shared/abstracts/entity.abstract';
+import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
 export const BrandStatusEnum = {
@@ -26,19 +24,13 @@ export const BrandTypeEnum = {
 
 export type BrandType = (typeof BrandTypeEnum)[keyof typeof BrandTypeEnum];
 
-export type BrandContentType = {
-	language: string;
-	description?: string;
-	meta: PageMeta;
-};
-
 const ENTITY_TABLE_NAME = 'brand';
 
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
 })
-
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_brand_slug', ['slug', 'brand_type'], {
 	unique: true,
 })

@@ -1,7 +1,7 @@
 import type LogDataEntity from '@/features/log-data/log-data.entity';
 import { getLogDataRepository } from '@/features/log-data/log-data.repository';
 import type { LogDataValidator } from '@/features/log-data/log-data.validator';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class LogDataService {
 	constructor(private repository: ReturnType<typeof getLogDataRepository>) {}
@@ -23,8 +23,8 @@ export class LogDataService {
 			.filterById(data.filter.id)
 			.filterByRange(
 				'created_at',
-				data.filter.create_date_start,
-				data.filter.create_date_end,
+				data.filter.create_at_start,
+				data.filter.create_at_end,
 			)
 			.filterBy('category', data.filter.category)
 			.filterBy('level', data.filter.level)

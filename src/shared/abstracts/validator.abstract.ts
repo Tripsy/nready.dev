@@ -1,7 +1,35 @@
 import { z } from 'zod';
-import dayjs from '@/config/dayjs.config';
-import { Configuration } from '@/config/settings.config';
-import { isValidDate, replaceVars } from '@/helpers';
+import { lang } from '@/config/i18n.setup';
+import {
+	createCurrentDate,
+	dateDiff,
+	isValidDate,
+	stringToDate,
+} from '@/helpers';
+
+export const sharedValidatorMessages = [
+	'invalid_enum',
+	'invalid_string',
+	'invalid_number',
+	'invalid_boolean',
+	'invalid_filter',
+	'string_min',
+	'array_min',
+	'invalid_id',
+	'invalid_ids',
+	'invalid_notes',
+	'invalid_language',
+	'invalid_status',
+	'invalid_date',
+	'invalid_meta_title',
+	'invalid_meta_description',
+	'invalid_meta_keywords',
+	'invalid_date_format',
+	'invalid_past_date',
+	'invalid_future_date',
+	'invalid_date_range',
+	'params_at_least_one',
+] as const;
 
 export abstract class IsValidator {
 	/**
@@ -67,13 +95,13 @@ export abstract class IsValidator {
 type EmptyValue = null | undefined;
 
 export abstract class BaseValidator<
-	TMessage extends Record<string, string>,
+	TMessage extends ReadonlyArray<string>,
 	TEmpty extends EmptyValue = undefined, // null - for FE; undefined - for BE
 > extends IsValidator {
 	private readonly emptyValue: TEmpty;
 
 	constructor(
-		private readonly message: TMessage,
+		private readonly entity: string,
 		options?: { emptyValue?: TEmpty },
 	) {
 		super();
@@ -81,14 +109,17 @@ export abstract class BaseValidator<
 		this.emptyValue = options?.emptyValue ?? (undefined as TEmpty);
 	}
 
-	protected getMessage(key: keyof TMessage, vars?: Record<string, string>) {
-		const message = this.message[key];
+	protected getMessage(
+		key: TMessage[number],
+		replacements?: Record<string, string>,
+	) {
+		const langKey = (
+			sharedValidatorMessages as ReadonlyArray<string>
+		).includes(key)
+			? `shared.validation.${key}`
+			: `${this.entity}.validation.${key}`;
 
-		if (!vars) {
-			return message;
-		}
-
-		return replaceVars(message, vars);
+		return lang(langKey, replacements);
 	}
 
 	/**
@@ -460,6 +491,18 @@ export abstract class BaseValidator<
 	/**
 	 * Validate ID
 	 */
+	// Overload signatures
+	protected validateId(
+		message?: string,
+		optionsData?: { required?: true },
+	): z.ZodType<number>;
+
+	protected validateId(
+		message?: string,
+		optionsData?: { required: false },
+	): z.ZodType<number | TEmpty>;
+
+	// Implementation signature
 	protected validateId(
 		message: string = 'Invalid ID',
 		optionsData?: { required?: boolean },
@@ -473,22 +516,17 @@ export abstract class BaseValidator<
 			return this.validateNumber(message, {
 				required: true,
 				onlyPositive: true,
-				allowDecimals: 0,
 			});
 		}
 
 		return this.validateNumber(message, {
 			required: false,
 			onlyPositive: true,
-			allowDecimals: 0,
 		});
 	}
 
 	/**
 	 * Validate date string and convert to `Date` object with time validation
-	 *
-	 * This validator handles both client-side (local time) and server-side (UTC with timezone)
-	 * date validation. It automatically detects the runtime environment but allows explicit override.
 	 *
 	 * @param messageData - Optional string or object with custom error messages
 	 * @param optionsData - Configuration options for date validation
@@ -510,18 +548,6 @@ export abstract class BaseValidator<
 	 *   maxFutureSeconds: 3600 // 1 hour
 	 * });
 	 *
-	 * @example
-	 * // Server-side with Romania timezone and 24-hour past limit
-	 * const serverSchema = validateDate({
-	 *   invalid_date: 'Invalid date',
-	 *   invalid_past_date: 'Not older than 24h',
-	 *   invalid_future_date: 'Cannot set a future date'
-	 * }, {
-	 *   runtime: 'server',
-	 *   timezone: 'Europe/Bucharest',
-	 *   requireTime: true,
-	 *   maxPastSeconds: 86400 // 24 hours
-	 * });
 	 *
 	 * @example
 	 * // Custom date format (European format)
@@ -542,14 +568,11 @@ export abstract class BaseValidator<
 	 *   invalid_future_date: 'Cannot be more than 2 hours in the future'
 	 * }, {
 	 *   runtime: 'server',
-	 *   timezone: 'Europe/Bucharest',
 	 *   dateFormat: /^\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}$/,
 	 *   requireTime: true,
 	 *   maxPastSeconds: 3600, // 1 hour
 	 *   maxFutureSeconds: 7200 // 2 hours
 	 * });
-	 *
-	 * @throws {Error} If runtime is 'server' and no timezone is provided
 	 */
 	// Overload signatures
 	protected validateDate(
@@ -558,13 +581,11 @@ export abstract class BaseValidator<
 			| {
 					invalid_date: string;
 					invalid_date_format: string;
-					invalid_past_date: string;
-					invalid_future_date: string;
+					invalid_past_date?: string;
+					invalid_future_date?: string;
 			  },
 		optionsData?: {
 			required?: true;
-			runtime?: 'client' | 'server';
-			timezone?: string;
 			dateFormat?: RegExp;
 			requireTime?: boolean;
 			maxPastSeconds?: number;
@@ -578,13 +599,11 @@ export abstract class BaseValidator<
 			| {
 					invalid_date: string;
 					invalid_date_format: string;
-					invalid_past_date: string;
-					invalid_future_date: string;
+					invalid_past_date?: string;
+					invalid_future_date?: string;
 			  },
 		optionsData: {
 			required: false;
-			runtime?: 'client' | 'server';
-			timezone?: string;
 			dateFormat?: RegExp;
 			requireTime?: boolean;
 			maxPastSeconds?: number;
@@ -599,13 +618,11 @@ export abstract class BaseValidator<
 			| {
 					invalid_date: string;
 					invalid_date_format: string;
-					invalid_past_date: string;
-					invalid_future_date: string;
+					invalid_past_date?: string;
+					invalid_future_date?: string;
 			  },
 		optionsData?: {
 			required?: boolean;
-			runtime?: 'client' | 'server';
-			timezone?: string; // IANA timezone, e.g., 'Europe/Bucharest'
 			dateFormat?: RegExp;
 			requireTime?: boolean;
 			maxPastSeconds?: number;
@@ -614,8 +631,6 @@ export abstract class BaseValidator<
 	): z.ZodType<Date | TEmpty> {
 		const options = {
 			required: true,
-			runtime: typeof window === 'undefined' ? 'server' : 'client', // Auto-detect
-			timezone: Configuration.get('app.timezone') as string,
 			dateFormat: /^\d{4}-\d{2}-\d{2}/,
 			requireTime: false,
 			...optionsData,
@@ -624,13 +639,6 @@ export abstract class BaseValidator<
 		const defaultMessages: Record<string, string> = {
 			invalid_date: 'Invalid date',
 		};
-
-		// Validate timezone for server runtime
-		if (options.runtime === 'server' && !options.timezone) {
-			throw new Error(
-				'Timezone is required for server-side date validation',
-			);
-		}
 
 		if (options.requireTime) {
 			options.dateFormat =
@@ -663,26 +671,17 @@ export abstract class BaseValidator<
 			message: message.invalid_date,
 		});
 
-		const getSecondsDiff = (val: string): number => {
-			if (options.runtime === 'server') {
-				// Server: Parse in provided timezone, compare in UTC
-				const dateInTimezone = dayjs.tz(val, options.timezone);
-				const now = dayjs.utc();
-
-				return now.diff(dateInTimezone, 'second');
-			} else {
-				// Client: Use local time
-				return dayjs().diff(dayjs(val), 'second');
-			}
-		};
-
 		stringSchema = stringSchema.refine(
 			(val) => {
 				if (options.maxPastSeconds === undefined) {
 					return true;
 				}
 
-				const secondsDiff = getSecondsDiff(val);
+				const secondsDiff = dateDiff(
+					stringToDate(val, !options.requireTime),
+					createCurrentDate(!options.requireTime),
+					'seconds',
+				);
 
 				if (secondsDiff > 0) {
 					return secondsDiff <= options.maxPastSeconds;
@@ -701,7 +700,11 @@ export abstract class BaseValidator<
 					return true;
 				}
 
-				const secondsDiff = getSecondsDiff(val);
+				const secondsDiff = dateDiff(
+					stringToDate(val, !options.requireTime),
+					createCurrentDate(!options.requireTime),
+					'seconds',
+				);
 
 				if (secondsDiff < 0) {
 					return Math.abs(secondsDiff) <= options.maxFutureSeconds;
@@ -715,13 +718,7 @@ export abstract class BaseValidator<
 		);
 
 		const dateSchema = stringSchema.transform((val) => {
-			if (options.runtime === 'server') {
-				// Server: Convert to UTC Date object
-				return dayjs.tz(val, options.timezone).utc().toDate();
-			} else {
-				// Client: Return local Date object
-				return dayjs(val).toDate();
-			}
+			return stringToDate(val);
 		});
 
 		if (options.required) {
@@ -732,12 +729,236 @@ export abstract class BaseValidator<
 	}
 
 	/**
+	 * Validate time string in HH:MM format with optional interval constraints
+	 *
+	 * @param messageData - Optional string or object with custom error messages
+	 * @param optionsData - Configuration options for time validation
+	 *
+	 * @example
+	 * // Basic usage
+	 * const basicSchema = validateTime('Invalid time');
+	 *
+	 * @example
+	 * // Required with 5-minute intervals
+	 * const timeSchema = validateTime({
+	 *   invalid: 'Please enter a valid time',
+	 *   invalid_format: 'Use format: HH:MM',
+	 *   invalid_interval: 'Time must be in 5-minute intervals'
+	 * });
+	 *
+	 * @example
+	 * // Optional with custom interval (15 minutes)
+	 * const optionalSchema = validateTime({
+	 *   invalid: 'Invalid time'
+	 * }, {
+	 *   required: false,
+	 *   minuteInterval: 15
+	 * });
+	 *
+	 * @example
+	 * // With time range restrictions
+	 * const workingHoursSchema = validateTime({
+	 *   invalid: 'Invalid time',
+	 *   invalid_range: 'Time must be between 09:00 and 17:00'
+	 * }, {
+	 *   minTime: '09:00',
+	 *   maxTime: '17:00',
+	 *   minuteInterval: 5
+	 * });
+	 */
+	// Overload signatures
+	protected validateTime(
+		messageData?:
+			| string
+			| {
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
+		optionsData?: {
+			required?: true;
+			minuteInterval?: number;
+			minTime?: string;
+			maxTime?: string;
+		},
+	): z.ZodType<string>;
+
+	protected validateTime(
+		messageData?:
+			| string
+			| {
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
+		optionsData?: {
+			required: false;
+			minuteInterval?: number;
+			minTime?: string;
+			maxTime?: string;
+		},
+	): z.ZodType<string | TEmpty>;
+
+	// Implementation signature
+	protected validateTime(
+		messageData?:
+			| string
+			| {
+					invalid?: string;
+					invalid_format?: string;
+					invalid_interval?: string;
+					invalid_range?: string;
+			  },
+		optionsData?: {
+			required?: boolean;
+			minuteInterval?: number;
+			minTime?: string;
+			maxTime?: string;
+		},
+	): z.ZodType<string | TEmpty> {
+		const options = {
+			required: true,
+			minuteInterval: 1,
+			...optionsData,
+		};
+
+		const defaultMessages: Record<string, string> = {
+			invalid: 'Invalid time',
+			invalid_format: 'Time must be in HH:MM format (e.g., 09:00, 14:30)',
+		};
+
+		if (options.minuteInterval && options.minuteInterval > 1) {
+			defaultMessages.invalid_interval = `Time must be in ${options.minuteInterval}-minute intervals`;
+		}
+
+		if (options.minTime || options.maxTime) {
+			defaultMessages.invalid_range = `Time must be between ${options.minTime ?? '00:00'} and ${options.maxTime ?? '23:59'}`;
+		}
+
+		const message = this.buildMessage(defaultMessages, messageData);
+
+		const parseTimeToMinutes = (time: string): number | null => {
+			const match = time.match(/^([0-1][0-9]|2[0-3]):([0-5][0-9])$/);
+
+			if (!match) {
+				return null;
+			}
+
+			const hours = parseInt(match[1], 10);
+			const minutes = parseInt(match[2], 10);
+
+			return hours * 60 + minutes;
+		};
+
+		const formatMinutesToTime = (minutes: number): string => {
+			const hours = Math.floor(minutes / 60);
+			const mins = minutes % 60;
+
+			return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+		};
+
+		let baseSchema = z.string({ message: message.invalid });
+
+		// Validate format (HH:MM)
+		baseSchema = baseSchema.refine(
+			(val) => /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/.test(val),
+			{ message: message.invalid_format },
+		);
+
+		// Validate minute interval (e.g., 00, 05, 10, 15, etc.)
+		if (options.minuteInterval && options.minuteInterval > 1) {
+			baseSchema = baseSchema.refine(
+				(val) => {
+					const minutes = parseTimeToMinutes(val);
+					if (minutes === null) return false;
+					return minutes % options.minuteInterval === 0;
+				},
+				{ message: message.invalid_interval },
+			);
+		}
+
+		// Validate min time
+		if (options.minTime) {
+			baseSchema = baseSchema.refine(
+				(val) => {
+					const timeMinutes = parseTimeToMinutes(val);
+					const minMinutes = options.minTime
+						? parseTimeToMinutes(options.minTime)
+						: null;
+
+					if (timeMinutes === null || minMinutes === null) {
+						return false;
+					}
+
+					return timeMinutes >= minMinutes;
+				},
+				{ message: message.invalid_range },
+			);
+		}
+
+		// Validate max time
+		if (options.maxTime) {
+			baseSchema = baseSchema.refine(
+				(val) => {
+					const timeMinutes = parseTimeToMinutes(val);
+					const maxMinutes = options.maxTime
+						? parseTimeToMinutes(options.maxTime)
+						: null;
+
+					if (timeMinutes === null || maxMinutes === null) {
+						return false;
+					}
+
+					return timeMinutes <= maxMinutes;
+				},
+				{ message: message.invalid_range },
+			);
+		}
+
+		// Optional step to round to nearest interval if needed
+		const timeSchema =
+			options.minuteInterval && options.minuteInterval > 1
+				? baseSchema.transform((val) => {
+						const minutes = parseTimeToMinutes(val);
+
+						if (minutes === null) {
+							return val;
+						}
+
+						// Round to nearest interval
+						const remainder = minutes % options.minuteInterval;
+
+						if (remainder === 0) {
+							return val;
+						}
+
+						const roundedMinutes = minutes - remainder;
+
+						return formatMinutesToTime(roundedMinutes);
+					})
+				: baseSchema;
+
+		if (options.required) {
+			return this.coerceEmpty(timeSchema) as z.ZodType<string>;
+		}
+
+		const optionalSchema = timeSchema
+			.transform((val) => (val === '' ? undefined : val))
+			.optional();
+
+		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
+	}
+
+	/**
 	 * @description Build a find validator
 	 */
 	protected validateFind<
 		TOrderBy extends Record<string, string>,
 		TDirection extends Record<string, string>,
 		TFilter extends z.ZodRawShape,
+		TQuery extends z.ZodRawShape = Record<never, never>,
 	>(
 		options: {
 			orderByEnum: TOrderBy;
@@ -746,7 +967,8 @@ export abstract class BaseValidator<
 			defaultDirection: TDirection[keyof TDirection];
 			defaultLimit: number;
 			defaultPage: number;
-			filterShape: TFilter;
+			filterSchema: TFilter;
+			querySchema?: TQuery;
 		},
 		messageData?: {
 			invalid_limit: string;
@@ -760,7 +982,8 @@ export abstract class BaseValidator<
 			defaultDirection,
 			defaultLimit,
 			defaultPage,
-			filterShape,
+			filterSchema,
+			querySchema = {} as TQuery,
 		} = options;
 
 		const message = this.buildMessage(
@@ -792,7 +1015,11 @@ export abstract class BaseValidator<
 				.default(defaultPage),
 
 			// Note: Do not add `optional()` types will break in *.service.ts files
-			filter: z.object(filterShape).partial(),
+			filter: z.preprocess(
+				(val) => val ?? {},
+				z.object(filterSchema).partial(),
+			),
+			...querySchema,
 		});
 	}
 
@@ -803,17 +1030,21 @@ export abstract class BaseValidator<
 			invalid_meta_keywords: 'Invalid keywords',
 		},
 	) {
-		return z.object({
-			title: this.validateString(message.invalid_meta_title, {
-				required: false,
+		return z.preprocess(
+			(val) => val ?? {},
+			z.object({
+				title: this.validateString(message.invalid_meta_title, {
+					required: false,
+				}),
+				description: this.validateString(
+					message.invalid_meta_description,
+					{ required: false },
+				),
+				keywords: this.validateString(message.invalid_meta_keywords, {
+					required: false,
+				}),
 			}),
-			description: this.validateString(message.invalid_meta_description, {
-				required: false,
-			}),
-			keywords: this.validateString(message.invalid_meta_keywords, {
-				required: false,
-			}),
-		});
+		);
 	}
 
 	// Overload signatures

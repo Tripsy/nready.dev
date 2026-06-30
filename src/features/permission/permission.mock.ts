@@ -1,9 +1,11 @@
 import type PermissionEntity from '@/features/permission/permission.entity';
 import {
 	OrderByEnum,
-	permissionValidator,
+	PermissionValidator,
 } from '@/features/permission/permission.validator';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const permissionValidator = new PermissionValidator('permission');
 
 export function getPermissionEntityMock(): PermissionEntity {
 	return {
@@ -15,7 +17,12 @@ export function getPermissionEntityMock(): PermissionEntity {
 }
 
 export const permissionInputPayloads = {
-	manage: {
+	create: {
+		entity: 'user',
+		operation: 'create',
+	},
+	update: {
+		id: 1,
 		entity: 'user',
 		operation: 'create',
 	},
@@ -32,6 +39,7 @@ export const permissionInputPayloads = {
 };
 
 export const permissionOutputPayloads = {
-	manage: permissionValidator.manage.parse(permissionInputPayloads.manage),
+	create: permissionValidator.create.parse(permissionInputPayloads.create),
+	update: permissionValidator.update.parse(permissionInputPayloads.update),
 	find: permissionValidator.find.parse(permissionInputPayloads.find),
 };

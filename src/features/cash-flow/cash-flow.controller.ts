@@ -2,9 +2,7 @@ import type { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 import { lang } from '@/config/i18n.setup';
 import { CustomError } from '@/exceptions';
-import CashFlowEntity, {
-	CashFlowCategoryEnum,
-} from '@/features/cash-flow/cash-flow.entity';
+import CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
 import {
 	type CashFlowPolicy,
 	cashFlowPolicy,
@@ -13,10 +11,8 @@ import {
 	type CashFlowService,
 	cashFlowService,
 } from '@/features/cash-flow/cash-flow.service';
-import {
-	type CashFlowValidator,
-	cashFlowValidator,
-} from '@/features/cash-flow/cash-flow.validator';
+import { CashFlowValidator } from '@/features/cash-flow/cash-flow.validator';
+import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.enum';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { getSystemLogger } from '@/providers/logger.provider';
@@ -50,8 +46,6 @@ class CashFlowController extends BaseController {
 			res.status(201).json(res.locals.output);
 		} catch (error) {
 			if (error instanceof QueryFailedError) {
-				// TODO the context for this error seems wrong => trigger by removing condition if (data.category === CashFlowCategoryEnum.REFUND) in cash-flow.service.ts
-
 				getSystemLogger().error(
 					error,
 					`QueryFailedError: ${error.message}`,
@@ -64,27 +58,22 @@ class CashFlowController extends BaseController {
 		}
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			CashFlowEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () => {
-			const entry = await this.cashFlowService.findById(
-				res.locals.validated.id,
+			return await this.cashFlowService.findById(
+				data.id,
 				this.policy.allowDeleted(res.locals.auth),
 			);
-
-			entry.amount = this.cashFlowService.outputAmount(
-				entry.amount,
-				entry.direction,
-			);
-
-			return entry;
 		});
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -96,12 +85,23 @@ class CashFlowController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
+		);
+
+		const existingEntry = await this.cashFlowService.findById(
+			data.id,
+			false,
+		);
 
 		const entry = await this.cashFlowService.updateData(
-			res.locals.validated.id,
+			existingEntry,
 			data,
-			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('cash-flow.success.update'));
@@ -115,7 +115,7 @@ class CashFlowController extends BaseController {
 
 		const data = this.validate(this.validator.delete, req.query, res);
 
-		await this.cashFlowService.delete(res.locals.validated.id, data.force);
+		await this.cashFlowService.delete(data.id, data.force);
 
 		res.locals.output.message(lang('cash-flow.success.delete'));
 
@@ -125,28 +125,12 @@ class CashFlowController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] = await this.cashFlowService.findByFilter(
 			data,
 			this.policy.allowDeleted(res.locals.auth),
 		);
-
-		entries.forEach((entry) => {
-			entry.amount = this.cashFlowService.outputAmount(
-				entry.amount,
-				entry.direction,
-			);
-		});
 
 		res.locals.output.data({
 			entries: entries,
@@ -161,38 +145,58 @@ class CashFlowController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public statusUpdate = asyncHandler(async (_req: Request, res: Response) => {
+	public statusUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		await this.cashFlowService.updateStatus(
-			res.locals.validated.id,
-			res.locals.validated.status,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.statusUpdate,
+			req.params,
+			res,
 		);
+
+		const existingEntry = await this.cashFlowService.findById(
+			data.id,
+			false,
+		);
+
+		await this.cashFlowService.updateStatus(existingEntry, data.status);
 
 		res.locals.output.message(lang('cash-flow.success.status_update'));
 
 		res.json(res.locals.output);
 	});
-}
 
-export function createCashFlowController(deps: {
-	policy: CashFlowPolicy;
-	validator: CashFlowValidator;
-	cache: CacheProvider;
-	cashFlowService: CashFlowService;
-}) {
-	return new CashFlowController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.cashFlowService,
+	public operationalRecords = asyncHandler(
+		async (req: Request, res: Response) => {
+			this.policy.canRead(res.locals.auth);
+
+			const data = this.validate(
+				this.validator.operationalRecords,
+				req.params,
+				res,
+			);
+
+			const cacheKey = this.cache.buildKey(
+				CashFlowEntity.NAME,
+				'operational-records',
+				data.id.toString(),
+			);
+
+			const cacheGetResults = await this.cache.get(cacheKey, async () =>
+				this.cashFlowService.findOperationalRecords(data.id),
+			);
+
+			res.locals.output.meta(cacheGetResults.isCached, 'isCached');
+			res.locals.output.data(cacheGetResults.data);
+
+			res.json(res.locals.output);
+		},
 	);
 }
 
-export const cashFlowController = createCashFlowController({
-	policy: cashFlowPolicy,
-	validator: cashFlowValidator,
-	cache: cacheProvider,
-	cashFlowService: cashFlowService,
-});
+export const cashFlowController = new CashFlowController(
+	cashFlowPolicy,
+	new CashFlowValidator('cash-flow'),
+	cacheProvider,
+	cashFlowService,
+);

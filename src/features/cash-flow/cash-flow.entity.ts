@@ -6,10 +6,17 @@ import {
 	JoinColumn,
 	ManyToOne,
 	OneToMany,
+	VirtualColumn,
 } from 'typeorm';
 import { Configuration } from '@/config/settings.config';
+import {
+	type CashFlowCategory,
+	CashFlowCategoryEnum,
+} from '@/features/cash-flow/cash-flow-category.enum';
+import OperationalRecordEntity from '@/features/cash-flow/operational-record.entity';
 import { arrayHasValue } from '@/helpers';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
 export const CurrencyEnum = {
@@ -37,50 +44,16 @@ export const CashFlowCategoryTypeEnum = {
 export type CashFlowCategoryType =
 	(typeof CashFlowCategoryTypeEnum)[keyof typeof CashFlowCategoryTypeEnum];
 
-export const CashFlowCategoryEnum = {
-	// Revenue
-	CUSTOMER: 'customer', // When company receive money from customer (invoice based)
-
-	// Operational Expenses
-	FUEL: 'fuel', // Vehicle fuel
-	MAINTENANCE: 'maintenance', // Vehicle repairs
-	TOLLS: 'tolls', // Road tolls
-
-	// Personnel
-	EMPLOYEE_SALARY: 'employee_salary',
-
-	// Business Expenses
-	VENDOR: 'vendor', // Third-party services
-	INSURANCE: 'insurance',
-	TAXES: 'taxes',
-
-	// Correction
-	CORRECTION: 'correction',
-	REFUND: 'refund',
-	EMPLOYEE_REIMBURSEMENT: 'employee_reimbursement',
-} as const;
-
-export type CashFlowCategory =
-	(typeof CashFlowCategoryEnum)[keyof typeof CashFlowCategoryEnum];
-
 export const getExpectedCategoryType = (
 	category: CashFlowCategory,
 ): CashFlowCategoryType => {
 	const revenueCategories = [CashFlowCategoryEnum.CUSTOMER];
 	const expenseCategories = [
-		CashFlowCategoryEnum.FUEL,
-		CashFlowCategoryEnum.MAINTENANCE,
-		CashFlowCategoryEnum.TOLLS,
-		CashFlowCategoryEnum.EMPLOYEE_SALARY,
 		CashFlowCategoryEnum.VENDOR,
 		CashFlowCategoryEnum.INSURANCE,
 		CashFlowCategoryEnum.TAXES,
 	];
-	const correctionCategories = [
-		CashFlowCategoryEnum.CORRECTION,
-		CashFlowCategoryEnum.REFUND,
-		CashFlowCategoryEnum.EMPLOYEE_REIMBURSEMENT,
-	];
+	const correctionCategories = [CashFlowCategoryEnum.REFUND];
 
 	if (arrayHasValue(category, revenueCategories)) {
 		return CashFlowCategoryTypeEnum.REVENUE;
@@ -188,7 +161,7 @@ export type CashFlowMethod =
 	(typeof CashFlowMethodEnum)[keyof typeof CashFlowMethodEnum];
 
 // Define number of decimals allowed for amount value
-export const AMOUNT_DECIMALS = 2;
+export const AMOUNT_DECIMALS = 4;
 
 /**
  * Hard-rules:
@@ -197,15 +170,34 @@ export const AMOUNT_DECIMALS = 2;
  * 	- `restore` functionality should not be implemented
  * 	- On `delete` if entry has refunds the operation is blocked unless `force` argument is present and then refunds are also deleted
  * 	- Status update is controlled via STATUS_TRANSITIONS
- * 	- Amounts are stored as positive number without decimals (defined by AMOUNT_DECIMALS)
+ * 	- `amount` is stored as positive number without decimals
+ * 	- `gross_amount` is calculated based on `amount` and `vat_rate` (depends on AMOUNT_DECIMALS)
+ * 	- `net_amount` is calculated based on `amount` and `vat_rate` (depends on AMOUNT_DECIMALS)
  */
 const ENTITY_TABLE_NAME = 'cash_flow';
+
+export const NET_AMOUNT_EXPRESSION = (alias: string) => `
+	CASE 
+		WHEN ${alias}.direction = '${CashFlowDirectionEnum.IN}' 
+		THEN CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}
+		ELSE -(CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS})
+	END
+`;
+
+export const GROSS_AMOUNT_EXPRESSION = (alias: string) => `
+    CASE 
+        WHEN ${alias}.direction = '${CashFlowDirectionEnum.IN}' 
+        THEN (CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}) * (1 + CAST(${alias}.vat_rate AS FLOAT) / 100)
+        ELSE -((CAST(${alias}.amount AS FLOAT) / ${10 ** AMOUNT_DECIMALS}) * (1 + CAST(${alias}.vat_rate AS FLOAT) / 100))
+    END
+`;
 
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
 	comment: 'Tracks cash flows.',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_cash_flow_created_at', ['created_at'])
 @Index('IDX_cash_flow_category_type_created_at', [
 	'category_type',
@@ -275,7 +267,7 @@ export default class CashFlowEntity extends EntityAbstract {
 	@Column('int', {
 		nullable: false,
 		comment:
-			'Amount intended to be charged; Note: It store cents; always divide by 100 for value',
+			'Amount intended to be charged; Note: Divide by 10000 for actual value. e.g. 806452 = 80.6452',
 	})
 	amount!: number;
 
@@ -333,4 +325,23 @@ export default class CashFlowEntity extends EntityAbstract {
 	)
 	@JoinColumn({ name: 'parent_id' })
 	parent!: CashFlowEntity | null;
+
+	@OneToMany(
+		() => OperationalRecordEntity,
+		(operationalRecord) => operationalRecord.cash_flow,
+	)
+	operational_records!: OperationalRecordEntity[];
+
+	// VIRTUAL
+	@VirtualColumn({
+		type: 'decimal',
+		query: (alias) => ` CAST(${NET_AMOUNT_EXPRESSION(alias)} AS FLOAT)`,
+	})
+	netAmount!: number;
+
+	@VirtualColumn({
+		type: 'decimal',
+		query: (alias) => `CAST(${GROSS_AMOUNT_EXPRESSION(alias)} AS FLOAT)`,
+	})
+	grossAmount!: number;
 }

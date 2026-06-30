@@ -3,6 +3,7 @@ import type { DiscountSnapshot } from '@/features/discount/discount.entity';
 import type OrderEntity from '@/features/order/order.entity';
 import type ProductEntity from '@/features/product/product.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 const ENTITY_TABLE_NAME = 'order_product';
 
@@ -11,6 +12,7 @@ const ENTITY_TABLE_NAME = 'order_product';
 	schema: 'public',
 	comment: 'Stores ordered products (order line items)',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class OrderProductEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

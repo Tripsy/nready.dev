@@ -1,71 +1,21 @@
 import dayjs from '@/config/dayjs.config';
 
+const DEFAULT_DATE_FORMAT = 'YYYY-MM-DD';
+
 /**
- * Check if a string is a valid date
+ * Create a current date
  *
- * @param {string} date - The date string to check
- * @returns {boolean} - True if the date is valid, false otherwise
+ * @param startOfDay - If true, returns the current date at 00:00:00.000
+ * @returns {Date} - The current date
  */
-export function isValidDate(date: string): boolean {
-	return dayjs(date).isValid();
-}
+export function createCurrentDate(startOfDay: boolean = false): Date {
+	const now = new Date();
 
-/**
- * Checks if a value is a valid Date object
- * @param date - The value to check
- * @returns `true` if the value is a valid Date object, `false` otherwise
- */
-export function isValidDateInstance(date: unknown): date is Date {
-	return (
-		date instanceof Date &&
-		!Number.isNaN(date.getTime()) &&
-		date.toString() !== 'Invalid Date'
-	);
-}
-
-/**
- * Converts a date string to a Date object with strict validation
- *
- * @param {string | null} value - The date string to convert (ISO 8601, RFC 2822, or other supported formats)
- * @returns {Date | null}
- * @throws {Error} If the input is not a valid date string or cannot be parsed
- */
-export function stringToDate(value: string | null): Date | null {
-	if (!value) {
-		return null;
+	if (startOfDay) {
+		now.setHours(0, 0, 0, 0);
 	}
 
-	const trimmedString = value.trim();
-
-	if (!trimmedString) {
-		return null;
-	}
-
-	// Special handling for ISO 8601 date-only format (YYYY-MM-DD)
-	if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedString)) {
-		const [year, month, day] = trimmedString.split('-').map(Number);
-		const date = new Date(Date.UTC(year, month - 1, day));
-
-		if (!isValidDateInstance(date)) {
-			throw new Error(`Invalid ISO date: ${trimmedString}`);
-		}
-
-		return date;
-	}
-
-	// General date parsing
-	const parsedDate = new Date(trimmedString);
-
-	if (!isValidDateInstance(parsedDate)) {
-		throw new Error(`Invalid date format: ${trimmedString}`);
-	}
-
-	// Additional validation for non-ISO formats
-	if (parsedDate.toString() === 'Invalid Date') {
-		throw new Error(`Unparsable date: ${trimmedString}`);
-	}
-
-	return parsedDate;
+	return now;
 }
 
 /**
@@ -103,36 +53,37 @@ export function createPastDate(seconds: number): Date {
 }
 
 /**
- * Calculate the difference between two dates in seconds
+ * Check if a string is a valid date
  *
- * @param {Date} date1 - The first date
- * @param {Date} date2 - The second date
- * @returns {number} - The difference in seconds
- * @throws {Error} - If either date is invalid
+ * @param {string} date - The date string to check
+ * @returns {boolean} - True if the date is valid, false otherwise
  */
-export function dateDiffInSeconds(date1: Date, date2: Date): number {
-	if (!isValidDateInstance(date1)) {
-		throw new Error('Invalid date (eg: date1)');
-	}
-
-	if (!isValidDateInstance(date2)) {
-		throw new Error('Invalid date (eg: date2)');
-	}
-
-	return Math.ceil((date1.getTime() - date2.getTime()) / 1000);
+export function isValidDate(date: string): boolean {
+	return dayjs(date).isValid();
 }
 
 /**
- * Return the `date` if it is a valid `Date` instance, otherwise return `undefined`.
+ * Convert string to Date object using dayjs
  *
  * @param date
+ * @param startOfDay
  */
-export function getValidDate(date: unknown): Date | undefined {
-	return isValidDateInstance(date) ? date : undefined;
+export function stringToDate(date: string, startOfDay: boolean = false): Date {
+	const parsed = dayjs(date);
+
+	if (!parsed.isValid()) {
+		throw new Error(`Invalid date value: "${date}"`);
+	}
+
+	if (startOfDay) {
+		return parsed.startOf('day').toDate();
+	}
+
+	return parsed.toDate();
 }
 
 /**
- * Universal date formatter with Moment.js
+ * Date formatter with dayjs
  *
  * @param value - Date input (string, Date, null, undefined)
  * @param format - Output format (or preset)
@@ -141,11 +92,12 @@ export function getValidDate(date: unknown): Date | undefined {
  */
 export function formatDate(
 	value: string | number | Date | null | undefined,
-	format?: 'default' | 'date-time' | string,
+	format?: 'default' | 'date-time' | 'time',
 	options?: {
+		customFormat?: string;
 		strict?: boolean;
 	},
-): string | undefined {
+): string | null {
 	// Handle empty values
 	if (
 		value === null ||
@@ -156,7 +108,7 @@ export function formatDate(
 			throw new Error('Invalid date: null/undefined');
 		}
 
-		return undefined;
+		return null;
 	}
 
 	const date = dayjs(value);
@@ -167,20 +119,74 @@ export function formatDate(
 			throw new Error(`Invalid date: ${value}`);
 		}
 
-		return undefined;
+		return null;
 	}
 
-	// Apply formatting
 	switch (format) {
 		case 'default':
-			return date.format('YYYY-MM-DD');
+			return date.format(DEFAULT_DATE_FORMAT);
 		case 'date-time':
-			return date.format('DD-MM-YYYY, hh:mm A');
+			return date.format('DD-MM-YYYY, HH:mm');
+		case 'time':
+			return date.format('HH:mm');
 		default:
 			if (format) {
 				return date.format(format);
 			}
 
+			if (options?.customFormat) {
+				return date.format(options.customFormat);
+			}
+
 			return date.toISOString();
+	}
+}
+
+/**
+ * Calculate the difference between two dates
+ *
+ * @example
+ * dateDiff(start, end, 'minutes') → 90
+ * dateDiff(start, end, 'display') → "1h 30'"
+ * dateDiff(start, end, 'seconds') → 5400
+ */
+// Overload signatures
+export function dateDiff(
+	start: string | Date,
+	end: string | Date,
+	unit: 'display',
+): string;
+export function dateDiff(
+	start: string | Date,
+	end: string | Date,
+	unit: 'seconds' | 'minutes' | 'hours',
+): number;
+// Implementation signature
+export function dateDiff(
+	startDate: string | Date,
+	endDate: string | Date,
+	unit: 'seconds' | 'minutes' | 'hours' | 'display',
+): number | string {
+	const start = dayjs(startDate);
+	const end = dayjs(endDate);
+
+	if (!start.isValid() || !end.isValid()) {
+		throw new Error('Invalid date arguments provided for dateDiff');
+	}
+
+	switch (unit) {
+		case 'seconds':
+			return Math.ceil(end.diff(start, 'second', true));
+		case 'minutes':
+			return Math.ceil(end.diff(start, 'minute', true));
+		case 'hours':
+			return Math.ceil(end.diff(start, 'hour', true));
+		case 'display': {
+			const diffInMinutes = end.diff(start, 'minute');
+			const hours = Math.floor(diffInMinutes / 60);
+			const minutes = diffInMinutes % 60;
+
+			return `${hours}h ${minutes}'`;
+		}
 	}
 }

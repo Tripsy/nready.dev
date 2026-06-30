@@ -9,10 +9,9 @@
 		"invalid_vat_rate": "VAT rate must be a valid number",
 		"invalid_currency": "Currency is invalid",
 		"invalid_exchange_rate": "Exchange rate must be a valid number",
-		"invalid_notes": "Notes are invalid",
-		"invalid_status": "Status is invalid",
 		"invalid_external_reference": "External reference invalid",
-		"invalid_parent_id": "Parent payment ID is invalid"
+		"invalid_parent_id": "Parent payment ID is invalid",
+		"required_operational_record_type": "For selected category operational record is required (e.g.: {{operational_record_type}})"
 	},
 	"error": {
 		"not_found": "Cash flow entry not found",
@@ -21,7 +20,7 @@
 		"direction_mismatch": "Category '{{category}}' requires direction '{{direction}}'",
 		"direction_expected_from_category_type": "Type '{{category_type}}' requires direction '{{direction}}'",
 		"refund_parent_required": "Refund must have a parent payment",
-		"refund_parent_status_invalid": "The refunded payment status is invalid (eg: {{status}})",
+		"invalid_refund_parent_status": "The refunded payment status is invalid (eg: {{status}})",
 		"refund_parent_same_currency": "Refunds have to created with the same currency used in the parent",
 		"refund_parent_invalid_category_type": "Cannot refund from selected payment",
 		"refund_parent_invalid_category": "Cannot refund from selected payment",

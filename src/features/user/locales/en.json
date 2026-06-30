@@ -11,7 +11,6 @@
 		"password_confirm_required": "Password confirmation is required",
 		"password_confirm_mismatch": "Passwords does not match",
 		"invalid_role": "Invalid role",
-		"invalid_status": "Invalid status",
 		"invalid_operator_type": "Invalid operator type",
 		"operator_type_required": "Operator type is required when role is operator",
 		"operator_type_only_for_operator": "Operator type can only be set when role is operator"

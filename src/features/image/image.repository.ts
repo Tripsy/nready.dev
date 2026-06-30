@@ -1,18 +1,18 @@
 import type { Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { Configuration } from '@/config/settings.config';
-import ClientAddressEntity from '@/features/client-address/client-address.entity';
+import ImageEntity from '@/features/image/image.entity';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
-export class ClientAddressQuery extends RepositoryAbstract<ClientAddressEntity> {
-	constructor(repository: Repository<ClientAddressEntity>) {
-		super(repository, ClientAddressEntity.NAME);
+export class ImageQuery extends RepositoryAbstract<ImageEntity> {
+	constructor(repository: Repository<ImageEntity>) {
+		super(repository, ImageEntity.NAME);
 	}
 
 	filterByTerm(term?: string): this {
 		if (term) {
 			if (!Number.isNaN(Number(term)) && term.trim() !== '') {
-				this.filterBy('id', Number(term));
+				this.filterBy('image.id', Number(term));
 			} else {
 				if (
 					term.length >
@@ -20,17 +20,12 @@ export class ClientAddressQuery extends RepositoryAbstract<ClientAddressEntity> 
 				) {
 					this.filterAny([
 						{
-							column: 'details',
+							column: 'image.name',
 							value: term,
 							operator: 'ILIKE',
 						},
 						{
-							column: 'postal_code',
-							value: term,
-							operator: 'ILIKE',
-						},
-						{
-							column: 'notes',
+							column: 'content.description',
 							value: term,
 							operator: 'ILIKE',
 						},
@@ -43,9 +38,9 @@ export class ClientAddressQuery extends RepositoryAbstract<ClientAddressEntity> 
 	}
 }
 
-export const getClientAddressRepository = () =>
-	dataSource.getRepository(ClientAddressEntity).extend({
+export const getImageRepository = () =>
+	dataSource.getRepository(ImageEntity).extend({
 		createQuery() {
-			return new ClientAddressQuery(this);
+			return new ImageQuery(this);
 		},
 	});

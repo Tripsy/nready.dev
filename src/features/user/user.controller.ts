@@ -34,18 +34,20 @@ class UserController extends BaseController {
 		res.status(201).json(res.locals.output);
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			UserEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
 			this.userService.findById(
-				res.locals.validated.id,
+				data.id,
 				this.policy.allowDeleted(res.locals.auth),
 			),
 		);
@@ -59,13 +61,18 @@ class UserController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
-
-		const entry = await this.userService.updateData(
-			res.locals.validated.id,
-			data,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
 		);
+
+		const existingEntry = await this.userService.findById(data.id, false);
+
+		const entry = await this.userService.updateData(existingEntry, data);
 
 		res.locals.output.message(lang('user.success.update'));
 		res.locals.output.data(entry);
@@ -73,20 +80,24 @@ class UserController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.userService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete, req.params, res);
+
+		await this.userService.delete(data.id);
 
 		res.locals.output.message(lang('user.success.delete'));
 
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.userService.restore(res.locals.validated.id);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.userService.restore(data.id);
 
 		res.locals.output.message(lang('user.success.restore'));
 
@@ -96,16 +107,7 @@ class UserController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] = await this.userService.findByFilter(
 			data,
@@ -125,14 +127,18 @@ class UserController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public statusUpdate = asyncHandler(async (_req: Request, res: Response) => {
+	public statusUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		await this.userService.updateStatus(
-			res.locals.validated.id,
-			res.locals.validated.status,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.statusUpdate,
+			req.params,
+			res,
 		);
+
+		const existingEntry = await this.userService.findById(data.id, false);
+
+		await this.userService.updateStatus(existingEntry, data.status);
 
 		res.locals.output.message(lang('user.success.status_update'));
 
@@ -140,23 +146,9 @@ class UserController extends BaseController {
 	});
 }
 
-export function createUserController(deps: {
-	policy: UserPolicy;
-	validator: UserValidator;
-	cache: CacheProvider;
-	userService: UserService;
-}) {
-	return new UserController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.userService,
-	);
-}
-
-export const userController = createUserController({
-	policy: userPolicy,
-	validator: userValidator,
-	cache: cacheProvider,
-	userService: userService,
-});
+export const userController = new UserController(
+	userPolicy,
+	userValidator,
+	cacheProvider,
+	userService,
+);

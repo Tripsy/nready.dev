@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 const controller = 'PermissionController';
-const basePath = permissionRoutes.basePath;
+const basePath = (await permissionRoutes()).basePath;
 
 describe(`${controller} - create`, () => {
 	const route = basePath;
@@ -64,7 +64,7 @@ describe(`${controller} - create`, () => {
 
 		const response = await request(app)
 			.post(route)
-			.send(permissionInputPayloads.manage);
+			.send(permissionInputPayloads.create);
 
 		withDebugResponse(() => {
 			expect(response.status).toBe(201);
@@ -107,7 +107,7 @@ describe(`${controller} - update`, () => {
 
 		const response = await request(app)
 			.put(route)
-			.send(permissionInputPayloads.manage);
+			.send(permissionInputPayloads.update);
 
 		withDebugResponse(() => {
 			expect(response.status).toBe(200);

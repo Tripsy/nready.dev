@@ -1,9 +1,11 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { LogDataCategoryEnum } from '@/features/log-data/log-data.entity';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 import { LogDataLevelEnum } from '@/shared/types/log-data.type';
 
 export const OrderByEnum = {
@@ -14,31 +16,28 @@ export const OrderByEnum = {
 	CREATED_AT: 'created_at',
 } as const;
 
-const validatorMessages = {
-	invalid_category: lang('log-data.validation.invalid_category'),
-	invalid_level: lang('log-data.validation.invalid_level'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-	invalid_date: lang('shared.validation.invalid_date'),
-	invalid_date_format: lang('shared.validation.invalid_date_format'),
-	invalid_past_date: lang('shared.validation.invalid_past_date'),
-	invalid_future_date: lang('shared.validation.invalid_future_date'),
-	invalid_date_range: lang('shared.validation.invalid_date_range'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_category',
+	'invalid_level',
+] as const;
 
 export class LogDataValidator extends BaseValidator<typeof validatorMessages> {
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly delete = z.object({
 		ids: z.array(
 			z.coerce
 				.number({
-					message: lang('shared.validation.invalid_ids', {
+					message: this.getMessage('invalid_ids', {
 						name: 'ids',
 					}),
 				})
 				.positive(),
 			{
-				message: lang('shared.validation.invalid_ids', {
+				message: this.getMessage('invalid_ids', {
 					name: 'ids',
 				}),
 			},
@@ -55,7 +54,7 @@ export class LogDataValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -73,7 +72,7 @@ export class LogDataValidator extends BaseValidator<typeof validatorMessages> {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength') as number,
 			}),
-			create_date_start: this.validateDate(
+			create_at_start: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),
 					invalid_date_format: this.getMessage('invalid_date_format'),
@@ -82,7 +81,7 @@ export class LogDataValidator extends BaseValidator<typeof validatorMessages> {
 				},
 				{ required: false },
 			),
-			create_date_end: this.validateDate(
+			create_at_end: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),
 					invalid_date_format: this.getMessage('invalid_date_format'),
@@ -94,17 +93,15 @@ export class LogDataValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter?.create_date_start &&
-			data.filter?.create_date_end &&
-			data.filter.create_date_start > data.filter.create_date_end
+			data.filter?.create_at_start &&
+			data.filter?.create_at_end &&
+			data.filter.create_at_start > data.filter.create_at_end
 		) {
 			ctx.addIssue({
-				path: ['filter', 'create_date_start'],
+				path: ['filter', 'create_at_start'],
 				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});
 		}
 	});
 }
-
-export const logDataValidator = new LogDataValidator(validatorMessages);

@@ -8,6 +8,7 @@ import {
 import type { CategoryQuery } from '@/features/category/category.repository';
 import { CategoryService } from '@/features/category/category.service';
 import type { CategoryValidator } from '@/features/category/category.validator';
+import { createCurrentDate } from '@/helpers';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
 	createMockRepository,
@@ -69,7 +70,7 @@ describe('CategoryService', () => {
 	it('should restore by id', async () => {
 		mockCategory.query.firstOrFail.mockResolvedValue({
 			...getCategoryEntityMock(),
-			deleted_at: new Date(),
+			deleted_at: createCurrentDate(),
 			parent: null,
 		});
 		mockCategory.query.restore.mockReturnThis();

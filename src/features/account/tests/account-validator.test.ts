@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import { accountInputPayloads } from '@/features/account/account.mock';
-import { accountValidator } from '@/features/account/account.validator';
+import { AccountValidator } from '@/features/account/account.validator';
 import { withDebugValidated } from '@/tests/jest-validator.setup';
 
 beforeEach(() => {
@@ -8,7 +8,7 @@ beforeEach(() => {
 });
 
 type ValidatorMethod = keyof Pick<
-	typeof accountValidator,
+	AccountValidator,
 	| 'register'
 	| 'login'
 	| 'passwordRecover'
@@ -34,6 +34,8 @@ const listSchemas: ValidatorMethod[] = [
 	'meEdit',
 	'meDelete',
 ];
+
+const accountValidator = new AccountValidator('account');
 
 describe(validator, () => {
 	listSchemas.forEach((n) => {

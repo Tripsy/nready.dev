@@ -4,6 +4,7 @@ import type AccountTokenEntity from '@/features/account/account-token.entity';
 import type { AccountTokenQuery } from '@/features/account/account-token.repository';
 import { AccountTokenService } from '@/features/account/account-token.service';
 import { getUserEntityMock } from '@/features/user/user.mock';
+import { createCurrentDate } from '@/helpers';
 import { createMockRepository } from '@/tests/jest-service.setup';
 
 /**
@@ -109,7 +110,7 @@ describe('AccountTokenService', () => {
 		jest.spyOn(serviceAccountToken, 'generateAuthToken').mockReturnValue({
 			token: 'jwt-string',
 			ident: 'ident-uuid',
-			expire_at: new Date(),
+			expire_at: createCurrentDate(),
 		});
 		mockAccountToken.repository.save.mockResolvedValue({} as never);
 

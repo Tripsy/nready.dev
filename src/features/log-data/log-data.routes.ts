@@ -1,31 +1,30 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
-import { logDataController } from '@/features/log-data/log-data.controller';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
-const routesModule: FeatureRoutesModule<typeof logDataController> = {
-	basePath: '/log-data',
-	controller: logDataController,
-	routes: {
-		read: {
-			path: '/:id',
-			method: 'get',
-			handlers: [validateParamsWhenId('id')],
-		},
-		delete: {
-			path: '',
-			method: 'delete',
-		},
-		find: {
-			path: '',
-			method: 'get',
-			handlers: [parseFilterMiddleware],
-		},
-	},
-};
+export default async () => {
+	const { logDataController } = await import(
+		'@/features/log-data/log-data.controller'
+	);
 
-const routesConfiguration: FeatureRoutesModule<typeof logDataController> = {
-	...routesModule,
-};
+	const config: FeatureRoutesModule<typeof logDataController> = {
+		basePath: '/log-data',
+		controller: logDataController,
+		routes: {
+			read: {
+				path: '/:id',
+				method: 'get',
+				handlers: [validateParamsWhenId('id')],
+			},
+			delete: {
+				path: '',
+				method: 'delete',
+			},
+			find: {
+				path: '',
+				method: 'get',
+			},
+		},
+	};
 
-export default routesConfiguration;
+	return config;
+};

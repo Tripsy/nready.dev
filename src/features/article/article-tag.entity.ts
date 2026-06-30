@@ -2,6 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type ArticleEntity from '@/features/article/article.entity';
 import type TermEntity from '@/features/term/term.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 const ENTITY_TABLE_NAME = 'article_tag';
 
@@ -10,6 +11,7 @@ const ENTITY_TABLE_NAME = 'article_tag';
 	schema: 'public',
 	comment: 'Links articles to tag terms',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_article_tag_unique', ['article_id', 'tag_id'], {
 	unique: true,
 })

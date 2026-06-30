@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import {
 	ClientStatusEnum,
@@ -7,7 +6,10 @@ import {
 } from '@/features/client/client.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList = [
 	'client_type',
@@ -30,32 +32,20 @@ export const OrderByEnum = {
 	CREATED_AT: 'created_at',
 } as const;
 
-const validatorMessages = {
-	invalid_iban: lang('client.validation.invalid_iban'),
-	invalid_bank_name: lang('client.validation.invalid_bank_name'),
-	invalid_contact_name: lang('client.validation.invalid_contact_name'),
-	invalid_contact_email: lang('client.validation.invalid_contact_email'),
-	invalid_contact_phone: lang('client.validation.invalid_contact_phone'),
-	invalid_notes: lang('client.validation.invalid_notes'),
-	invalid_company_name: lang('client.validation.invalid_company_name'),
-	invalid_company_cui: lang('client.validation.invalid_company_cui'),
-	invalid_company_reg_com: lang('client.validation.invalid_company_reg_com'),
-	invalid_person_name: lang('client.validation.invalid_person_name'),
-	invalid_person_identification_number: lang(
-		'client.validation.invalid_person_identification_number',
-	),
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-	invalid_type: lang('client.validation.invalid_type'),
-	invalid_status: lang('cash-flow.validation.invalid_status'),
-	invalid_date: lang('shared.validation.invalid_date'),
-	invalid_date_format: lang('shared.validation.invalid_date_format'),
-	invalid_past_date: lang('shared.validation.invalid_past_date'),
-	invalid_future_date: lang('shared.validation.invalid_future_date'),
-	invalid_date_range: lang('shared.validation.invalid_date_range'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_iban',
+	'invalid_bank_name',
+	'invalid_contact_name',
+	'invalid_contact_email',
+	'invalid_contact_phone',
+	'invalid_company_name',
+	'invalid_company_cui',
+	'invalid_company_reg_com',
+	'invalid_person_name',
+	'invalid_person_identification_number',
+	'invalid_type',
+] as const;
 
 export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 	readonly baseSchema = {
@@ -131,6 +121,14 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 			.extend(this.baseSchema),
 	]);
 
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly updateId = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly update = z
 		.discriminatedUnion('client_type', [
 			// Company schema
@@ -186,6 +184,14 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 			path: ['_global'],
 		});
 
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly find = this.validateFind({
 		orderByEnum: OrderByEnum,
 		defaultOrderBy: OrderByEnum.ID,
@@ -196,7 +202,7 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -214,7 +220,7 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_status'),
 				{ required: false },
 			),
-			create_date_start: this.validateDate(
+			create_at_start: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),
 					invalid_date_format: this.getMessage('invalid_date_format'),
@@ -223,7 +229,7 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 				},
 				{ required: false },
 			),
-			create_date_end: this.validateDate(
+			create_at_end: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),
 					invalid_date_format: this.getMessage('invalid_date_format'),
@@ -239,17 +245,23 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	}).superRefine((data, ctx) => {
 		if (
-			data.filter?.create_date_start &&
-			data.filter?.create_date_end &&
-			data.filter.create_date_start > data.filter.create_date_end
+			data.filter?.create_at_start &&
+			data.filter?.create_at_end &&
+			data.filter.create_at_start > data.filter.create_at_end
 		) {
 			ctx.addIssue({
-				path: ['filter', 'create_date_start'],
+				path: ['filter', 'create_at_start'],
 				message: this.getMessage('invalid_date_range'),
 				code: 'custom',
 			});
 		}
 	});
-}
 
-export const clientValidator = new ClientValidator(validatorMessages);
+	readonly statusUpdate = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		status: this.validateEnum(
+			ClientStatusEnum,
+			this.getMessage('invalid_status'),
+		),
+	});
+}

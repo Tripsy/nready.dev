@@ -4,7 +4,7 @@ import FileStreamRotator from 'file-stream-rotator';
 import nodemailer from 'nodemailer';
 import pino, { type Logger } from 'pino';
 import pinoPretty from 'pino-pretty';
-import { v4 as uuid } from 'uuid';
+import { v7 as uuid } from 'uuid';
 import dataSource from '@/config/data-source.config';
 import { requestContext } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
@@ -155,7 +155,9 @@ export class LogStream extends Writable {
 
 		const clonedLog = JSON.parse(JSON.stringify(log));
 
-		clonedLog.time = formatDate(log.time, 'HH:mm:ss Z');
+		clonedLog.time = formatDate(log.time, undefined, {
+			customFormat: 'HH:mm:ss Z',
+		});
 
 		delete clonedLog?.destinations; // Destinations were added to track log channels
 		delete clonedLog.level;
@@ -244,7 +246,9 @@ export class LogStream extends Writable {
 
 		const clonedLog = JSON.parse(JSON.stringify(log));
 
-		clonedLog.time = formatDate(log.time, 'HH:mm:ss Z');
+		clonedLog.time = formatDate(log.time, undefined, {
+			customFormat: 'HH:mm:ss Z',
+		});
 
 		delete clonedLog?.destinations; // Destinations were added to track log channels
 

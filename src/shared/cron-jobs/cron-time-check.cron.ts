@@ -1,6 +1,6 @@
 import dataSource from '@/config/data-source.config';
 import { Configuration } from '@/config/settings.config';
-import { createPastDate, formatDate } from '@/helpers';
+import { createCurrentDate, createPastDate, formatDate } from '@/helpers';
 import { loadEmailTemplate, queueEmail } from '@/providers/email.provider';
 
 export const SCHEDULE_EXPRESSION = '03 02 * * *';
@@ -36,7 +36,7 @@ const cronTimeCheck = async () => {
 			ch.start_at;
     `;
 
-	const endDate = new Date().toISOString();
+	const endDate = createCurrentDate().toISOString();
 	const startDate = createPastDate(86400).toISOString();
 
 	const queryParameters = [startDate, endDate];

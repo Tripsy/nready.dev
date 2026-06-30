@@ -9,10 +9,7 @@ import {
 	type PermissionService,
 	permissionService,
 } from '@/features/permission/permission.service';
-import {
-	type PermissionValidator,
-	permissionValidator,
-} from '@/features/permission/permission.validator';
+import { PermissionValidator } from '@/features/permission/permission.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -30,11 +27,11 @@ class PermissionController extends BaseController {
 	public create = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canCreate(res.locals.auth);
 
-		const data = this.validate(this.validator.manage, req.body, res);
+		const data = this.validate(this.validator.create, req.body, res);
 
 		const createResult = await this.permissionService.create(
-			this.policy.allowDeleted(res.locals.auth),
 			data,
+			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.data(createResult.permission);
@@ -48,18 +45,20 @@ class PermissionController extends BaseController {
 		res.status(201).json(res.locals.output);
 	});
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			PermissionEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
 			this.permissionService.findById(
-				res.locals.validated.id,
+				data.id,
 				this.policy.allowDeleted(res.locals.auth),
 			),
 		);
@@ -73,10 +72,22 @@ class PermissionController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.manage, req.body, res);
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
+		);
+
+		const existingEntry = await this.permissionService.findById(
+			data.id,
+			false,
+		);
 
 		const entry = await this.permissionService.updateData(
-			res.locals.validated.id,
+			existingEntry,
 			data,
 		);
 
@@ -86,20 +97,24 @@ class PermissionController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.permissionService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete, req.params, res);
+
+		await this.permissionService.delete(data.id);
 
 		res.locals.output.message(lang('permission.success.delete'));
 
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.permissionService.restore(res.locals.validated.id);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.permissionService.restore(data.id);
 
 		res.locals.output.message(lang('permission.success.restore'));
 
@@ -109,16 +124,7 @@ class PermissionController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] = await this.permissionService.findByFilter(
 			data,
@@ -139,23 +145,9 @@ class PermissionController extends BaseController {
 	});
 }
 
-export function createPermissionController(deps: {
-	policy: PermissionPolicy;
-	validator: PermissionValidator;
-	cache: CacheProvider;
-	permissionService: PermissionService;
-}) {
-	return new PermissionController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.permissionService,
-	);
-}
-
-export const permissionController = createPermissionController({
-	policy: permissionPolicy,
-	validator: permissionValidator,
-	cache: cacheProvider,
-	permissionService: permissionService,
-});
+export const permissionController = new PermissionController(
+	permissionPolicy,
+	new PermissionValidator('permission'),
+	cacheProvider,
+	permissionService,
+);

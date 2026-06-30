@@ -22,7 +22,7 @@ beforeEach(() => {
 });
 
 const controller = 'PlaceController';
-const basePath = placeRoutes.basePath;
+const basePath = (await placeRoutes()).basePath;
 
 testControllerCreate<PlaceEntity, PlaceValidator>({
 	controller: controller,

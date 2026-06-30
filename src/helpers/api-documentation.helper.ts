@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import type { FeatureRoutesModule, HttpMethod } from '@/config/routes.setup';
 import { Configuration } from '@/config/settings.config';
 import type { HttpStatusCode } from '@/exceptions';
+import { buildSrcPath } from '@/helpers/system.helper';
 import { apiDocumentationMiddleware } from '@/middleware/api-documentation.middleware';
 import sharedMessages from '@/shared/locales/en.json';
 
@@ -271,11 +272,17 @@ export function addApiDocumentationMiddleware<C>(
 
 export async function setupDevelopmentDocumentation<C>(
 	module: FeatureRoutesModule<C>,
-	docsPath: string,
+	feature: string,
 ): Promise<FeatureRoutesModule<C>> {
 	if (!Configuration.isEnvironment('development')) {
 		return module;
 	}
+
+	const docsPath = buildSrcPath(
+		Configuration.get('folder.features') as string,
+		feature,
+		`${feature}.docs`,
+	);
 
 	try {
 		const { docs } = await import(docsPath);

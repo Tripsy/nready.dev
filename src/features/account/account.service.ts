@@ -15,8 +15,8 @@ import {
 import type UserEntity from '@/features/user/user.entity';
 import { type UserStatus, UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
-import { createFutureDate } from '@/helpers';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import { createCurrentDate, createFutureDate } from '@/helpers';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export type ConfirmationTokenPayload = {
 	user_id: number;
@@ -30,13 +30,6 @@ export class AccountService {
 		private accountRecoveryService: AccountRecoveryService,
 		private accountEmailService: AccountEmailService,
 	) {}
-
-	/**
-	 * @description Encrypts a password
-	 */
-	public async encryptPassword(password: string): Promise<string> {
-		return await bcrypt.hash(password, 10);
-	}
 
 	/**
 	 * @description Checks if a password matches a hashed password
@@ -55,14 +48,10 @@ export class AccountService {
 		user: UserEntity,
 		password: string,
 	): Promise<void> {
-		user.password = password; // Encryption it handled in subscriber
-		user.password_updated_at = new Date();
+		user.password = password; // Subscriber hashes it
+		user.password_updated_at = createCurrentDate();
 
-		await this.userService.update({
-			id: user.id,
-			password: password,
-			password_updated_at: new Date(),
-		});
+		await this.userService.update(user);
 
 		await this.accountRecoveryService.removeAccountRecoveryForUser(user.id);
 	}
@@ -70,10 +59,13 @@ export class AccountService {
 	public async register(
 		data: ValidatorOutput<AccountValidator, 'register'>,
 	): Promise<UserEntity> {
-		const existing = await this.userService.findByEmail(data.email, true);
+		const existing = await this.userService.findByEmail(data.email);
 
 		if (existing) {
-			if (existing.status === UserStatusEnum.PENDING) {
+			if (
+				!existing.deleted_at &&
+				existing.status === UserStatusEnum.PENDING
+			) {
 				throw new CustomError(
 					409,
 					lang('account.error.pending_account'),

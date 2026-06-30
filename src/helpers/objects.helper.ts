@@ -110,3 +110,22 @@ export function arrayHasValue<T extends readonly unknown[]>(
 ): value is T[number] {
 	return array.includes(value);
 }
+
+/**
+ * Creates a new object with only the specified keys from the source
+ */
+export function pickValuesFromObject<T extends Record<string, unknown>>(
+	source: T,
+	keys: string[],
+): Partial<T> {
+	return keys.reduce(
+		(acc, key) => {
+			if (key in source) {
+				acc[key as keyof T] = source[key as keyof T];
+			}
+
+			return acc;
+		},
+		{} as Partial<T>,
+	);
+}

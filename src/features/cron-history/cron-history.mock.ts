@@ -1,7 +1,7 @@
 import type CronHistoryEntity from '@/features/cron-history/cron-history.entity';
 import { CronHistoryStatusEnum } from '@/features/cron-history/cron-history.entity';
 import {
-	cronHistoryValidator,
+	CronHistoryValidator,
 	OrderByEnum,
 } from '@/features/cron-history/cron-history.validator';
 import { createPastDate, formatDate } from '@/helpers';
@@ -37,5 +37,7 @@ export const cronHistoryInputPayloads = {
 };
 
 export const cronHistoryOutputPayloads = {
-	find: cronHistoryValidator.find.parse(cronHistoryInputPayloads.find),
+	find: new CronHistoryValidator('cron-history').find.parse(
+		cronHistoryInputPayloads.find,
+	),
 };

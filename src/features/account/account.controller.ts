@@ -16,10 +16,7 @@ import {
 	type AccountService,
 	accountService,
 } from '@/features/account/account.service';
-import {
-	type AccountValidator,
-	accountValidator,
-} from '@/features/account/account.validator';
+import { AccountValidator } from '@/features/account/account.validator';
 import {
 	type AccountEmailService,
 	accountEmailService,
@@ -35,7 +32,12 @@ import {
 } from '@/features/account/account-token.service';
 import { UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
-import { compareMetaDataValue, createPastDate, tokenMetaData } from '@/helpers';
+import {
+	compareMetaDataValue,
+	createCurrentDate,
+	createPastDate,
+	tokenMetaData,
+} from '@/helpers';
 import asyncHandler from '@/helpers/async.handler';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
@@ -56,7 +58,7 @@ class AccountController extends BaseController {
 
 		const data = this.validate(this.validator.register, req.body, res);
 
-		data.language = data.language || res.locals.lang;
+		data.language = data.language || res.locals.language;
 
 		const entry = await this.accountService.register(data);
 
@@ -71,13 +73,16 @@ class AccountController extends BaseController {
 
 		const data = this.validate(this.validator.login, req.body, res);
 
-		const user = await this.userService.findByEmail(data.email, false, [
+		const user = await this.userService.findByEmail(data.email, undefined, [
 			'id',
+			'name',
+			'email',
 			'password',
 			'status',
+			'deleted_at',
 		]);
 
-		if (!user) {
+		if (!user || user.deleted_at) {
 			throw new NotFoundError(lang('account.error.not_found'));
 		}
 
@@ -193,15 +198,13 @@ class AccountController extends BaseController {
 				res,
 			);
 
-			const user = await this.userService.findByEmail(data.email, false, [
-				'id',
-				'name',
-				'email',
-				'language',
-				'status',
-			]);
+			const user = await this.userService.findByEmail(
+				data.email,
+				undefined,
+				['id', 'name', 'email', 'language', 'status', 'deleted_at'],
+			);
 
-			if (!user) {
+			if (!user || user.deleted_at) {
 				throw new NotFoundError(lang('account.error.not_found'));
 			}
 
@@ -254,12 +257,15 @@ class AccountController extends BaseController {
 
 			const data = this.validate(
 				this.validator.passwordRecoverChange,
-				req.body,
+				{
+					...req.body,
+					ident: req.params.ident,
+				},
 				res,
 			);
 
 			const recovery = await this.accountRecoveryService.findByIdent(
-				res.locals.validated.ident,
+				data.ident,
 			);
 
 			if (!recovery) {
@@ -274,7 +280,7 @@ class AccountController extends BaseController {
 				);
 			}
 
-			if (recovery.expire_at < new Date()) {
+			if (recovery.expire_at < createCurrentDate()) {
 				throw new BadRequestError(
 					lang('account.error.recovery_token_expired'),
 				);
@@ -315,7 +321,7 @@ class AccountController extends BaseController {
 			// Mark the recovery token as used
 			await this.accountRecoveryService.update({
 				id: recovery.id,
-				used_at: new Date(),
+				used_at: createCurrentDate(),
 			});
 
 			void this.accountEmailService.sendEmailPasswordChange({
@@ -388,8 +394,14 @@ class AccountController extends BaseController {
 	 * It is allowed to be used authenticated or not
 	 * ...and "Yes" - based on implementation (maybe auto-login after registration) - confirmation can take place even if logged in
 	 */
-	public emailConfirm = asyncHandler(async (_req: Request, res: Response) => {
-		const token = decodeURIComponent(res.locals.validated.token);
+	public emailConfirm = asyncHandler(async (req: Request, res: Response) => {
+		const data = this.validate(
+			this.validator.emailConfirm,
+			req.params,
+			res,
+		);
+
+		const token = decodeURIComponent(data.token);
 
 		// Verify JWT and extract payload
 		const confirmationTokenPayload =
@@ -413,7 +425,7 @@ class AccountController extends BaseController {
 		if (confirmationTokenPayload.user_email_new) {
 			// Confirm procedure for email update
 			user.email = confirmationTokenPayload.user_email_new;
-			user.email_verified_at = new Date();
+			user.email_verified_at = createCurrentDate();
 
 			await this.userService.update({
 				id: user.id,
@@ -435,7 +447,7 @@ class AccountController extends BaseController {
 
 			// Update user status
 			user.status = UserStatusEnum.ACTIVE;
-			user.email_verified_at = new Date();
+			user.email_verified_at = createCurrentDate();
 
 			await this.userService.update({
 				id: user.id,
@@ -462,15 +474,13 @@ class AccountController extends BaseController {
 				res,
 			);
 
-			const user = await this.userService.findByEmail(data.email, false, [
-				'id',
-				'name',
-				'email',
-				'language',
-				'status',
-			]);
+			const user = await this.userService.findByEmail(
+				data.email,
+				undefined,
+				['id', 'name', 'email', 'language', 'status', 'deleted_at'],
+			);
 
-			if (!user) {
+			if (!user || user.deleted_at) {
 				throw new BadRequestError(lang('account.error.not_found'));
 			}
 
@@ -493,10 +503,7 @@ class AccountController extends BaseController {
 
 		const data = this.validate(this.validator.emailUpdate, req.body, res);
 
-		const existingUser = await this.userService.findByEmail(
-			data.email_new,
-			true,
-		);
+		const existingUser = await this.userService.findByEmail(data.email_new);
 
 		// Return error if email already in use by another account
 		if (existingUser) {
@@ -639,32 +646,12 @@ class AccountController extends BaseController {
 	});
 }
 
-export function createAccountController(deps: {
-	policy: AccountPolicy;
-	validator: AccountValidator;
-	accountService: AccountService;
-	accountTokenService: AccountTokenService;
-	accountRecoveryService: AccountRecoveryService;
-	accountEmailService: AccountEmailService;
-	userService: UserService;
-}) {
-	return new AccountController(
-		deps.policy,
-		deps.validator,
-		deps.accountService,
-		deps.accountTokenService,
-		deps.accountRecoveryService,
-		deps.accountEmailService,
-		deps.userService,
-	);
-}
-
-export const accountController = createAccountController({
-	policy: accountPolicy,
-	validator: accountValidator,
-	accountService: accountService,
-	accountTokenService: accountTokenService,
-	accountRecoveryService: accountRecoveryService,
-	accountEmailService: accountEmailService,
-	userService: userService,
-});
+export const accountController = new AccountController(
+	accountPolicy,
+	new AccountValidator('account'),
+	accountService,
+	accountTokenService,
+	accountRecoveryService,
+	accountEmailService,
+	userService,
+);

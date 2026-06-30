@@ -6,10 +6,7 @@ import {
 	type BrandService,
 	brandService,
 } from '@/features/brand/brand.service';
-import {
-	type BrandValidator,
-	brandValidator,
-} from '@/features/brand/brand.validator';
+import { BrandValidator } from '@/features/brand/brand.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -40,11 +37,18 @@ class BrandController extends BaseController {
 	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
 
-		const data = this.validate(this.validator.read, req.query, res);
+		const data = this.validate(
+			this.validator.read,
+			{
+				...req.query,
+				id: req.params.id,
+			},
+			res,
+		);
 
 		const cacheKey = this.cache.buildKey(
 			BrandEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			data.language ?? '',
 			'read',
 		);
@@ -52,11 +56,11 @@ class BrandController extends BaseController {
 		const cacheGetResults = await this.cache.get(
 			cacheKey,
 			async () =>
-				await this.brandService.getDataById(
-					res.locals.validated.id,
-					data,
-					this.policy.allowDeleted(res.locals.auth),
-				),
+				await this.brandService.getEntryData({
+					id: data.id,
+					language: data.language,
+					withDeleted: this.policy.allowDeleted(res.locals.auth),
+				}),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -68,12 +72,20 @@ class BrandController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.update, req.body, res);
+		const data = this.validate(
+			this.validator.update,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
+		);
+
+		const existingEntry = await this.brandService.findById(data.id, false);
 
 		const entry = await this.brandService.updateDataWithContent(
-			res.locals.validated.id,
+			existingEntry,
 			data,
-			this.policy.allowDeleted(res.locals.auth),
 		);
 
 		res.locals.output.message(lang('brand.success.update'));
@@ -82,20 +94,24 @@ class BrandController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public delete = asyncHandler(async (_req: Request, res: Response) => {
+	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		await this.brandService.delete(res.locals.validated.id);
+		const data = this.validate(this.validator.delete, req.params, res);
+
+		await this.brandService.delete(data.id);
 
 		res.locals.output.message(lang('brand.success.delete'));
 
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (_req: Request, res: Response) => {
+	public restore = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRestore(res.locals.auth);
 
-		await this.brandService.restore(res.locals.validated.id);
+		const data = this.validate(this.validator.restore, req.params, res);
+
+		await this.brandService.restore(data.id);
 
 		res.locals.output.message(lang('brand.success.restore'));
 
@@ -105,16 +121,7 @@ class BrandController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		if (!data.filter.language) {
 			data.filter.language = res.locals.language;
@@ -138,14 +145,18 @@ class BrandController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public statusUpdate = asyncHandler(async (_req: Request, res: Response) => {
+	public statusUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		await this.brandService.updateStatus(
-			res.locals.validated.id,
-			res.locals.validated.status,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.statusUpdate,
+			req.params,
+			res,
 		);
+
+		const existingEntry = await this.brandService.findById(data.id, false);
+
+		await this.brandService.updateStatus(existingEntry, data.status);
 
 		res.locals.output.message(lang('brand.success.status_update'));
 
@@ -155,13 +166,16 @@ class BrandController extends BaseController {
 	public orderUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.orderUpdate, req.body, res);
-
-		await this.brandService.updateOrder(
-			res.locals.validated.brand_type,
-			data.positions,
-			this.policy.allowDeleted(res.locals.auth),
+		const data = this.validate(
+			this.validator.orderUpdate,
+			{
+				...req.body,
+				brand_type: req.params.brand_type,
+			},
+			res,
 		);
+
+		await this.brandService.updateOrder(data.brand_type, data.positions);
 
 		res.locals.output.message(lang('brand.success.order_update'));
 
@@ -169,23 +183,9 @@ class BrandController extends BaseController {
 	});
 }
 
-export function createBrandController(deps: {
-	policy: BrandPolicy;
-	validator: BrandValidator;
-	cache: CacheProvider;
-	brandService: BrandService;
-}) {
-	return new BrandController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.brandService,
-	);
-}
-
-export const brandController = createBrandController({
-	policy: brandPolicy,
-	validator: brandValidator,
-	cache: cacheProvider,
-	brandService: brandService,
-});
+export const brandController = new BrandController(
+	brandPolicy,
+	new BrandValidator('brand'),
+	cacheProvider,
+	brandService,
+);

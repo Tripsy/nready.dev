@@ -1,7 +1,7 @@
 import { lang } from '@/config/i18n.setup';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import type { UserPermissionValidator } from '@/features/user-permission/user-permission.validator';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class UserPermissionService {
 	constructor(
@@ -13,14 +13,13 @@ export class UserPermissionService {
 	 */
 	public async create(
 		data: ValidatorOutput<UserPermissionValidator, 'create'>,
-		user_id: number,
 	) {
 		return Promise.all(
 			data.permission_ids.map(async (permission_id) => {
 				const existingUserPermission = await this.repository
 					.createQuery()
 					.select(['id', 'deleted_at'])
-					.filterBy('user_id', user_id)
+					.filterBy('user_id', data.user_id)
 					.filterBy('permission_id', permission_id)
 					.withDeleted()
 					.first();
@@ -44,7 +43,7 @@ export class UserPermissionService {
 				}
 
 				await this.repository.save({
-					user_id,
+					user_id: data.user_id,
 					permission_id,
 				});
 
@@ -64,7 +63,7 @@ export class UserPermissionService {
 			.delete(true, false, true);
 	}
 
-	public async restore(user_id: number, id: number) {
+	public async restore(id: number, user_id: number) {
 		await this.repository
 			.createQuery()
 			.filterById(id)
@@ -74,8 +73,8 @@ export class UserPermissionService {
 
 	public findByFilter(
 		data: ValidatorOutput<UserPermissionValidator, 'find'>,
-		user_id: number,
 		withDeleted: boolean,
+		user_id: number,
 	) {
 		return this.repository
 			.createQuery()

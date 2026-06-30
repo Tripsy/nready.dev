@@ -1,10 +1,12 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import { PlaceTypeEnum } from '@/features/place/place.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { BaseValidator } from '@/shared/abstracts/validator.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
 
 export const paramsUpdateList: string[] = ['place_type', 'code', 'parent_id'];
 
@@ -12,20 +14,17 @@ export const OrderByEnum = {
 	ID: 'id',
 } as const;
 
-const validatorMessages = {
-	invalid_contents: lang('place.validation.invalid_contents'),
-	duplicate_contents: lang('place.validation.duplicate_contents'),
-	invalid_name: lang('place.validation.invalid_name'),
-	invalid_place_type: lang('place.validation.invalid_place_type'),
-	code_invalid: lang('place.validation.code_invalid'),
-	invalid_parent_id: lang('place.validation.invalid_parent_id'),
-	required_parent_id: lang('place.validation.required_parent_id'),
-	params_at_least_one: lang('shared.validation.params_at_least_one'),
-	invalid_number: lang('shared.validation.invalid_number'),
-	invalid_string: lang('shared.validation.invalid_string'),
-	invalid_boolean: lang('shared.validation.invalid_boolean'),
-	invalid_language: lang('shared.validation.invalid_language'),
-};
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_contents',
+	'duplicate_contents',
+	'invalid_name',
+	'invalid_place_type',
+	'invalid_type_label',
+	'invalid_code',
+	'invalid_parent_id',
+	'required_parent_id',
+] as const;
 
 export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 	contentsSchema() {
@@ -33,23 +32,17 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 			language: this.validateLanguage(),
 			name: this.validateString(this.getMessage('invalid_name')),
 			type_label: this.validateString(
-				lang('place.validation.invalid_type_label'),
+				this.getMessage('invalid_type_label'),
 			),
 		});
 	}
-
-	readonly read = z.object({
-		language: this.validateLanguage(this.getMessage('invalid_language'), {
-			required: false,
-		}),
-	});
 
 	readonly create = z.object({
 		place_type: this.validateEnum(
 			PlaceTypeEnum,
 			this.getMessage('invalid_place_type'),
 		),
-		code: this.validateString(this.getMessage('code_invalid'), {
+		code: this.validateString(this.getMessage('invalid_code'), {
 			required: false,
 		}),
 		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
@@ -67,14 +60,22 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 			),
 	});
 
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}),
+	});
+
 	readonly update = z
 		.object({
+			id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 			place_type: this.validateEnum(
 				PlaceTypeEnum,
 				this.getMessage('invalid_place_type'),
 				{ required: false },
 			),
-			code: this.validateString(this.getMessage('code_invalid'), {
+			code: this.validateString(this.getMessage('invalid_code'), {
 				required: false,
 			}),
 			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
@@ -112,6 +113,14 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 			}
 		});
 
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	readonly find = this.validateFind({
 		orderByEnum: OrderByEnum,
 		defaultOrderBy: OrderByEnum.ID,
@@ -122,7 +131,7 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		defaultLimit: Configuration.get('filter.limit') as number,
 		defaultPage: 1,
 
-		filterShape: {
+		filterSchema: {
 			id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
@@ -146,5 +155,3 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	});
 }
-
-export const placeValidator = new PlaceValidator(validatorMessages);

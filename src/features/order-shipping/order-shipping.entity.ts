@@ -3,6 +3,7 @@ import type CarrierEntity from '@/features/carrier/carrier.entity';
 import type { DiscountSnapshot } from '@/features/discount/discount.entity';
 import type OrderEntity from '@/features/order/order.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 export const ShippingStatusEnum = {
 	PENDING: 'pending',
@@ -23,6 +24,7 @@ const ENTITY_TABLE_NAME = 'order_shipping';
 	schema: 'public',
 	comment: 'Stores shipping details for orders',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class OrderShippingEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

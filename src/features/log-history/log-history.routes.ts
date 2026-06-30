@@ -1,31 +1,30 @@
 import type { FeatureRoutesModule } from '@/config/routes.setup';
-import { logHistoryController } from '@/features/log-history/log-history.controller';
-import { parseFilterMiddleware } from '@/middleware/parse-filter.middleware';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
 
-const routesModule: FeatureRoutesModule<typeof logHistoryController> = {
-	basePath: '/log-history',
-	controller: logHistoryController,
-	routes: {
-		read: {
-			path: '/:id',
-			method: 'get',
-			handlers: [validateParamsWhenId('id')],
-		},
-		delete: {
-			path: '',
-			method: 'delete',
-		},
-		find: {
-			path: '',
-			method: 'get',
-			handlers: [parseFilterMiddleware],
-		},
-	},
-};
+export default async () => {
+	const { logHistoryController } = await import(
+		'@/features/log-history/log-history.controller'
+	);
 
-const routesConfiguration: FeatureRoutesModule<typeof logHistoryController> = {
-	...routesModule,
-};
+	const config: FeatureRoutesModule<typeof logHistoryController> = {
+		basePath: '/log-history',
+		controller: logHistoryController,
+		routes: {
+			read: {
+				path: '/:id',
+				method: 'get',
+				handlers: [validateParamsWhenId('id')],
+			},
+			delete: {
+				path: '',
+				method: 'delete',
+			},
+			find: {
+				path: '',
+				method: 'get',
+			},
+		},
+	};
 
-export default routesConfiguration;
+	return config;
+};

@@ -1,0 +1,99 @@
+import { z } from 'zod';
+import { Configuration } from '@/config/settings.config';
+import { hasAtLeastOneValue } from '@/helpers';
+import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+import {
+	BaseValidator,
+	sharedValidatorMessages,
+} from '@/shared/abstracts/validator.abstract';
+
+export const paramsUpdateList: string[] = ['details', 'postal_code'];
+
+export const OrderByEnum = {
+	ID: 'id',
+} as const;
+
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_city_id',
+	'invalid_details',
+	'invalid_postal_code',
+] as const;
+
+export class AddressValidator extends BaseValidator<typeof validatorMessages> {
+	readonly create = z.object({
+		city_id: this.validateId(this.getMessage('invalid_city_id'), {
+			required: false,
+		}),
+		details: this.validateString(this.getMessage('invalid_details')),
+		postal_code: this.validatePostalCode(
+			this.getMessage('invalid_postal_code'),
+			{ required: false },
+		),
+	});
+
+	readonly read = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}).default(Configuration.language()),
+	});
+
+	readonly update = z
+		.object({
+			id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+			city_id: this.validateId(this.getMessage('invalid_city_id'), {
+				required: false,
+			}),
+			details: this.validateString(this.getMessage('invalid_details'), {
+				required: false,
+			}),
+			postal_code: this.validatePostalCode(
+				this.getMessage('invalid_postal_code'),
+				{ required: false },
+			),
+		})
+		.refine((data) => hasAtLeastOneValue(data), {
+			message: this.getMessage('params_at_least_one', {
+				params: paramsUpdateList.join(', '),
+			}),
+			path: ['_global'],
+		});
+
+	readonly delete = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly restore = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
+	readonly find = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.ID,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.ASC,
+
+		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultPage: 1,
+
+		filterSchema: {
+			id: this.validateNumber(this.getMessage('invalid_number'), {
+				required: false,
+			}),
+			term: this.validateString(this.getMessage('invalid_string'), {
+				required: false,
+				minChars: Configuration.get('filter.termMinLength') as number,
+			}),
+			language: this.validateLanguage(
+				this.getMessage('invalid_language'),
+				{ required: false },
+			),
+			is_deleted: this.validateBoolean(
+				this.getMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
+		},
+	});
+}

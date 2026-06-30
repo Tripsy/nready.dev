@@ -1,5 +1,6 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type ProductEntity from './product.entity';
 
 const ENTITY_TABLE_NAME = 'product_content';
@@ -10,6 +11,7 @@ const ENTITY_TABLE_NAME = 'product_content';
 	comment:
 		'Language-specific content for products (name, slug, descriptions, meta)',
 })
+@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_product_content_unique_per_lang', ['product_id', 'language'])
 @Index('IDX_product_content_slug_lang', ['slug', 'language'], { unique: true })
 export default class ProductContentEntity extends EntityAbstract {

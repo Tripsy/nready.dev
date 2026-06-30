@@ -33,7 +33,7 @@ beforeEach(() => {
 });
 
 const controller = 'ClientController';
-const basePath = clientRoutes.basePath;
+const basePath = (await clientRoutes()).basePath;
 
 testControllerCreate<ClientEntity, ClientValidator>({
 	controller: controller,

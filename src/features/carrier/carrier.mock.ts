@@ -1,10 +1,12 @@
 import type CarrierEntity from '@/features/carrier/carrier.entity';
 import {
-	carrierValidator,
+	CarrierValidator,
 	OrderByEnum,
 } from '@/features/carrier/carrier.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const carrierValidator = new CarrierValidator('carrier');
 
 export function getCarrierEntityMock(): CarrierEntity {
 	return {
@@ -29,6 +31,7 @@ export const carrierInputPayloads = {
 		notes: 'Test carrier entry',
 	},
 	update: {
+		id: 1,
 		name: 'Fun Drive Update',
 		website: 'http://www.fundrive.dev',
 		phone: '12345',

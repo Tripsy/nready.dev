@@ -8,10 +8,7 @@ import {
 	type LogHistoryService,
 	logHistoryService,
 } from '@/features/log-history/log-history.service';
-import {
-	type LogHistoryValidator,
-	logHistoryValidator,
-} from '@/features/log-history/log-history.validator';
+import { LogHistoryValidator } from '@/features/log-history/log-history.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
@@ -24,10 +21,12 @@ class LogHistoryController extends BaseController {
 		super();
 	}
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
 
-		const entry = await logHistoryService.findById(res.locals.validated.id);
+		const data = this.validate(this.validator.read, req.params, res);
+
+		const entry = await logHistoryService.findById(data.id);
 
 		res.locals.output.data(entry);
 
@@ -55,16 +54,7 @@ class LogHistoryController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] =
 			await this.logHistoryService.findByFilter(data);
@@ -83,20 +73,8 @@ class LogHistoryController extends BaseController {
 	});
 }
 
-export function createLogHistoryController(deps: {
-	policy: LogHistoryPolicy;
-	validator: LogHistoryValidator;
-	logHistoryService: LogHistoryService;
-}) {
-	return new LogHistoryController(
-		deps.policy,
-		deps.validator,
-		deps.logHistoryService,
-	);
-}
-
-export const logHistoryController = createLogHistoryController({
-	policy: logHistoryPolicy,
-	validator: logHistoryValidator,
-	logHistoryService: logHistoryService,
-});
+export const logHistoryController = new LogHistoryController(
+	logHistoryPolicy,
+	new LogHistoryValidator('log-history'),
+	logHistoryService,
+);

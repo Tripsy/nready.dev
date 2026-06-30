@@ -1,9 +1,10 @@
-import type { EntityManager, Repository } from 'typeorm';
+import type { DeepPartial } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/i18n.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import BrandEntity, {
 	type BrandStatus,
+	BrandStatusEnum,
 	type BrandType,
 	STATUS_TRANSITIONS,
 } from '@/features/brand/brand.entity';
@@ -13,16 +14,12 @@ import {
 	paramsUpdateList,
 } from '@/features/brand/brand.validator';
 import BrandContentRepository from '@/features/brand/brand-content.repository';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import { pickValuesFromObject } from '@/helpers';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class BrandService {
-	constructor(
-		private repository: ReturnType<typeof getBrandRepository>,
-		private getScopedBrandRepository: (
-			manager?: EntityManager,
-		) => Repository<BrandEntity>,
-	) {}
+	constructor(private repository: ReturnType<typeof getBrandRepository>) {}
 
 	/**
 	 * @description Used in `create` method from controller;
@@ -30,18 +27,14 @@ export class BrandService {
 	public async create(
 		data: ValidatorOutput<BrandValidator, 'create'>,
 	): Promise<BrandEntity> {
-		const existing = await this.findBySlug(
-			data.slug,
-			data.brand_type,
-			true,
-		);
+		const existing = await this.findBySlug(data.slug, data.brand_type);
 
 		if (existing) {
 			throw new CustomError(409, lang('brand.error.already_exist'));
 		}
 
 		return dataSource.transaction(async (manager) => {
-			const repository = this.getScopedBrandRepository(manager);
+			const repository = manager.getRepository(BrandEntity);
 
 			const entry = {
 				name: data.name,
@@ -62,22 +55,23 @@ export class BrandService {
 	}
 
 	/**
-	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
+	 * @description Update any data
 	 */
-	public async updateDataWithContent(
-		id: number,
-		data: ValidatorOutput<BrandValidator, 'update'>,
-		withDeleted: boolean,
-	) {
-		const brand = await this.findById(id, withDeleted);
+	public update(
+		data: DeepPartial<BrandEntity> & { id: number },
+	): Promise<BrandEntity> {
+		return this.repository.save(data);
+	}
 
+	public async updateDataWithContent(
+		entry: BrandEntity,
+		data: ValidatorOutput<BrandValidator, 'update'>,
+	) {
 		if (data.slug || data.brand_type) {
 			const existing = await this.findBySlug(
-				data.slug || brand.slug,
-				data.brand_type || brand.brand_type,
-				true,
-				undefined,
-				id,
+				data.slug || entry.slug,
+				data.brand_type || entry.brand_type,
+				entry.id,
 			);
 
 			if (existing) {
@@ -86,24 +80,17 @@ export class BrandService {
 		}
 
 		return dataSource.transaction(async (manager) => {
-			const repository = manager.getRepository(BrandEntity); // We use the manager -> `getBrandRepository` is not bound to the transaction
+			const repository = manager.getRepository(BrandEntity);
 
-			const updateData = {
-				...Object.fromEntries(
-					paramsUpdateList
-						.filter((key) => key in data)
-						.map((key) => [key, data[key as keyof typeof data]]),
-				),
-				id,
-			};
+			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
-			const updatedEntity = await repository.save(updateData);
+			const updatedEntity = await repository.save(entry);
 
 			if (data.contents) {
 				await BrandContentRepository.saveContent(
 					manager,
 					data.contents,
-					id,
+					entry.id,
 				);
 			}
 
@@ -112,12 +99,9 @@ export class BrandService {
 	}
 
 	public async updateStatus(
-		id: number,
+		entry: BrandEntity,
 		newStatus: BrandStatus,
-		withDeleted: boolean,
 	): Promise<void> {
-		const entry = await this.findById(id, withDeleted);
-
 		assertValidStatusTransition(
 			STATUS_TRANSITIONS,
 			entry.status,
@@ -125,21 +109,20 @@ export class BrandService {
 		);
 
 		entry.status = newStatus;
+		entry.sort_order = 0;
 
-		await this.repository.save(entry);
+		await this.update(entry);
 	}
 
 	public async updateOrder(
 		brand_type: BrandType,
 		ids: number[], // Array of IDs in the desired order
-		withDeleted: boolean,
 	): Promise<void> {
 		// We make sure all the available IDs are present in the sorting (eg: ids)
 		const count = await this.repository
 			.createQuery()
 			.filterBy('brand_type', brand_type)
-			// .filterBy('id', ids, 'IN') // In case we want to allow partial sorting
-			.withDeleted(withDeleted)
+			.filterBy('status', BrandStatusEnum.ACTIVE)
 			.count();
 
 		if (count !== ids.length) {
@@ -179,25 +162,14 @@ export class BrandService {
 			.firstOrFail();
 	}
 
-	public findBySlug(
-		slug: string,
-		brand_type: BrandType,
-		withDeleted: boolean,
-		fields?: string[],
-		excludeId?: number,
-	) {
+	public findBySlug(slug: string, brand_type: BrandType, withoutId?: number) {
 		const q = this.repository
 			.createQuery()
 			.filterBy('slug', slug)
-			.filterBy('brand_type', brand_type)
-			.withDeleted(withDeleted);
+			.filterBy('brand_type', brand_type);
 
-		if (excludeId) {
-			q.filterBy('id', excludeId, '!=');
-		}
-
-		if (fields) {
-			q.select(fields);
+		if (withoutId) {
+			q.filterBy('id', withoutId, '!=');
 		}
 
 		return q.first();
@@ -206,11 +178,11 @@ export class BrandService {
 	/**
 	 * @description Used in `read` method from controller; this will return a custom shape
 	 */
-	public async getDataById(
-		id: number,
-		data: ValidatorOutput<BrandValidator, 'read'>,
-		withDeleted: boolean,
-	) {
+	public async getEntryData(data: {
+		id: number;
+		language?: string;
+		withDeleted: boolean;
+	}) {
 		const query = this.repository
 			.createQuery()
 			.select([
@@ -227,8 +199,8 @@ export class BrandService {
 				'content.description',
 				'content.meta',
 			])
-			.filterById(id)
-			.withDeleted(withDeleted);
+			.filterById(data.id)
+			.withDeleted(data.withDeleted);
 
 		if (data.language) {
 			query.joinAndSelect(
@@ -272,6 +244,7 @@ export class BrandService {
 				'brand.created_at',
 				'brand.updated_at',
 				'brand.deleted_at',
+				'brand.sort_order',
 
 				'content.language',
 				'content.description',
@@ -287,12 +260,4 @@ export class BrandService {
 			.all(true);
 	}
 }
-
-export function getScopedBrandRepository(manager?: EntityManager) {
-	return (manager ?? dataSource.manager).getRepository(BrandEntity);
-}
-
-export const brandService = new BrandService(
-	getBrandRepository(),
-	getScopedBrandRepository,
-);
+export const brandService = new BrandService(getBrandRepository());

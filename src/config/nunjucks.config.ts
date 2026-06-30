@@ -1,6 +1,6 @@
 import nunjucks from 'nunjucks';
 import { Configuration } from '@/config/settings.config';
-import { buildSrcPath } from '@/helpers';
+import { buildSrcPath, createCurrentDate } from '@/helpers';
 
 // Create a new environment
 const templates = new nunjucks.Environment(
@@ -18,7 +18,10 @@ const templates = new nunjucks.Environment(
 templates.addGlobal('siteName', Configuration.get('frontend.name'));
 templates.addGlobal('siteUrl', Configuration.get('frontend.url'));
 templates.addGlobal('supportEmail', Configuration.get('app.email'));
-templates.addGlobal('currentYear', new Date().getFullYear().toString());
+templates.addGlobal(
+	'currentYear',
+	createCurrentDate().getFullYear().toString(),
+);
 
 // // Add custom filter
 // templates.addFilter('shorten', function (str: string, count: number = 5) {

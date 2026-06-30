@@ -14,19 +14,20 @@ import {
 	type ClientValidator,
 	paramsUpdateList,
 } from '@/features/client/client.validator';
-import type { ValidatorOutput } from '@/helpers/mock.helper';
+import { pickValuesFromObject } from '@/helpers';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class ClientService {
 	constructor(private repository: ReturnType<typeof getClientRepository>) {}
 
-	public async checkDuplicate(data: ClientIdentityData, exclude_id?: number) {
+	public async checkDuplicate(data: ClientIdentityData, withoutId?: number) {
 		const query = this.repository
 			.createQuery()
 			.filterBy('client_type', data.client_type);
 
-		if (exclude_id) {
-			query.filterBy('id', exclude_id, '!=');
+		if (withoutId) {
+			query.filterBy('id', withoutId, '!=');
 		}
 
 		if (data.client_type === ClientTypeEnum.COMPANY) {
@@ -118,7 +119,7 @@ export class ClientService {
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
 	public async updateData(
-		id: number,
+		entry: ClientEntity,
 		data: ValidatorOutput<ClientValidator, 'update'>,
 	) {
 		const identityData: ClientIdentityData =
@@ -135,27 +136,17 @@ export class ClientService {
 							data.person_identification_number,
 					};
 
-		await this.checkDuplicate(identityData, id);
+		await this.checkDuplicate(identityData, entry.id);
 
-		const updateData = {
-			...Object.fromEntries(
-				paramsUpdateList
-					.filter((key) => key in data)
-					.map((key) => [key, data[key as keyof typeof data]]),
-			),
-			id,
-		};
+		Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
-		return this.update(updateData);
+		return this.update(entry);
 	}
 
 	public async updateStatus(
-		id: number,
+		entry: ClientEntity,
 		newStatus: ClientStatus,
-		withDeleted: boolean,
 	): Promise<void> {
-		const entry = await this.findById(id, withDeleted);
-
 		assertValidStatusTransition(
 			STATUS_TRANSITIONS,
 			entry.status,
@@ -164,7 +155,7 @@ export class ClientService {
 
 		entry.status = newStatus;
 
-		await this.repository.save(entry);
+		await this.update(entry);
 	}
 
 	public async delete(id: number) {
@@ -183,11 +174,11 @@ export class ClientService {
 			.firstOrFail();
 	}
 
-	public async getDataById(id: number, withDeleted: boolean) {
+	public async getEntryData(data: { id: number; withDeleted: boolean }) {
 		const entry = await this.repository
 			.createQuery()
-			.filterById(id)
-			.withDeleted(withDeleted)
+			.filterById(data.id)
+			.withDeleted(data.withDeleted)
 			.firstOrFail();
 
 		if (entry.client_type === ClientTypeEnum.COMPANY) {
@@ -213,8 +204,8 @@ export class ClientService {
 			.filterByStatus(data.filter.status)
 			.filterByRange(
 				'created_at',
-				data.filter.create_date_start,
-				data.filter.create_date_end,
+				data.filter.create_at_start,
+				data.filter.create_at_end,
 			)
 			.filterByTerm(data.filter.term, data.filter.client_type)
 			.withDeleted(withDeleted && data.filter.is_deleted)

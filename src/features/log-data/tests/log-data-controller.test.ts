@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 
 const controller = 'LogDataController';
-const basePath = logDataRoutes.basePath;
+const basePath = (await logDataRoutes()).basePath;
 
 testControllerRead<LogDataEntity>({
 	controller: controller,

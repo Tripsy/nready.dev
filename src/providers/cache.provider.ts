@@ -104,6 +104,8 @@ export class CacheProvider {
 			if (cachedData) {
 				results.isCached = true;
 				results.data = this.formatOutputData(cachedData);
+
+				return results;
 			}
 
 			results.data = await fetchFunction();

@@ -1,10 +1,12 @@
 import type UserPermissionEntity from '@/features/user-permission/user-permission.entity';
 import {
 	OrderByEnum,
-	userPermissionValidator,
+	UserPermissionValidator,
 } from '@/features/user-permission/user-permission.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const userPermissionValidator = new UserPermissionValidator('user_permission');
 
 export function getUserPermissionEntityMock(): UserPermissionEntity {
 	return {
@@ -18,9 +20,11 @@ export function getUserPermissionEntityMock(): UserPermissionEntity {
 
 export const userPermissionInputPayloads = {
 	create: {
+		user_id: 1,
 		permission_ids: [1, 2],
 	},
 	find: {
+		user_id: 1,
 		page: 1,
 		limit: 10,
 		order_by: OrderByEnum.ID,

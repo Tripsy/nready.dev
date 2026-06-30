@@ -1,9 +1,9 @@
 import { expect, jest } from '@jest/globals';
+import type { Repository } from 'typeorm';
 import { Configuration } from '@/config/settings.config';
 import { BadRequestError } from '@/exceptions';
 import type CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
 import {
-	CashFlowCategoryEnum,
 	CashFlowCategoryTypeEnum,
 	CashFlowDirectionEnum,
 	type CashFlowStatus,
@@ -16,11 +16,16 @@ import {
 	cashFlowOutputPayloads,
 	getCashFlowEntityMock,
 } from '@/features/cash-flow/cash-flow.mock';
-import type { CashFlowQuery } from '@/features/cash-flow/cash-flow.repository';
+import type {
+	CashFlowQuery,
+	getCashFlowRepository,
+} from '@/features/cash-flow/cash-flow.repository';
 import { CashFlowService } from '@/features/cash-flow/cash-flow.service';
 import type { CashFlowValidator } from '@/features/cash-flow/cash-flow.validator';
+import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.enum';
 import {
 	createMockRepository,
+	setupTransactionMock,
 	testServiceFindByFilter,
 	testServiceFindById,
 	testServiceUpdateStatus,
@@ -33,7 +38,17 @@ describe('CashFlowService', () => {
 
 	const mockCashFlow = createMockRepository<CashFlowEntity, CashFlowQuery>();
 
-	const serviceCashFlow = new CashFlowService(mockCashFlow.repository);
+	(
+		mockCashFlow.repository as unknown as {
+			setupOperationalRecord: jest.Mock;
+		}
+	).setupOperationalRecord = jest.fn();
+
+	const serviceCashFlow = new CashFlowService(
+		mockCashFlow.repository as unknown as ReturnType<
+			typeof getCashFlowRepository
+		>,
+	);
 
 	it('checkDirection - should NOT throw when direction is IN', async () => {
 		expect(() =>
@@ -83,7 +98,7 @@ describe('CashFlowService', () => {
 	it('checkRefund - should throw when invalid category is set', async () => {
 		await expect(() =>
 			serviceCashFlow.checkRefund({
-				category: CashFlowCategoryEnum.FUEL,
+				category: CashFlowCategoryEnum.CUSTOMER,
 				inputAmount: 2500,
 				currency: Configuration.currency() as Currency,
 				parentEntry: getCashFlowEntityMock(),
@@ -103,7 +118,7 @@ describe('CashFlowService', () => {
 				}),
 				refundedAmount: 10000,
 			}),
-		).rejects.toThrow('cash-flow.error.refund_parent_status_invalid');
+		).rejects.toThrow('cash-flow.error.invalid_refund_parent_status');
 	});
 
 	it('checkRefund - should throw when currency is not matching', async () => {
@@ -134,20 +149,6 @@ describe('CashFlowService', () => {
 		).rejects.toThrow(
 			'cash-flow.error.refund_parent_invalid_category_type',
 		);
-	});
-
-	it('checkRefund - should throw when parent category is EMPLOYEE_SALARY', async () => {
-		await expect(() =>
-			serviceCashFlow.checkRefund({
-				category: CashFlowCategoryEnum.REFUND,
-				inputAmount: 2500,
-				currency: Configuration.currency() as Currency,
-				parentEntry: getCashFlowEntityMock({
-					category: CashFlowCategoryEnum.EMPLOYEE_SALARY,
-				}),
-				refundedAmount: 10000,
-			}),
-		).rejects.toThrow('cash-flow.error.refund_parent_invalid_category');
 	});
 
 	it('checkRefund - should throw when parent amount is smaller than amount', async () => {
@@ -194,6 +195,11 @@ describe('CashFlowService', () => {
 
 		const createData = cashFlowOutputPayloads.create;
 
+		const { manager } = setupTransactionMock();
+		(manager.getRepository as jest.Mock).mockReturnValue(
+			mockCashFlow.repository,
+		);
+
 		jest.spyOn(serviceCashFlow, 'checkDirection').mockImplementationOnce(
 			() => null,
 		);
@@ -203,15 +209,11 @@ describe('CashFlowService', () => {
 		jest.spyOn(serviceCashFlow, 'checkCategory').mockImplementationOnce(
 			() => null,
 		);
-
 		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(
 			getCashFlowEntityMock(),
 		);
-
 		jest.spyOn(serviceCashFlow, 'checkRefund').mockImplementationOnce(
-			async () => {
-				return;
-			},
+			async () => {},
 		);
 
 		mockCashFlow.repository.save.mockResolvedValue(entity);
@@ -223,38 +225,53 @@ describe('CashFlowService', () => {
 	});
 
 	it('on updateData throw error when updating entry with wrong status', async () => {
-		const entity = getCashFlowEntityMock({
+		const entry = getCashFlowEntityMock({
 			status: CashFlowStatusEnum.COMPLETED,
 		});
 
-		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entity);
+		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entry);
 
 		await expect(
-			serviceCashFlow.updateData(entity.id, cashFlowInputPayloads.update),
+			serviceCashFlow.updateData(entry, {
+				...cashFlowInputPayloads.update,
+			}),
 		).rejects.toThrow('cash-flow.error.update_not_allowed');
 	});
 
-	it('should call update when status is mutable', async () => {
-		const entity = getCashFlowEntityMock({
+	it('should call save with merged data when status is mutable', async () => {
+		const entry = getCashFlowEntityMock({
 			status: CashFlowStatusEnum.PENDING,
 		});
+		const payload = { ...cashFlowInputPayloads.update };
 
-		const payload = cashFlowInputPayloads.update;
+		const { manager } = setupTransactionMock();
+		(manager.getRepository as jest.Mock).mockReturnValue(
+			mockCashFlow.repository,
+		);
 
-		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entity);
+		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entry);
 
-		const updateSpy = jest
-			.spyOn(serviceCashFlow, 'update')
-			.mockResolvedValue(entity);
+		const expectedAmount = serviceCashFlow.inputAmount(payload.amount);
 
-		await serviceCashFlow.updateData(entity.id, payload);
+		mockCashFlow.repository.save.mockImplementation(async (data) => data);
 
-		expect(updateSpy).toHaveBeenCalled();
+		const result = await serviceCashFlow.updateData(entry, payload);
+
+		expect(mockCashFlow.repository.save).toHaveBeenCalledWith(
+			expect.objectContaining({ ...payload, amount: expectedAmount }),
+		);
+		expect(result).toEqual({
+			...entry,
+			...payload,
+			amount: expectedAmount,
+		});
 	});
 
 	testServiceUpdateStatus<CashFlowEntity, CashFlowStatus>(
 		serviceCashFlow,
-		mockCashFlow.repository,
+		mockCashFlow.repository as unknown as jest.MockedObject<
+			Repository<CashFlowEntity>
+		>,
 		{
 			good: {
 				from: CashFlowStatusEnum.PENDING,
@@ -268,19 +285,15 @@ describe('CashFlowService', () => {
 	);
 
 	it('should update status with success', async () => {
-		const entity = getCashFlowEntityMock({
+		const entry = getCashFlowEntityMock({
 			status: CashFlowStatusEnum.PENDING,
 		});
 
-		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entity);
+		jest.spyOn(serviceCashFlow, 'findById').mockResolvedValue(entry);
 
-		mockCashFlow.repository.save.mockResolvedValue(entity);
+		mockCashFlow.repository.save.mockResolvedValue(entry);
 
-		await serviceCashFlow.updateStatus(
-			entity.id,
-			CashFlowStatusEnum.COMPLETED,
-			false,
-		);
+		await serviceCashFlow.updateStatus(entry, CashFlowStatusEnum.COMPLETED);
 
 		expect(mockCashFlow.repository.save).toHaveBeenCalled();
 	});

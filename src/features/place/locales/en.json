@@ -1,7 +1,7 @@
 {
 	"validation": {
 		"invalid_place_type": "Invalid type",
-		"code_invalid": "Invalid code",
+		"invalid_code": "Invalid code",
 		"invalid_parent_id": "Invalid parent ID",
 		"required_parent_id": "Parent ID required for region & city types",
 		"address_country_invalid": "Invalid address country",

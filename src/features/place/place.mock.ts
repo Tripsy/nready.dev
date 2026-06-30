@@ -1,8 +1,10 @@
 import type PlaceEntity from '@/features/place/place.entity';
 import { PlaceTypeEnum } from '@/features/place/place.entity';
-import { OrderByEnum, placeValidator } from '@/features/place/place.validator';
+import { OrderByEnum, PlaceValidator } from '@/features/place/place.validator';
 import { createPastDate } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
+
+const placeValidator = new PlaceValidator('place');
 
 export function getPlaceEntityMock(): PlaceEntity {
 	return {
@@ -32,6 +34,7 @@ export const placeInputPayloads = {
 		],
 	},
 	update: {
+		id: 1,
 		place_type: PlaceTypeEnum.COUNTRY,
 		code: 'RO',
 		parent_id: undefined,

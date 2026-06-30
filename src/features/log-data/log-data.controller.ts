@@ -9,10 +9,7 @@ import {
 	type LogDataService,
 	logDataService,
 } from '@/features/log-data/log-data.service';
-import {
-	type LogDataValidator,
-	logDataValidator,
-} from '@/features/log-data/log-data.validator';
+import { LogDataValidator } from '@/features/log-data/log-data.validator';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -27,17 +24,19 @@ class LogDataController extends BaseController {
 		super();
 	}
 
-	public read = asyncHandler(async (_req: Request, res: Response) => {
+	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
 
 		const cacheKey = this.cache.buildKey(
 			LogDataEntity.NAME,
-			res.locals.validated.id,
+			data.id.toString(),
 			'read',
 		);
 
 		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.logDataService.findById(res.locals.validated.id),
+			this.logDataService.findById(data.id),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -67,16 +66,7 @@ class LogDataController extends BaseController {
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
-		const data = this.validate(
-			this.validator.find,
-			{
-				...req.query,
-				...(res.locals.filter !== undefined && {
-					filter: res.locals.filter,
-				}),
-			},
-			res,
-		);
+		const data = this.validate(this.validator.find, req.query, res);
 
 		const [entries, total] = await this.logDataService.findByFilter(data);
 
@@ -94,23 +84,9 @@ class LogDataController extends BaseController {
 	});
 }
 
-export function createLogDataController(deps: {
-	policy: LogDataPolicy;
-	validator: LogDataValidator;
-	cache: CacheProvider;
-	logDataService: LogDataService;
-}) {
-	return new LogDataController(
-		deps.policy,
-		deps.validator,
-		deps.cache,
-		deps.logDataService,
-	);
-}
-
-export const logDataController = createLogDataController({
-	policy: logDataPolicy,
-	validator: logDataValidator,
-	cache: cacheProvider,
-	logDataService: logDataService,
-});
+export const logDataController = new LogDataController(
+	logDataPolicy,
+	new LogDataValidator('log-data'),
+	cacheProvider,
+	logDataService,
+);

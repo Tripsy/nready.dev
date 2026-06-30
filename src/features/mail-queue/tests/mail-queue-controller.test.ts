@@ -19,7 +19,7 @@ beforeEach(() => {
 });
 
 const controller = 'MailQueueController';
-const basePath = mailQueueRoutes.basePath;
+const basePath = (await mailQueueRoutes()).basePath;
 
 testControllerRead<MailQueueEntity>({
 	controller: controller,

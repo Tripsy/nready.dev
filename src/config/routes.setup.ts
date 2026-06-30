@@ -3,7 +3,8 @@ import path from 'node:path';
 import { type RequestHandler, Router } from 'express';
 import { apiRateLimiter } from '@/config/rate-limit.config';
 import { Configuration } from '@/config/settings.config';
-import { buildSrcPath } from '@/helpers';
+import { buildSrcPath, getErrorMessage } from '@/helpers';
+import { setupDevelopmentDocumentation } from '@/helpers/api-documentation.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 
 export type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
@@ -51,21 +52,19 @@ function buildRoutes<C>({
 
 	for (const action in routes) {
 		const config = routes[action];
-		const { path, method, handlers = [] } = config;
+		const { path: routePath, method, handlers = [] } = config;
 
-		const fullPath = `${basePath}${path}`;
 		const middleware = [...handlers];
 
-		// Check if any handler / middleware name ends with "RateLimiter"
-		const hasRateLimiter = middleware.some((f) => {
-			const functionName = f.name || '';
-
-			return functionName.endsWith('RateLimiter');
-		});
+		const hasRateLimiter = middleware.some((f) =>
+			(f.name || '').endsWith('RateLimiter'),
+		);
 
 		if (!hasRateLimiter) {
 			middleware.push(apiRateLimiter);
 		}
+
+		const fullPath = `${basePath}${routePath}`;
 
 		router[method](
 			fullPath,
@@ -123,7 +122,7 @@ function findRouteFiles(featuresDirectory: string) {
 	return routeFiles;
 }
 
-export const initRoutes = async (apiPrefix: string = ''): Promise<Router> => {
+export const initRoutes = async (): Promise<Router> => {
 	const router = Router();
 
 	const featuresPath = buildSrcPath(
@@ -132,7 +131,7 @@ export const initRoutes = async (apiPrefix: string = ''): Promise<Router> => {
 	const routeFiles = findRouteFiles(featuresPath);
 
 	for (const routeFilePath of routeFiles) {
-		await loadRoutes(router, routeFilePath, apiPrefix);
+		await loadRoutes(router, routeFilePath);
 	}
 
 	getSystemLogger().debug('Routes initialized');
@@ -143,7 +142,6 @@ export const initRoutes = async (apiPrefix: string = ''): Promise<Router> => {
 async function loadRoutes(
 	router: Router,
 	routeFilePath: string,
-	apiPrefix: string,
 ): Promise<void> {
 	const feature = path.basename(routeFilePath).split('.')[0];
 
@@ -153,24 +151,35 @@ async function loadRoutes(
 		}
 
 		const module = await import(routeFilePath);
-		const def = module.default;
+		const defOrFactory = module.default;
 
-		if (!def) {
+		if (!defOrFactory) {
 			getSystemLogger().warn(
 				`Feature ${feature} does not export default routes config`,
 			);
-
 			return;
 		}
 
-		router.use(apiPrefix, buildRoutes(def));
+		let def =
+			typeof defOrFactory === 'function'
+				? await defOrFactory()
+				: defOrFactory;
+
+		def = await setupDevelopmentDocumentation(def, feature);
+
+		router.use(buildRoutes(def));
 
 		if (Configuration.isEnvironment('development')) {
 			pushRouteInfo(feature, def);
 		}
 	} catch (error) {
 		getSystemLogger().error(
-			{ err: error, feature, path: getRoutesFilePath(feature) },
+			{
+				err: error,
+				msg: getErrorMessage(error),
+				feature,
+				path: getRoutesFilePath(feature),
+			},
 			`Failed to load routes for feature "${feature}"`,
 		);
 	}

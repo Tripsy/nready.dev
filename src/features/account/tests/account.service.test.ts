@@ -13,7 +13,7 @@ import { UserStatusEnum } from '@/features/user/user.entity';
 import { getUserEntityMock } from '@/features/user/user.mock';
 import type { UserQuery } from '@/features/user/user.repository';
 import { UserService } from '@/features/user/user.service';
-import { createFutureDate } from '@/helpers';
+import { createFutureDate, encryptPassword } from '@/helpers';
 import { createMockRepository } from '@/tests/jest-service.setup';
 
 /**
@@ -56,7 +56,7 @@ describe('AccountService', () => {
 	);
 
 	it('encryptPassword should return a hashed string', async () => {
-		const result = await serviceAccount.encryptPassword('plain');
+		const result = await encryptPassword('plain');
 
 		expect(result).toBeDefined();
 		expect(typeof result).toBe('string');
@@ -64,7 +64,7 @@ describe('AccountService', () => {
 	});
 
 	it('checkPassword should return true when password matches', async () => {
-		const hashed = await serviceAccount.encryptPassword('secret');
+		const hashed = await encryptPassword('secret');
 
 		const result = await serviceAccount.checkPassword('secret', hashed);
 
@@ -72,7 +72,7 @@ describe('AccountService', () => {
 	});
 
 	it('checkPassword should return false when password does not match', async () => {
-		const hashed = await serviceAccount.encryptPassword('secret');
+		const hashed = await encryptPassword('secret');
 
 		const result = await serviceAccount.checkPassword('wrong', hashed);
 
