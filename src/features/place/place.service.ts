@@ -136,13 +136,11 @@ export class PlaceService {
 
 			const updatedEntity = await repository.save(entry);
 
-			if (data.contents) {
-				await PlaceContentRepository.saveContent(
-					manager,
-					data.contents,
-					entry.id,
-				);
-			}
+			await PlaceContentRepository.saveContent(
+				manager,
+				data.contents,
+				entry.id,
+			);
 
 			return updatedEntity;
 		});

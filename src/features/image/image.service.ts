@@ -1,21 +1,15 @@
 import type { DeepPartial } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import { lang } from '@/config/i18n.setup';
 import { BadRequestError } from '@/exceptions';
 import ImageEntity, {
 	type ImageSection,
 	type ImageStatus,
-	ImageStatusEnum,
 	ImageTypeEnum,
 	STATUS_TRANSITIONS,
 } from '@/features/image/image.entity';
 import { getImageRepository } from '@/features/image/image.repository';
-import {
-	type ImageValidator,
-	paramsUpdateList,
-} from '@/features/image/image.validator';
+import type { ImageValidator } from '@/features/image/image.validator';
 import ImageContentRepository from '@/features/image/image-content.repository';
-import { pickValuesFromObject } from '@/helpers';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
@@ -35,6 +29,10 @@ export class ImageService {
 				section: data.section,
 				entity_id: data.entity_id,
 				image_type: data.image_type,
+				storage: data.storage,
+				path: data.path,
+				properties: data.properties,
+				sort_order: data.sort_order,
 			};
 
 			const entrySaved = await repository.save(entry);
@@ -62,23 +60,15 @@ export class ImageService {
 		entry: ImageEntity,
 		data: ValidatorOutput<ImageValidator, 'update'>,
 	) {
-		return dataSource.transaction(async (manager) => {
-			const repository = manager.getRepository(ImageEntity);
-
-			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
-
-			const updatedEntity = await repository.save(entry);
-
-			if (data.contents) {
-				await ImageContentRepository.saveContent(
-					manager,
-					data.contents,
-					entry.id,
-				);
-			}
-
-			return updatedEntity;
+		await dataSource.transaction(async (manager) => {
+			await ImageContentRepository.saveContent(
+				manager,
+				data.contents,
+				entry.id,
+			);
 		});
+
+		return entry;
 	}
 
 	public async updateStatus(
@@ -100,66 +90,69 @@ export class ImageService {
 	public async updateOrder(
 		section: ImageSection,
 		entity_id: number,
-		ids: number[], // Array of IDs in the desired order
+		positions: { id: number; sort_order: number }[],
 	): Promise<void> {
-		// We make sure all the available IDs are present in the sorting (eg: ids)
-		const count = await this.repository
-			.createQuery()
-			.filterBy('section', section)
-			.filterBy('entity_id', entity_id)
-			.filterBy('image_type', ImageTypeEnum.GALLERY)
-			.filterBy('status', ImageStatusEnum.ACTIVE)
-			.count();
+		const ids = positions.map((p) => p.id);
 
-		if (count !== ids.length) {
-			throw new BadRequestError(
-				lang('image.validation.invalid_ids_provided'),
-			);
+		if (ids.length === 0) {
+			return;
 		}
 
 		await dataSource.transaction(async (manager) => {
-			const cases = ids
-				.map((id, index) => `WHEN ${id} THEN ${ids.length - index}`)
-				.join(' ');
+			const imageRepository = manager.getRepository(ImageEntity);
 
-			await manager.query(`
-                UPDATE image
-                SET sort_order = CASE id
-                    ${cases}
-                END
-                WHERE id IN (${ids.join(',')})
-            `);
+			// Load all images with ownership check in one query
+			const images = await imageRepository
+				.createQueryBuilder('image')
+				.where('image.id IN (:...ids)', { ids })
+				.andWhere('image.section = :section', { section })
+				.andWhere('image.entity_id = :entity_id', { entity_id })
+				.andWhere('image.image_type = :imageType', {
+					imageType: ImageTypeEnum.GALLERY,
+				})
+				.getMany();
+
+			// Validate all images exist and belong to this entity
+			const foundIds = new Set(images.map((img) => img.id));
+			const allFound = ids.every((id) => foundIds.has(id));
+
+			if (!allFound) {
+				const missingIds = ids.filter((id) => !foundIds.has(id));
+
+				throw new BadRequestError(
+					`Invalid image IDs: ${missingIds.join(', ')}`,
+				);
+			}
+
+			// Update sort_order
+			const updatedImages = images.map((image) => {
+				const position = positions.find((p) => p.id === image.id);
+
+				if (position) {
+					image.sort_order = position.sort_order;
+				}
+
+				return image;
+			});
+
+			// Save all - triggers subscribers
+			await imageRepository.save(updatedImages);
 		});
 	}
 
 	public async delete(id: number) {
-		await this.repository.createQuery().filterById(id).delete();
+		await this.repository.createQuery().filterById(id).delete(false);
 	}
 
-	public async restore(id: number) {
-		await this.repository.createQuery().filterById(id).restore();
-	}
-
-	public findById(id: number, withDeleted: boolean): Promise<ImageEntity> {
-		return this.repository
-			.createQuery()
-			.filterById(id)
-			.withDeleted(withDeleted)
-			.firstOrFail();
+	public findById(id: number): Promise<ImageEntity> {
+		return this.repository.createQuery().filterById(id).firstOrFail();
 	}
 
 	/**
 	 * @description Used in `read` method from controller; this will return a custom shape
 	 */
-	public async getEntryData(data: {
-		id: number;
-		language?: string;
-		withDeleted: boolean;
-	}) {
-		const query = this.repository
-			.createQuery()
-			.filterById(data.id)
-			.withDeleted(data.withDeleted);
+	public async getEntryData(data: { id: number; language?: string }) {
+		const query = this.repository.createQuery().filterById(data.id);
 
 		if (data.language) {
 			query.joinAndSelect(
@@ -179,46 +172,41 @@ export class ImageService {
 		return await query.firstOrFail();
 	}
 
-	public findByFilter(
-		data: ValidatorOutput<ImageValidator, 'find'>,
-		withDeleted: boolean,
-	) {
-		return this.repository
+	public findByFilter(data: ValidatorOutput<ImageValidator, 'find'>) {
+		const query = this.repository
 			.createQuery()
-			.join(
-				'image.contents',
-				'content',
-				'LEFT',
-				'content.language = :language',
-				{
-					language: data.filter.language,
-				},
-			)
+			.join('image.contents', 'content', 'LEFT')
 			.select([
 				'image.id',
 				'image.section',
 				'image.entity_id',
 				'image.image_type',
+				'image.storage',
+				'image.path',
+				'image.properties',
 				'image.status',
 				'image.sort_order',
 				'image.created_at',
 				'image.updated_at',
-				'image.deleted_at',
 
+				'content.id',
 				'content.language',
-				'content.storage',
-				'content.path',
-				'content.properties',
-				'content.attributes',
+				'content.title',
+				'content.description',
 			])
 			.filterById(data.filter.id)
+			.filterBy('image.entity_id', data.filter.entity_id)
 			.filterBy('image.section', data.filter.section)
 			.filterBy('image.image_type', data.filter.image_type)
 			.filterBy('image.status', data.filter.status)
-			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)
-			.pagination(data.page, data.limit)
-			.all(true);
+			.pagination(data.page, data.limit);
+
+		if (data.filter.language) {
+			query.filterBy('content.language', data.filter.language);
+		}
+
+		return query.all(true);
 	}
 }
 export const imageService = new ImageService(getImageRepository());

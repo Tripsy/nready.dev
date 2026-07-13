@@ -1,6 +1,5 @@
 import { expect, jest } from '@jest/globals';
 import ImageEntity, {
-	ImageSectionEnum,
 	type ImageStatus,
 	ImageStatusEnum,
 } from '@/features/image/image.entity';
@@ -19,7 +18,6 @@ import {
 	testServiceDelete,
 	testServiceFindByFilter,
 	testServiceFindById,
-	testServiceRestore,
 	testServiceUpdateStatus,
 } from '@/tests/jest-service.setup';
 
@@ -73,7 +71,13 @@ describe('ImageService', () => {
 
 		const { transaction, manager } = setupTransactionMock();
 
-		await serviceImage.updateOrder(ImageSectionEnum.PRODUCT, 1, [1, 2]);
+		const orderData = imageOutputPayloads.orderUpdate;
+
+		await serviceImage.updateOrder(
+			imageOutputPayloads.orderUpdate.section,
+			imageOutputPayloads.orderUpdate.entity_id,
+			orderData.positions,
+		);
 
 		expect(transaction).toHaveBeenCalled();
 		expect(manager.query).toHaveBeenCalled();
@@ -88,6 +92,4 @@ describe('ImageService', () => {
 	);
 
 	testServiceDelete<ImageEntity, ImageQuery>(mockImage.query, serviceImage);
-
-	testServiceRestore<ImageEntity, ImageQuery>(mockImage.query, serviceImage);
 });

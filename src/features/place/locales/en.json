@@ -8,8 +8,6 @@
 		"address_region_invalid": "Invalid address region",
 		"address_city_invalid": "Invalid address city",
 		"country_no_parent": "Country cannot have a parent",
-		"invalid_contents": "At least one content entry is required",
-		"duplicate_contents": "Contents data cannot contain duplicate language",
 		"invalid_name": "Invalid place name",
 		"invalid_type_label": "Invalid type label"
 	},

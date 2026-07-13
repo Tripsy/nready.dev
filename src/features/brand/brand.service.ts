@@ -86,13 +86,11 @@ export class BrandService {
 
 			const updatedEntity = await repository.save(entry);
 
-			if (data.contents) {
-				await BrandContentRepository.saveContent(
-					manager,
-					data.contents,
-					entry.id,
-				);
-			}
+			await BrandContentRepository.saveContent(
+				manager,
+				data.contents,
+				entry.id,
+			);
 
 			return updatedEntity;
 		});

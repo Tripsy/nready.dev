@@ -16,8 +16,6 @@ export const OrderByEnum = {
 
 const validatorMessages = [
 	...sharedValidatorMessages,
-	'invalid_contents',
-	'duplicate_contents',
 	'invalid_name',
 	'invalid_place_type',
 	'invalid_type_label',
@@ -27,15 +25,11 @@ const validatorMessages = [
 ] as const;
 
 export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
-	contentsSchema() {
-		return z.object({
-			language: this.validateLanguage(),
-			name: this.validateString(this.getMessage('invalid_name')),
-			type_label: this.validateString(
-				this.getMessage('invalid_type_label'),
-			),
-		});
-	}
+	readonly contentsSchema = z.object({
+		language: this.validateLanguage(),
+		name: this.validateString(this.getMessage('invalid_name')),
+		type_label: this.validateString(this.getMessage('invalid_type_label')),
+	});
 
 	readonly create = z.object({
 		place_type: this.validateEnum(
@@ -48,12 +42,13 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 			required: false,
 		}),
-		contents: this.contentsSchema()
+		contents: this.contentsSchema
 			.array()
 			.min(1, this.getMessage('invalid_contents'))
 			.refine(
 				(contents) => {
 					const languages = contents.map((c) => c.language);
+
 					return new Set(languages).size === languages.length;
 				},
 				{ message: this.getMessage('duplicate_contents') },
@@ -81,16 +76,14 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 				required: false,
 			}),
-			contents: this.contentsSchema()
-				.array()
-				.refine(
-					(contents) => {
-						const languages = contents.map((c) => c.language);
-						return new Set(languages).size === languages.length;
-					},
-					{ message: this.getMessage('duplicate_contents') },
-				)
-				.optional(),
+			contents: this.contentsSchema.array().refine(
+				(contents) => {
+					const languages = contents.map((c) => c.language);
+
+					return new Set(languages).size === languages.length;
+				},
+				{ message: this.getMessage('duplicate_contents') },
+			),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
 			message: this.getMessage('params_at_least_one', {
