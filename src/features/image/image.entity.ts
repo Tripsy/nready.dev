@@ -1,13 +1,20 @@
-import { Column, Entity, Index, OneToMany } from 'typeorm';
+import {
+	Column,
+	CreateDateColumn,
+	Entity,
+	Index,
+	OneToMany,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn,
+} from 'typeorm';
 import type ImageContentEntity from '@/features/image/image-content.entity';
-import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
 export const ImageSectionEnum = {
 	PRODUCT: 'product',
 	CATEGORY: 'category',
 	BRAND: 'brand',
+	CMR: 'cmr',
 } as const;
 
 export type ImageSection =
@@ -34,14 +41,47 @@ export const STATUS_TRANSITIONS: StatusTransitions<ImageStatus> = {
 	[ImageStatusEnum.INACTIVE]: [ImageStatusEnum.ACTIVE],
 };
 
+export const ImageStorageEnum = {
+	LOCAL: 'local',
+	S3: 's3',
+} as const;
+
+export type ImageStorage =
+	(typeof ImageStorageEnum)[keyof typeof ImageStorageEnum];
+
+export const ImageMimeEnum = {
+	JPEG: 'image/jpeg',
+	PNG: 'image/png',
+	GIF: 'image/gif',
+	WEBP: 'image/webp',
+	SVG: 'image/svg+xml',
+} as const;
+
+export type ImageMime = (typeof ImageMimeEnum)[keyof typeof ImageMimeEnum];
+
+export type ImagePropertiesType = {
+	width?: number; // pixel
+	height?: number; // pixel
+	size?: number; // in bytes
+	mime?: ImageMime;
+};
+
 const ENTITY_TABLE_NAME = 'image';
 
 @Entity({ name: ENTITY_TABLE_NAME, schema: 'public' })
-@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_image_type_id', ['entity_id', 'section', 'image_type'])
-export default class ImageEntity extends EntityAbstract {
+export default class ImageEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
+
+	@PrimaryGeneratedColumn({ type: 'int' })
+	id!: number;
+
+	@CreateDateColumn({ type: 'timestamp', nullable: false })
+	created_at!: Date;
+
+	@UpdateDateColumn({ type: 'timestamp', nullable: true })
+	updated_at!: Date | null;
 
 	@Column('text', {
 		nullable: false,
@@ -62,6 +102,22 @@ export default class ImageEntity extends EntityAbstract {
 		comment: 'The type of the image (eg: primary, logo, gallery, etc)',
 	})
 	image_type!: ImageType;
+
+	@Column('text', {
+		nullable: false,
+		comment: 'The storage destination of the image (eg: local, s3, etc)',
+	})
+	@Index('IDX_image_content_storage', ['storage'])
+	storage!: ImageStorage;
+
+	@Column('text', { nullable: false })
+	path!: string;
+
+	@Column('jsonb', {
+		nullable: true,
+		comment: 'Properties of the file',
+	})
+	properties!: ImagePropertiesType;
 
 	@Column({
 		type: 'enum',

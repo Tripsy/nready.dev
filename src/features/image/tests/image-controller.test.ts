@@ -16,7 +16,6 @@ import {
 	testControllerDeleteSingle,
 	testControllerFind,
 	testControllerRead,
-	testControllerRestoreSingle,
 	testControllerStatusUpdate,
 	testControllerUpdateWithContent,
 	withDebugResponse,
@@ -64,13 +63,6 @@ testControllerRead<ImageEntity>({
 testControllerDeleteSingle({
 	controller: controller,
 	route: `${basePath}/${getImageEntityMock().id}`,
-	policy: imagePolicy,
-	service: imageService,
-});
-
-testControllerRestoreSingle({
-	controller: controller,
-	route: `${basePath}/${getImageEntityMock().id}/restore`,
 	policy: imagePolicy,
 	service: imageService,
 });

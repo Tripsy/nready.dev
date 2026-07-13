@@ -28,6 +28,9 @@ export const sharedValidatorMessages = [
 	'invalid_past_date',
 	'invalid_future_date',
 	'invalid_date_range',
+	'invalid_contents',
+	'duplicate_contents',
+	'duplicate_position_ids',
 	'params_at_least_one',
 ] as const;
 

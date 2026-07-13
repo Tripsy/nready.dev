@@ -4,5 +4,5 @@
 	"relativePath": "/brand",
 	"entities": ["brand", "brand-content"],
 	"depends_on": ["image"],
-	"depends_off": ["product"]
+	"depends_off": []
 }

@@ -296,24 +296,12 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-commit 
-    - dropped res.locals.validated; replaced with validator schema; validateWhenString - obsolete
-    - dropped parse-filter.middleware 
-    - fixed lang related errors triggered when running migrations > new event userRegistered - used in user.subscriber
-    - refactored validatorMessages from *.validator.ts
-    - routest.setup bug fix
-    - 
-
-1. test image
-2. feature - images  (image-content)
-3. Go on FE #3 → image (multer - File upload handling)
-4. Category needs ordering too
-5. Go on FE → category
-6. Deploy on AWS
-7. API documentation
-    > done for discounts
-    > do for: account, category, carrier, cash-flow, client, cron-history, log-history, mail-queue, permission, place, template, user-permission
-8. create CLI script which should generate something like:
+1. pnpm run madge
+2. Category needs ordering too
+3. Go on FE → category
+4. Deploy on AWS
+5. API documentation (`done` for discounts)
+6. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -335,29 +323,29 @@ commit
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-9. Tests for account-recovery.service.ts are missing 
-10. Go on FE #2 → carrier, discount,
-11. Prepared entities:
-     - article
-         - article-category
-         - article-content
-         - article-tag  
-         - article-track
-     - invoice
-     - order
-         - order-product
-     - order-shipping
-         - order-shipping-product
-     - product
-         - product-attribute
-         - product-category
-         - product-tag
-         - product-content
-     - subscription
-         - subscription-evidence
-     - term
-12. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-13. cron hanging / delaying / semaphore 
+7. Tests for account-recovery.service.ts are missing 
+8. Go on FE #2 → carrier, discount,
+9. Prepared entities:
+    - article
+        - article-category
+        - article-content
+        - article-tag  
+        - article-track
+    - invoice
+    - order
+        - order-product
+    - order-shipping
+        - order-shipping-product
+    - product
+        - product-attribute
+        - product-category
+        - product-tag
+        - product-content
+    - subscription
+        - subscription-evidence
+    - term
+10. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+11. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

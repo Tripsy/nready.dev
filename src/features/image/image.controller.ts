@@ -67,7 +67,6 @@ class ImageController extends BaseController {
 				await this.imageService.getEntryData({
 					id: data.id,
 					language: data.language,
-					withDeleted: this.policy.allowDeleted(res.locals.auth),
 				}),
 		);
 
@@ -84,14 +83,12 @@ class ImageController extends BaseController {
 			this.validator.update,
 			{
 				...req.body,
-				section: req.params.section,
-				entity_id: req.params.entity_id,
 				id: req.params.id,
 			},
 			res,
 		);
 
-		const existingEntry = await this.imageService.findById(data.id, false);
+		const existingEntry = await this.imageService.findById(data.id);
 
 		const entry = await this.imageService.updateDataWithContent(
 			existingEntry,
@@ -116,31 +113,12 @@ class ImageController extends BaseController {
 		res.json(res.locals.output);
 	});
 
-	public restore = asyncHandler(async (req: Request, res: Response) => {
-		this.policy.canRestore(res.locals.auth);
-
-		const data = this.validate(this.validator.restore, req.params, res);
-
-		await this.imageService.restore(data.id);
-
-		res.locals.output.message(lang('image.success.restore'));
-
-		res.json(res.locals.output);
-	});
-
 	public find = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canFind(res.locals.auth);
 
 		const data = this.validate(this.validator.find, req.query, res);
 
-		if (!data.filter.language) {
-			data.filter.language = res.locals.language;
-		}
-
-		const [entries, total] = await this.imageService.findByFilter(
-			data,
-			this.policy.allowDeleted(res.locals.auth),
-		);
+		const [entries, total] = await this.imageService.findByFilter(data);
 
 		res.locals.output.data({
 			entries: entries,
@@ -164,7 +142,7 @@ class ImageController extends BaseController {
 			res,
 		);
 
-		const existingEntry = await this.imageService.findById(data.id, false);
+		const existingEntry = await this.imageService.findById(data.id);
 
 		await this.imageService.updateStatus(existingEntry, data.status);
 

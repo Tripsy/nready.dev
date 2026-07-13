@@ -16,6 +16,8 @@
 		"status_update_not_allowed": "Invalid status transition from {{currentStatus}} to {{newStatus}}"
 	},
 	"validation": {
+		"invalid_id": "Invalid ID parameter (eg: {{name}})",
+		"invalid_ids": "Invalid IDs parameter (eg: {{name}})",
 		"invalid_enum": "Invalid enum parameter (eg: {{name}}). Accepted: {{allowedValues}}",
 		"invalid_string": "Field must be a string",
 		"invalid_number": "Field must be a number",
@@ -24,12 +26,14 @@
 		"string_min": "Field value must be at least {{min}} characters long",
 		"array_min": "Minimum array length is {{length}}",
 
-		"invalid_id": "Invalid ID parameter (eg: {{name}})",
-		"invalid_ids": "Invalid IDs parameter (eg: {{name}})",
 		"invalid_notes": "Invalid notes",
 		"invalid_language": "Invalid language",
 		"invalid_status": "Invalid status",
 		"invalid_date": "Invalid date",
+
+		"invalid_contents": "At least one content entry is required",
+		"duplicate_contents": "Contents data cannot contain duplicate language",
+		"duplicate_position_ids": "Positions data cannot contain duplicate IDs",
 
 		"invalid_meta_title": "Invalid title",
 		"invalid_meta_description": "Invalid description",

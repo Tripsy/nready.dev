@@ -35,16 +35,11 @@ export const ImageContentRepository = dataSource
 					contents.map((c) => ({
 						image_id: image_id,
 						language: c.language,
-						storage: c.storage,
-						path: c.path,
-						properties: c.properties,
-						attributes: c.attributes,
+						title: c.title,
+						description: c.description,
 					})),
 				)
-				.orUpdate(
-					['storage', 'path', 'properties', 'attributes'],
-					['image_id', 'language'],
-				)
+				.orUpdate(['title', 'description'], ['image_id', 'language'])
 				.execute();
 		},
 	});

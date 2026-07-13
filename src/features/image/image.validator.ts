@@ -2,14 +2,12 @@ import { z } from 'zod';
 import { lang } from '@/config/i18n.setup';
 import { Configuration } from '@/config/settings.config';
 import {
+	ImageMimeEnum,
 	ImageSectionEnum,
 	ImageStatusEnum,
+	ImageStorageEnum,
 	ImageTypeEnum,
 } from '@/features/image/image.entity';
-import {
-	ImageMimeEnum,
-	ImageStorageEnum,
-} from '@/features/image/image-content.entity';
 import { hasAtLeastOneValue } from '@/helpers';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
@@ -17,7 +15,7 @@ import {
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
 
-export const paramsUpdateList: string[] = ['image_type'];
+export const paramsUpdateList: string[] = [];
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -36,6 +34,7 @@ const validatorMessages = [
 	'invalid_alt',
 	'invalid_title',
 	'invalid_description',
+	'invalid_sort_order',
 	'invalid_entity_id',
 	'invalid_section',
 ] as const;
@@ -64,47 +63,17 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 		);
 	}
 
-	protected validateAttributes(
-		message = {
-			invalid_alt: 'Invalid alt',
-			invalid_title: 'Invalid title',
-			invalid_description: 'Invalid description',
-		},
-	) {
-		return z.preprocess(
-			(val) => val ?? {},
-			z.object({
-				alt: this.validateString(message.invalid_alt, {
-					required: false,
-				}),
-				title: this.validateString(message.invalid_title, {
-					required: false,
-				}),
-				description: this.validateString(message.invalid_description, {
-					required: false,
-				}),
-			}),
-		);
-	}
-
 	readonly contentsSchema = z.object({
 		language: this.validateLanguage(this.getMessage('invalid_language')),
-		storage: this.validateEnum(
-			ImageStorageEnum,
-			this.getMessage('invalid_storage'),
+		title: this.validateString(this.getMessage('invalid_title'), {
+			required: false,
+		}),
+		description: this.validateString(
+			this.getMessage('invalid_description'),
+			{
+				required: false,
+			},
 		),
-		path: this.validateString(this.getMessage('invalid_path')),
-		properties: this.validateProperties({
-			invalid_width: this.getMessage('invalid_width'),
-			invalid_height: this.getMessage('invalid_height'),
-			invalid_size: this.getMessage('invalid_size'),
-			invalid_mime: this.getMessage('invalid_mime'),
-		}),
-		attributes: this.validateAttributes({
-			invalid_alt: this.getMessage('invalid_alt'),
-			invalid_title: this.getMessage('invalid_title'),
-			invalid_description: this.getMessage('invalid_description'),
-		}),
 	});
 
 	readonly create = z.object({
@@ -117,7 +86,31 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 			ImageTypeEnum,
 			this.getMessage('invalid_image_type'),
 		),
-		contents: this.contentsSchema.array(),
+		storage: this.validateEnum(
+			ImageStorageEnum,
+			this.getMessage('invalid_storage'),
+		),
+		path: this.validateString(this.getMessage('invalid_path')),
+		properties: this.validateProperties({
+			invalid_width: this.getMessage('invalid_width'),
+			invalid_height: this.getMessage('invalid_height'),
+			invalid_size: this.getMessage('invalid_size'),
+			invalid_mime: this.getMessage('invalid_mime'),
+		}),
+		sort_order: this.validateNumber(this.getMessage('invalid_sort_order'), {
+			required: false,
+		}),
+		contents: this.contentsSchema
+			.array()
+			.min(1, { message: this.getMessage('invalid_contents') })
+			.refine(
+				(contents) => {
+					const languages = contents.map((c) => c.language);
+
+					return new Set(languages).size === languages.length;
+				},
+				{ message: this.getMessage('duplicate_contents') },
+			),
 	});
 
 	readonly read = z.object({
@@ -130,12 +123,17 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 	readonly update = z
 		.object({
 			id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
-			image_type: this.validateEnum(
-				ImageTypeEnum,
-				this.getMessage('invalid_image_type'),
-				{ required: false },
-			),
-			contents: this.contentsSchema.array().optional(),
+			contents: this.contentsSchema
+				.array()
+				.min(1, { message: this.getMessage('invalid_contents') })
+				.refine(
+					(contents) => {
+						const languages = contents.map((c) => c.language);
+
+						return new Set(languages).size === languages.length;
+					},
+					{ message: this.getMessage('duplicate_contents') },
+				),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
 			message: this.getMessage('params_at_least_one', {
@@ -145,10 +143,6 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 		});
 
 	readonly delete = z.object({
-		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
-	});
-
-	readonly restore = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 	});
 
@@ -211,14 +205,27 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 		entity_id: this.validateId(this.getMessage('invalid_entity_id')),
 		positions: z
 			.array(
-				z.number({
-					message: this.getMessage('invalid_number'),
+				z.object({
+					id: this.validateId(
+						this.getMessage('invalid_id', { name: 'id' }),
+					),
+					sort_order: this.validateNumber(
+						this.getMessage('invalid_sort_order'),
+					),
 				}),
 			)
 			.min(2, {
 				message: lang('shared.validation.array_min', {
 					length: '2',
 				}),
-			}),
+			})
+			.refine(
+				(positions) => {
+					const ids = positions.map((p) => p.id);
+
+					return new Set(ids).size === ids.length;
+				},
+				{ message: this.getMessage('duplicate_position_ids') },
+			),
 	});
 }
