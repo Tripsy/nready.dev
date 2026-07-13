@@ -26,8 +26,6 @@
 		"string_min": "Field value must be at least {{min}} characters long",
 		"array_min": "Minimum array length is {{length}}",
 
-		"invalid_id": "Invalid ID parameter (eg: {{name}})",
-		"invalid_ids": "Invalid IDs parameter (eg: {{name}})",
 		"invalid_notes": "Invalid notes",
 		"invalid_language": "Invalid language",
 		"invalid_status": "Invalid status",
