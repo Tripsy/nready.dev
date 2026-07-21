@@ -61,13 +61,11 @@ class ImageController extends BaseController {
 			'read',
 		);
 
-		const cacheGetResults = await this.cache.get(
-			cacheKey,
-			async () =>
-				await this.imageService.getEntryData({
-					id: data.id,
-					language: data.language,
-				}),
+		const cacheGetResults = await this.cache.get(cacheKey, () =>
+			this.imageService.getEntryData({
+				id: data.id,
+				language: data.language,
+			}),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');

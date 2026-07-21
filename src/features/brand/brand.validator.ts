@@ -83,14 +83,17 @@ export class BrandValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_brand_type'),
 				{ required: false },
 			),
-			contents: this.contentsSchema.array().refine(
-				(contents) => {
-					const languages = contents.map((c) => c.language);
+			contents: this.contentsSchema
+				.array()
+				.refine(
+					(contents) => {
+						const languages = contents.map((c) => c.language);
 
-					return new Set(languages).size === languages.length;
-				},
-				{ message: this.getMessage('duplicate_contents') },
-			),
+						return new Set(languages).size === languages.length;
+					},
+					{ message: this.getMessage('duplicate_contents') },
+				)
+				.optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data), {
 			message: this.getMessage('params_at_least_one', {

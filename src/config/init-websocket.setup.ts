@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import type { Server } from 'node:http';
 import { Configuration } from '@/config/settings.config';
-import { ModuleError } from '@/exceptions/module.error';
+import { ModuleError } from '@/exceptions';
 import {
 	getErrorMessage,
 	getFeaturesFilesPathByFolderAndExtension,

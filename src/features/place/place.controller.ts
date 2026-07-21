@@ -46,21 +46,23 @@ class PlaceController extends BaseController {
 			res,
 		);
 
+		const language = data.language ?? res.locals.language;
+		const withDeleted = this.policy.allowDeleted(res.locals.auth);
+
 		const cacheKey = this.cache.buildKey(
 			PlaceEntity.NAME,
 			data.id.toString(),
-			data.language ?? '',
+			language,
+			withDeleted ? 'with-deleted' : 'non-deleted',
 			'read',
 		);
 
-		const cacheGetResults = await this.cache.get(
-			cacheKey,
-			async () =>
-				await this.placeService.getEntryData({
-					id: data.id,
-					language: data.language,
-					withDeleted: this.policy.allowDeleted(res.locals.auth),
-				}),
+		const cacheGetResults = await this.cache.get(cacheKey, () =>
+			this.placeService.getEntryData({
+				id: data.id,
+				language,
+				withDeleted,
+			}),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');

@@ -35,7 +35,7 @@ export class UserService {
 		const existingEntry = await this.findByEmail(data.email);
 
 		if (existingEntry) {
-			throw new CustomError(409, lang('user.error.already_exists'));
+			throw new CustomError(409, lang('user.error.email_already_used'));
 		}
 
 		const entry = {

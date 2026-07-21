@@ -1,7 +1,6 @@
 import type { Response } from 'express';
 import type { z } from 'zod';
-import { BadRequestError } from '@/exceptions';
-import { UnprocessableContentError } from '@/exceptions/unprocessable-content.error';
+import { BadRequestError, UnprocessableContentError } from '@/exceptions';
 
 export abstract class BaseController {
 	protected validate<V extends z.ZodTypeAny>(

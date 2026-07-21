@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { Configuration } from '@/config/settings.config';
-import { ModuleError } from '@/exceptions/module.error';
+import { ModuleError } from '@/exceptions';
 import {
 	getErrorMessage,
 	getFeaturesFilePathByExtension,

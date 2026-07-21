@@ -90,39 +90,37 @@ export class CacheProvider {
 			data: null,
 		};
 
-		try {
-			ttl = this.determineTtl(ttl);
+		const resolvedTtl = this.determineTtl(ttl);
 
-			if (ttl === 0) {
-				results.data = await fetchFunction();
-
-				return results;
-			}
-
-			const cachedData = await this.cache.get(key);
-
-			if (cachedData) {
-				results.isCached = true;
-				results.data = this.formatOutputData(cachedData);
-
-				return results;
-			}
-
+		if (resolvedTtl === 0) {
 			results.data = await fetchFunction();
 
-			await this.set(key, results.data, ttl);
-
 			return results;
+		}
+
+		let cachedData: string | null = null;
+
+		try {
+			cachedData = await this.cache.get(key);
 		} catch (error) {
 			getSystemLogger().error(
 				error,
 				`Error fetching cache for key: ${key}`,
 			);
+		}
 
-			results.data = await fetchFunction(); // Fallback to fetching fresh data
+		if (cachedData) {
+			results.isCached = true;
+			results.data = this.formatOutputData(cachedData);
 
 			return results;
 		}
+
+		results.data = await fetchFunction();
+
+		await this.set(key, results.data, resolvedTtl);
+
+		return results;
 	}
 
 	async set(key: string, data: CacheData, ttl?: number) {

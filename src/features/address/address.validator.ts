@@ -36,7 +36,7 @@ export class AddressValidator extends BaseValidator<typeof validatorMessages> {
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 		language: this.validateLanguage(this.getMessage('invalid_language'), {
 			required: false,
-		}).default(Configuration.language()),
+		}),
 	});
 
 	readonly update = z

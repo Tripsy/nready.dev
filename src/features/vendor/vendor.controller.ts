@@ -42,16 +42,19 @@ class VendorController extends BaseController {
 
 		const data = this.validate(this.validator.read, req.params, res);
 
+		const withDeleted = this.policy.allowDeleted(res.locals.auth);
+
 		const cacheKey = this.cache.buildKey(
 			VendorEntity.NAME,
 			data.id.toString(),
+			withDeleted ? 'with-deleted' : 'non-deleted',
 			'read',
 		);
 
-		const cacheGetResults = await this.cache.get(cacheKey, async () =>
+		const cacheGetResults = await this.cache.get(cacheKey, () =>
 			this.vendorService.getEntryData({
 				id: data.id,
-				withDeleted: this.policy.allowDeleted(res.locals.auth),
+				withDeleted,
 			}),
 		);
 
