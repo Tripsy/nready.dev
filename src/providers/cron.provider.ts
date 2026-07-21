@@ -6,8 +6,7 @@ import {
 	requestContext,
 } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
-import { NotFoundError } from '@/exceptions';
-import { ModuleError } from '@/exceptions/module.error';
+import { ModuleError, NotFoundError } from '@/exceptions';
 import CronHistoryEntity, {
 	CronHistoryStatusEnum,
 } from '@/features/cron-history/cron-history.entity';
@@ -22,7 +21,7 @@ import {
 } from '@/helpers';
 import { getCronLogger, getSystemLogger } from '@/providers/logger.provider';
 
-export async function startCronJobs() {
+export function getCronJobsPaths() {
 	const sharedFolder = `${Configuration.get('folder.shared') as string}/cron-jobs`;
 	const featuresFolder = Configuration.get<string>(
 		'folder.features',
@@ -39,7 +38,11 @@ export async function startCronJobs() {
 		fileExtension,
 	);
 
-	const cronJobsPaths = [...sharedPaths, ...featurePaths];
+	return [...sharedPaths, ...featurePaths];
+}
+
+export async function startCronJobs() {
+	const cronJobsPaths = getCronJobsPaths();
 
 	const promises = cronJobsPaths.map(async (filePath) => {
 		try {

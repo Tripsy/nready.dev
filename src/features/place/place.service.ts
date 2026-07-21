@@ -138,7 +138,7 @@ export class PlaceService {
 
 			await PlaceContentRepository.saveContent(
 				manager,
-				data.contents,
+				data.contents ?? [],
 				entry.id,
 			);
 

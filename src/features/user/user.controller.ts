@@ -39,17 +39,17 @@ class UserController extends BaseController {
 
 		const data = this.validate(this.validator.read, req.params, res);
 
+		const withDeleted = this.policy.allowDeleted(res.locals.auth);
+
 		const cacheKey = this.cache.buildKey(
 			UserEntity.NAME,
 			data.id.toString(),
+			withDeleted ? 'with-deleted' : 'non-deleted',
 			'read',
 		);
 
-		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.userService.findById(
-				data.id,
-				this.policy.allowDeleted(res.locals.auth),
-			),
+		const cacheGetResults = await this.cache.get(cacheKey, () =>
+			this.userService.findById(data.id, withDeleted),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');

@@ -70,14 +70,40 @@ describe('BrandService', () => {
 	);
 
 	it('updateOrder - success', async () => {
-		mockBrand.query.count.mockResolvedValue(2);
-
 		const { transaction, manager } = setupTransactionMock();
+
+		// The submitted ids must be a complete reordering of the active set
+		// for this brand_type; `updateOrder` loads those rows and saves them
+		// via the repository so subscribers fire (cache invalidation + audit).
+		const activeBrands = [
+			{ id: 1, sort_order: 0 },
+			{ id: 2, sort_order: 0 },
+		];
+
+		const queryBuilder = {
+			where: jest.fn().mockReturnThis(),
+			andWhere: jest.fn().mockReturnThis(),
+			getMany: jest
+				.fn<() => Promise<unknown>>()
+				.mockResolvedValue(activeBrands),
+		};
+
+		const brandRepository = {
+			createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+			save: jest
+				.fn<() => Promise<unknown>>()
+				.mockResolvedValue(activeBrands),
+		};
+
+		manager.getRepository.mockReturnValue(brandRepository);
 
 		await serviceBrand.updateOrder(BrandTypeEnum.PRODUCT, [1, 2]);
 
 		expect(transaction).toHaveBeenCalled();
-		expect(manager.query).toHaveBeenCalled();
+		expect(brandRepository.createQueryBuilder).toHaveBeenCalledWith(
+			'brand',
+		);
+		expect(brandRepository.save).toHaveBeenCalled();
 	});
 
 	testServiceFindById<BrandEntity, BrandQuery>(mockBrand.query, serviceBrand);

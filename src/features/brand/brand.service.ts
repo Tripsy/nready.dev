@@ -30,7 +30,7 @@ export class BrandService {
 		const existing = await this.findBySlug(data.slug, data.brand_type);
 
 		if (existing) {
-			throw new CustomError(409, lang('brand.error.already_exist'));
+			throw new CustomError(409, lang('brand.error.already_exists'));
 		}
 
 		return dataSource.transaction(async (manager) => {
@@ -88,7 +88,7 @@ export class BrandService {
 
 			await BrandContentRepository.saveContent(
 				manager,
-				data.contents,
+				data.contents ?? [],
 				entry.id,
 			);
 
@@ -116,31 +116,39 @@ export class BrandService {
 		brand_type: BrandType,
 		ids: number[], // Array of IDs in the desired order
 	): Promise<void> {
-		// We make sure all the available IDs are present in the sorting (eg: ids)
-		const count = await this.repository
-			.createQuery()
-			.filterBy('brand_type', brand_type)
-			.filterBy('status', BrandStatusEnum.ACTIVE)
-			.count();
-
-		if (count !== ids.length) {
-			throw new BadRequestError(
-				lang('brand.validation.invalid_ids_provided'),
-			);
-		}
-
 		await dataSource.transaction(async (manager) => {
-			const cases = ids
-				.map((id, index) => `WHEN ${id} THEN ${ids.length - index}`)
-				.join(' ');
+			const brandRepository = manager.getRepository(BrandEntity);
 
-			await manager.query(`
-                UPDATE brand
-                SET sort_order = CASE id
-                    ${cases}
-                END
-                WHERE id IN (${ids.join(',')})
-            `);
+			// Load every active brand of this type - the submitted ids must
+			// be a complete reordering of this exact set, not a subset or a
+			// mix of ids belonging to another brand_type.
+			const brands = await brandRepository
+				.createQueryBuilder('brand')
+				.where('brand.brand_type = :brand_type', { brand_type })
+				.andWhere('brand.status = :status', {
+					status: BrandStatusEnum.ACTIVE,
+				})
+				.getMany();
+
+			const foundIds = new Set(brands.map((brand) => brand.id));
+			const allProvidedAreValid = ids.every((id) => foundIds.has(id));
+
+			if (brands.length !== ids.length || !allProvidedAreValid) {
+				throw new BadRequestError(
+					lang('brand.validation.invalid_ids_provided'),
+				);
+			}
+
+			const updatedBrands = brands.map((brand) => {
+				const position = ids.indexOf(brand.id);
+
+				brand.sort_order = ids.length - position;
+
+				return brand;
+			});
+
+			// Save all - triggers subscribers (cache invalidation + audit log)
+			await brandRepository.save(updatedBrands);
 		});
 	}
 

@@ -49,18 +49,22 @@ class AddressController extends BaseController {
 			res,
 		);
 
+		const language = data.language ?? res.locals.language;
+		const withDeleted = this.policy.allowDeleted(res.locals.auth);
+
 		const cacheKey = this.cache.buildKey(
 			AddressEntity.NAME,
 			data.id.toString(),
-			data.language,
+			language,
+			withDeleted ? 'with-deleted' : 'non-deleted',
 			'read',
 		);
 
-		const cacheGetResults = await this.cache.get(cacheKey, async () =>
+		const cacheGetResults = await this.cache.get(cacheKey, () =>
 			this.addressService.getEntryData({
 				id: data.id,
-				language: data.language ?? res.locals.language,
-				withDeleted: this.policy.allowDeleted(res.locals.auth),
+				language,
+				withDeleted,
 			}),
 		);
 
