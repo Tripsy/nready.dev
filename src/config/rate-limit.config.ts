@@ -1,6 +1,6 @@
 import type { Request } from 'express';
 import rateLimit from 'express-rate-limit';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 
 const ipsAllowlist = ['192.168.0.56', '192.168.0.21'];
 

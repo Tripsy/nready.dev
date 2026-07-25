@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import PlaceEntity from '@/features/place/place.entity';
 import { type PlacePolicy, placePolicy } from '@/features/place/place.policy';
 import {

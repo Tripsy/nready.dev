@@ -1,6 +1,6 @@
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import { getErrorMessage } from '@/helpers/system.helper';
 import type {

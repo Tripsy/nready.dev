@@ -1,6 +1,6 @@
 import type { DeepPartial, EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import CategoryEntity, {
 	type CategoryStatus,

@@ -1,5 +1,5 @@
 import type { DeepPartial } from 'typeorm';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import type CarrierEntity from '@/features/carrier/carrier.entity';
 import { getCarrierRepository } from '@/features/carrier/carrier.repository';

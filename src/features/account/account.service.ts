@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import { BadRequestError, CustomError } from '@/exceptions';
 import type { AccountValidator } from '@/features/account/account.validator';

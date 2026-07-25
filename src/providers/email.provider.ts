@@ -1,4 +1,4 @@
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import templates from '@/config/nunjucks.config';
 import { Configuration } from '@/config/settings.config';
 import MailQueueEntity from '@/features/mail-queue/mail-queue.entity';

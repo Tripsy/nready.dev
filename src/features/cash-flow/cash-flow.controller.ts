@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
 import {

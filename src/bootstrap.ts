@@ -1,6 +1,6 @@
-import { initializeI18next } from '@/config/i18n.setup';
 import { initQueues } from '@/config/init-queue.config';
 import { setupListeners } from '@/config/listeners.setup';
+import { initializeMessages } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import startCronJobs from '@/providers/cron.provider';
 import { initDatabase } from '@/providers/database.provider';
@@ -26,7 +26,7 @@ function validateConfig(): void {
 export async function bootstrap(): Promise<void> {
 	validateConfig();
 
-	await initializeI18next();
+	await initializeMessages();
 
 	if (!Configuration.isEnvironment('test')) {
 		await initDatabase();

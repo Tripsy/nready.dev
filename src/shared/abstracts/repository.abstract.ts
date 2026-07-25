@@ -7,7 +7,7 @@ import {
 	type SelectQueryBuilder,
 } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError, NotFoundError } from '@/exceptions';
 import {
 	type OrderDirection,

@@ -1,6 +1,6 @@
 import type { DeepPartial } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import BrandEntity, {
 	type BrandStatus,

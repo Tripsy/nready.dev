@@ -5,8 +5,6 @@ import cookieParser from 'cookie-parser';
 import type { Request, Response } from 'express';
 import express from 'express';
 import helmet from 'helmet';
-import i18next from 'i18next';
-import { handle as i18nextMiddleware } from 'i18next-http-middleware';
 import qs from 'qs';
 import { v4 as uuid } from 'uuid';
 import { Configuration } from '@/config/settings.config';
@@ -125,11 +123,7 @@ export async function createApp() {
 	);
 	app.use(outputHandler); // Set `res.locals.output`
 
-	if (!Configuration.isEnvironment('test')) {
-		app.use(i18nextMiddleware(i18next));
-	}
-
-	app.use(languageMiddleware); // Set `res.locals.language`
+	app.use(languageMiddleware); // Set `res.locals.language` (drives content/email language, not messages)
 
 	if (!Configuration.isEnvironment('test')) {
 		app.use(authMiddleware); // Set `res.locals.auth`

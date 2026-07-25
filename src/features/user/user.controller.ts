@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import UserEntity from '@/features/user/user.entity';
 import { type UserPolicy, userPolicy } from '@/features/user/user.policy';
 import { type UserService, userService } from '@/features/user/user.service';

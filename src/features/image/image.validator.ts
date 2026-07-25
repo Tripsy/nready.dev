@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import {
 	ImageMimeEnum,
