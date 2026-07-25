@@ -1,9 +1,9 @@
-import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { CashFlowStatusEnum } from '@/features/cash-flow/cash-flow.entity';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
 } from '@/middleware/validate-params.middleware';
+import type { FeatureRoutesModule } from '@/shared/types/routes.type';
 
 export default async () => {
 	const { cashFlowController } = await import(

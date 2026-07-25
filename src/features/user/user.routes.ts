@@ -1,10 +1,10 @@
-import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { userController } from '@/features/user/user.controller';
 import { UserStatusEnum } from '@/features/user/user.entity';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
 } from '@/middleware/validate-params.middleware';
+import type { FeatureRoutesModule } from '@/shared/types/routes.type';
 
 const routesModule: FeatureRoutesModule<typeof userController> = {
 	basePath: '/users',

@@ -1,10 +1,13 @@
 import type { z } from 'zod';
-import type { FeatureRoutesModule, HttpMethod } from '@/config/routes.setup';
 import { Configuration } from '@/config/settings.config';
 import type { HttpStatusCode } from '@/exceptions';
 import { buildSrcPath } from '@/helpers/system.helper';
 import { apiDocumentationMiddleware } from '@/middleware/api-documentation.middleware';
 import sharedMessages from '@/shared/locales/en.json';
+import type {
+	FeatureRoutesModule,
+	HttpMethod,
+} from '@/shared/types/routes.type';
 
 type ZodIssue = z.core.$ZodIssue;
 

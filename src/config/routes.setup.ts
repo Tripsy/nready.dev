@@ -6,22 +6,10 @@ import { Configuration } from '@/config/settings.config';
 import { buildSrcPath, getErrorMessage } from '@/helpers';
 import { setupDevelopmentDocumentation } from '@/helpers/api-documentation.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
-
-export type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
-
-type RoutesType<C> = {
-	[K in keyof C]: {
-		path: string;
-		method: HttpMethod;
-		handlers?: RequestHandler[];
-	};
-};
-
-export type FeatureRoutesModule<C> = {
-	basePath: string;
-	controller: C;
-	routes: RoutesType<C>;
-};
+import type {
+	FeatureRoutesModule,
+	RoutesType,
+} from '@/shared/types/routes.type';
 
 interface RouteInfo {
 	name: string;

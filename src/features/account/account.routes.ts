@@ -2,7 +2,7 @@ import {
 	authDefaultRateLimiter,
 	authLoginRateLimiter,
 } from '@/config/rate-limit.config';
-import type { FeatureRoutesModule } from '@/config/routes.setup';
+import type { FeatureRoutesModule } from '@/shared/types/routes.type';
 
 export default async () => {
 	const { accountController } = await import(

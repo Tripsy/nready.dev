@@ -1,5 +1,5 @@
-import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { validateParamsWhenId } from '@/middleware/validate-params.middleware';
+import type { FeatureRoutesModule } from '@/shared/types/routes.type';
 
 export default async () => {
 	const { mailQueueController } = await import(
