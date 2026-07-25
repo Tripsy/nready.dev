@@ -49,7 +49,7 @@ export class UserPermissionService {
 
 				return {
 					permission_id,
-					message: lang('user-permission.success.created'),
+					message: lang('user-permission.success.create'),
 				};
 			}),
 		);

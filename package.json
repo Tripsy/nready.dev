@@ -21,11 +21,13 @@
 		"typecheck": "tsc --noEmit",
 		"biome": "NODE_OPTIONS=--no-deprecation biome check --write",
 		"madge": "madge --circular src",
-		"migration:generate": "pnpx tsx ./node_modules/typeorm/cli.js migration:generate -d ./src/config/data-source.config.ts",
-		"migration:run": "pnpx tsx ./node_modules/typeorm/cli.js migration:run -d ./src/config/data-source.config.ts",
-		"migration:revert": "pnpx tsx ./node_modules/typeorm/cli.js migration:revert -d ./src/config/data-source.config.ts"
+		"messages:check": "tsx cli/check-message-keys.ts",
+		"migration:generate": "tsx ./node_modules/typeorm/cli.js migration:generate -d ./src/config/data-source.config.ts",
+		"migration:run": "tsx ./node_modules/typeorm/cli.js migration:run -d ./src/config/data-source.config.ts",
+		"migration:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d ./src/config/data-source.config.ts"
 	},
 	"dependencies": {
+		"@aws-sdk/client-cloudwatch-logs": "^3.1095.0",
 		"@aws-sdk/client-ses": "^3.994.0",
 		"@aws-sdk/credential-provider-node": "^3.972.10",
 		"bcrypt": "^6.0.0",

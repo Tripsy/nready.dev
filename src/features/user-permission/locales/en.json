@@ -4,6 +4,7 @@
 		"already_exists": "User permission already exists"
 	},
 	"success": {
+		"create": "User permission created",
 		"update": "User permission updated",
 		"restore": "User permission restored",
 		"delete": "User permission deleted"

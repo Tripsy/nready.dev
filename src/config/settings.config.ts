@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { hostname } from 'node:os';
 import { getObjectValue, type ObjectValue, setObjectValue } from '@/helpers';
 import type { LogDataLevel } from '@/shared/types/log-data.type';
 import type { LogHistoryDestination } from '@/shared/types/log-history.type';
@@ -6,6 +7,13 @@ import type { LogHistoryDestination } from '@/shared/types/log-history.type';
 type Settings = { [key: string]: ObjectValue };
 
 function loadSettings(): Settings {
+	// Read directly from `process.env` rather than through `Configuration`: these decide
+	// values inside the settings object being built, so it does not exist yet.
+	const environment = process.env.APP_ENV || 'development';
+	const isProduction = environment === 'production';
+	const isVerbose =
+		process.env.APP_DEBUG === 'true' || environment === 'test';
+
 	return {
 		app: {
 			environment: process.env.APP_ENV || 'development',
@@ -48,19 +56,48 @@ function loadSettings(): Settings {
 		cache: {
 			ttl: Number(process.env.CACHE_TTL) ?? 60,
 		},
+		/*
+		 * Each `level*` array is the set of levels one destination accepts; an empty array
+		 * means that destination is not built at all (see `log-destinations.factory.ts`).
+		 */
 		logging: {
 			logLevel: process.env.PINO_LOG_LEVEL || ('trace' as LogDataLevel),
-			levelFile: [
-				'debug',
+			levelConsole: (isVerbose
+				? ['trace', 'debug', 'info', 'warn', 'error', 'fatal']
+				: []) as LogDataLevel[],
+			// Production hosts are ephemeral, so rotating files on disk buy nothing and
+			// are lost with the instance — CloudWatch replaces them there.
+			levelFile: (isProduction
+				? []
+				: [
+						'debug',
+						'info',
+						'error',
+						'warn',
+						'fatal',
+					]) as LogDataLevel[],
+			levelDatabase: ['info', 'error', 'warn', 'fatal'] as LogDataLevel[],
+			// Only `fatal` by default: this channel was silently broken until now, and
+			// error-level volume would make it noise. Widen it here if you want it back.
+			levelEmail: ['fatal'] as LogDataLevel[],
+			// Not gated on environment — the destination is skipped unless a log group is
+			// configured, so setting AWS_CLOUDWATCH_LOG_GROUP is enough to try it in dev.
+			levelCloudWatch: [
 				'info',
-				'error',
 				'warn',
+				'error',
 				'fatal',
 			] as LogDataLevel[],
-			levelDatabase: ['info', 'error', 'warn', 'fatal'] as LogDataLevel[],
-			levelEmail: ['error', 'fatal'] as LogDataLevel[],
 			logEmail: process.env.PINO_LOG_EMAIL || '',
 			history: process.env.LOGGING_HISTORY as LogHistoryDestination,
+		},
+		aws: {
+			region: process.env.AWS_REGION || '',
+			cloudwatch: {
+				logGroup: process.env.AWS_CLOUDWATCH_LOG_GROUP || '',
+				// One stream per host keeps concurrent writers off a shared stream.
+				logStream: process.env.AWS_CLOUDWATCH_LOG_STREAM || hostname(),
+			},
 		},
 		mail: {
 			provider: process.env.MAIL_PROVIDER || 'smtp', // 'smtp' or 'ses'

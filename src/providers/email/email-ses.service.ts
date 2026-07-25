@@ -2,7 +2,7 @@ import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
-import { getErrorMessage } from '@/helpers/system.helper';
+import { getErrorMessage } from '@/helpers';
 import type {
 	EmailAddressType,
 	EmailContent,
@@ -56,7 +56,7 @@ export class SesEmailService implements EmailService {
 			);
 
 			console.debug(
-				lang('app.email.sent_success', {
+				lang('shared.debug.email_sent', {
 					subject: content.subject,
 					to: to.address,
 				}),
@@ -64,7 +64,7 @@ export class SesEmailService implements EmailService {
 		} catch (error: unknown) {
 			console.error(
 				error,
-				lang('app.email.sent_error', {
+				lang('shared.debug.email_error', {
 					subject: content.subject,
 					to: to.address,
 					error: getErrorMessage(error),

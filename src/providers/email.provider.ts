@@ -10,15 +10,11 @@ import {
 } from '@/features/template/template.entity';
 import { getTemplateRepository } from '@/features/template/template.repository';
 import { getErrorMessage } from '@/helpers';
-import { SesEmailService } from '@/providers/email/email-ses.service';
-import { SmtpEmailService } from '@/providers/email/email-smtp.service';
+import { getEmailService } from '@/providers/email/email-service.factory';
 import { getSystemLogger } from '@/providers/logger.provider';
-import {
-	type EmailAddressType,
-	type EmailProvider,
-	EmailProviderEnum,
-	type EmailService,
-	type SendEmailArgs,
+import type {
+	EmailAddressType,
+	SendEmailArgs,
 } from '@/shared/types/email.type';
 
 export type EmailQueueData = {
@@ -107,29 +103,6 @@ export async function queueEmail(
 	mailQueueEntity.from = from;
 
 	await getMailQueueRepository().save(mailQueueEntity);
-}
-
-let currentServiceInstance: EmailService | null = null;
-
-export function getEmailService(): EmailService {
-	const provider =
-		(Configuration.get('mail.provider') as EmailProvider) ||
-		EmailProviderEnum.SES;
-
-	if (currentServiceInstance) {
-		return currentServiceInstance;
-	}
-
-	switch (provider) {
-		case EmailProviderEnum.SMTP:
-			currentServiceInstance = new SmtpEmailService();
-			break;
-		default:
-			currentServiceInstance = new SesEmailService();
-			break;
-	}
-
-	return currentServiceInstance;
 }
 
 export async function sendEmail(data: SendEmailArgs): Promise<void> {

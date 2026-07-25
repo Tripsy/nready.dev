@@ -9,7 +9,6 @@ import {
 	type ObjectValue,
 	replaceVars,
 } from '@/helpers';
-import { getSystemLogger } from '@/providers/logger.provider';
 
 /**
  * API-facing text — response messages and validation errors — is English-only by design.
@@ -22,6 +21,11 @@ import { getSystemLogger } from '@/providers/logger.provider';
  * language detection, no per-language backend loading, no fallback chain. What remains is
  * a dotted-key lookup plus `{{var}}` interpolation, which `getObjectValue`/`replaceVars`
  * already provide — so the i18next/​fs-backend/​http-middleware trio was dropped.
+ *
+ * Diagnostics here go to `console`, not `getSystemLogger()`, on purpose. The logger's email
+ * destination resolves an email transport, and those transports call `lang()` — routing
+ * this module's own warnings back through the logger closes that loop. This module sits
+ * below the logger in the dependency order and must stay there.
  */
 
 const LANGUAGE = 'en';
@@ -108,9 +112,41 @@ export async function initializeMessages(): Promise<void> {
 		}
 	}
 
-	getSystemLogger().debug(
-		`Messages loaded for namespaces: ${Object.keys(messages).join(', ')}`,
-	);
+	if (Configuration.get('app.debug')) {
+		console.debug(
+			`Messages loaded for namespaces: ${Object.keys(messages).join(', ')}`,
+		);
+	}
+}
+
+type MessageLookup =
+	| { found: true; value: string }
+	| { found: false; reason: 'unknown_namespace' | 'missing_key' };
+
+function lookup(key: string): MessageLookup {
+	const [namespace, ...rest] = key.split('.');
+	const resource = messages[namespace];
+
+	if (!resource) {
+		return { found: false, reason: 'unknown_namespace' };
+	}
+
+	const value = getObjectValue(resource, rest.join('.'));
+
+	if (typeof value !== 'string') {
+		return { found: false, reason: 'missing_key' };
+	}
+
+	return { found: true, value };
+}
+
+/**
+ * Whether a key resolves to a message. Used by `cli/check-message-keys.ts` to fail the
+ * build on a dangling key; unlike `lang()` it has no test-environment short-circuit, so
+ * the check behaves the same in every environment.
+ */
+export function hasMessage(key: string): boolean {
+	return key.includes('.') && lookup(key).found;
 }
 
 /**
@@ -135,30 +171,23 @@ export const lang = (
 		);
 	}
 
-	const [namespace, ...rest] = key.split('.');
-	const resource = messages[namespace];
+	const result = lookup(key);
 
-	if (!resource) {
+	if (!result.found) {
 		if (fallback) {
 			return fallback;
 		}
 
-		getSystemLogger().warn(`Unknown namespace: ${namespace}`);
+		console.warn(
+			result.reason === 'unknown_namespace'
+				? `Unknown message namespace: ${key.split('.')[0]}`
+				: `Missing message for key: ${key}`,
+		);
 
 		return key;
 	}
 
-	const value = getObjectValue(resource, rest.join('.'));
-
-	if (typeof value !== 'string') {
-		if (fallback) {
-			return fallback;
-		}
-
-		getSystemLogger().warn(`Missing message for key: ${key}`);
-
-		return key;
-	}
+	const value = result.value;
 
 	return replaceVars(value, replacements);
 };

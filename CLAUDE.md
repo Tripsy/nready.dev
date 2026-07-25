@@ -39,15 +39,15 @@ pnpm run migration:run
 pnpm run migration:revert
 
 # Seeds
-pnpx tsx src/features/template/database/template.seed.ts
-pnpx tsx src/features/permission/database/permission.seed.ts
+tsx src/features/template/database/template.seed.ts
+tsx src/features/permission/database/permission.seed.ts
 
 # Feature management CLI (see Feature System below)
-pnpx tsx cli/feature.ts <feature> install|remove|upgrade
+tsx cli/feature.ts <feature> install|remove|upgrade
 
 # Cron CLI
-pnpx tsx cli/cron.ts list -s
-pnpx tsx cli/cron.ts run <cron-name>
+tsx cli/cron.ts list -s
+tsx cli/cron.ts run <cron-name>
 ```
 
 > ⚠ Always inspect generated migrations before running — columns are sometimes dropped.
@@ -68,13 +68,13 @@ Biome enforces: **tab indent (width 4)**, **single quotes** in JS/TS, and organi
 
 `server.ts` → `bootstrap()` → `createApp()` → `listen` → WebSockets → signal handlers.
 
-- **`src/bootstrap.ts`** initializes infrastructure in order: i18next, database, event listeners, queues, email worker, cron jobs. In the `test` environment, database/listeners/queues/cron are skipped.
+- **`src/bootstrap.ts`** initializes infrastructure in order: messages, database, event listeners, queues, email worker, cron jobs. In the `test` environment, database/listeners/queues/cron are skipped.
 - **`src/app.ts`** builds the Express app: Helmet (locked-down API CSP), CORS, compression, cookie/JSON parsing, request-ID, timeout, then the middleware chain, dynamically-loaded routes, `/health` + `/ready`, and finally `notFoundHandler` + `errorHandler` (must remain last).
 - **`server.ts`** owns graceful shutdown — `closeHandler()` closes Redis, queues, DB, log streams, and WebSockets.
 
 ### Middleware chain (order matters, see `app.ts`)
 
-`outputHandler` (sets `res.locals.output`) → i18next → `languageMiddleware` (`res.locals.language`) → `authMiddleware` (`res.locals.auth`) → `requestContextMiddleware`. The auth and i18next middleware are skipped in the `test` environment. Route-level param validators live in `src/middleware/validate-params.middleware.ts` (`validateParamsWhenId`, `validateParamsWhenEnum`).
+`outputHandler` (sets `res.locals.output`) → `languageMiddleware` (`res.locals.language`) → `authMiddleware` (`res.locals.auth`) → `requestContextMiddleware`. `authMiddleware` is skipped in the `test` environment. `res.locals.language` selects *content* language (brand/address/place/template entries, email rendering) — response messages are English-only. Route-level param validators live in `src/middleware/validate-params.middleware.ts` (`validateParamsWhenId`, `validateParamsWhenEnum`).
 
 ### Feature-based modules (`src/features/<name>/`)
 
@@ -100,21 +100,22 @@ The dev/prod file extension is resolved by `Configuration.resolveExtension()` (`
 
 ### Feature installer (`cli/feature.ts`)
 
-Features can be packaged in `packages/` and installed into `src/features/` via `pnpx tsx cli/feature.ts <feature> install|remove|upgrade`. Each package carries a `manifest.json` (`name`, `version`, `relativePath`, `entities`, `depends_on`, `depends_off`). The CLI enforces dependency ordering, blocks removal of `core` features, backs up on upgrade, supports rollback, and **prompts you to run migrations manually** for entity-bearing features (it does not auto-migrate). Hardcodes `basePath = /var/www/html`.
+Features can be packaged in `packages/` and installed into `src/features/` via `tsx cli/feature.ts <feature> install|remove|upgrade`. Each package carries a `manifest.json` (`name`, `version`, `relativePath`, `entities`, `depends_on`, `depends_off`). The CLI enforces dependency ordering, blocks removal of `core` features, backs up on upgrade, supports rollback, and **prompts you to run migrations manually** for entity-bearing features (it does not auto-migrate). Hardcodes `basePath = /var/www/html`.
 
 ### Configuration
 
 `src/config/settings.config.ts` centralizes all settings behind `Configuration.get('dot.path')`, sourced from env vars with defaults. Helpers: `Configuration.isEnvironment(env)`, `.environment()`, `.language()`, `.currency()`, `.resolveExtension()`. Prefer this over reading `process.env` directly.
 
-### Response envelope, errors, and i18n
+### Response envelope, errors, and messages
 
 - Controllers never `res.json(data)` raw — they populate `res.locals.output` (`.data()`, `.message()`, `.meta()`, `.errors()`) set up by `output-handler.middleware.ts`, then `res.json(res.locals.output)`.
 - Errors are thrown as typed classes from `src/exceptions/` (`BadRequestError`, `NotFoundError`, `UnauthorizedError`, `NotAllowedError`, `UnprocessableContentError`, `CustomError(status, msg)`, `ModuleError`) and normalized by `error-handler.middleware.ts`. Zod validation failures throw `UnprocessableContentError` with issues attached.
-- User-facing strings come from i18next via `lang('feature.key', params)`; message catalogs live in `src/features/<name>/locales/` and `src/shared/locales/`.
+- User-facing strings come from `lang('feature.key', params)` (`src/config/message.setup.ts`); catalogs live in `src/features/<name>/locales/en.json` and `src/shared/locales/en.json`. Messages are English-only — `lang()` reads `en.json` and nothing else. `pnpm run messages:check` fails the build on a key with no catalog entry.
+- `errorHandler` masks every `>= 500` message to the generic `shared.error.server_error` unless `app.debug` is on, and the echoed `request` block is dropped outside debug. Never rely on a 5xx message reaching the client — model actionable failures as 4xx.
 
 ### Cross-cutting infrastructure
 
-- **`src/providers/`** — `database` (TypeORM data source), `cache` (Redis-backed; `cacheProvider.buildKey(...)` + `get(key, loader)`), `logger` (Pino with file/database/email transports and dedicated system/cron loggers), `email` (SMTP or SES, chosen by `mail.provider`), `cron`.
+- **`src/providers/`** — `database` (TypeORM data source), `cache` (Redis-backed; `cacheProvider.buildKey(...)` + `get(key, loader)`), `logger` (Pino; `providers/logger/` holds one `LogDestination` per sink — console, file, database, email, CloudWatch — selected per level by `log-destinations.factory.ts`, with dedicated system/cron loggers), `email` (SMTP or SES, chosen by `mail.provider`), `cron`.
 - **`src/queues/` + `src/workers/`** — BullMQ; email is enqueued (`email.queue.ts`) and processed by `src/workers/email.worker.ts`.
 - **`src/config/request.context.ts`** — AsyncLocalStorage request context (`auth_id`, `performed_by`, `source`, `request_id`, `language`), also populated for cron runs and used by subscribers/logging.
 - **`src/shared/`** — `abstracts/` (base controller, repository, entity, service helpers, policy, subscriber, validator), shared `cron-jobs/`, `listeners/`, `decorators/`, `locales/`, and `types/` (including `express.d.ts` augmenting `res.locals`).

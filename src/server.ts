@@ -10,7 +10,7 @@ import {
 import { getRoutesInfo } from '@/config/routes.setup';
 import { Configuration } from '@/config/settings.config';
 import { destroyDatabase } from '@/providers/database.provider';
-import { getSystemLogger, LogStream } from '@/providers/logger.provider';
+import { getLogStream, getSystemLogger } from '@/providers/logger.provider';
 import { queueFactory } from '@/queues/queue.factory';
 
 export let server: Server;
@@ -117,7 +117,7 @@ export async function closeHandler(): Promise<void> {
 		{ name: 'Redis', fn: redisClose },
 		{ name: 'Queues', fn: () => queueFactory.closeAll() },
 		{ name: 'Database', fn: destroyDatabase },
-		{ name: 'Log streams', fn: () => new LogStream().closeFileStreams() },
+		{ name: 'Log streams', fn: () => getLogStream().close() },
 		{ name: 'WebSockets', fn: () => cleanupWebSockets() },
 	];
 
