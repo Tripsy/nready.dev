@@ -1,6 +1,7 @@
 import type { Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import AccountTokenEntity from '@/features/account/account-token.entity';
+import { runInBackground } from '@/providers/logger.provider';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
 export class AccountTokenQuery extends RepositoryAbstract<AccountTokenEntity> {
@@ -21,7 +22,16 @@ export const getAccountTokenRepository = () =>
 			return new AccountTokenQuery(this);
 		},
 
+		/*
+		 * Fire-and-forget by design: the only callers are in `auth.middleware.ts`, which
+		 * continues to `next()` regardless — cleaning up a dead token must not add latency
+		 * to the request. `runInBackground` keeps a failed delete from surfacing as an
+		 * unhandled rejection, which `server.ts` would treat as grounds for a shutdown.
+		 */
 		removeTokenById(id: number): void {
-			void this.createQuery().filterById(id).delete(false);
+			runInBackground(
+				this.createQuery().filterById(id).delete(false),
+				`Failed to remove account token #${id}`,
+			);
 		},
 	});

@@ -39,6 +39,7 @@ import {
 	tokenMetaData,
 } from '@/helpers';
 import asyncHandler from '@/helpers/async.handler';
+import { runInBackground } from '@/providers/logger.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
 class AccountController extends BaseController {
@@ -234,15 +235,18 @@ class AccountController extends BaseController {
 			const [ident, expire_at] =
 				await this.accountRecoveryService.setupRecovery(user, metadata);
 
-			void this.accountEmailService.sendEmailPasswordRecover(
-				{
-					...user,
-					language: user.language || res.locals.language,
-				},
-				{
-					ident: ident,
-					expire_at: expire_at,
-				},
+			runInBackground(
+				this.accountEmailService.sendEmailPasswordRecover(
+					{
+						...user,
+						language: user.language || res.locals.language,
+					},
+					{
+						ident: ident,
+						expire_at: expire_at,
+					},
+				),
+				`Failed to send the password-recovery email to user #${user.id}`,
 			);
 
 			res.locals.output.message(lang('account.success.password_recover'));
@@ -320,10 +324,13 @@ class AccountController extends BaseController {
 				used_at: createCurrentDate(),
 			});
 
-			void this.accountEmailService.sendEmailPasswordChange({
-				...user,
-				language: user.language || res.locals.language,
-			});
+			runInBackground(
+				this.accountEmailService.sendEmailPasswordChange({
+					...user,
+					language: user.language || res.locals.language,
+				}),
+				`Failed to send the password-change notice to user #${user.id}`,
+			);
 
 			res.locals.output.message(lang('account.success.password_changed'));
 
@@ -516,11 +523,14 @@ class AccountController extends BaseController {
 		const { token, expire_at } =
 			this.accountService.createConfirmationToken(user, data.email_new);
 
-		void this.accountEmailService.sendEmailConfirmUpdate(
-			user,
-			token,
-			expire_at,
-			data.email_new,
+		runInBackground(
+			this.accountEmailService.sendEmailConfirmUpdate(
+				user,
+				token,
+				expire_at,
+				data.email_new,
+			),
+			`Failed to send the email-update confirmation to user #${user.id}`,
 		);
 
 		res.locals.output.message(lang('account.success.email_update_request'));

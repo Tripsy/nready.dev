@@ -26,7 +26,7 @@ export class AccountEmailService {
 			expire_at: formatDate(expire_at, 'date-time') as string,
 		};
 
-		void queueEmail(emailTemplate, {
+		await queueEmail(emailTemplate, {
 			name: user.name,
 			address: email_new,
 		});
@@ -53,7 +53,7 @@ export class AccountEmailService {
 			expire_at: formatDate(expire_at, 'date-time') as string,
 		};
 
-		void queueEmail(emailTemplate, {
+		await queueEmail(emailTemplate, {
 			name: user.name,
 			address: user.email,
 		});
@@ -75,7 +75,7 @@ export class AccountEmailService {
 			name: user.name,
 		};
 
-		void queueEmail(emailTemplate, {
+		await queueEmail(emailTemplate, {
 			name: user.name,
 			address: user.email,
 		});
@@ -103,7 +103,7 @@ export class AccountEmailService {
 			expire_at: formatDate(token.expire_at, 'date-time') as string,
 		};
 
-		void queueEmail(emailTemplate, {
+		await queueEmail(emailTemplate, {
 			name: user.name,
 			address: user.email,
 		});
@@ -125,7 +125,7 @@ export class AccountEmailService {
 			name: user.name,
 		};
 
-		void queueEmail(emailTemplate, {
+		await queueEmail(emailTemplate, {
 			name: user.name,
 			address: user.email,
 		});

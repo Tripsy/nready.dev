@@ -16,6 +16,7 @@ import type UserEntity from '@/features/user/user.entity';
 import { type UserStatus, UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
 import { createCurrentDate, createFutureDate } from '@/helpers';
+import { runInBackground } from '@/providers/logger.provider';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export type ConfirmationTokenPayload = {
@@ -144,10 +145,13 @@ export class AccountService {
 	): void {
 		const { token, expire_at } = this.createConfirmationToken(user);
 
-		void this.accountEmailService.sendEmailConfirmCreate(
-			user,
-			token,
-			expire_at,
+		runInBackground(
+			this.accountEmailService.sendEmailConfirmCreate(
+				user,
+				token,
+				expire_at,
+			),
+			`Failed to send the account-confirmation email to user #${user.id}`,
 		);
 	}
 
@@ -162,10 +166,14 @@ export class AccountService {
 	): void {
 		switch (user.status) {
 			case UserStatusEnum.ACTIVE:
-				void this.accountEmailService.sendWelcomeEmail(user);
+				runInBackground(
+					this.accountEmailService.sendWelcomeEmail(user),
+					`Failed to send the welcome email to user #${user.id}`,
+				);
 				break;
 			case UserStatusEnum.PENDING:
-				void this.processEmailConfirmCreate(user);
+				// Synchronous — it wraps its own send in `runInBackground`.
+				this.processEmailConfirmCreate(user);
 				break;
 		}
 	}

@@ -9,7 +9,7 @@ import {
 } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
 import { getLogHistoryRepository } from '@/features/log-history/log-history.repository';
-import { getHistoryLogger } from '@/providers/logger.provider';
+import { getHistoryLogger, runInBackground } from '@/providers/logger.provider';
 import {
 	LogHistoryActionEnum,
 	type LogHistoryDestination,
@@ -55,15 +55,18 @@ export default function registerLogHistoryListener() {
 			}
 
 			case 'db': {
-				void getLogHistoryRepository().createLogs(
-					payload.entity,
-					payload.entity_ids,
-					payload.action,
-					ctx?.auth_id || null,
-					ctx?.performed_by || 'unknown',
-					ctx?.request_id || 'unknown',
-					ctx?.source || RequestContextSourceEnum.UNKNOWN,
-					payload.data,
+				runInBackground(
+					getLogHistoryRepository().createLogs(
+						payload.entity,
+						payload.entity_ids,
+						payload.action,
+						ctx?.auth_id || null,
+						ctx?.performed_by || 'unknown',
+						ctx?.request_id || 'unknown',
+						ctx?.source || RequestContextSourceEnum.UNKNOWN,
+						payload.data,
+					),
+					`Failed to write history for ${payload.entity} ${payload.entity_ids.join(', ')}`,
 				);
 
 				break;
