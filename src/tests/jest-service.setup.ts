@@ -47,8 +47,23 @@ export function createMockRepository<
 		return query;
 	});
 
+	// Chainable TypeORM query-builder stub. Every filter method returns the builder, so a
+	// service can chain freely; a test only has to configure the terminal call it needs
+	// (`getMany`/`getOne`), which default to empty results.
+	const queryBuilder = {
+		where: jest.fn(() => queryBuilder),
+		andWhere: jest.fn(() => queryBuilder),
+		orderBy: jest.fn(() => queryBuilder),
+		addOrderBy: jest.fn(() => queryBuilder),
+		select: jest.fn(() => queryBuilder),
+		leftJoinAndSelect: jest.fn(() => queryBuilder),
+		getMany: jest.fn(async () => [] as E[]),
+		getOne: jest.fn(async () => null as E | null),
+	};
+
 	const repository = {
 		createQuery: createQueryMock,
+		createQueryBuilder: jest.fn(() => queryBuilder),
 		save: jest.fn(),
 	} as unknown as jest.Mocked<Repository<E>> & {
 		createQuery(): Q;
@@ -56,6 +71,7 @@ export function createMockRepository<
 
 	return {
 		query,
+		queryBuilder,
 		repository,
 	};
 }
@@ -82,10 +98,21 @@ export function createMockContentRepository<
 	};
 }
 
-export function setupTransactionMock() {
+/**
+ * Stubs `dataSource.transaction` so the callback runs against a fake `EntityManager`.
+ *
+ * Pass the repository from `createMockRepository()` when the service under test resolves
+ * one inside the transaction (`manager.getRepository(Entity)`) — without it `getRepository`
+ * returns `undefined` and the service dies on the first call against it.
+ */
+export function setupTransactionMock(repository?: unknown) {
 	const manager = {
 		query: jest.fn(),
-		getRepository: jest.fn(),
+		save: jest.fn(),
+		softRemove: jest.fn(),
+		// Deliberately loose: a test may override this with a bespoke repository stub
+		// (see `BrandService.updateOrder`), which is not a full TypeORM `Repository`.
+		getRepository: jest.fn(() => repository) as jest.Mock,
 	};
 
 	const transaction = jest
@@ -193,14 +220,21 @@ interface IDeleteService {
 export function testServiceDelete<
 	E extends ObjectLiteral,
 	Q extends RepositoryAbstract<E>,
->(query: jest.Mocked<Q>, service: IDeleteService) {
+>(
+	query: jest.Mocked<Q>,
+	service: IDeleteService,
+	// Most services soft-delete via a bare `.delete()`. Pass the arguments when a feature
+	// deliberately differs — `image` hard-deletes with `.delete(false)`, since a
+	// soft-deleted row whose file is gone is useless.
+	expectedDeleteArgs: boolean[] = [],
+) {
 	it('should delete by id', async () => {
 		query.delete.mockResolvedValue(1);
 
 		await service.delete(1);
 
 		expect(query.filterById).toHaveBeenCalledWith(1);
-		expect(query.delete).toHaveBeenCalledWith();
+		expect(query.delete).toHaveBeenCalledWith(...expectedDeleteArgs);
 	});
 }
 

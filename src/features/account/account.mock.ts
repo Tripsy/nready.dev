@@ -71,6 +71,9 @@ export const accountInputPayloads = {
 		email: 'john.doe@example.com',
 	},
 	passwordRecoverChange: {
+		// The controller merges `ident` from the path before validating, so the payload
+		// the validator sees always carries it.
+		ident: mockUuid(),
 		password: 'Secure@123',
 		password_confirm: 'Secure@123',
 	},

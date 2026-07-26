@@ -113,7 +113,15 @@ class CashFlowController extends BaseController {
 	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		const data = this.validate(this.validator.delete, req.query, res);
+		// `id` comes from the path (`/:id`), `force` from the query string.
+		const data = this.validate(
+			this.validator.delete,
+			{
+				...req.query,
+				id: req.params.id,
+			},
+			res,
+		);
 
 		await this.cashFlowService.delete(data.id, data.force);
 

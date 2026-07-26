@@ -37,7 +37,8 @@ const basePath = (await imageRoutes()).basePath;
 
 testControllerCreate<ImageEntity, ImageValidator>({
 	controller: controller,
-	route: basePath,
+	// Images are created under their owning entity: POST /images/:section/:entity_id
+	route: `${basePath}/${getImageEntityMock().section}/${getImageEntityMock().entity_id}`,
 	entityMock: getImageEntityMock(),
 	policy: imagePolicy,
 	service: imageService,
@@ -85,7 +86,9 @@ testControllerStatusUpdate<ImageEntity>({
 });
 
 describe(`${controller} - orderUpdate`, () => {
-	const route = `${basePath}/${getImageEntityMock().image_type}/order`;
+	// PATCH /images/:section/:entity_id/order — `section`, not `image_type`, and the
+	// entity_id segment is required.
+	const route = `${basePath}/${getImageEntityMock().section}/${getImageEntityMock().entity_id}/order`;
 
 	it('should fail if not authenticated', async () => {
 		const response = await request(app).patch(route).send();

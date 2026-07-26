@@ -1,6 +1,7 @@
 import type { Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import { lang } from '@/config/message.setup';
+import { Configuration } from '@/config/settings.config';
 
 const ipsAllowlist = ['192.168.0.56', '192.168.0.21'];
 
@@ -13,7 +14,19 @@ const baseConfig = {
 	limit: 150,
 	legacyHeaders: false,
 	standardHeaders: 'draft-6' as const,
-	skip: (req: Request) => ipsAllowlist.includes(req.ip || ''),
+	/*
+	 * Disabled under `test`, like `authMiddleware` in `app.ts`.
+	 *
+	 * One limiter instance is cached per type, so `register`, `passwordRecover` and
+	 * `emailConfirmSend` all share a single 10-per-15-minutes budget. In a suite that
+	 * counter carries across every test in the file, which makes results depend on how
+	 * many requests ran before — adding a case anywhere can push an unrelated one into a
+	 * 429. Nothing asserts rate-limiting behaviour, so there is nothing to lose by
+	 * skipping it.
+	 */
+	skip: (req: Request) =>
+		Configuration.isEnvironment('test') ||
+		ipsAllowlist.includes(req.ip || ''),
 };
 
 const configs: Record<

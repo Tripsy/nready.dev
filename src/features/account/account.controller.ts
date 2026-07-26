@@ -307,10 +307,6 @@ class AccountController extends BaseController {
 				false,
 			);
 
-			if (!user) {
-				throw new NotFoundError(lang('account.error.not_found'));
-			}
-
 			if (user.status !== UserStatusEnum.ACTIVE) {
 				throw new NotFoundError(lang('account.error.not_active'));
 			}
@@ -411,10 +407,6 @@ class AccountController extends BaseController {
 			confirmationTokenPayload.user_id,
 			false,
 		);
-
-		if (!user) {
-			throw new NotFoundError(lang('account.error.not_found'));
-		}
 
 		if (user.email !== confirmationTokenPayload.user_email) {
 			throw new BadRequestError(
@@ -521,10 +513,6 @@ class AccountController extends BaseController {
 
 		const user = await this.userService.findById(user_id, false);
 
-		if (!user) {
-			throw new NotFoundError(lang('account.error.not_found'));
-		}
-
 		const { token, expire_at } =
 			this.accountService.createConfirmationToken(user, data.email_new);
 
@@ -586,11 +574,9 @@ class AccountController extends BaseController {
 			throw new UnauthorizedError();
 		}
 
-		const user = await this.userService.findById(user_id, false);
-
-		if (!user) {
-			throw new NotFoundError(lang('account.error.not_found'));
-		}
+		// Throws NotFoundError when the account no longer exists. The entity itself is
+		// not needed — the update targets `user_id` directly.
+		await this.userService.findById(user_id, false);
 
 		await this.userService.update({
 			id: user_id,
@@ -615,10 +601,6 @@ class AccountController extends BaseController {
 		}
 
 		const user = await this.userService.findById(user_id, false);
-
-		if (!user) {
-			throw new NotFoundError(lang('account.error.not_found'));
-		}
 
 		const isValidPassword: boolean =
 			await this.accountService.checkPassword(

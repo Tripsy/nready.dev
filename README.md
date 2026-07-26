@@ -322,9 +322,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-6. Tests for account-recovery.service.ts are missing 
-7. Go on FE #2 → carrier, discount,
-8. Prepared entities:
+6. Go on FE #2 → carrier, discount,
+7. Prepared entities:
     - article
         - article-category
         - article-content
@@ -343,8 +342,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - subscription
         - subscription-evidence
     - term
-9. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-10. cron hanging / delaying / semaphore 
+8. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+9. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     
