@@ -49,7 +49,8 @@ Then confirm `grep -c "Test suite failed to run"` is 0 before trusting the total
 
 Other testing notes:
 
-- `jest.mock()` does not hoist under the ESM preset. To replace a module-level function use `jest.unstable_mockModule(...)` followed by a dynamic `await import()` of the subject (see `account-email.service.test.ts`). The `jest.mock()` example in `src/tests/helpers/*.unit.ts` is dead — those files don't match `testMatch`.
+- `jest.mock()` does not hoist under the ESM preset. To replace a module-level function use `jest.unstable_mockModule(...)` followed by a dynamic `await import()` of the subject (see `account-email.service.test.ts`).
+- There are no helper-level unit tests. `src/tests/helpers/*.unit.ts` was deleted on 2026-07-26 — the `.unit.ts` suffix never matched `testMatch`, so those cases had never run and had drifted out of date. `date`, `string`, `system` and `meta-data` helpers are uncovered.
 - Rate limiting is skipped when `APP_ENV=test`: one limiter instance is cached per type, so `register`/`passwordRecover`/`emailConfirmSend` would otherwise share a single 10-per-15-minute budget across a whole file.
 
 ```bash
