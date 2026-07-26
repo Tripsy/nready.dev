@@ -3,7 +3,7 @@ import {
 	type UserRegisteredEventPayload,
 } from '@/config/event.config';
 import { accountService } from '@/features/account/account.service';
-import { getErrorMessage } from '@/helpers';
+import { getErrorMessage } from '@/helpers/system.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 
 export default function registerAccountListener() {

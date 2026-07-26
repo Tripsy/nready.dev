@@ -12,7 +12,7 @@ import {
 	type PlaceService,
 	placeService,
 } from '@/features/place/place.service';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class AddressService {

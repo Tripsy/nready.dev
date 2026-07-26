@@ -4,7 +4,7 @@ import {
 	OrderByEnum,
 	TemplateValidator,
 } from '@/features/template/template.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const templateValidator = new TemplateValidator('template');

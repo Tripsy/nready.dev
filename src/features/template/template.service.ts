@@ -8,7 +8,7 @@ import {
 	paramsUpdateList,
 	type TemplateValidator,
 } from '@/features/template/template.validator';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class TemplateService {

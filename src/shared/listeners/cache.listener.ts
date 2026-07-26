@@ -2,8 +2,8 @@ import {
 	type CacheCleanEventPayload,
 	eventEmitter,
 } from '@/config/event.config';
+import { runInBackground } from '@/helpers/background.helper';
 import { cacheProvider } from '@/providers/cache.provider';
-import { runInBackground } from '@/providers/logger.provider';
 
 export default function registerCacheListener() {
 	eventEmitter.on('cacheClean', (payload: CacheCleanEventPayload) => {

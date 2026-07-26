@@ -3,7 +3,7 @@ import {
 	CarrierValidator,
 	OrderByEnum,
 } from '@/features/carrier/carrier.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const carrierValidator = new CarrierValidator('carrier');

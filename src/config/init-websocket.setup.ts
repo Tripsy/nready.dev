@@ -6,7 +6,7 @@ import {
 	getErrorMessage,
 	getFeaturesFilesPathByFolderAndExtension,
 	getFileNameWithoutExtension,
-} from '@/helpers';
+} from '@/helpers/system.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 
 type CleanupFn = () => void;

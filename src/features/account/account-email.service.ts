@@ -1,6 +1,6 @@
 import type AccountRecoveryEntity from '@/features/account/account-recovery.entity';
 import type UserEntity from '@/features/user/user.entity';
-import { formatDate } from '@/helpers';
+import { formatDate } from '@/helpers/date.helper';
 import { loadEmailTemplate, queueEmail } from '@/providers/email.provider';
 
 export class AccountEmailService {

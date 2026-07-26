@@ -1,6 +1,7 @@
 import { EOL } from 'node:os';
 import FileStreamRotator from 'file-stream-rotator';
-import { buildRootPath, formatDate } from '@/helpers';
+import { formatDate } from '@/helpers/date.helper';
+import { buildRootPath } from '@/helpers/system.helper';
 import {
 	type LogDestination,
 	LogDestinationEnum,

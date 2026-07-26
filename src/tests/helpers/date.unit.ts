@@ -5,7 +5,7 @@ import {
 	dateDiff,
 	formatDate,
 	isValidDate,
-} from '@/helpers';
+} from '@/helpers/date.helper';
 
 describe('helpers/utils.helper.ts - Unit Tests', () => {
 	describe('isValidDate', () => {

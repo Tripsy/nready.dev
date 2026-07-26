@@ -10,7 +10,7 @@ import {
 } from '@/features/cash-flow/cash-flow.entity';
 import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.enum';
 import { OperationalRecordTypeEnum } from '@/features/cash-flow/operational-record.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,

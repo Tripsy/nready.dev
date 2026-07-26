@@ -1,7 +1,7 @@
 import type { Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import AccountTokenEntity from '@/features/account/account-token.entity';
-import { runInBackground } from '@/providers/logger.provider';
+import { runInBackground } from '@/helpers/background.helper';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 
 export class AccountTokenQuery extends RepositoryAbstract<AccountTokenEntity> {

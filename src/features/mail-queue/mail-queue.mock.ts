@@ -4,7 +4,7 @@ import {
 	MailQueueValidator,
 	OrderByEnum,
 } from '@/features/mail-queue/mail-queue.validator';
-import { createPastDate, formatDate } from '@/helpers';
+import { createPastDate, formatDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 export function getMailQueueEntityMock(): MailQueueEntity {

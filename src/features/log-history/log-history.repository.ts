@@ -2,7 +2,7 @@ import type { Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import type { RequestContextSource } from '@/config/request.context';
 import LogHistoryEntity from '@/features/log-history/log-history.entity';
-import { createCurrentDate } from '@/helpers';
+import { createCurrentDate } from '@/helpers/date.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import type { LogHistoryAction } from '@/shared/types/log-history.type';

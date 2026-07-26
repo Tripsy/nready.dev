@@ -8,7 +8,7 @@ import helmet from 'helmet';
 import qs from 'qs';
 import { v4 as uuid } from 'uuid';
 import { Configuration } from '@/config/settings.config';
-import { createCurrentDate } from '@/helpers';
+import { createCurrentDate } from '@/helpers/date.helper';
 import authMiddleware from '@/middleware/auth.middleware';
 import { corsHandler } from '@/middleware/cors-handler.middleware';
 import { errorHandler } from '@/middleware/error-handler.middleware';

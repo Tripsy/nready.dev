@@ -6,7 +6,7 @@ import {
 	getFeaturesFilePathByExtension,
 	getFileNameWithoutExtension,
 	getSharedFilePathsByExtension,
-} from '@/helpers';
+} from '@/helpers/system.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 
 async function registerListener(filePath: string) {

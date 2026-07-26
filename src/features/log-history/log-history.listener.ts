@@ -9,7 +9,8 @@ import {
 } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
 import { getLogHistoryRepository } from '@/features/log-history/log-history.repository';
-import { getHistoryLogger, runInBackground } from '@/providers/logger.provider';
+import { runInBackground } from '@/helpers/background.helper';
+import { getHistoryLogger } from '@/providers/logger.provider';
 import {
 	LogHistoryActionEnum,
 	type LogHistoryDestination,

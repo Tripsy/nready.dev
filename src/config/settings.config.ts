@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { hostname } from 'node:os';
-import { getObjectValue, type ObjectValue } from '@/helpers';
+import { getObjectValue, type ObjectValue } from '@/helpers/objects.helper';
 import type { LogDataLevel } from '@/shared/types/log-data.type';
 import type { LogHistoryDestination } from '@/shared/types/log-history.type';
 

@@ -4,7 +4,7 @@ import {
 	LogDataValidator,
 	OrderByEnum,
 } from '@/features/log-data/log-data.validator';
-import { createPastDate, formatDate } from '@/helpers';
+import { createPastDate, formatDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { LogDataLevelEnum } from '@/shared/types/log-data.type';
 

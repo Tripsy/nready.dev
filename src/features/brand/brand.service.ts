@@ -14,7 +14,7 @@ import {
 	paramsUpdateList,
 } from '@/features/brand/brand.validator';
 import BrandContentRepository from '@/features/brand/brand-content.repository';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 

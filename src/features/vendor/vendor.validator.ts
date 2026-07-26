@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import { VendorStatusEnum } from '@/features/vendor/vendor.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,

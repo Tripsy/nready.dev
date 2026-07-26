@@ -3,8 +3,8 @@ import path from 'node:path';
 import { type RequestHandler, Router } from 'express';
 import { apiRateLimiter } from '@/config/rate-limit.config';
 import { Configuration } from '@/config/settings.config';
-import { buildSrcPath, getErrorMessage } from '@/helpers';
 import { setupDevelopmentDocumentation } from '@/helpers/api-documentation.helper';
+import { buildSrcPath, getErrorMessage } from '@/helpers/system.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 import type {
 	FeatureRoutesModule,

@@ -1,6 +1,10 @@
 import dataSource from '@/config/data-source.config';
 import { Configuration } from '@/config/settings.config';
-import { createCurrentDate, createPastDate, formatDate } from '@/helpers';
+import {
+	createCurrentDate,
+	createPastDate,
+	formatDate,
+} from '@/helpers/date.helper';
 import { loadEmailTemplate, queueEmail } from '@/providers/email.provider';
 
 export const SCHEDULE_EXPRESSION = '03 02 * * *';

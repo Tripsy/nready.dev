@@ -4,7 +4,8 @@ import { getAccountRecoveryMock } from '@/features/account/account.mock';
 import type AccountRecoveryEntity from '@/features/account/account-recovery.entity';
 import type { AccountRecoveryQuery } from '@/features/account/account-recovery.repository';
 import { AccountRecoveryService } from '@/features/account/account-recovery.service';
-import { createPastDate, type TokenMetadata } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
+import type { TokenMetadata } from '@/helpers/meta-data.helper';
 import { createMockRepository } from '@/tests/jest-service.setup';
 
 function getMetadataMock(): TokenMetadata {

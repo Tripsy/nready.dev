@@ -34,7 +34,7 @@ import {
 import { getOperationalRecordRepository } from '@/features/cash-flow/operational-record.repository';
 import { clientService } from '@/features/client/client.service';
 import { vendorService } from '@/features/vendor/vendor.service';
-import { arrayHasValue, pickValuesFromObject } from '@/helpers';
+import { arrayHasValue, pickValuesFromObject } from '@/helpers/objects.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 

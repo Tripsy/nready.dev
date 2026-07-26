@@ -32,14 +32,13 @@ import {
 } from '@/features/account/account-token.service';
 import { UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
+import asyncHandler from '@/helpers/async.handler';
+import { runInBackground } from '@/helpers/background.helper';
+import { createCurrentDate, createPastDate } from '@/helpers/date.helper';
 import {
 	compareMetaDataValue,
-	createCurrentDate,
-	createPastDate,
 	tokenMetaData,
-} from '@/helpers';
-import asyncHandler from '@/helpers/async.handler';
-import { runInBackground } from '@/providers/logger.provider';
+} from '@/helpers/meta-data.helper';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
 class AccountController extends BaseController {

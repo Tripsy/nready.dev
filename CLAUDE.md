@@ -26,12 +26,33 @@ pnpm run dev                # run dev server (nodemon, watches src)
 pnpm run typecheck          # tsc --noEmit
 pnpm run biome              # biome check --write (lint + format + organize imports)
 pnpm run madge             # circular dependency check (madge --circular src)
+pnpm run messages:check    # fail on any lang() key with no locale entry
 
 # Tests (Jest + Supertest, ESM via ts-jest). NODE_ENV/APP_ENV forced to `test`.
 pnpm run test                                          # all tests
-pnpm run test account.functional.ts --testTimeout=60000 --detectOpenHandles
-pnpm run test account.unit.ts --detect-open-handles
-pnpm run test -- <path-or-name-substring>              # run a single test file by name
+pnpm run test src/features/account                     # one feature
+pnpm run test account-controller.test.ts               # one file (path substring)
+```
+
+**A green test run can be a lie.** Read the test *count*, not just the colour:
+
+- `bail: 3` stops the run after 3 failing files and prints e.g. `3 of 39 total`. That is not a full run.
+- A SIGKILLed jest worker silently drops an entire file — jest reports `Test suite failed to run … signal=SIGKILL` and carries on, so those tests never execute while the summary still looks plausible. `maxWorkers` is pinned to 2 in `jest.config.js` for this reason (the default `cpus - 1` is 11 here, far past the container's 4g `mem_limit`). **Do not raise it** without re-measuring; the suite peaks at ~2.4 GB.
+
+For a trustworthy full run, bypass `bail` — note `pnpm run test -- --bail=0` does *not* work, because `--` reaches jest as a literal test-path pattern:
+
+```bash
+docker exec -e NODE_OPTIONS=--experimental-vm-modules -e APP_DEBUG=false -e APP_ENV=test -e NODE_ENV=test nready.test pnpm exec jest --bail=0
+```
+
+Then confirm `grep -c "Test suite failed to run"` is 0 before trusting the totals.
+
+Other testing notes:
+
+- `jest.mock()` does not hoist under the ESM preset. To replace a module-level function use `jest.unstable_mockModule(...)` followed by a dynamic `await import()` of the subject (see `account-email.service.test.ts`). The `jest.mock()` example in `src/tests/helpers/*.unit.ts` is dead — those files don't match `testMatch`.
+- Rate limiting is skipped when `APP_ENV=test`: one limiter instance is cached per type, so `register`/`passwordRecover`/`emailConfirmSend` would otherwise share a single 10-per-15-minute budget across a whole file.
+
+```bash
 
 # Migrations (run inside container; data-source is src/config/data-source.config.ts)
 pnpm run migration:generate ./src/database/migrations/<name>
@@ -52,11 +73,13 @@ tsx cli/cron.ts run <cron-name>
 
 > ⚠ Always inspect generated migrations before running — columns are sometimes dropped.
 
-Tests are discovered from `src/tests/**/*.test.ts` and `src/features/**/tests/*.test.ts`. Test suites within a feature are split by type: `*.unit.ts` (service/validator) and `*.functional.ts` (controller, via Supertest).
+Tests are discovered from `src/tests/**/*.test.ts` and `src/features/**/tests/*.test.ts` — a file outside those two globs never runs. Within a feature they are split by layer, one file each: `<feature>-controller.test.ts` (integration, real Express app via Supertest), `<feature>-service.test.ts` (unit, repository mocked) and `<feature>-validator.test.ts` (schema only).
 
 ## Path Aliases
 
 `@/*` maps to `src/*` (see `tsconfig.json`). Use it consistently in imports.
+
+Import helpers by file — `@/helpers/date.helper`, not `@/helpers`. There is no helpers barrel and none is planned; the one that existed was removed so the module graph stays explicit.
 
 ## Code Style
 
@@ -104,7 +127,7 @@ Features can be packaged in `packages/` and installed into `src/features/` via `
 
 ### Configuration
 
-`src/config/settings.config.ts` centralizes all settings behind `Configuration.get('dot.path')`, sourced from env vars with defaults. Helpers: `Configuration.isEnvironment(env)`, `.environment()`, `.language()`, `.currency()`, `.resolveExtension()`. Prefer this over reading `process.env` directly.
+`src/config/settings.config.ts` centralizes all settings behind `Configuration.get('dot.path')`, sourced from env vars with defaults. Settings are built once and cached; the key is **type-checked** against the shape of `loadSettings()` and the return type is inferred — don't add `as string` at call sites or pass an explicit generic, a cast re-hides the errors the typing exists to catch. Helpers: `Configuration.isEnvironment(env)`, `.environment()`, `.language()`, `.currency()`, `.resolveExtension()`. Prefer this over reading `process.env` directly.
 
 ### Response envelope, errors, and messages
 
@@ -126,6 +149,9 @@ Features can be packaged in `packages/` and installed into `src/features/` via `
 
 ## Notes
 
+- **Never `void` a promise.** `server.ts` turns an `unhandledRejection` into a full shutdown, so a failed background side effect takes the API down. Use `runInBackground(promise, context)` from `helpers/background.helper.ts`, which catches and logs. The same trap hides in `async` event listeners — a synchronous throw inside one becomes an unawaited rejection.
+- **Don't null-check a `firstOrFail()`-backed finder.** `userService.findById` returns `Promise<UserEntity>`; an `if (!user)` after it is unreachable and the 404 already comes from the repository. Use a `.first()`-backed finder when null is a real outcome.
+- **Validate from the right source.** `req.query` alone is correct only for `find` (path `''`). Any action whose route declares `:params` must merge them — `{ ...req.query, id: req.params.id }` — or the schema gets `undefined` and the endpoint rejects every request with `invalid_id`. This has shipped twice.
 - Soft deletes are pervasive (`deleted_at`); policies gate visibility of deleted records via `allowDeleted`.
 - Status changes go through `assertValidStatusTransition(STATUS_TRANSITIONS, current, next)` — define allowed transitions on the entity.
 - Auth is JWT-based; passwords hashed with bcrypt; sessions limited via `user.maxActiveSessions`.

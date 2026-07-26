@@ -8,7 +8,7 @@ import {
 	ImageStorageEnum,
 	ImageTypeEnum,
 } from '@/features/image/image.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,

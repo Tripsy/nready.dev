@@ -1,6 +1,6 @@
 import dataSource from '@/config/data-source.config';
 import LogDataEntity from '@/features/log-data/log-data.entity';
-import { getErrorMessage } from '@/helpers';
+import { getErrorMessage } from '@/helpers/system.helper';
 import {
 	type LogDestination,
 	LogDestinationEnum,

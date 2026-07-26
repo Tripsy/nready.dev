@@ -1,6 +1,7 @@
 import nunjucks from 'nunjucks';
 import { Configuration } from '@/config/settings.config';
-import { buildSrcPath, createCurrentDate } from '@/helpers';
+import { createCurrentDate } from '@/helpers/date.helper';
+import { buildSrcPath } from '@/helpers/system.helper';
 
 // Create a new environment
 const templates = new nunjucks.Environment(

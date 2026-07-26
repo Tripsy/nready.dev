@@ -2,7 +2,7 @@ import { Worker } from 'bullmq';
 import { Configuration } from '@/config/settings.config';
 import { MailQueueStatusEnum } from '@/features/mail-queue/mail-queue.entity';
 import { getMailQueueRepository } from '@/features/mail-queue/mail-queue.repository';
-import { createCurrentDate } from '@/helpers';
+import { createCurrentDate } from '@/helpers/date.helper';
 import { type EmailQueueData, sendEmail } from '@/providers/email.provider';
 import { getSystemLogger } from '@/providers/logger.provider';
 

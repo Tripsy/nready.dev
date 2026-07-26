@@ -1,6 +1,6 @@
 import { expect, jest } from '@jest/globals';
 import type { EmailTemplate } from '@/features/template/template.entity';
-import { formatDate } from '@/helpers';
+import { formatDate } from '@/helpers/date.helper';
 
 /*
  * `AccountEmailService` collaborates with two module-level functions rather than injected

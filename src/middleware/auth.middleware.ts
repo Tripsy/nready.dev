@@ -7,12 +7,14 @@ import UserEntity, { UserStatusEnum } from '@/features/user/user.entity';
 import { getUserRepository } from '@/features/user/user.repository';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import {
-	compareMetaDataValue,
 	createCurrentDate,
 	createFutureDate,
 	dateDiff,
+} from '@/helpers/date.helper';
+import {
+	compareMetaDataValue,
 	tokenMetaData,
-} from '@/helpers';
+} from '@/helpers/meta-data.helper';
 import { cacheProvider } from '@/providers/cache.provider';
 import type { AuthContextPermissions } from '@/shared/types/express';
 

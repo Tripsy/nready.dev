@@ -15,8 +15,8 @@ import {
 import type UserEntity from '@/features/user/user.entity';
 import { type UserStatus, UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
-import { createCurrentDate, createFutureDate } from '@/helpers';
-import { runInBackground } from '@/providers/logger.provider';
+import { runInBackground } from '@/helpers/background.helper';
+import { createCurrentDate, createFutureDate } from '@/helpers/date.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export type ConfirmationTokenPayload = {

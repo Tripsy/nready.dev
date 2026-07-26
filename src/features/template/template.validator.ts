@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import { TemplateTypeEnum } from '@/features/template/template.entity';
-import { hasAtLeastOneValue, safeHtml } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
+import { safeHtml } from '@/helpers/string.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,

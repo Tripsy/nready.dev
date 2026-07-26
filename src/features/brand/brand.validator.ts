@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import { BrandStatusEnum, BrandTypeEnum } from '@/features/brand/brand.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,

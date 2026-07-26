@@ -15,7 +15,7 @@ import {
 	paramsUpdateList,
 	type UserValidator,
 } from '@/features/user/user.validator';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { UserRoleEnum } from '@/shared/types/user-role.type';

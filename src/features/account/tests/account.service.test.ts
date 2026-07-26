@@ -13,7 +13,8 @@ import { UserStatusEnum } from '@/features/user/user.entity';
 import { getUserEntityMock } from '@/features/user/user.mock';
 import type { UserQuery } from '@/features/user/user.repository';
 import { UserService } from '@/features/user/user.service';
-import { createFutureDate, encryptPassword } from '@/helpers';
+import { createFutureDate } from '@/helpers/date.helper';
+import { encryptPassword } from '@/helpers/security.helper';
 import { createMockRepository } from '@/tests/jest-service.setup';
 
 /**

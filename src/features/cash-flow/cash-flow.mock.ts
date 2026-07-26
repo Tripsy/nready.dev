@@ -11,7 +11,7 @@ import {
 	OrderByEnum,
 } from '@/features/cash-flow/cash-flow.validator';
 import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.enum';
-import { createPastDate, formatDate } from '@/helpers';
+import { createPastDate, formatDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const cashFlowValidator = new CashFlowValidator('cash_flow');

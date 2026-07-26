@@ -18,7 +18,7 @@ import { accountTokenService } from '@/features/account/account-token.service';
 import { UserStatusEnum } from '@/features/user/user.entity';
 import { getUserEntityMock } from '@/features/user/user.mock';
 import { userService } from '@/features/user/user.service';
-import { createFutureDate, createPastDate } from '@/helpers';
+import { createFutureDate, createPastDate } from '@/helpers/date.helper';
 import { withDebugResponse } from '@/tests/jest-controller.setup';
 import { mockConfig, mockUuid } from '@/tests/mocks/helpers.mock';
 import {

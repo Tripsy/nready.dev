@@ -1,6 +1,6 @@
 import { Configuration } from '@/config/settings.config';
 import { getCronHistoryRepository } from '@/features/cron-history/cron-history.repository';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { loadEmailTemplate, queueEmail } from '@/providers/email.provider';
 
 export const SCHEDULE_EXPRESSION = '01 02 * * *';

@@ -7,7 +7,7 @@ import {
 	type CarrierValidator,
 	paramsUpdateList,
 } from '@/features/carrier/carrier.validator';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class CarrierService {

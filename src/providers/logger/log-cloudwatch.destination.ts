@@ -7,7 +7,7 @@ import {
 } from '@aws-sdk/client-cloudwatch-logs';
 import { defaultProvider } from '@aws-sdk/credential-provider-node';
 import { Configuration } from '@/config/settings.config';
-import { getErrorMessage } from '@/helpers';
+import { getErrorMessage } from '@/helpers/system.helper';
 import {
 	type LogDestination,
 	LogDestinationEnum,

@@ -1,7 +1,7 @@
 import type PlaceEntity from '@/features/place/place.entity';
 import { PlaceTypeEnum } from '@/features/place/place.entity';
 import { OrderByEnum, PlaceValidator } from '@/features/place/place.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const placeValidator = new PlaceValidator('place');

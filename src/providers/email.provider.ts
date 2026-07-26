@@ -9,7 +9,7 @@ import {
 	TemplateTypeEnum,
 } from '@/features/template/template.entity';
 import { getTemplateRepository } from '@/features/template/template.repository';
-import { getErrorMessage } from '@/helpers';
+import { getErrorMessage } from '@/helpers/system.helper';
 import { getEmailService } from '@/providers/email/email-service.factory';
 import { getSystemLogger } from '@/providers/logger.provider';
 import type {
