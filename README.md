@@ -296,12 +296,11 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. pnpm run madge
-2. Category needs ordering too
-3. Go on FE → category
-4. Deploy on AWS
-5. API documentation (`done` for discounts)
-6. create CLI script which should generate something like:
+1. Category needs ordering too
+2. Go on FE → category
+3. Deploy on AWS
+4. API documentation (`done` for discounts)
+5. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -323,9 +322,9 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-7. Tests for account-recovery.service.ts are missing 
-8. Go on FE #2 → carrier, discount,
-9. Prepared entities:
+6. Tests for account-recovery.service.ts are missing 
+7. Go on FE #2 → carrier, discount,
+8. Prepared entities:
     - article
         - article-category
         - article-content
@@ -344,8 +343,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - subscription
         - subscription-evidence
     - term
-10. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-11. cron hanging / delaying / semaphore 
+9. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+10. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

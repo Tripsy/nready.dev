@@ -17,9 +17,7 @@ export class CacheProvider {
 	}
 
 	determineTtl(ttl?: number): number {
-		return ttl === undefined
-			? (Configuration.get('cache.ttl') as number)
-			: ttl;
+		return ttl === undefined ? Configuration.get('cache.ttl') : ttl;
 	}
 
 	formatInputData(data: CacheData): string | number {

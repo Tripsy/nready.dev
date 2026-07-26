@@ -36,7 +36,7 @@ async function start() {
 
 	await new Promise<void>((resolve) => {
 		server = app.listen(appPort, () => {
-			getSystemLogger().info(`Server listening on port ${appPort}`);
+			getSystemLogger().debug(`Server listening on port ${appPort}`);
 			resolve();
 		});
 	});
@@ -137,10 +137,10 @@ export async function closeHandler(): Promise<void> {
 // Print startup info
 function printStartupInfo(): void {
 	const appConfig = {
-		port: Configuration.get('app.port') as string,
-		environment: Configuration.environment() as string,
-		name: Configuration.get('app.name') as string,
-		url: Configuration.get('app.url') as string,
+		port: Configuration.get('app.port'),
+		environment: Configuration.environment(),
+		name: Configuration.get('app.name'),
+		url: Configuration.get('app.url'),
 	};
 
 	if (appConfig.environment === 'test') {

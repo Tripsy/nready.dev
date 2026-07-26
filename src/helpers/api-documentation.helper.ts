@@ -282,7 +282,7 @@ export async function setupDevelopmentDocumentation<C>(
 	}
 
 	const docsPath = buildSrcPath(
-		Configuration.get('folder.features') as string,
+		Configuration.get('folder.features'),
 		feature,
 		`${feature}.docs`,
 	);

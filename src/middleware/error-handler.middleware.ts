@@ -14,9 +14,17 @@ import { getSystemLogger } from '@/providers/logger.provider';
  * string unless `app.debug` is on; 4xx messages are written for the client and pass through.
  *
  * The real error is still logged in full below — masking is a response-shaping concern only.
+ *
+ * Not applied under `test`: the suite runs with `APP_DEBUG=false`, so masking would leave
+ * every failing controller test reporting only `shared.error.server_error` and hide the
+ * actual cause from `withDebugResponse`.
  */
 function clientMessage(err: Error, status: number): string {
-	if (status < 500 || Configuration.get('app.debug')) {
+	if (
+		status < 500 ||
+		Configuration.get('app.debug') ||
+		Configuration.isEnvironment('test')
+	) {
 		return err.message;
 	}
 

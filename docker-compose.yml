@@ -8,6 +8,13 @@ services:
             dockerfile: docker/dockerfile
         volumes:
             - .:/var/www/html
+        # Without a limit a runaway process can consume the entire Docker VM (7.6 GB) and
+        # trip the host OOM killer, taking other containers down with it. Capping it
+        # contains the blast radius and makes a runaway attributable to this container.
+        #
+        # Serving requests takes ~105 MB; `pnpm test` peaks at ~2.4 GB with the capped
+        # worker count in jest.config.js. 4g clears that with room to spare.
+        mem_limit: 4g
         tty: true
         networks:
             - development

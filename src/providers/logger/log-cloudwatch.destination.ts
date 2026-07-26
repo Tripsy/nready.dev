@@ -62,7 +62,7 @@ export class LogCloudWatchDestination implements LogDestination {
 		private readonly logStreamName: string,
 	) {
 		this.client = new CloudWatchLogsClient({
-			region: Configuration.get('aws.region') as string,
+			region: Configuration.get('aws.region'),
 			credentials: defaultProvider(),
 		});
 	}

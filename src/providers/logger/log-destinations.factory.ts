@@ -1,4 +1,4 @@
-import { Configuration } from '@/config/settings.config';
+import { Configuration, type SettingsKey } from '@/config/settings.config';
 import { LogCloudWatchDestination } from '@/providers/logger/log-cloudwatch.destination';
 import { LogConsoleDestination } from '@/providers/logger/log-console.destination';
 import { LogDatabaseDestination } from '@/providers/logger/log-database.destination';
@@ -7,8 +7,10 @@ import { LogFileDestination } from '@/providers/logger/log-file.destination';
 import type { LogDestination } from '@/shared/types/log.type';
 import type { LogDataLevel } from '@/shared/types/log-data.type';
 
-function levelsFor(key: string): ReadonlyArray<LogDataLevel> {
-	return (Configuration.get(key) as LogDataLevel[] | undefined) ?? [];
+type LogLevelKey = Extract<SettingsKey, `logging.level${string}`>;
+
+function levelsFor(key: LogLevelKey): ReadonlyArray<LogDataLevel> {
+	return Configuration.get(key) ?? [];
 }
 
 /**
@@ -48,7 +50,7 @@ export function buildLogDestinations(): LogDestination[] {
 	}
 
 	const cloudWatchLevels = levelsFor('logging.levelCloudWatch');
-	const logGroupName = Configuration.get('aws.cloudwatch.logGroup') as string;
+	const logGroupName = Configuration.get('aws.cloudwatch.logGroup');
 	const logStreamName = Configuration.get(
 		'aws.cloudwatch.logStream',
 	) as string;

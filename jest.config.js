@@ -68,7 +68,15 @@ const config = {
 	// globals: {},
 
 	// The maximum amount of workers used to run your tests. Can be specified as % or a number. E.g. maxWorkers: 10% will use 10% of your CPU amount + 1 as the maximum worker number. maxWorkers: 2 will use a maximum of 2 workers.
-	// maxWorkers: "50%",
+	//
+	// Capped deliberately. Jest defaults to `cpus - 1`, which is 11 workers in the dev
+	// container; at ~600 MB each that blows past the container's `mem_limit` and the
+	// kernel SIGKILLs workers. A killed worker makes jest report "Test suite failed to
+	// run" and skip that file's tests entirely, so the run still ends with a summary that
+	// looks plausible while whole suites silently never executed.
+	// 2 workers peaks at ~2.4 GB and is within budget for both this repo and nready.dev,
+	// whose larger suite OOMs at 3+. Costs ~2s here versus 4 workers; not worth the risk.
+	maxWorkers: 2,
 
 	// An array of directory names to be searched recursively up from the requiring module's location
 	// moduleDirectories: [

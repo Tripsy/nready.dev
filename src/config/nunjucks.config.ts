@@ -9,7 +9,7 @@ const templates = new nunjucks.Environment(
 		autoescape: true,
 		throwOnUndefined: true,
 		trimBlocks: true,
-		noCache: Configuration.get('app.debug') === 'true',
+		noCache: Configuration.get('app.debug'),
 		watch: true,
 	},
 );

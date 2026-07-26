@@ -14,7 +14,7 @@ export class SesEmailService implements EmailService {
 
 	constructor() {
 		this.ses = new SESClient({
-			region: Configuration.get('aws.region') as string,
+			region: Configuration.get('aws.region'),
 			credentials: defaultProvider(),
 			// logger: console,
 		});

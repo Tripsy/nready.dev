@@ -117,7 +117,7 @@ export class AccountService {
 
 		const token = jwt.sign(
 			payload,
-			Configuration.get('user.emailConfirmationSecret') as string,
+			Configuration.get('user.emailConfirmationSecret'),
 			{
 				expiresIn:
 					(Configuration.get(
@@ -127,8 +127,7 @@ export class AccountService {
 		);
 
 		const expire_at = createFutureDate(
-			(Configuration.get('user.emailConfirmationExpiresIn') as number) *
-				86400,
+			Configuration.get('user.emailConfirmationExpiresIn') * 86400,
 		);
 
 		return { token, expire_at };
@@ -181,7 +180,7 @@ export class AccountService {
 		try {
 			return jwt.verify(
 				token,
-				Configuration.get('user.emailConfirmationSecret') as string,
+				Configuration.get('user.emailConfirmationSecret'),
 			) as ConfirmationTokenPayload;
 		} catch {
 			throw new BadRequestError(

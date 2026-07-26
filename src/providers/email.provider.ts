@@ -108,7 +108,7 @@ export async function queueEmail(
 export async function sendEmail(data: SendEmailArgs): Promise<void> {
 	try {
 		if (!data.from) {
-			data.from = Configuration.get('mail.from') as EmailAddressType;
+			data.from = Configuration.get('mail.from');
 		}
 
 		if (!data.replyTo) {

@@ -153,7 +153,7 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {

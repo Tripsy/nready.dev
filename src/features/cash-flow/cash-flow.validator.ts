@@ -187,7 +187,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {
@@ -242,7 +242,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
-				minChars: Configuration.get('filter.termMinLength') as number,
+				minChars: Configuration.get('filter.termMinLength'),
 			}),
 			client_id: this.validateId(this.getMessage('invalid_number'), {
 				required: false,

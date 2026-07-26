@@ -176,14 +176,11 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			'seconds',
 		);
 
-		if (
-			diffInSeconds <
-			(Configuration.get('user.authRefreshExpiresIn') as number)
-		) {
+		if (diffInSeconds < Configuration.get('user.authRefreshExpiresIn')) {
 			await getAccountTokenRepository().update(activeToken.id, {
 				used_at: createCurrentDate(),
 				expire_at: createFutureDate(
-					Configuration.get('user.authExpiresIn') as number,
+					Configuration.get('user.authExpiresIn'),
 				),
 			});
 		} else {

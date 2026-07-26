@@ -26,10 +26,8 @@ async function registerListener(filePath: string) {
 }
 
 export async function setupListeners() {
-	const sharedFolder = `${Configuration.get('folder.shared') as string}/listeners`;
-	const featuresFolder = Configuration.get<string>(
-		'folder.features',
-	) as string;
+	const sharedFolder = `${Configuration.get('folder.shared')}/listeners`;
+	const featuresFolder = Configuration.get('folder.features') as string;
 	const fileExtension = `listener.${Configuration.resolveExtension()}`;
 
 	const sharedPaths = getSharedFilePathsByExtension(

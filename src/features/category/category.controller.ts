@@ -158,7 +158,13 @@ class CategoryController extends BaseController {
 	public statusUpdate = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		const data = this.validate(this.validator.statusUpdate, req.query, res);
+		// `id` and `status` come from the path (`/:id/status/:status`), `force` from the
+		// query string — so both sources are merged, with the path winning on conflict.
+		const data = this.validate(
+			this.validator.statusUpdate,
+			{ ...req.query, ...req.params },
+			res,
+		);
 
 		const existingEntry = await this.categoryService.findById(
 			data.id,

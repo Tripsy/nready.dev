@@ -32,7 +32,7 @@ export class LogEmailDestination implements LogDestination {
 	constructor(readonly levels: ReadonlyArray<LogDataLevel>) {}
 
 	async write(record: LogRecord): Promise<void> {
-		const to = Configuration.get('logging.logEmail') as string;
+		const to = Configuration.get('logging.logEmail');
 
 		if (!to) {
 			return;
@@ -63,7 +63,7 @@ export class LogEmailDestination implements LogDestination {
 			await getEmailService().sendEmail(
 				{
 					subject: lang('shared.debug.email_log_subject', {
-						app: Configuration.get<string>('app.name') as string,
+						app: Configuration.get('app.name'),
 						level: record.level,
 					}),
 					text: body,

@@ -114,7 +114,7 @@ class AccountController extends BaseController {
 			await this.accountTokenService.getAuthValidTokens(user.id);
 
 		const maxActiveSessions = Math.max(
-			Configuration.get('user.maxActiveSessions') as number,
+			Configuration.get('user.maxActiveSessions'),
 			1,
 		); // Forced `1` as value - in case config value was set as 0 due to an error
 

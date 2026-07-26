@@ -55,7 +55,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 					min_chars: this.getMessage('name_min'),
 				},
 				{
-					minChars: Configuration.get('user.nameMinChars') as number,
+					minChars: Configuration.get('user.nameMinChars'),
 				},
 			),
 			email: this.validateEmail(this.getMessage('invalid_email')),
@@ -145,7 +145,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 				},
 				{
 					required: false,
-					minChars: Configuration.get('user.nameMinChars') as number,
+					minChars: Configuration.get('user.nameMinChars'),
 				},
 			),
 			email: this.validateEmail(this.getMessage('invalid_email'), {
@@ -256,7 +256,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {
@@ -265,7 +265,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
-				minChars: Configuration.get('filter.termMinLength') as number,
+				minChars: Configuration.get('filter.termMinLength'),
 			}),
 			status: this.validateEnum(
 				UserStatusEnum,

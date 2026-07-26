@@ -51,7 +51,7 @@ export class LogHistoryValidator extends BaseValidator<
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {

@@ -2,7 +2,6 @@ import { Configuration } from '@/config/settings.config';
 import { SesEmailService } from '@/providers/email/email-ses.service';
 import { SmtpEmailService } from '@/providers/email/email-smtp.service';
 import {
-	type EmailProvider,
 	EmailProviderEnum,
 	type EmailService,
 } from '@/shared/types/email.type';
@@ -21,8 +20,7 @@ export function getEmailService(): EmailService {
 	}
 
 	const provider =
-		(Configuration.get('mail.provider') as EmailProvider) ||
-		EmailProviderEnum.SES;
+		Configuration.get('mail.provider') || EmailProviderEnum.SES;
 
 	switch (provider) {
 		case EmailProviderEnum.SMTP:

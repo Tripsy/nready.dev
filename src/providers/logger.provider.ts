@@ -186,7 +186,7 @@ const logger = pino(
 		// 'fatal', 'error', 'warn', 'info', 'debug', 'trace' or 'silent'
 		level: Configuration.isEnvironment('test')
 			? 'error'
-			: (Configuration.get('logging.logLevel') as LogDataLevel),
+			: Configuration.get('logging.logLevel'),
 		// Defines how and where to send log data, such as to files, external services, or streams.
 		nestedKey: 'context',
 		// Define default properties included in every log line.

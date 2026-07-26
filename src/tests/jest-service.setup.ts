@@ -132,7 +132,6 @@ export function testServiceUpdate<E extends ObjectLiteral>(
 }
 
 interface IUpdateStatusService<E, S> {
-	findById(id: number, withDeleted?: boolean): Promise<E>;
 	updateStatus(entry: E, newStatus: S): Promise<void>;
 }
 
@@ -153,10 +152,8 @@ export function testServiceUpdateStatus<
 			status: statusTransitions.good.from,
 		} as unknown as E;
 
-		jest.spyOn(service, 'findById').mockResolvedValue(entity);
-
 		await expect(
-			service.updateStatus(entity.id, statusTransitions.good.from),
+			service.updateStatus(entity, statusTransitions.good.from),
 		).rejects.toThrow('shared.error.status_unchanged');
 	});
 
@@ -169,10 +166,8 @@ export function testServiceUpdateStatus<
 				status: badTransition.from,
 			} as unknown as E;
 
-			jest.spyOn(service, 'findById').mockResolvedValue(entity);
-
 			await expect(
-				service.updateStatus(entity.id, badTransition.to),
+				service.updateStatus(entity, badTransition.to),
 			).rejects.toThrow('shared.error.status_update_not_allowed');
 		});
 	}
@@ -183,11 +178,9 @@ export function testServiceUpdateStatus<
 			status: statusTransitions.good.from,
 		} as unknown as E;
 
-		jest.spyOn(service, 'findById').mockResolvedValue(entity);
-
 		repository.save.mockResolvedValue(entity);
 
-		await service.updateStatus(entity.id, statusTransitions.good.to);
+		await service.updateStatus(entity, statusTransitions.good.to);
 
 		expect(repository.save).toHaveBeenCalled();
 	});

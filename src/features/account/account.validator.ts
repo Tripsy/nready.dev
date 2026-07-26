@@ -36,7 +36,7 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 				},
 				{
 					required: true,
-					minChars: Configuration.get('user.nameMinChars') as number,
+					minChars: Configuration.get('user.nameMinChars'),
 				},
 			),
 			email: this.validateEmail(this.getMessage('invalid_email')),
@@ -196,7 +196,7 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 			},
 			{
 				required: true,
-				minChars: Configuration.get('user.nameMinChars') as number,
+				minChars: Configuration.get('user.nameMinChars'),
 			},
 		),
 		language: this.validateLanguage(this.getMessage('invalid_language'), {

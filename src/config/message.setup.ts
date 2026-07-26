@@ -72,15 +72,13 @@ async function readNamespace(
  * Loads every `en.json` (shared + per feature) into memory. Called once from `bootstrap`.
  */
 export async function initializeMessages(): Promise<void> {
-	const featuresPath = buildSrcPath(
-		Configuration.get('folder.features') as string,
-	);
+	const featuresPath = buildSrcPath(Configuration.get('folder.features'));
 
 	const namespaceFiles: ReadonlyArray<readonly [string, string]> = [
 		[
 			SHARED_NAMESPACE,
 			buildSrcPath(
-				Configuration.get('folder.shared') as string,
+				Configuration.get('folder.shared'),
 				LOCALES_FOLDER,
 				`${LANGUAGE}.json`,
 			),

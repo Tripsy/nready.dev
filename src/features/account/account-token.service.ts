@@ -53,7 +53,7 @@ export class AccountTokenService {
 		try {
 			return jwt.verify(
 				token,
-				Configuration.get('user.authSecret') as string,
+				Configuration.get('user.authSecret'),
 			) as AuthTokenPayload;
 		} catch (err) {
 			throw new CustomError(
@@ -91,7 +91,7 @@ export class AccountTokenService {
 
 		const ident: string = uuid();
 		const expire_at: Date = createFutureDate(
-			Configuration.get('user.authExpiresIn') as number,
+			Configuration.get('user.authExpiresIn'),
 		);
 
 		const payload: AuthTokenPayload = {
@@ -99,10 +99,7 @@ export class AccountTokenService {
 			ident: ident,
 		};
 
-		const token = jwt.sign(
-			payload,
-			Configuration.get('user.authSecret') as string,
-		);
+		const token = jwt.sign(payload, Configuration.get('user.authSecret'));
 
 		return { token, ident, expire_at };
 	}

@@ -49,8 +49,8 @@ const emailWorker = new Worker(
 	},
 	{
 		connection: {
-			host: Configuration.get('redis.host') as string,
-			port: Configuration.get('redis.port') as number,
+			host: Configuration.get('redis.host'),
+			port: Configuration.get('redis.port'),
 		},
 		concurrency: 5,
 	},

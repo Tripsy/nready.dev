@@ -55,7 +55,7 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {
@@ -64,7 +64,7 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
-				minChars: Configuration.get('filter.termMinLength') as number,
+				minChars: Configuration.get('filter.termMinLength'),
 			}),
 			status: this.validateEnum(
 				VendorStatusEnum,

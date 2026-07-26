@@ -21,7 +21,7 @@ interface RouteInfo {
 
 function getRoutesFilePath(feature: string) {
 	return buildSrcPath(
-		Configuration.get('folder.features') as string,
+		Configuration.get('folder.features'),
 		feature,
 		`${feature}.routes`,
 	);
@@ -113,9 +113,7 @@ function findRouteFiles(featuresDirectory: string) {
 export const initRoutes = async (): Promise<Router> => {
 	const router = Router();
 
-	const featuresPath = buildSrcPath(
-		Configuration.get('folder.features') as string,
-	);
+	const featuresPath = buildSrcPath(Configuration.get('folder.features'));
 	const routeFiles = findRouteFiles(featuresPath);
 
 	for (const routeFilePath of routeFiles) {

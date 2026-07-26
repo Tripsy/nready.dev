@@ -84,8 +84,8 @@ const cronTimeCheck = async () => {
 		};
 
 		await queueEmail(emailTemplate, {
-			name: Configuration.get('app.name') as string,
-			address: Configuration.get('app.email') as string,
+			name: Configuration.get('app.name'),
+			address: Configuration.get('app.email'),
 		});
 	}
 

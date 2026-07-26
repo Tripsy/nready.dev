@@ -1,12 +1,15 @@
 import 'dotenv/config';
 import { hostname } from 'node:os';
-import { getObjectValue, type ObjectValue, setObjectValue } from '@/helpers';
+import { getObjectValue, type ObjectValue } from '@/helpers';
 import type { LogDataLevel } from '@/shared/types/log-data.type';
 import type { LogHistoryDestination } from '@/shared/types/log-history.type';
 
-type Settings = { [key: string]: ObjectValue };
-
-function loadSettings(): Settings {
+/**
+ * Deliberately un-annotated so TypeScript infers the literal shape of the returned object.
+ * That inferred shape is what gives `Configuration.get()` its key union and return types —
+ * annotating this `: Settings` would widen everything to `ObjectValue` and lose both.
+ */
+function loadSettings() {
 	// Read directly from `process.env` rather than through `Configuration`: these decide
 	// values inside the settings object being built, so it does not exist yet.
 	const environment = process.env.APP_ENV || 'development';
@@ -137,48 +140,121 @@ function loadSettings(): Settings {
 	};
 }
 
+type Settings = ReturnType<typeof loadSettings>;
+
+/**
+ * Every valid dotted path into `Settings`, as a union of string literals.
+ *
+ * Arrays stop the recursion — `logging.levelFile` is a leaf, there is no
+ * `logging.levelFile.0`. `NonNullable` lets an optional branch (`mail.host` is
+ * `string | undefined`) still be classified by its non-undefined type.
+ */
+export type SettingsKey<T = Settings> = {
+	[K in keyof T & string]: T[K] extends readonly unknown[]
+		? K
+		: NonNullable<T[K]> extends object
+			? K | `${K}.${SettingsKey<NonNullable<T[K]>>}`
+			: K;
+}[keyof T & string];
+
+/** The type stored at a given dotted path. */
+export type SettingsValue<
+	K extends string,
+	T = Settings,
+> = K extends `${infer Head}.${infer Rest}`
+	? Head extends keyof T
+		? SettingsValue<Rest, NonNullable<T[Head]>>
+		: never
+	: K extends keyof T
+		? T[K]
+		: never;
+
+/**
+ * Settings are derived once, on first read, and reused.
+ *
+ * `loadSettings()` is not cheap — it re-reads ~40 environment variables, runs `parseInt`
+ * and `split` over them and calls `hostname()` — and it used to run on *every*
+ * `Configuration.get()`. Boot alone did ~1000 of them. Nothing here can change after the
+ * process starts (`dotenv/config` is imported at the top of this module, before any
+ * reader), so rebuilding per read bought nothing.
+ *
+ * Caching also makes `set()` work: it previously mutated a throwaway object that was
+ * discarded on return, so writes were silently lost.
+ */
+let settings: Settings | undefined;
+
+function getSettings(): Settings {
+	settings ??= loadSettings();
+
+	return settings;
+}
+
 export const Configuration = {
-	get: <T = ObjectValue>(key: string): T | undefined => {
-		const value = getObjectValue(loadSettings(), key);
+	/**
+	 * Reads a setting by dotted path. The path is checked against the shape of
+	 * `loadSettings()`, so a typo is a compile error rather than an `undefined` at runtime,
+	 * and the return type is inferred — no `as string` needed at the call site.
+	 */
+	get: <K extends SettingsKey>(key: K): SettingsValue<K> => {
+		const value = getObjectValue(
+			getSettings() as Record<string, ObjectValue>,
+			key,
+		);
 
 		if (value === undefined) {
+			// Unreachable for a well-typed key unless the value is genuinely optional
+			// (eg: `mail.host`); kept as a guard for dynamic paths.
 			console.warn(`Configuration key not found: ${key}`);
 		}
 
-		return value as T;
+		return value as SettingsValue<K>;
 	},
 
-	set: (key: string, value: ObjectValue): void => {
-		const success = setObjectValue(loadSettings(), key, value);
+	// Currently unused
+	// set: <K extends SettingsKey>(key: K, value: SettingsValue<K>): void => {
+	// 	const success = setObjectValue(
+	// 		getSettings() as Record<string, ObjectValue>,
+	// 		key,
+	// 		value as ObjectValue,
+	// 	);
+	//
+	// 	if (!success) {
+	// 		console.warn(`Failed to set configuration key: ${key}`);
+	// 	}
+	// },
 
-		if (!success) {
-			console.warn(`Failed to set configuration key: ${key}`);
-		}
-	},
-
+	// These read the cached object directly rather than going through `get()`. They are
+	// the hottest paths — every `lang()` call hits `isEnvironment` — and this skips the
+	// dotted-path split, the lookup and the undefined check for a plain property read.
 	environment: () => {
-		return Configuration.get('app.environment') as string;
+		return getSettings().app.environment;
 	},
 
 	isEnvironment: (value: string) => {
-		return Configuration.environment() === value;
+		return getSettings().app.environment === value;
 	},
 
 	language: () => {
-		return Configuration.get('language.default') as string;
+		return getSettings().language.default;
 	},
 
 	isSupportedLanguage: (language: string): boolean => {
-		const languages = Configuration.get<string[]>('language.supported');
-
-		return Array.isArray(languages) && languages.includes(language);
+		return getSettings().language.supported.includes(language);
 	},
 
 	currency: () => {
-		return Configuration.get('app.currency') as string;
+		return getSettings().app.currency;
 	},
 
 	resolveExtension: () => {
 		return Configuration.environment() === 'production' ? 'js' : 'ts';
+	},
+
+	/**
+	 * Drops the cache so the next read re-derives from `process.env`.
+	 * Only for tests that need to exercise a different environment.
+	 */
+	reset: (): void => {
+		settings = undefined;
 	},
 };

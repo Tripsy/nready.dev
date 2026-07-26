@@ -34,7 +34,7 @@ export class AccountRecoveryService {
 	): Promise<[string, Date]> {
 		const ident: string = uuid();
 		const expire_at = createFutureDate(
-			Configuration.get('user.recoveryIdentExpiresIn') as number,
+			Configuration.get('user.recoveryIdentExpiresIn'),
 		);
 
 		const accountRecoveryEntity = new AccountRecoveryEntity();

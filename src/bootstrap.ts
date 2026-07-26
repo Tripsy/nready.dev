@@ -7,7 +7,7 @@ import { initDatabase } from '@/providers/database.provider';
 
 // Validate critical configuration
 function validateConfig(): void {
-	const required = ['app.port'];
+	const required = ['app.port'] as const;
 	const missing = required.filter((key) => !Configuration.get(key));
 
 	if (missing.length > 0) {
