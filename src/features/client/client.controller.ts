@@ -12,6 +12,7 @@ import {
 } from '@/features/client/client.service';
 import { ClientValidator } from '@/features/client/client.validator';
 import asyncHandler from '@/helpers/async.handler';
+import { getRouteParam } from '@/helpers/request.helper';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
@@ -74,7 +75,7 @@ class ClientController extends BaseController {
 		 * body, so the stored value has to fill in for it.
 		 */
 		const existingEntry = await this.clientService.findById(
-			parseInt(req.params.id, 10),
+			parseInt(getRouteParam(req, 'id') ?? '', 10),
 			false,
 		);
 

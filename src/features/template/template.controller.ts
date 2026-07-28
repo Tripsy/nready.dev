@@ -13,6 +13,7 @@ import {
 } from '@/features/template/template.service';
 import { TemplateValidator } from '@/features/template/template.validator';
 import asyncHandler from '@/helpers/async.handler';
+import { getRouteParam } from '@/helpers/request.helper';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
@@ -98,7 +99,7 @@ class TemplateController extends BaseController {
 		 * the stored value has to fill in for it.
 		 */
 		const existingEntry = await this.templateService.findById(
-			parseInt(req.params.id, 10),
+			parseInt(getRouteParam(req, 'id') ?? '', 10),
 			false,
 		);
 

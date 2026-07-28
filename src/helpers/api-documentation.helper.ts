@@ -3,7 +3,10 @@ import { Configuration } from '@/config/settings.config';
 import type { HttpStatusCode } from '@/exceptions';
 import { buildSrcPath } from '@/helpers/system.helper';
 import { apiDocumentationMiddleware } from '@/middleware/api-documentation.middleware';
-import sharedMessages from '@/shared/locales/en.json';
+// The import attribute is required by Node ESM, which refuses to load a JSON module
+// without it. `moduleResolution: "bundler"` lets tsc and tsx accept the bare form, so this
+// only failed once the built output ran under Node.
+import sharedMessages from '@/shared/locales/en.json' with { type: 'json' };
 import type {
 	FeatureRoutesModule,
 	HttpMethod,

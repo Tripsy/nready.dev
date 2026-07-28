@@ -23,9 +23,10 @@ Package manager is **pnpm** (single-package workspace defined in `pnpm-workspace
 
 ```bash
 pnpm run dev                # run dev server (nodemon, watches src)
+pnpm run build              # production build -> dist/src (tsc + tsc-alias + asset copy)
+pnpm run start              # run the build from dist/ (APP_ENV=production)
 pnpm run typecheck          # tsc --noEmit
-pnpm run biome              # biome check --write (lint + format + organize imports)
-pnpm run madge             # circular dependency check (madge --circular src)
+pnpm run biome              # biome check --write (lint + format + imports + import cycles)
 pnpm run messages:check    # fail on any lang() key with no locale entry
 
 # Tests (Jest + Supertest, ESM via ts-jest). NODE_ENV/APP_ENV forced to `test`.
@@ -33,6 +34,12 @@ pnpm run test                                          # all tests
 pnpm run test src/features/account                     # one feature
 pnpm run test account-controller.test.ts               # one file (path substring)
 ```
+
+`start` runs from inside `dist/` on purpose. `SRC_PATH` in `system.helper.ts` is
+`<cwd>/src`, and both the TypeORM entity glob and the runtime asset reads (Nunjucks
+templates, per-feature `locales/en.json`) resolve through it — so the process has to see
+`dist/src` as its `src`. It reads configuration from real environment variables; there is
+no `.env` in the build output.
 
 **A green test run can be a lie.** Read the test *count*, not just the colour:
 
