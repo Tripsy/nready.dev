@@ -13,7 +13,6 @@ import {
 
 export const paramsUpdateList = [
 	'client_type',
-	'status',
 	'company_name',
 	'company_cui',
 	'company_reg_com',
@@ -26,6 +25,20 @@ export const paramsUpdateList = [
 	'contact_phone',
 	'notes',
 ];
+
+/*
+ * `client_type` discriminates the update union, so the controller fills it in from the stored
+ * row whenever the body omits it — by the time the schema runs it is always present, and
+ * counting it would defeat the empty-update check exactly as `id` would. It stays in
+ * `paramsUpdateList` because it is genuinely updatable and the message should say so.
+ *
+ * The cost is that an update carrying *only* `client_type` is rejected. That is not a real
+ * loss: switching a client between company and person means sending the target branch's
+ * fields too, and those are counted.
+ */
+const paramsUpdateCheckList = paramsUpdateList.filter(
+	(param) => param !== 'client_type',
+);
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -125,10 +138,6 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 	});
 
-	readonly updateId = z.object({
-		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
-	});
-
 	readonly update = z
 		.discriminatedUnion('client_type', [
 			// Company schema
@@ -177,7 +186,7 @@ export class ClientValidator extends BaseValidator<typeof validatorMessages> {
 				})
 				.extend(this.baseSchema),
 		])
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateCheckList), {
 			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),

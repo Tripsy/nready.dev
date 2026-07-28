@@ -11,6 +11,8 @@ import {
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
 
+export const paramsUpdateList: string[] = ['parent_id', 'contents'];
+
 export const OrderByEnum = {
 	ID: 'id',
 	LABEL: 'label',
@@ -78,9 +80,9 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			contents: this.contentsSchema().array().optional(),
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
-				params: ['parent_id', 'contents'].join(', '),
+				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
 		});

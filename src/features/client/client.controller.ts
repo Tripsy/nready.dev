@@ -27,11 +27,7 @@ class ClientController extends BaseController {
 	public create = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canCreate(res.locals.auth);
 
-		const data = await this.validateAsync(
-			this.validator.create,
-			req.body,
-			res,
-		);
+		const data = this.validate(this.validator.create, req.body, res);
 
 		const entry = await this.clientService.create(data);
 
@@ -71,19 +67,18 @@ class ClientController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
-		// Not very clean, but we need the `id` value
-		const dataForId = this.validate(
-			this.validator.updateId,
-			req.params,
-			res,
-		);
-
+		/*
+		 * The id is read straight from the route: `validateParamsWhenId('id')` has already
+		 * rejected anything that is not a positive integer. It is needed before validation
+		 * because `client_type` discriminates the update union and may be absent from the
+		 * body, so the stored value has to fill in for it.
+		 */
 		const existingEntry = await this.clientService.findById(
-			dataForId.id,
+			parseInt(req.params.id, 10),
 			false,
 		);
 
-		const data = await this.validateAsync(
+		const data = this.validate(
 			this.validator.update,
 			{
 				client_type: req.body.client_type ?? existingEntry.client_type, // Because `client_type` is not required but needed for validation

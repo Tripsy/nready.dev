@@ -15,7 +15,7 @@ import {
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
 
-export const paramsUpdateList: string[] = [];
+export const paramsUpdateList: string[] = ['contents'];
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -135,9 +135,9 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 					{ message: this.getMessage('duplicate_contents') },
 				),
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
-				params: [...paramsUpdateList, 'contents'].join(', '),
+				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
 		});

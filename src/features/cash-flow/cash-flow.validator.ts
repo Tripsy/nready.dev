@@ -21,16 +21,14 @@ export const paramsUpdateList: string[] = [
 	'direction',
 	'category_type',
 	'category',
-	'gateway',
 	'method',
 	'amount',
 	'vat_rate',
 	'currency',
 	'external_reference',
 	'notes',
-	// operational record
-	'client_id',
-	'vendor_id',
+	// The individual records are nested under this one key in the update schema
+	'operational_records',
 ];
 
 export const OrderByEnum = {
@@ -165,7 +163,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			operational_records: this.operationalRecordsSchema,
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),

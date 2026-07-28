@@ -55,6 +55,15 @@ function loadSettings() {
 			host: process.env.REDIS_HOST || 'localhost',
 			port: parseInt(process.env.REDIS_PORT || '6379', 10),
 			password: process.env.REDIS_PASSWORD || '',
+			/*
+			 * This app and the frontend client share one Redis instance and database, so
+			 * every key is namespaced by app. Applied in `CacheProvider.buildKey` rather than
+			 * through ioredis's own `keyPrefix` option: that one does not reach the MATCH
+			 * argument of SCAN, so `deleteByPattern` would scan the *other* app's keys and
+			 * then delete against them — leaving the collision risk in place while appearing
+			 * to solve it.
+			 */
+			keyPrefix: process.env.REDIS_KEY_PREFIX || 'backend',
 		},
 		cache: {
 			ttl: Number(process.env.CACHE_TTL) ?? 60,
@@ -172,14 +181,14 @@ export type SettingsValue<
 /**
  * Settings are derived once, on first read, and reused.
  *
- * `loadSettings()` is not cheap — it re-reads ~40 environment variables, runs `parseInt`
- * and `split` over them and calls `hostname()` — and it used to run on *every*
- * `Configuration.get()`. Boot alone did ~1000 of them. Nothing here can change after the
- * process starts (`dotenv/config` is imported at the top of this module, before any
- * reader), so rebuilding per read bought nothing.
+ * `loadSettings()` is not cheap — it re-reads ~40 environment variables, runs `parseInt` and
+ * `split` over them and calls `hostname()` — and `Configuration.get()` is called ~1000 times
+ * during boot alone. Nothing here can change after the process starts (`dotenv/config` is
+ * imported at the top of this module, before any reader), so a per-read rebuild would buy
+ * nothing.
  *
- * Caching also makes `set()` work: it previously mutated a throwaway object that was
- * discarded on return, so writes were silently lost.
+ * The single instance is also what lets `set()` work at all: a writer has to mutate the
+ * object every reader sees, not a throwaway rebuilt on the spot.
  */
 let settings: Settings | undefined;
 

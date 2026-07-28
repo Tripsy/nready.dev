@@ -11,8 +11,10 @@ ENV SHELL=/bin/bash
 # Install pnpm
 RUN wget -qO- https://get.pnpm.io/install.sh | sh -
 
-# Update PATH to include pnpm
-ENV PATH="/root/.local/share/pnpm:$PATH"
+# pnpm 11 puts its binaries in $PNPM_HOME/bin; pnpm 10 and earlier put them directly in
+# $PNPM_HOME. Both are on PATH so the image builds either way.
+ENV PNPM_HOME="/root/.local/share/pnpm"
+ENV PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH"
 
 # Init
 RUN pnpm init

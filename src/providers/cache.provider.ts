@@ -12,8 +12,16 @@ type CacheGetResults = {
 export class CacheProvider {
 	constructor(private readonly cache: Redis) {}
 
+	/**
+	 * Every key is built here, so prefixing at this point covers reads, writes and the
+	 * patterns handed to `deleteByPattern` alike — including the one the cache-clean listener
+	 * assembles as `${buildKey(...args)}*`. An empty `redis.keyPrefix` drops out via the same
+	 * filter that removes empty segments, leaving keys unprefixed.
+	 */
 	buildKey(...args: string[]) {
-		return args.filter((arg) => arg !== '').join(':');
+		return [Configuration.get('redis.keyPrefix'), ...args]
+			.filter((arg) => arg !== '')
+			.join(':');
 	}
 
 	determineTtl(ttl?: number): number {
@@ -46,7 +54,12 @@ export class CacheProvider {
 		}
 
 		try {
-			// Only parse if it looks like JSON (starts with {, [, ", or digit)
+			/*
+			 * Objects, arrays and quoted strings are parsed back; a bare number is left as the
+			 * string Redis returned. That is deliberate — "42" cannot be told apart from a
+			 * numeric string a caller stored on purpose, so coercing it here would corrupt
+			 * one to serve the other. Callers that need a number convert it themselves.
+			 */
 			const trimmed = data.trim();
 
 			if (
@@ -122,13 +135,26 @@ export class CacheProvider {
 	}
 
 	async set(key: string, data: CacheData, ttl?: number) {
+		const resolvedTtl = this.determineTtl(ttl);
+
+		/*
+		 * Redis rejects `EX 0` outright ("ERR invalid expire time in 'set' command"), and the
+		 * catch below would turn that into a silent no-op with only a log line. A resolved TTL
+		 * of 0 means caching is switched off — `get()` already reads it that way — so skip the
+		 * write rather than issue one that cannot succeed. This is reachable through the
+		 * default alone: `cache.ttl` is 0 in .env, so any caller omitting `ttl` lands here.
+		 */
+		if (resolvedTtl <= 0) {
+			return;
+		}
+
 		try {
 			if (data !== null) {
 				await this.cache.set(
 					key,
 					this.formatInputData(data),
 					'EX',
-					this.determineTtl(ttl),
+					resolvedTtl,
 				);
 			}
 		} catch (error) {
@@ -225,8 +251,12 @@ class MockCacheProvider extends CacheProvider {
 		// intentionally no-op
 	}
 
+	// Kept identical to the real provider's: the mock stores nothing, but two divergent key
+	// builders is exactly the drift that bites later.
 	buildKey(...args: string[]): string {
-		return args.join(':');
+		return [Configuration.get('redis.keyPrefix'), ...args]
+			.filter((arg) => arg !== '')
+			.join(':');
 	}
 }
 

@@ -33,7 +33,7 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 				required: false,
 			}),
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),

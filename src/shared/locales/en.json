@@ -44,7 +44,8 @@
 		"invalid_future_date": "Date too new",
 		"invalid_date_range": "Invalid date range",
 
-		"params_at_least_one": "At least one parameter is required (eg: {{params}})"
+		"params_at_least_one": "At least one parameter is required (eg: {{params}})",
+		"only_positive": "Enter a positive number"
 	},
 	"debug": {
 		"email_error": "Failed to send email with subject `{{subject}}` to `{{to}}` (eg: {{error}})",

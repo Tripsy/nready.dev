@@ -7,7 +7,7 @@ import {
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
 
-export const paramsUpdateList: string[] = ['details', 'postal_code'];
+export const paramsUpdateList: string[] = ['city_id', 'details', 'postal_code'];
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -53,7 +53,7 @@ export class AddressValidator extends BaseValidator<typeof validatorMessages> {
 				{ required: false },
 			),
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),

@@ -16,6 +16,20 @@ export const paramsUpdateList: string[] = [
 	'content',
 ];
 
+/*
+ * `type` discriminates the update union, so the controller fills it in from the stored row
+ * whenever the body omits it — by the time the schema runs it is always present, and counting
+ * it would defeat the empty-update check exactly as `id` would. It stays in
+ * `paramsUpdateList` because it is genuinely updatable and the message should say so.
+ *
+ * The cost is that an update carrying *only* `type` is rejected. That is not a real loss:
+ * switching a template between email and page means sending the matching `content` too, and
+ * that is counted.
+ */
+const paramsUpdateCheckList = paramsUpdateList.filter(
+	(param) => param !== 'type',
+);
+
 export const OrderByEnum = {
 	ID: 'id',
 	LABEL: 'label',
@@ -165,7 +179,7 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 				})
 				.extend(this.baseUpdateSchema),
 		])
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateCheckList), {
 			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
