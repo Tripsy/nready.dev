@@ -105,6 +105,17 @@ function loadSettings() {
 		},
 		aws: {
 			region: process.env.AWS_REGION || '',
+			ses: {
+				/*
+				 * SES identities are verified per region, so the region that can send mail
+				 * is not necessarily the one the application runs in — a domain verified
+				 * years ago in one region stays there, while the instance lives wherever it
+				 * was deployed. Falling back to AWS_REGION keeps the common single-region
+				 * case configuration-free.
+				 */
+				region:
+					process.env.AWS_SES_REGION || process.env.AWS_REGION || '',
+			},
 			cloudwatch: {
 				logGroup: process.env.AWS_CLOUDWATCH_LOG_GROUP || '',
 				// One stream per host keeps concurrent writers off a shared stream.

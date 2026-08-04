@@ -48,9 +48,20 @@ const emailWorker = new Worker(
 		}
 	},
 	{
+		/*
+		 * A dedicated connection, not the shared `getRedisClient()` singleton: a BullMQ
+		 * worker issues blocking reads (BRPOPLPUSH), which occupy the connection for the
+		 * length of the block and would stall every other command sharing it.
+		 *
+		 * The password is not optional. Without it this silently works anywhere Redis is
+		 * unauthenticated — every development machine — and fails in production with
+		 * "NOAUTH Authentication required", surfacing as emails that never arrive while the
+		 * API keeps reporting success.
+		 */
 		connection: {
 			host: Configuration.get('redis.host'),
 			port: Configuration.get('redis.port'),
+			password: Configuration.get('redis.password'),
 		},
 		concurrency: 5,
 	},

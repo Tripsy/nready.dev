@@ -70,8 +70,27 @@ export async function createApp() {
 		}),
 	);
 
-	// Configuration
-	app.set('trust proxy', false);
+	/*
+	 * Configuration
+	 *
+	 * In production the app sits behind exactly one reverse proxy, so `req.ip` must come
+	 * from X-Forwarded-For rather than the socket — otherwise every request looks like it
+	 * originates from the proxy's address. That single shared address would collapse
+	 * `express-rate-limit` into one global bucket for all callers, and make every logged IP
+	 * identical.
+	 *
+	 * The value is the hop count, not a boolean, and it must match the real topology: the
+	 * proxy is expected to *replace* X-Forwarded-For so the header carries exactly one
+	 * entry. Trusting more hops than exist would let a caller forge the header and evade
+	 * rate limiting by spoofing an address.
+	 *
+	 * Left off outside production, where the app is reached directly and any
+	 * X-Forwarded-For is untrusted input.
+	 */
+	app.set(
+		'trust proxy',
+		Configuration.isEnvironment('production') ? 1 : false,
+	);
 
 	// CORS handling
 	app.use(corsHandler);

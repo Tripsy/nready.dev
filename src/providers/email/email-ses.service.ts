@@ -14,7 +14,10 @@ export class SesEmailService implements EmailService {
 
 	constructor() {
 		this.ses = new SESClient({
-			region: Configuration.get('aws.region'),
+			// Not `aws.region`: the verified sending identity may live in a different
+			// region than the one this instance runs in. Defaults to aws.region when
+			// AWS_SES_REGION is unset.
+			region: Configuration.get('aws.ses.region'),
 			credentials: defaultProvider(),
 			// logger: console,
 		});
