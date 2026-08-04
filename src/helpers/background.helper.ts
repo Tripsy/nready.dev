@@ -13,6 +13,16 @@ export function runInBackground(
 	context: string,
 ): void {
 	promise.catch((error: unknown) => {
-		getSystemLogger().error(error, context);
+		/*
+		 * Wrapped in `{ err }` rather than passed as the merge object directly. Pino only
+		 * applies its error serializer to a recognised error key; a bare Error passed as
+		 * the first argument is merged as a plain object, and because Error's `message` and
+		 * `stack` are non-enumerable, the record reaches the log destinations with an empty
+		 * context — the message survives, every detail of *why* does not.
+		 *
+		 * This is the failure path for every fire-and-forget side effect in the app, so
+		 * losing the cause here means losing it everywhere it matters most.
+		 */
+		getSystemLogger().error({ err: error }, context);
 	});
 }

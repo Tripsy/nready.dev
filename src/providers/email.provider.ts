@@ -24,23 +24,68 @@ export type EmailQueueData = {
 	from?: EmailAddressType;
 };
 
-export async function loadEmailTemplate(
-	label: string,
-	language: string,
-): Promise<EmailTemplate> {
-	const template = await getTemplateRepository()
+function findTemplate(label: string, language: string) {
+	return getTemplateRepository()
 		.createQuery()
 		.select(['id', 'language', 'type', 'content'])
 		.filterBy('label', label)
 		.filterBy('language', language)
 		.filterBy('type', TemplateTypeEnum.EMAIL)
 		.first();
+}
+
+export async function loadEmailTemplate(
+	label: string,
+	language: string,
+): Promise<EmailTemplate> {
+	/*
+	 * Falls back through the configured default to English rather than requiring an exact
+	 * language match.
+	 *
+	 * A missing translation used to mean the user received *no* email at all: the throw
+	 * below propagates into `runInBackground`, which logs it and returns, while the
+	 * controller has already answered 200. Account recovery and email confirmation both go
+	 * through here, so a user in an untranslated language could never verify an address or
+	 * reset a password, with nothing in the response to say so.
+	 *
+	 * Delivering an email in the wrong language is a visible, recoverable annoyance;
+	 * delivering nothing is a silent lockout. Only the last resort throws.
+	 */
+	const candidates = [
+		language,
+		Configuration.get('language.default'),
+		'en',
+	].filter(
+		(candidate, index, all): candidate is string =>
+			Boolean(candidate) && all.indexOf(candidate) === index,
+	);
+
+	let template: Awaited<ReturnType<typeof findTemplate>> = null;
+	let resolvedLanguage = language;
+
+	for (const candidate of candidates) {
+		template = await findTemplate(label, candidate);
+
+		if (template) {
+			resolvedLanguage = candidate;
+			break;
+		}
+	}
+
+	if (template && resolvedLanguage !== language) {
+		// Warn rather than stay silent: this is a content gap someone should close, and it
+		// is otherwise invisible because the email still arrives.
+		getSystemLogger().warn(
+			{ label, requested: language, used: resolvedLanguage },
+			'Email template missing for the requested language — fell back',
+		);
+	}
 
 	if (!template) {
 		throw new Error(
 			lang('template.error.cannot_load', {
 				label,
-				language,
+				language: candidates.join(', '),
 				type: TemplateTypeEnum.EMAIL,
 			}),
 		);
