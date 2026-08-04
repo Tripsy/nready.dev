@@ -88,7 +88,17 @@ function loadSettings() {
 						'warn',
 						'fatal',
 					]) as LogDataLevel[],
-			levelDatabase: ['info', 'error', 'warn', 'fatal'] as LogDataLevel[],
+			/*
+			 * Only what is worth keeping in the application's own database. `info` and
+			 * `warn` are the bulk of the volume and belong in CloudWatch instead, which is
+			 * cheaper per byte and expires on a retention policy — `log_data` grows on the
+			 * instance's disk and nothing prunes it.
+			 *
+			 * `error` and `fatal` stay here on purpose: this table is queryable from the
+			 * app itself and from local tooling, which is a materially faster path to
+			 * "why did that fail" than the CloudWatch console.
+			 */
+			levelDatabase: ['error', 'fatal'] as LogDataLevel[],
 			// Only `fatal` by default: this channel was silently broken until now, and
 			// error-level volume would make it noise. Widen it here if you want it back.
 			levelEmail: ['fatal'] as LogDataLevel[],
