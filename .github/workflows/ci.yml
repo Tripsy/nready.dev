@@ -11,25 +11,26 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [22.x]
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
-          version: 9
+          # Matches the dev container. pnpm-workspace.yaml uses `allowBuilds` and
+          # `minimumReleaseAgeExclude`, which pnpm 9 does not understand.
+          version: 11.17.0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: ${{ matrix.node-version }}
+          # The runtime is Node 24 (docker/dockerfile). Testing on a different major than
+          # production ships is a gap, not a matrix.
+          node-version: 24.x
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -37,11 +38,16 @@ jobs:
       - name: Type check
         run: pnpm run typecheck
 
-      - name: Lint (Biome)
-        run: pnpm run biome
+      # `pnpm run biome` is `biome check --write`: it fixes problems in place and exits 0,
+      # so in CI a lint failure would pass silently. `biome ci` is the read-only
+      # counterpart and fails on anything it would have changed. It also covers circular
+      # imports through noImportCycles — which is why the old `madge` step is gone: madge
+      # was removed from the project, so that step could only ever fail.
+      - name: Lint and format (Biome)
+        run: pnpm exec biome ci .
 
-      - name: Check circular deps
-        run: pnpm run madge
+      - name: Check message keys
+        run: pnpm run messages:check
 
       - name: Run tests
         run: pnpm test
