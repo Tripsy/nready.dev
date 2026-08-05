@@ -80,6 +80,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			role: 'visitor',
 			operator_type: null,
 			permissions: {},
+			has_password: false,
 			activeToken: '',
 		};
 
@@ -139,6 +140,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 				'name',
 				'email',
 				'email_verified_at',
+				'password',
 				'password_updated_at',
 				'language',
 				'role',
@@ -191,9 +193,18 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 			});
 		}
 
+		/*
+		 * `password` is pulled out rather than spread: `meDetails` serialises the whole auth
+		 * object into the `/account/me` response, so leaving it in would publish the hash.
+		 * Only the boolean survives — the frontend needs it to tell a social-only account
+		 * (no password to change, none to confirm on delete) from a normal one.
+		 */
+		const { password, ...userContext } = user;
+
 		// Attach user information to the request object
 		res.locals.auth = {
-			...user,
+			...userContext,
+			has_password: !!password,
 			permissions: await getUserPermissions(user.id),
 			activeToken: activeToken.ident,
 		};

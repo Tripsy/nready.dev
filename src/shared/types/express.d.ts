@@ -12,6 +12,8 @@ export type AuthContext = {
 	role: UserRole | 'visitor';
 	operator_type: UserOperatorType | null;
 	permissions: AuthContextPermissions;
+	// False for a social sign-in account that has never set one.
+	has_password: boolean;
 	activeToken: string;
 };
 
