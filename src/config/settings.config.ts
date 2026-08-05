@@ -167,6 +167,40 @@ function loadSettings() {
 			loginMaxFailedAttemptsForEmail: 3,
 			loginFailedAttemptsLockTime: 900,
 		},
+		/*
+		 * Social sign-in. The frontend runs the browser half of the authorization-code
+		 * flow and posts the resulting `code` here; the secrets below never leave the
+		 * backend, which is the whole point of not doing the exchange in the browser.
+		 *
+		 * A provider with an empty `clientId` is treated as not configured and its
+		 * endpoint answers 501 — so a deployment can enable Google without Facebook.
+		 */
+		oauth: {
+			/*
+			 * `redirect_uri` has to be sent on the exchange because the provider matches it
+			 * against the one used to obtain the code. It arrives from the client, so it is
+			 * checked here rather than trusted: anything under `frontend.url` is accepted,
+			 * and this list covers the extra origins (preview deployments, a second
+			 * frontend) that a single backend may serve.
+			 */
+			redirectUriAllowList: (
+				process.env.OAUTH_REDIRECT_URI_ALLOW_LIST || ''
+			)
+				.split(',')
+				.map((v) => v.trim())
+				.filter(Boolean),
+			google: {
+				clientId: process.env.OAUTH_GOOGLE_CLIENT_ID || '',
+				clientSecret: process.env.OAUTH_GOOGLE_CLIENT_SECRET || '',
+			},
+			facebook: {
+				clientId: process.env.OAUTH_FACEBOOK_CLIENT_ID || '',
+				clientSecret: process.env.OAUTH_FACEBOOK_CLIENT_SECRET || '',
+				// Graph API is versioned and versions are retired on a schedule, so this is
+				// configurable rather than pinned in code.
+				apiVersion: process.env.OAUTH_FACEBOOK_API_VERSION || 'v21.0',
+			},
+		},
 	};
 }
 

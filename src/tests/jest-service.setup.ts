@@ -18,6 +18,7 @@ export function createMockQuery() {
 		filterByEmail: jest.fn().mockReturnThis(),
 		filterByTemplate: jest.fn().mockReturnThis(),
 		filterByIdent: jest.fn().mockReturnThis(),
+		filterByProviderSubject: jest.fn().mockReturnThis(),
 		orderBy: jest.fn().mockReturnThis(),
 		pagination: jest.fn().mockReturnThis(),
 		withDeleted: jest.fn().mockReturnThis(),
@@ -65,6 +66,7 @@ export function createMockRepository<
 		createQuery: createQueryMock,
 		createQueryBuilder: jest.fn(() => queryBuilder),
 		save: jest.fn(),
+		update: jest.fn(),
 	} as unknown as jest.Mocked<Repository<E>> & {
 		createQuery(): Q;
 	};

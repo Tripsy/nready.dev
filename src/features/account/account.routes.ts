@@ -23,6 +23,22 @@ export default async () => {
 				method: 'post',
 				handlers: [authLoginRateLimiter],
 			},
+			// Social sign-in: the frontend runs the browser redirect and posts the
+			// resulting authorization code here. Rate-limited as a login, because that is
+			// what it is.
+			oauthLogin: {
+				path: '/oauth/:provider',
+				method: 'post',
+				handlers: [authLoginRateLimiter],
+			},
+			oauthList: {
+				path: '/oauth',
+				method: 'get',
+			},
+			oauthUnlink: {
+				path: '/oauth/:provider',
+				method: 'delete',
+			},
 			removeToken: {
 				path: '/token',
 				method: 'delete',

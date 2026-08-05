@@ -15,7 +15,16 @@
 		"email_same": "This email is already in use",
 		"email_already_used": "Email already used by another account",
 		"too_many_login_attempts": "Too many failed login attempts. Please try again later.",
-		"not_logged_in": "Not logged in"
+		"not_logged_in": "Not logged in",
+		"oauth_provider_not_configured": "This sign-in provider is not available",
+		"oauth_provider_error": "The sign-in provider could not be reached. Please try again",
+		"oauth_code_invalid": "Sign-in failed. Please try again",
+		"oauth_redirect_uri_invalid": "Invalid redirect URI",
+		"oauth_email_missing": "The provider did not share an email address. Register with an email instead",
+		"oauth_email_unverified": "The email address on the provider account is not verified",
+		"oauth_only_account": "This account uses social sign-in. Use the social button, or set a password through password recovery",
+		"oauth_not_linked": "This provider is not linked to your account",
+		"oauth_unlink_last_credential": "Set a password before unlinking your only sign-in method"
 	},
 	"success": {
 		"register": "Account registered successfully",
@@ -30,7 +39,8 @@
 		"email_updated": "Email updated successfully",
 		"email_update_request": "Follow email confirmation instructions",
 		"edit": "Account updated successfully",
-		"delete": "Account deleted successfully"
+		"delete": "Account deleted successfully",
+		"oauth_unlinked": "Provider unlinked successfully"
 	},
 	"validation": {
 		"ident_required": "Ident is required",
@@ -48,6 +58,9 @@
 		"password_condition_special_character": "Password must contain at least one special character",
 		"password_confirm_required": "Password confirmation is required",
 		"password_confirm_mismatch": "Passwords does not match",
-		"invalid_password_current": "Invalid current password"
+		"invalid_password_current": "Invalid current password",
+		"invalid_oauth_provider": "Unsupported sign-in provider",
+		"invalid_oauth_code": "Authorization code is required",
+		"invalid_oauth_redirect_uri": "Redirect URI is required"
 	}
 }

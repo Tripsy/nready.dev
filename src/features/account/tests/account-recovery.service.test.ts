@@ -31,23 +31,48 @@ describe('AccountRecoveryService', () => {
 		mockAccountRecovery.repository,
 	);
 
-	describe('update', () => {
-		it('should save the given data', async () => {
+	describe('markAsUsed', () => {
+		it('should issue an UPDATE rather than a save', async () => {
 			const entity = getAccountRecoveryMock();
 
-			mockAccountRecovery.repository.save.mockResolvedValue(entity);
+			await serviceAccountRecovery.markAsUsed(entity.id);
 
-			const result = await serviceAccountRecovery.update({
-				id: entity.id,
-				used_at: entity.used_at,
-			});
+			/*
+			 * `save()` would fall back to an INSERT when the row is missing, writing a
+			 * record with a null `user_id`. Pinning this to `update` is the regression
+			 * guard for that.
+			 */
+			expect(mockAccountRecovery.repository.update).toHaveBeenCalledWith(
+				entity.id,
+				{ used_at: expect.any(Date) },
+			);
+			expect(mockAccountRecovery.repository.save).not.toHaveBeenCalled();
+		});
+	});
 
-			expect(mockAccountRecovery.repository.save).toHaveBeenCalledWith({
-				id: entity.id,
-				used_at: entity.used_at,
-			});
+	describe('removeAccountRecoveryForUser', () => {
+		it('should remove every row for the user by default', async () => {
+			await serviceAccountRecovery.removeAccountRecoveryForUser(7);
 
-			expect(result).toBe(entity);
+			expect(mockAccountRecovery.query.filterBy).toHaveBeenCalledWith(
+				'user_id',
+				7,
+			);
+			expect(mockAccountRecovery.query.filterBy).toHaveBeenCalledTimes(1);
+			expect(mockAccountRecovery.query.delete).toHaveBeenCalledWith(
+				false,
+				true,
+			);
+		});
+
+		it('should spare the redeemed row when `exceptId` is given', async () => {
+			await serviceAccountRecovery.removeAccountRecoveryForUser(7, 42);
+
+			expect(mockAccountRecovery.query.filterBy).toHaveBeenCalledWith(
+				'id',
+				42,
+				'!=',
+			);
 		});
 	});
 

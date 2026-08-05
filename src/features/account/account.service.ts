@@ -43,18 +43,27 @@ export class AccountService {
 	}
 
 	/**
-	 * @description Updates a user password and removes all recovery tokens for a user
+	 * @description Updates a user password and drops the user's recovery tokens
+	 *
+	 * `keepRecoveryId` spares one row — the recovery link currently being redeemed, which
+	 * `passwordRecoverChange` then marks as used. Every other outstanding recovery for this
+	 * user dies here: once the password changes, any link requested beforehand must stop
+	 * working, including ones requested by someone else.
 	 */
 	public async updatePassword(
 		user: UserEntity,
 		password: string,
+		keepRecoveryId?: number,
 	): Promise<void> {
 		user.password = password; // Subscriber hashes it
 		user.password_updated_at = createCurrentDate();
 
 		await this.userService.update(user);
 
-		await this.accountRecoveryService.removeAccountRecoveryForUser(user.id);
+		await this.accountRecoveryService.removeAccountRecoveryForUser(
+			user.id,
+			keepRecoveryId,
+		);
 	}
 
 	public async register(

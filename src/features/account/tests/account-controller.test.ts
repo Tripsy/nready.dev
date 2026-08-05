@@ -12,7 +12,6 @@ import {
 import { accountPolicy } from '@/features/account/account.policy';
 import accountRoutes from '@/features/account/account.routes';
 import { accountService } from '@/features/account/account.service';
-import type AccountRecoveryEntity from '@/features/account/account-recovery.entity';
 import { accountRecoveryService } from '@/features/account/account-recovery.service';
 import { accountTokenService } from '@/features/account/account-token.service';
 import { UserStatusEnum } from '@/features/user/user.entity';
@@ -397,12 +396,12 @@ describe(`${controller} - passwordRecoverChange`, () => {
 			...getUserEntityMock(),
 			status: UserStatusEnum.ACTIVE,
 		});
-		jest.spyOn(accountService, 'updatePassword').mockResolvedValue(
-			undefined,
-		);
-		jest.spyOn(accountRecoveryService, 'update').mockResolvedValue(
-			{} as AccountRecoveryEntity,
-		);
+		const updatePasswordSpy = jest
+			.spyOn(accountService, 'updatePassword')
+			.mockResolvedValue(undefined);
+		const markAsUsedSpy = jest
+			.spyOn(accountRecoveryService, 'markAsUsed')
+			.mockResolvedValue(undefined);
 
 		mockAccountEmailService();
 
@@ -419,6 +418,19 @@ describe(`${controller} - passwordRecoverChange`, () => {
 				'account.success.password_changed',
 			);
 		}, response);
+
+		/*
+		 * The redeemed row has to survive `updatePassword` for `markAsUsed` to land on it —
+		 * hence the third argument. Without it the row is deleted first and the follow-up
+		 * write re-inserts it with a null `user_id`, turning a successful recovery into a
+		 * 500.
+		 */
+		expect(updatePasswordSpy).toHaveBeenCalledWith(
+			expect.anything(),
+			'Secure@123!',
+			mockAccountRecovery.id,
+		);
+		expect(markAsUsedSpy).toHaveBeenCalledWith(mockAccountRecovery.id);
 	});
 });
 
@@ -441,7 +453,7 @@ describe(`${controller} - passwordUpdate`, () => {
 		jest.spyOn(accountPolicy, 'getId').mockReturnValue(
 			getUserEntityMock().id,
 		);
-		jest.spyOn(userService, 'findById').mockResolvedValue({
+		jest.spyOn(userService, 'findByIdWithPassword').mockResolvedValue({
 			...getUserEntityMock(),
 			status: UserStatusEnum.ACTIVE,
 		});
@@ -465,7 +477,7 @@ describe(`${controller} - passwordUpdate`, () => {
 		jest.spyOn(accountPolicy, 'getId').mockReturnValue(
 			getUserEntityMock().id,
 		);
-		jest.spyOn(userService, 'findById').mockResolvedValue({
+		jest.spyOn(userService, 'findByIdWithPassword').mockResolvedValue({
 			...getUserEntityMock(),
 			status: UserStatusEnum.ACTIVE,
 		});
@@ -785,7 +797,7 @@ describe(`${controller} - meDelete`, () => {
 		jest.spyOn(accountPolicy, 'getId').mockReturnValue(
 			getUserEntityMock().id,
 		);
-		jest.spyOn(userService, 'findById').mockResolvedValue(
+		jest.spyOn(userService, 'findByIdWithPassword').mockResolvedValue(
 			getUserEntityMock(),
 		);
 		jest.spyOn(accountService, 'checkPassword').mockResolvedValue(true);
@@ -1155,7 +1167,7 @@ describe(`${controller} - meEdit / meDelete (rejection branches)`, () => {
 		isAuthenticatedSpy(accountPolicy);
 
 		jest.spyOn(accountPolicy, 'getId').mockReturnValue(1);
-		jest.spyOn(userService, 'findById').mockResolvedValue(
+		jest.spyOn(userService, 'findByIdWithPassword').mockResolvedValue(
 			getUserEntityMock(),
 		);
 		jest.spyOn(accountService, 'checkPassword').mockResolvedValue(false);

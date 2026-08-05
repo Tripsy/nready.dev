@@ -146,6 +146,21 @@ export class UserService {
 			.firstOrFail();
 	}
 
+	/**
+	 * @description Same as `findById`, but with the `password` column loaded.
+	 *
+	 * `password` is declared `select: false`, so the default query never returns it — a
+	 * caller that has to verify a password (or find out whether the account has one at all,
+	 * now that social sign-in accounts may not) must ask for the column explicitly.
+	 */
+	public findByIdWithPassword(id: number): Promise<UserEntity> {
+		return this.repository
+			.createQuery()
+			.select(['id', 'name', 'email', 'language', 'status', 'password'])
+			.filterById(id)
+			.firstOrFail();
+	}
+
 	public findByEmail(email: string, withoutId?: number, select?: string[]) {
 		const q = this.repository
 			.createQuery()

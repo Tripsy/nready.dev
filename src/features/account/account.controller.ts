@@ -22,6 +22,10 @@ import {
 	accountEmailService,
 } from '@/features/account/account-email.service';
 import {
+	type AccountOAuthService,
+	accountOAuthService,
+} from '@/features/account/account-oauth.service';
+import {
 	type AccountRecoveryService,
 	accountRecoveryService,
 } from '@/features/account/account-recovery.service';
@@ -30,6 +34,7 @@ import {
 	type AuthValidToken,
 	accountTokenService,
 } from '@/features/account/account-token.service';
+import type UserEntity from '@/features/user/user.entity';
 import { UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
 import asyncHandler from '@/helpers/async.handler';
@@ -47,6 +52,7 @@ class AccountController extends BaseController {
 		private validator: AccountValidator,
 		private accountService: AccountService,
 		private accountTokenService: AccountTokenService,
+		private accountOAuthService: AccountOAuthService,
 		private accountRecoveryService: AccountRecoveryService,
 		private accountEmailService: AccountEmailService,
 		private userService: UserService,
@@ -67,6 +73,47 @@ class AccountController extends BaseController {
 
 		res.status(201).json(res.locals.output);
 	});
+
+	/**
+	 * Issues an auth token for an already-authenticated user, or refuses when the session
+	 * cap is reached and hands back the list of tokens the client can revoke.
+	 *
+	 * Shared by password login and social login so both answer identically — the frontend
+	 * has one code path for the 403-with-token-list case.
+	 */
+	private async issueAuthToken(
+		user: Partial<UserEntity> & { id: number },
+		req: Request,
+		res: Response,
+		successMessage: string,
+	): Promise<void> {
+		const authValidTokens: AuthValidToken[] =
+			await this.accountTokenService.getAuthValidTokens(user.id);
+
+		const maxActiveSessions = Math.max(
+			Configuration.get('user.maxActiveSessions'),
+			1,
+		); // Forced `1` as value - in case config value was set as 0 due to an error
+
+		if (authValidTokens.length >= maxActiveSessions) {
+			res.status(403); // Forbidden - client's identity is known to the server
+			res.locals.output.message(
+				lang('account.error.max_active_sessions'),
+			);
+			res.locals.output.data({
+				authTokens: authValidTokens,
+			});
+
+			return;
+		}
+
+		const token = await this.accountTokenService.setupAuthToken(user, req);
+
+		res.locals.output.message(successMessage);
+		res.locals.output.data({
+			token: token,
+		});
+	}
 
 	public login = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.notAuth(res.locals.auth);
@@ -100,6 +147,13 @@ class AccountController extends BaseController {
 			}
 		}
 
+		// Social sign-in accounts have no password; without this they would fall through to
+		// `checkPassword` and get the generic "invalid email or password", which sends the
+		// user off to reset a password that does not exist.
+		if (!user.password) {
+			throw new BadRequestError(lang('account.error.oauth_only_account'));
+		}
+
 		const isValidPassword: boolean =
 			await this.accountService.checkPassword(
 				data.password,
@@ -110,33 +164,90 @@ class AccountController extends BaseController {
 			throw new UnauthorizedError(lang('account.error.not_authorized'));
 		}
 
-		const authValidTokens: AuthValidToken[] =
-			await this.accountTokenService.getAuthValidTokens(user.id);
+		await this.issueAuthToken(
+			user,
+			req,
+			res,
+			lang('account.success.login'),
+		);
 
-		const maxActiveSessions = Math.max(
-			Configuration.get('user.maxActiveSessions'),
-			1,
-		); // Forced `1` as value - in case config value was set as 0 due to an error
+		res.json(res.locals.output);
+	});
 
-		if (authValidTokens.length >= maxActiveSessions) {
-			res.status(403); // Forbidden - client's identity is known to the server
-			res.locals.output.message(
-				lang('account.error.max_active_sessions'),
-			);
-			res.locals.output.data({
-				authTokens: authValidTokens,
-			});
-		} else {
-			const token = await this.accountTokenService.setupAuthToken(
-				user,
-				req,
-			);
+	/**
+	 * Social sign-in. The frontend performs the provider redirect and posts the resulting
+	 * authorization code here; the code is exchanged server-side so the client secret never
+	 * reaches the browser.
+	 *
+	 * Registration and login are the same endpoint on purpose: from the provider's side
+	 * they are indistinguishable, and the user has not told us which one they meant.
+	 */
+	public oauthLogin = asyncHandler(async (req: Request, res: Response) => {
+		this.policy.notAuth(res.locals.auth);
 
-			res.locals.output.message(lang('account.success.login'));
-			res.locals.output.data({
-				token: token,
-			});
+		const data = this.validate(
+			this.validator.oauthLogin,
+			{
+				...req.body,
+				provider: req.params.provider,
+			},
+			res,
+		);
+
+		const user = await this.accountOAuthService.resolveUser(
+			data.provider,
+			data.code,
+			data.redirect_uri,
+			data.language || res.locals.language,
+		);
+
+		await this.issueAuthToken(
+			user,
+			req,
+			res,
+			lang('account.success.login'),
+		);
+
+		res.json(res.locals.output);
+	});
+
+	/**
+	 * Lists the providers linked to the current account, for the account settings screen.
+	 */
+	public oauthList = asyncHandler(async (_req: Request, res: Response) => {
+		this.policy.requiredAuth(res.locals.auth);
+
+		const user_id = this.policy.getId(res.locals.auth);
+
+		if (!user_id) {
+			throw new UnauthorizedError();
 		}
+
+		res.locals.output.data(
+			await this.accountOAuthService.findForUser(user_id),
+		);
+
+		res.json(res.locals.output);
+	});
+
+	public oauthUnlink = asyncHandler(async (req: Request, res: Response) => {
+		this.policy.requiredAuth(res.locals.auth);
+
+		const data = this.validate(this.validator.oauthUnlink, req.params, res);
+
+		const user_id = this.policy.getId(res.locals.auth);
+
+		if (!user_id) {
+			throw new UnauthorizedError();
+		}
+
+		// `password` decides whether unlinking would leave the account with no way in at
+		// all, so the row has to be loaded with that column.
+		const user = await this.userService.findByIdWithPassword(user_id);
+
+		await this.accountOAuthService.unlink(user, data.provider);
+
+		res.locals.output.message(lang('account.success.oauth_unlinked'));
 
 		res.json(res.locals.output);
 	});
@@ -314,14 +425,21 @@ class AccountController extends BaseController {
 				throw new NotFoundError(lang('account.error.not_active'));
 			}
 
-			// Update user password and remove all account tokens
-			await this.accountService.updatePassword(user, data.password);
+			/*
+			 * Drops every other outstanding recovery for this user but spares the row being
+			 * redeemed, so the `used_at` write below has a row to land on.
+			 *
+			 * The password change goes first on purpose: if it throws, the link is still
+			 * unused and the user can simply click it again. Marking the link used first
+			 * would burn it on a failure that changed nothing.
+			 */
+			await this.accountService.updatePassword(
+				user,
+				data.password,
+				recovery.id,
+			);
 
-			// Mark the recovery token as used
-			await this.accountRecoveryService.update({
-				id: recovery.id,
-				used_at: createCurrentDate(),
-			});
+			await this.accountRecoveryService.markAsUsed(recovery.id);
 
 			runInBackground(
 				this.accountEmailService.sendEmailPasswordChange({
@@ -353,7 +471,15 @@ class AccountController extends BaseController {
 				throw new UnauthorizedError();
 			}
 
-			const user = await this.userService.findById(user_id, false);
+			const user = await this.userService.findByIdWithPassword(user_id);
+
+			// A social sign-in account has no current password to prove. Setting the first
+			// one goes through password recovery, which proves ownership by email instead.
+			if (!user.password) {
+				throw new BadRequestError(
+					lang('account.error.oauth_only_account'),
+				);
+			}
 
 			const isValidPassword: boolean =
 				await this.accountService.checkPassword(
@@ -609,24 +735,33 @@ class AccountController extends BaseController {
 			throw new UnauthorizedError();
 		}
 
-		const user = await this.userService.findById(user_id, false);
+		const user = await this.userService.findByIdWithPassword(user_id);
 
-		const isValidPassword: boolean =
-			await this.accountService.checkPassword(
-				data.password_current,
-				user.password,
-			);
+		/*
+		 * A social sign-in account has no password to confirm with. The request is already
+		 * authenticated by a valid auth token, which is the same bar every other `/me`
+		 * endpoint clears — refusing here would leave such a user unable to delete their
+		 * own account at all.
+		 */
+		if (user.password) {
+			const isValidPassword: boolean =
+				!!data.password_current &&
+				(await this.accountService.checkPassword(
+					data.password_current,
+					user.password,
+				));
 
-		if (!isValidPassword) {
-			res.locals.output.errors([
-				{
-					password_current: lang(
-						'account.validation.invalid_password',
-					),
-				},
-			]);
+			if (!isValidPassword) {
+				res.locals.output.errors([
+					{
+						password_current: lang(
+							'account.validation.invalid_password',
+						),
+					},
+				]);
 
-			throw new BadRequestError();
+				throw new BadRequestError();
+			}
 		}
 
 		await this.userService.delete(user_id);
@@ -642,6 +777,7 @@ export const accountController = new AccountController(
 	new AccountValidator('account'),
 	accountService,
 	accountTokenService,
+	accountOAuthService,
 	accountRecoveryService,
 	accountEmailService,
 	userService,

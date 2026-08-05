@@ -67,6 +67,16 @@ export const accountInputPayloads = {
 		email: 'john.doe@example.com',
 		password: 'Secure@123',
 	},
+	oauthLogin: {
+		// The controller merges `provider` from the path before validating.
+		provider: 'google',
+		code: 'provider_authorization_code',
+		redirect_uri: 'http://dashboard.test/auth/callback/google',
+		language: 'en',
+	},
+	oauthUnlink: {
+		provider: 'google',
+	},
 	passwordRecover: {
 		email: 'john.doe@example.com',
 	},

@@ -12,6 +12,8 @@ type ValidatorMethod = keyof Pick<
 	AccountValidator,
 	| 'register'
 	| 'login'
+	| 'oauthLogin'
+	| 'oauthUnlink'
 	| 'passwordRecover'
 	| 'passwordRecoverChange'
 	| 'passwordUpdate'
@@ -26,6 +28,8 @@ const validator = 'AccountValidator';
 const listSchemas: ValidatorMethod[] = [
 	'register',
 	'login',
+	'oauthLogin',
+	'oauthUnlink',
 	'passwordRecover',
 	'passwordRecoverChange',
 	'passwordUpdate',
