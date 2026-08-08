@@ -1,7 +1,6 @@
-import { Column, Entity, Index, OneToMany, OneToOne } from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
 import type ArticleCategoryEntity from '@/features/article/article-category.entity';
 import type ArticleTagEntity from '@/features/article/article-tag.entity';
-import type ArticleTrackEntity from '@/features/article/article-track.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
@@ -52,7 +51,10 @@ export default class ArticleEntity extends EntityAbstract {
 	@Index('IDX_article_status')
 	status!: ArticleStatus;
 
-	@Column('text', {
+	@Column({
+		type: 'enum',
+		enum: ArticleLayoutEnum,
+		default: ArticleLayoutEnum.DEFAULT,
 		nullable: false,
 	})
 	layout!: ArticleLayout;
@@ -86,7 +88,7 @@ export default class ArticleEntity extends EntityAbstract {
 		default: ArticleFeaturedStatusEnum.NOWHERE,
 		nullable: false,
 	})
-	featuredStatus!: ArticleFeaturedStatus;
+	featured_status!: ArticleFeaturedStatus;
 
 	// RELATIONS
 	@OneToMany('ArticleTagEntity', (tag: ArticleTagEntity) => tag.article)
@@ -97,10 +99,4 @@ export default class ArticleEntity extends EntityAbstract {
 		(category: ArticleCategoryEntity) => category.article,
 	)
 	categories?: ArticleCategoryEntity[];
-
-	@OneToOne(
-		'ArticleTrackEntity',
-		(track: ArticleTrackEntity) => track.article,
-	)
-	track?: ArticleTrackEntity;
 }

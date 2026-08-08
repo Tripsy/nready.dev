@@ -299,9 +299,9 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Remaining, unchanged: the nready.dev migration (deferred by you), no pushes on any branch, empty OAuth credentials in all three .env files (so nothing is live until you fill    
-   them and register {APP_URL}/account/oauth/{provider} in each provider console), and the optional POST /account/oauth/:provider/link follow-up for linking a provider while signed
-   in.
+1. Make a skill command to create a consolidated migration
+2. 
+
 2. Go on FE → category
 3. Go on FE #2 → carrier, discount,
 4. Prepared entities:
@@ -326,8 +326,16 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO - EXTRA
 
-1. API documentation (`done` for discounts)
-2. create CLI script which should generate something like:
+1. Implement kill all sessions except current
+   // // This will actually remove all sessions - keep it for further implementation
+   // await AccountTokenRepository.createQuery()
+   //     .filterBy('user_id', policy.getUserId())
+   //     .delete(false, true);
+2. For template section
+   - would be a nice idea to keep track of the last changes (maybe add a new column - prev version id and a button to restore to that version)
+   - view presentation could be enhanced
+3. API documentation (`done` for discounts)
+4. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -349,8 +357,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
    }   
-3. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-4. cron hanging / delaying / semaphore 
+5. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+6. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

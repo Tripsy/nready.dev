@@ -18,10 +18,11 @@ const ENTITY_TABLE_NAME = 'category_content';
 @Index(
 	'IDX_category_content_category_id_language',
 	['category_id', 'language'],
-	{ unique: true },
+	{ unique: true, where: 'deleted_at IS NULL' },
 )
 @Index('IDX_category_content_slug_language', ['type', 'slug', 'language'], {
 	unique: true,
+	where: 'deleted_at IS NULL',
 })
 export default class CategoryContentEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
@@ -31,7 +32,7 @@ export default class CategoryContentEntity extends EntityAbstract {
 	category_id!: number;
 
 	@Column('varchar', {
-		length: 2,
+		length: 3,
 		default: 'en',
 	})
 	language!: string;

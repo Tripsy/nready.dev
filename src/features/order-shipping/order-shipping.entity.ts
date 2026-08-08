@@ -54,7 +54,10 @@ export default class OrderShippingEntity extends EntityAbstract {
 	carrier_id!: number | null;
 
 	@Column('varchar', { nullable: true })
-	@Index('IDX_order_shipping_tracking_number', { unique: true })
+	@Index('IDX_order_shipping_tracking_number', {
+		unique: true,
+		where: 'deleted_at IS NULL',
+	})
 	tracking_number!: string | null;
 
 	@Column('varchar', { nullable: true })
@@ -85,7 +88,7 @@ export default class OrderShippingEntity extends EntityAbstract {
 	})
 	exchange_rate!: number;
 
-	@Column('simple-json', {
+	@Column('jsonb', {
 		nullable: true,
 		comment: 'Array of discount snapshots applied',
 	})

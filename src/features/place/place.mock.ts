@@ -10,7 +10,7 @@ export function getPlaceEntityMock(): PlaceEntity {
 	return {
 		id: 1,
 		place_type: PlaceTypeEnum.COUNTRY,
-		parent_id: undefined,
+		parent_id: null,
 		code: 'RO',
 		created_at: createPastDate(86400),
 		updated_at: null,

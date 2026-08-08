@@ -17,7 +17,12 @@ const ENTITY_TABLE_NAME = 'log_history';
 	schema: 'logs',
 	comment: 'Store entities history: created, updated, deleted, etc.',
 })
-@Index('IDX_log_history_entity_id_action', ['entity_id', 'entity', 'action'], {
+/*
+ * `entity` leads because an id is only meaningful within its entity — id 5 exists for
+ * `user`, `product` and `order` alike. This order also serves a filter on `entity` alone,
+ * which an `entity_id`-leading index cannot.
+ */
+@Index('IDX_log_history_entity_id_action', ['entity', 'entity_id', 'action'], {
 	unique: false,
 })
 export default class LogHistoryEntity {

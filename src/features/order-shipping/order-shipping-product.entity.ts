@@ -17,6 +17,7 @@ const ENTITY_TABLE_NAME = 'order_shipping_product';
 	['order_shipping_id', 'order_product_id'],
 	{
 		unique: true,
+		where: 'deleted_at IS NULL',
 	},
 )
 export default class OrderShippingProductEntity extends EntityAbstract {

@@ -45,8 +45,11 @@ export default class OrderEntity extends EntityAbstract {
 	@Index('IDX_order_client_id')
 	client_id!: number;
 
-	@Column('varchar', { nullable: false, unique: true })
-	@Index('IDX_order_ref_number')
+	@Column('varchar', { nullable: false })
+	@Index('IDX_order_ref_number', {
+		unique: true,
+		where: 'deleted_at IS NULL',
+	})
 	ref_number!: string;
 
 	@Column({

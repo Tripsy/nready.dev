@@ -51,6 +51,7 @@ const ENTITY_TABLE_NAME = 'template';
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_label_language_type', ['label', 'language', 'type'], {
 	unique: true,
+	where: 'deleted_at IS NULL',
 })
 export default class TemplateEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

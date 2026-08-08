@@ -27,7 +27,12 @@ const ENTITY_TABLE_NAME = 'log_data';
 	name: ENTITY_TABLE_NAME,
 	schema: 'logs',
 })
-@Index('idx_log_data', ['created_at', 'level', 'category'])
+/*
+ * Equality columns lead, the range column trails: `findByFilter` filters `level` and
+ * `category` by equality but `created_at` by range, and a btree stops filtering at the
+ * first range predicate — anything ordered after `created_at` could never be used.
+ */
+@Index('IDX_log_data', ['level', 'category', 'created_at'])
 export default class LogDataEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
@@ -43,8 +48,12 @@ export default class LogDataEntity {
 	@Index('IDX_log_data_request_id')
 	request_id!: string | null;
 
-	@Column('varchar', { nullable: false })
-	category!: string;
+	@Column({
+		type: 'enum',
+		enum: LogDataCategoryEnum,
+		nullable: false,
+	})
+	category!: LogDataCategory;
 
 	@Column({
 		type: 'enum',
@@ -60,7 +69,7 @@ export default class LogDataEntity {
 	context?: Record<string, unknown>;
 
 	@Column('simple-json', { nullable: true })
-	debugStack?: Record<string, unknown>;
+	debug_stack?: Record<string, unknown>;
 
 	@CreateDateColumn({ type: 'timestamp', nullable: false })
 	created_at!: Date;

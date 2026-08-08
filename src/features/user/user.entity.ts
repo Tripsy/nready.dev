@@ -43,7 +43,7 @@ export default class UserEntity extends EntityAbstract {
 	name!: string;
 
 	@Column('varchar', { nullable: false })
-	@Index('IDX_user_email', { unique: true })
+	@Index('IDX_user_email', { unique: true, where: 'deleted_at IS NULL' })
 	email!: string;
 
 	@Column({ type: 'timestamp', nullable: true })

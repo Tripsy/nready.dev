@@ -51,19 +51,19 @@ const ENTITY_TABLE_NAME = 'client';
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_client_company_name_unique', ['company_name'], {
 	unique: true,
-	where: "company_name IS NOT NULL AND client_type = 'company'",
+	where: "company_name IS NOT NULL AND client_type = 'company' AND deleted_at IS NULL",
 })
 @Index('IDX_client_cui_unique', ['company_cui'], {
 	unique: true,
-	where: "company_cui IS NOT NULL AND client_type = 'company'",
+	where: "company_cui IS NOT NULL AND client_type = 'company' AND deleted_at IS NULL",
 })
 @Index('IDX_client_reg_com_unique', ['company_reg_com'], {
 	unique: true,
-	where: "company_reg_com IS NOT NULL AND client_type = 'company'",
+	where: "company_reg_com IS NOT NULL AND client_type = 'company' AND deleted_at IS NULL",
 })
 @Index('IDX_client_cnp_unique', ['person_identification_number'], {
 	unique: true,
-	where: "person_identification_number IS NOT NULL AND client_type = 'person'",
+	where: "person_identification_number IS NOT NULL AND client_type = 'person' AND deleted_at IS NULL",
 })
 export default class ClientEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

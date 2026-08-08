@@ -14,6 +14,7 @@ const ENTITY_TABLE_NAME = 'article_tag';
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_article_tag_unique', ['article_id', 'tag_id'], {
 	unique: true,
+	where: 'deleted_at IS NULL',
 })
 export default class ArticleTagEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

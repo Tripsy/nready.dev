@@ -1,7 +1,10 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
+import type ArticleEntity from '@/features/article/article.entity';
+import {
+	EntityAbstract,
+	type PageMeta,
+} from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
-import type ArticleEntity from './article.entity';
 
 export type ArticleAuthorType = {
 	name: string;
@@ -19,8 +22,14 @@ const ENTITY_TABLE_NAME = 'article_content';
 		'Language-specific content for articles (title, slug, brief, content, meta)',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
-@Index('IDX_article_content_unique_per_lang', ['article_id', 'language'])
-@Index('IDX_article_content_slug_lang', ['slug', 'language'], { unique: true })
+@Index('IDX_article_content_unique_per_lang', ['article_id', 'language'], {
+	unique: true,
+	where: 'deleted_at IS NULL',
+})
+@Index('IDX_article_content_slug_lang', ['slug', 'language'], {
+	unique: true,
+	where: 'deleted_at IS NULL',
+})
 export default class ArticleContentEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
@@ -56,13 +65,13 @@ export default class ArticleContentEntity extends EntityAbstract {
 		nullable: true,
 		comment: 'Reserved column for future use',
 	})
-	content_blocks!: Record<string, string>;
+	content_blocks!: Record<string, string> | null;
 
 	@Column('jsonb', {
 		nullable: true,
-		comment: 'SEO metadata for article pages.',
+		comment: 'SEO metadata, canonical URL, images, structured data, etc.',
 	})
-	meta!: Record<string, number> | null;
+	meta!: PageMeta | null;
 
 	// RELATIONS
 	@ManyToOne('ArticleEntity', {

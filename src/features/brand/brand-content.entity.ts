@@ -21,6 +21,7 @@ const ENTITY_TABLE_NAME = 'brand_content';
 })
 @Index('IDX_brand_content_unique_per_lang', ['brand_id', 'language'], {
 	unique: true,
+	where: 'deleted_at IS NULL',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class BrandContentEntity extends EntityAbstract {

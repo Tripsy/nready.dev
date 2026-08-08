@@ -95,9 +95,11 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			onlyPositive: true,
 			allowDecimals: 2,
 		}),
+		// Optional: the service applies the deployment's configured currency when omitted
 		currency: this.validateEnum(
 			CurrencyEnum,
 			this.getMessage('invalid_currency'),
+			{ required: false },
 		),
 		external_reference: this.validateString(
 			this.getMessage('invalid_external_reference'),
@@ -140,7 +142,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 				{ required: false },
 			),
 			amount: this.validateNumber(this.getMessage('invalid_amount'), {
-				required: true,
+				required: false,
 				onlyPositive: false,
 				allowDecimals: AMOUNT_DECIMALS,
 			}),
