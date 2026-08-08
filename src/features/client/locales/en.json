@@ -1,17 +1,16 @@
 {
 	"validation": {
-		"client_invalid": "Client type is invalid",
-		"iban_invalid": "Invalid iban number",
-		"bank_invalid_name": "Invalid bank name",
-		"contact_invalid_name": "Invalid contact name",
-		"contact_invalid_email": "Invalid contact email",
-		"contact_phone_invalid": "Invalid contact phone number",
-		"company_invalid_name": "Invalid company name",
-		"company_cui_invalid": "Invalid company CUI",
-		"company_reg_com_invalid": "Invalid company registration number",
-		"person_invalid_name": "Invalid person name",
-		"person_identification_number_invalid": "Invalid person CNP",
-		"person_phone_invalid": "Invalid person phone number"
+		"invalid_type": "Invalid client type",
+		"invalid_iban": "Invalid IBAN number",
+		"invalid_bank_name": "Invalid bank name",
+		"invalid_contact_name": "Invalid contact name",
+		"invalid_contact_email": "Invalid contact email",
+		"invalid_contact_phone": "Invalid contact phone number",
+		"invalid_company_name": "Invalid company name",
+		"invalid_company_cui": "Invalid company CUI",
+		"invalid_company_reg_com": "Invalid company registration number",
+		"invalid_person_name": "Invalid person name",
+		"invalid_person_identification_number": "Invalid person CNP"
 	},
 	"error": {
 		"not_found": "Client not found",
