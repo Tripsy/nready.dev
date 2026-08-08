@@ -173,18 +173,25 @@ Start by copying the `.env.example` file to `.env` and update the environment va
 
 ### 6. Database
 
-For PostgreSQL only
-
- ```sql
-CREATE SCHEMA IF NOT EXISTS system;
-CREATE SCHEMA IF NOT EXISTS logs;
-```  
-
-Run the following commands to create the required database schemas:
+Create the database itself, then build the schema:
 
 ```
-$ pnpm run migration:run
+$ pnpx tsx src/database/migrate.ts
 ```
+
+This creates the non-public schemas (`system`, `logs`) before applying the migrations, so it
+works against an empty database. It is also the production entry point.
+
+> **⚠ Warning**
+> `pnpm run migration:run` drives the TypeORM CLI, which writes its `system.migrations`
+> bookkeeping table *before* running any migration — on an empty database it fails with
+> `schema "system" does not exist`. Use it only once the schemas exist, or create them by hand
+> first:
+>
+> ```sql
+> CREATE SCHEMA IF NOT EXISTS system;
+> CREATE SCHEMA IF NOT EXISTS logs;
+> ```
 
 ### 7. Run the application
 
@@ -205,27 +212,59 @@ $ pnpx tsx cli/feature.ts [feature] upgrade
 > **⚠ Warning**
 > Always check the migrations before run it, sometimes columns are dropped
 
+> **⚠ Warning**
+> A green test run can be a lie — read the test *count*, not just the colour. `bail: 3` stops
+> the run after 3 failing files, and a SIGKILLed worker drops a whole file while the summary
+> still looks plausible. For a trustworthy full run:
+>
+> ```bash
+> $ docker exec -e NODE_OPTIONS=--experimental-vm-modules -e APP_DEBUG=false \
+>     -e APP_ENV=test -e NODE_ENV=test $DOCKER_CONTAINER pnpm exec jest --bail=0
+> ```
+>
+> `pnpm run test -- --bail=0` does **not** work: the `--` reaches jest as a literal test-path
+> pattern and matches nothing.
+
 ```bash
 // Generate migration file
 $ pnpm run migration:generate /var/www/html/src/database/migrations/init
 
+// Apply pending migrations - this is the production entry point and the one to use on an
+// empty database, since it creates the `system` and `logs` schemas first
+$ pnpx tsx src/database/migrate.ts
+
 // Run new migrations - update DB structure
+// Goes through the TypeORM CLI, which writes its `system.migrations` table before running
+// anything, so it fails on a database where the schemas do not exist yet
 $ pnpm run migration:run
 
 // Revert last migration
 $ pnpm run migration:revert
 
+// Replace every migration with a single one generated from the entities
+// Pre-production only; --baseline rewrites the migrations table of a database whose schema
+// already matches. Use `pnpm exec`, since `pnpm run ... --` forwards `--` literally
+$ pnpm exec tsx ./cli/migration-consolidate.ts --baseline
+
 // Reset database
 $ pnpx tsx ./node_modules/typeorm/cli.js schema:drop -d src/config/data-source.config.ts
 
-// Import seed data
+// Import reference data - a fixed canonical list, wipe-and-insert; run these first
 $ pnpx tsx /var/www/html/src/features/template/database/template.seed.ts  
 $ pnpx tsx /var/www/html/src/features/permission/database/permission.seed.ts
 
+// Create the first administrator - reads ADMIN_EMAIL / ADMIN_PASSWORD, which have no
+// defaults; keyed on email, so re-running never resets an existing admin's password
+$ pnpx tsx /var/www/html/src/features/account/database/admin.seed.ts
+
+// Import demo data - every entity in foreign-key order, or a single one
+$ pnpm run seed
+$ pnpm run seed brand
+
 // Run tests
-$ pnpm run test --testTimeout=60000
-$ pnpm run test account.functional.ts --testTimeout=60000 --detectOpenHandles
-$ pnpm run test account.unit.ts --detect-open-handles
+$ pnpm run test
+$ pnpm run test account-controller.test.ts
+$ pnpm run test src/features/account --detectOpenHandles
 
 // Code sanity (lint, format, circular dependencies)
 $ pnpm run biome
