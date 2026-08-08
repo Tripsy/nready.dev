@@ -33,6 +33,7 @@ const ENTITY_TABLE_NAME = 'brand';
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_brand_slug', ['slug', 'brand_type'], {
 	unique: true,
+	where: 'deleted_at IS NULL',
 })
 export default class BrandEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

@@ -13,6 +13,7 @@ const ENTITY_TABLE_NAME = 'article_category';
 })
 @Index('IDX_article_category_unique', ['article_id', 'category_id'], {
 	unique: true,
+	where: 'deleted_at IS NULL',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class ArticleCategoryEntity extends EntityAbstract {

@@ -101,9 +101,11 @@ export const CategoryContentRepository = dataSource
 							meta: c.meta,
 						})),
 					)
+					// Predicate must match the partial unique index — see brand-content.repository.ts
 					.orUpdate(
 						['label', 'slug', 'description', 'meta'],
 						['category_id', 'language'],
+						{ indexPredicate: 'deleted_at IS NULL' },
 					)
 					.execute();
 			} catch (e) {

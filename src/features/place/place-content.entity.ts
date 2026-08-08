@@ -19,6 +19,7 @@ const ENTITY_TABLE_NAME = 'place_content';
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_place_content_unique_per_lang', ['place_id', 'language'], {
 	unique: true,
+	where: 'deleted_at IS NULL',
 })
 export default class PlaceContentEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;

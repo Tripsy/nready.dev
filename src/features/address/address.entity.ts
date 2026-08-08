@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type PlaceEntity from '@/features/place/place.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
@@ -16,6 +16,7 @@ export default class AddressEntity extends EntityAbstract {
 	static readonly HAS_CACHE: boolean = true;
 
 	@Column('int', { nullable: true })
+	@Index('IDX_address_city_id')
 	city_id!: number | null;
 
 	@Column('text')

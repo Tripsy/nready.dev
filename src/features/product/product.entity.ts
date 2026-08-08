@@ -68,7 +68,7 @@ export default class ProductEntity extends EntityAbstract {
 	static readonly HAS_CACHE: boolean = true;
 
 	@Column('varchar', { nullable: false })
-	@Index('IDX_product_sku', { unique: true })
+	@Index('IDX_product_sku', { unique: true, where: 'deleted_at IS NULL' })
 	sku!: string;
 
 	@Column('int', { nullable: false })

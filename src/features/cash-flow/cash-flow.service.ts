@@ -14,6 +14,7 @@ import CashFlowEntity, {
 	getExpectedDirection,
 	MUTABLE_STATUSES,
 	REFUNDABLE_STATUSES,
+	resolveCurrency,
 	STATUS_TRANSITIONS,
 } from '@/features/cash-flow/cash-flow.entity';
 import { getCashFlowRepository } from '@/features/cash-flow/cash-flow.repository';
@@ -249,6 +250,7 @@ export class CashFlowService {
 		data: ValidatorOutput<CashFlowValidator, 'create'>,
 	): Promise<CashFlowEntity> {
 		const inputAmount = this.inputAmount(data.amount);
+		const currency = resolveCurrency(data.currency);
 
 		this.checkDirection(data.category_type, data.direction);
 		this.checkCategoryType(data.category_type, data.category);
@@ -265,7 +267,7 @@ export class CashFlowService {
 			await this.checkRefund({
 				category: data.category,
 				inputAmount: inputAmount,
-				currency: data.currency,
+				currency: currency,
 				parentEntry: parentEntry,
 				refundedAmount: refundedAmount,
 			});
@@ -278,8 +280,8 @@ export class CashFlowService {
 			method: data.method,
 			amount: inputAmount,
 			vat_rate: data.vat_rate,
-			currency: data.currency,
-			exchange_rate: this.getExchangeRate(data.currency),
+			currency: currency,
+			exchange_rate: this.getExchangeRate(currency),
 			external_reference: data.external_reference,
 			parent_id: data.parent_id,
 			notes: data.notes,

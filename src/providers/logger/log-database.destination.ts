@@ -31,7 +31,7 @@ export class LogDatabaseDestination implements LogDestination {
 		logData.category = record.category;
 		logData.level = record.level;
 		logData.message = record.message;
-		logData.debugStack = record.debugStack;
+		logData.debug_stack = record.debugStack;
 		logData.context = record.context;
 
 		try {

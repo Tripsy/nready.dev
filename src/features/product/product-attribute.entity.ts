@@ -17,6 +17,7 @@ const ENTITY_TABLE_NAME = 'product_attribute';
 	['product_id', 'attribute_label_id', 'attribute_value_id'],
 	{
 		unique: true,
+		where: 'deleted_at IS NULL',
 	},
 )
 export default class ProductAttributeEntity extends EntityAbstract {
@@ -27,10 +28,13 @@ export default class ProductAttributeEntity extends EntityAbstract {
 	@Index('IDX_product_attribute_product_id')
 	product_id!: number;
 
+	// Both indexed for the RESTRICT check `term` runs on every delete
 	@Column('int', { nullable: false })
+	@Index('IDX_product_attribute_attribute_label_id')
 	attribute_label_id!: number;
 
 	@Column('int', { nullable: false })
+	@Index('IDX_product_attribute_attribute_value_id')
 	attribute_value_id!: number;
 
 	// RELATIONS

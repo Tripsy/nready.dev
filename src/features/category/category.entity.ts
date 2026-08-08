@@ -91,7 +91,9 @@ export default class CategoryEntity extends EntityAbstract {
 	/**
 	 * Hierarchy
 	 */
+	// Indexed for the children lookup in `category.service.ts` and for the FK's own delete path
 	@TreeParent()
+	@Index('IDX_category_parent_id')
 	@JoinColumn({ name: 'parent_id' })
 	parent?: CategoryEntity | null;
 

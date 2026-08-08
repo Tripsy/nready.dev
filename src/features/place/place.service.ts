@@ -20,7 +20,7 @@ export class PlaceService {
 	public async checkParentId(
 		action: 'create' | 'update',
 		place_type: PlaceType,
-		parent_id?: number,
+		parent_id?: number | null,
 	) {
 		if (place_type === PlaceTypeEnum.COUNTRY) {
 			if (parent_id) {

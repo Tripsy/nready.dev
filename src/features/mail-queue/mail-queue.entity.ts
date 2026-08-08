@@ -38,7 +38,7 @@ export default class MailQueueEntity {
 	@Index('IDX_mail_queue_template_id')
 	template_id?: number | null;
 
-	@Column('char', { length: 2, nullable: false })
+	@Column('varchar', { length: 3, nullable: false })
 	language!: string;
 
 	@Column({

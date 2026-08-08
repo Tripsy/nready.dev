@@ -22,14 +22,15 @@ const ENTITY_TABLE_NAME = 'subscription';
 	comment: 'Recurring subscriptions created from orders',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
-@Index('IDX_subscription_end_at', ['end_at', 'status'], {
-	unique: true,
-})
+@Index('IDX_subscription_end_at', ['end_at', 'status'])
 export default class SubscriptionEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
 
-	@Index('IDX_subscription_order_id', { unique: true })
+	@Index('IDX_subscription_order_id', {
+		unique: true,
+		where: 'deleted_at IS NULL',
+	})
 	@Column('int', { nullable: false })
 	order_id!: number;
 
@@ -37,16 +38,18 @@ export default class SubscriptionEntity extends EntityAbstract {
 		nullable: true,
 		comment: 'When subscription is assigned to a user (virtual services)',
 	})
+	@Index('IDX_subscription_user_id')
 	user_id!: number | null;
 
-	@Column('int', {
+	@Column('varchar', {
 		nullable: false,
 		comment: 'Subscription reference code (e.g., S12345)',
 	})
 	@Index('IDX_subscription_ref_code', {
 		unique: true,
+		where: 'deleted_at IS NULL',
 	})
-	ref_code!: number;
+	ref_code!: string;
 
 	@Column({
 		type: 'enum',
@@ -119,8 +122,9 @@ export default class SubscriptionEntity extends EntityAbstract {
 	@JoinColumn({ name: 'order_id' })
 	order!: OrderEntity;
 
+	// The link is optional, so losing the user must not take the billing history with it
 	@ManyToOne('UserEntity', {
-		onDelete: 'CASCADE',
+		onDelete: 'SET NULL',
 	})
 	@JoinColumn({ name: 'user_id' })
 	user?: UserEntity | null;

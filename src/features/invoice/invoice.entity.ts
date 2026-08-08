@@ -89,6 +89,7 @@ const ENTITY_TABLE_NAME = 'invoice';
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_invoice_ref', ['ref_number', 'ref_code'], {
 	unique: true,
+	where: 'deleted_at IS NULL',
 })
 export default class InvoiceEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
@@ -157,7 +158,7 @@ export default class InvoiceEntity extends EntityAbstract {
 		comment:
 			'Snapshot of billing info at the moment of issuing the invoice',
 	})
-	billing_details!: BillingDetails;
+	billing_details!: BillingDetails | null;
 
 	@Column('jsonb', {
 		nullable: true,

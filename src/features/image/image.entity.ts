@@ -14,7 +14,7 @@ export const ImageSectionEnum = {
 	PRODUCT: 'product',
 	CATEGORY: 'category',
 	BRAND: 'brand',
-	CMR: 'cmr',
+	ARTICLE: 'article',
 } as const;
 
 export type ImageSection =
@@ -83,12 +83,12 @@ export default class ImageEntity {
 	@UpdateDateColumn({ type: 'timestamp', nullable: true })
 	updated_at!: Date | null;
 
-	@Column('text', {
+	@Column({
+		type: 'enum',
+		enum: ImageSectionEnum,
 		nullable: false,
-		comment:
-			'The section this image belongs to (product, category, image, etc.)',
+		comment: 'The section this image belongs to',
 	})
-	@Index('IDX_image_section')
 	section!: ImageSection;
 
 	@Column('int', {
@@ -97,17 +97,22 @@ export default class ImageEntity {
 	})
 	entity_id!: number;
 
-	@Column('text', {
+	@Column({
+		type: 'enum',
+		enum: ImageTypeEnum,
 		nullable: false,
-		comment: 'The type of the image (eg: primary, logo, gallery, etc)',
+		comment: 'The type of the image',
 	})
 	image_type!: ImageType;
 
-	@Column('text', {
+	@Column({
+		type: 'enum',
+		enum: ImageStorageEnum,
+		default: ImageStorageEnum.LOCAL,
 		nullable: false,
-		comment: 'The storage destination of the image (eg: local, s3, etc)',
+		comment: 'The storage destination of the image',
 	})
-	@Index('IDX_image_content_storage', ['storage'])
+	@Index('IDX_image_storage')
 	storage!: ImageStorage;
 
 	@Column('text', { nullable: false })
@@ -117,7 +122,7 @@ export default class ImageEntity {
 		nullable: true,
 		comment: 'Properties of the file',
 	})
-	properties!: ImagePropertiesType;
+	properties!: ImagePropertiesType | null;
 
 	@Column({
 		type: 'enum',

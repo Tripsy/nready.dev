@@ -27,6 +27,23 @@ export const CurrencyEnum = {
 
 export type Currency = (typeof CurrencyEnum)[keyof typeof CurrencyEnum];
 
+/**
+ * Falls back to the deployment's configured currency when the request omits one.
+ * `app.currency` is a free-form env string, so it is checked against the enum rather than
+ * trusted — a typo in `APP_CURRENCY` must not reach a column the database constrains.
+ */
+export const resolveCurrency = (currency?: Currency): Currency => {
+	if (currency) {
+		return currency;
+	}
+
+	const configured: string = Configuration.currency();
+
+	return arrayHasValue(configured, Object.values(CurrencyEnum))
+		? configured
+		: CurrencyEnum.EUR;
+};
+
 export const CashFlowDirectionEnum = {
 	IN: 'in', // money received relative to company
 	OUT: 'out', // money sent relative to company
@@ -199,10 +216,8 @@ export const GROSS_AMOUNT_EXPRESSION = (alias: string) => `
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_cash_flow_created_at', ['created_at'])
-@Index('IDX_cash_flow_category_type_created_at', [
-	'category_type',
-	'created_at',
-])
+// No `category_type` equivalent: it is derived from `category` (see `getExpectedCategoryType`
+// and the direction/amount @Check), so an index on it would duplicate this one
 @Index('IDX_cash_flow_category_created_at', ['category', 'created_at'])
 @Index('IDX_cash_flow_method_status', ['method', 'status'])
 @Index('IDX_cash_flow_status_created_at', ['status', 'created_at'])
@@ -274,10 +289,15 @@ export default class CashFlowEntity extends EntityAbstract {
 	@Column('decimal', { precision: 5, scale: 2, nullable: false })
 	vat_rate!: number;
 
+	/*
+	 * The column default is a literal, not `Configuration.currency()`: a runtime env value baked
+	 * into the schema would freeze whatever the machine that generated the migration happened to
+	 * be configured with. The deployment's own currency is applied by the service on create.
+	 */
 	@Column({
 		type: 'enum',
 		enum: CurrencyEnum,
-		default: Configuration.currency(),
+		default: CurrencyEnum.EUR,
 		nullable: false,
 	})
 	currency!: Currency;
@@ -301,7 +321,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		nullable: true,
 		comment: 'Parent payment ID (e.g.: for refunds)',
 	})
-	@Index('IDX_parent_id')
+	@Index('IDX_cash_flow_parent_id')
 	parent_id!: number | null;
 
 	// OTHER
@@ -337,11 +357,11 @@ export default class CashFlowEntity extends EntityAbstract {
 		type: 'decimal',
 		query: (alias) => ` CAST(${NET_AMOUNT_EXPRESSION(alias)} AS FLOAT)`,
 	})
-	netAmount!: number;
+	net_amount!: number;
 
 	@VirtualColumn({
 		type: 'decimal',
 		query: (alias) => `CAST(${GROSS_AMOUNT_EXPRESSION(alias)} AS FLOAT)`,
 	})
-	grossAmount!: number;
+	gross_amount!: number;
 }

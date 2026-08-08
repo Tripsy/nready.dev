@@ -7,6 +7,7 @@ import {
 	ManyToOne,
 	PrimaryGeneratedColumn,
 } from 'typeorm';
+import type InvoiceEntity from '@/features/invoice/invoice.entity';
 import type SubscriptionEntity from '@/features/subscription/subscription.entity';
 
 export const SubscriptionEvidenceStatusEnum = {
@@ -66,4 +67,12 @@ export default class SubscriptionEvidenceEntity {
 	})
 	@JoinColumn({ name: 'subscription_id' })
 	subscription!: SubscriptionEntity;
+
+	// RESTRICT: the evidence row is the audit trail for a renewal, so the invoice it charged
+	// against has to stay reachable for as long as the evidence does
+	@ManyToOne('InvoiceEntity', {
+		onDelete: 'RESTRICT',
+	})
+	@JoinColumn({ name: 'invoice_id' })
+	invoice!: InvoiceEntity;
 }

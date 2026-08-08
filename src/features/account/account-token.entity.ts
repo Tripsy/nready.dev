@@ -27,7 +27,7 @@ export default class AccountTokenEntity {
 	@Index('IDX_account_token_user_id')
 	user_id!: number;
 
-	@Column('char', { length: 36, nullable: false, unique: true })
+	@Column('char', { length: 36, nullable: false })
 	@Index('IDX_account_token_ident', { unique: true })
 	ident!: string;
 

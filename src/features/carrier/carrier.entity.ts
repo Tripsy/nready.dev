@@ -14,8 +14,8 @@ export default class CarrierEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
 
-	@Column('varchar', { nullable: false, unique: true })
-	@Index('IDX_carrier_name', { unique: true })
+	@Column('varchar', { nullable: false })
+	@Index('IDX_carrier_name', { unique: true, where: 'deleted_at IS NULL' })
 	name!: string;
 
 	@Column('varchar', { nullable: true })

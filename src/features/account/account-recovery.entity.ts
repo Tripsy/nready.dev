@@ -27,7 +27,7 @@ export default class AccountRecoveryEntity {
 	@Index('IDX_account_recovery_user_id')
 	user_id!: number;
 
-	@Column('char', { length: 36, nullable: false, unique: true })
+	@Column('char', { length: 36, nullable: false })
 	@Index('IDX_account_recovery_ident', { unique: true })
 	ident!: string;
 

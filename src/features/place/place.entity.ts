@@ -39,11 +39,11 @@ export default class PlaceEntity extends EntityAbstract {
 
 	@Column('int', { nullable: true })
 	@Index('IDX_place_parent_id')
-	parent_id?: number; // country -> null, region -> country_id, city -> region_id or country_id
+	parent_id!: number | null; // country -> null, region -> country_id, city -> region_id or country_id
 
 	@Column('varchar', { length: 3, nullable: true, comment: 'Abbreviation' })
 	@Index('IDX_place_code')
-	code?: string;
+	code!: string | null;
 
 	// RELATIONS
 	@ManyToOne(
