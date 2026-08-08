@@ -6,7 +6,8 @@
 		"article",
 		"article_category",
 		"article_content",
-		"article_tag"
+		"article_tag",
+		"article_visibility_rule"
 	],
 	"depends_on": ["category", "term"],
 	"depends_off": []

@@ -1,9 +1,70 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class Init1786205764796 implements MigrationInterface {
-	name = 'Init1786205764796';
+export class Init1786231730366 implements MigrationInterface {
+	name = 'Init1786231730366';
 
 	public async up(queryRunner: QueryRunner): Promise<void> {
+		await queryRunner.query(
+			`CREATE TABLE "address" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "city_id" integer, "details" text NOT NULL, "postal_code" character varying, CONSTRAINT "PK_d92de1f82754668b5f5f5dd4fd5" PRIMARY KEY ("id"))`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_address_city_id" ON "address"  ("city_id") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_address_deleted_at" ON "address"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(`COMMENT ON TABLE "address" IS 'Addresses'`);
+		await queryRunner.query(
+			`CREATE TABLE "carrier" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "name" character varying NOT NULL, "website" character varying, "phone" character varying, "email" character varying, "notes" text, CONSTRAINT "PK_f615ebd1906f0270d41b3a5a8b0" PRIMARY KEY ("id"))`,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_carrier_name" ON "carrier"  ("name") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_carrier_deleted_at" ON "carrier"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "carrier" IS 'Stores shipping carriers'`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."category_status_enum" AS ENUM('active', 'pending', 'inactive')`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."category_type_enum" AS ENUM('product', 'article')`,
+		);
+		await queryRunner.query(
+			`CREATE TABLE "category" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "status" "public"."category_status_enum" NOT NULL DEFAULT 'pending', "type" "public"."category_type_enum" NOT NULL DEFAULT 'product', "sort_order" integer NOT NULL DEFAULT '0', "details" jsonb, "parent_id" integer, CONSTRAINT "PK_9c4e4a89e3674fc9f382d733f03" PRIMARY KEY ("id")); COMMENT ON COLUMN "category"."type" IS 'Specifies the entity type this category belongs to'; COMMENT ON COLUMN "category"."sort_order" IS 'Sort order among siblings'; COMMENT ON COLUMN "category"."details" IS 'Reserved column for future use'`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_category_parent_id" ON "category"  ("parent_id") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_category_type" ON "category"  ("type", "status") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_category_deleted_at" ON "category"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "category" IS 'Hierarchical product categories'`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."category_content_type_enum" AS ENUM('product', 'article')`,
+		);
+		await queryRunner.query(
+			`CREATE TABLE "category_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "category_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "type" "public"."category_content_type_enum" NOT NULL, "label" character varying NOT NULL, "slug" character varying NOT NULL, "description" text, "meta" jsonb, "details" jsonb, CONSTRAINT "PK_266faccfe1a64cd9a8e5479deed" PRIMARY KEY ("id")); COMMENT ON COLUMN "category_content"."type" IS 'The type is duplicated here from category to be used as unique index'; COMMENT ON COLUMN "category_content"."meta" IS 'SEO metadata, canonical URL, images, structured data, etc.'; COMMENT ON COLUMN "category_content"."details" IS 'Reserved column for future use'`,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_category_content_slug_language" ON "category_content"  ("type", "slug", "language") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_category_content_category_id_language" ON "category_content"  ("category_id", "language") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_category_content_deleted_at" ON "category_content"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "category_content" IS 'Language-specific category content (slug, description, metadata)'`,
+		);
 		await queryRunner.query(
 			`CREATE TYPE "public"."brand_status_enum" AS ENUM('active', 'inactive')`,
 		);
@@ -18,6 +79,48 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(
 			`CREATE INDEX "IDX_brand_deleted_at" ON "brand"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE TABLE "brand_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "brand_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "description" text, "meta" jsonb, CONSTRAINT "PK_8e9d5488729b396e59d9144ea27" PRIMARY KEY ("id")); COMMENT ON COLUMN "brand_content"."meta" IS 'SEO metadata, canonical URL, images, structured data, etc.'`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_brand_content_deleted_at" ON "brand_content"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_brand_content_unique_per_lang" ON "brand_content"  ("brand_id", "language") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "brand_content" IS 'Language-specific content for brands (descriptions, meta)'`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."discount_scope_enum" AS ENUM('client', 'order', 'product', 'category', 'country')`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."discount_reason_enum" AS ENUM('flash_sale', 'first_time_customer', 'loyalty_discount', 'birthday_discount', 'referral_discount', 'vip_discount', 'special_discount')`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."discount_type_enum" AS ENUM('percent', 'amount')`,
+		);
+		await queryRunner.query(
+			`CREATE TABLE "discount" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "label" character varying NOT NULL, "scope" "public"."discount_scope_enum" NOT NULL, "reason" "public"."discount_reason_enum" NOT NULL, "reference" character varying, "type" "public"."discount_type_enum" NOT NULL, "rules" jsonb, "value" numeric(12,2) NOT NULL, "start_at" TIMESTAMP, "end_at" TIMESTAMP, "notes" text, CONSTRAINT "PK_d05d8712e429673e459e7f1cddb" PRIMARY KEY ("id")); COMMENT ON COLUMN "discount"."label" IS 'Discount name'; COMMENT ON COLUMN "discount"."reference" IS 'Coupon code, referral code, etc'; COMMENT ON COLUMN "discount"."rules" IS 'Optional rules or conditions for discount applicability'`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_discount_scope" ON "discount"  ("scope") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_discount_reason" ON "discount"  ("reason") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_discount_reference" ON "discount"  ("reference") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_discount_active" ON "discount"  ("start_at", "end_at", "scope") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_discount_deleted_at" ON "discount"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "discount" IS 'Stores discount definitions. Note: Discount applied only for prices without VAT before exchange rate conversion'`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "public"."operational_record_operational_record_type_enum" AS ENUM('client', 'vendor')`,
@@ -93,37 +196,46 @@ export class Init1786205764796 implements MigrationInterface {
 			`COMMENT ON TABLE "cash_flow" IS 'Tracks cash flows.'`,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "brand_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "brand_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "description" text, "meta" jsonb, CONSTRAINT "PK_8e9d5488729b396e59d9144ea27" PRIMARY KEY ("id")); COMMENT ON COLUMN "brand_content"."meta" IS 'SEO metadata, canonical URL, images, structured data, etc.'`,
+			`CREATE TABLE "image_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "image_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "title" text, "description" text, CONSTRAINT "PK_7f5b75103fb93c4bc1c1fd46496" PRIMARY KEY ("id"))`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_brand_content_deleted_at" ON "brand_content"  ("deleted_at") WHERE deleted_at IS NULL`,
+			`CREATE UNIQUE INDEX "IDX_image_content_unique_per_lang" ON "image_content"  ("image_id", "language") `,
 		);
 		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_brand_content_unique_per_lang" ON "brand_content"  ("brand_id", "language") WHERE deleted_at IS NULL`,
+			`COMMENT ON TABLE "image_content" IS 'Language-specific content for images'`,
 		);
 		await queryRunner.query(
-			`COMMENT ON TABLE "brand_content" IS 'Language-specific content for brands (descriptions, meta)'`,
+			`CREATE TYPE "public"."image_section_enum" AS ENUM('product', 'category', 'brand', 'article')`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."category_status_enum" AS ENUM('active', 'pending', 'inactive')`,
+			`CREATE TYPE "public"."image_image_type_enum" AS ENUM('logo', 'gallery')`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."category_type_enum" AS ENUM('product', 'article')`,
+			`CREATE TYPE "public"."image_storage_enum" AS ENUM('local', 's3')`,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "category" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "status" "public"."category_status_enum" NOT NULL DEFAULT 'pending', "type" "public"."category_type_enum" NOT NULL DEFAULT 'product', "sort_order" integer NOT NULL DEFAULT '0', "details" jsonb, "parent_id" integer, CONSTRAINT "PK_9c4e4a89e3674fc9f382d733f03" PRIMARY KEY ("id")); COMMENT ON COLUMN "category"."type" IS 'Specifies the entity type this category belongs to'; COMMENT ON COLUMN "category"."sort_order" IS 'Sort order among siblings'; COMMENT ON COLUMN "category"."details" IS 'Reserved column for future use'`,
+			`CREATE TYPE "public"."image_status_enum" AS ENUM('active', 'inactive')`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_category_parent_id" ON "category"  ("parent_id") `,
+			`CREATE TABLE "image" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "section" "public"."image_section_enum" NOT NULL, "entity_id" integer NOT NULL, "image_type" "public"."image_image_type_enum" NOT NULL, "storage" "public"."image_storage_enum" NOT NULL DEFAULT 'local', "path" text NOT NULL, "properties" jsonb, "status" "public"."image_status_enum" NOT NULL DEFAULT 'active', "sort_order" integer NOT NULL DEFAULT '0', "details" jsonb, CONSTRAINT "PK_d6db1ab4ee9ad9dbe86c64e4cc3" PRIMARY KEY ("id")); COMMENT ON COLUMN "image"."section" IS 'The section this image belongs to'; COMMENT ON COLUMN "image"."entity_id" IS 'ID of the entity this image is linked to'; COMMENT ON COLUMN "image"."image_type" IS 'The type of the image'; COMMENT ON COLUMN "image"."storage" IS 'The storage destination of the image'; COMMENT ON COLUMN "image"."properties" IS 'Properties of the file'; COMMENT ON COLUMN "image"."sort_order" IS 'Order/position of the image within the entity type'; COMMENT ON COLUMN "image"."details" IS 'Reserved column for future use'`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_category_type" ON "category"  ("type", "status") `,
+			`CREATE INDEX "IDX_image_storage" ON "image"  ("storage") `,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_category_deleted_at" ON "category"  ("deleted_at") WHERE deleted_at IS NULL`,
+			`CREATE INDEX "IDX_image_type_id" ON "image"  ("entity_id", "section", "image_type") `,
 		);
 		await queryRunner.query(
-			`COMMENT ON TABLE "category" IS 'Hierarchical product categories'`,
+			`CREATE TABLE "system"."permission" ("id" SERIAL NOT NULL, "entity" character varying NOT NULL, "operation" character varying NOT NULL, "deleted_at" TIMESTAMP, CONSTRAINT "PK_3b8b97af9d9d8807e41e6f48362" PRIMARY KEY ("id"))`,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_permission" ON "system"."permission"  ("entity", "operation") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_permission_deleted_at" ON "system"."permission"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "system"."permission" IS 'Stores permissions'`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "public"."client_client_type_enum" AS ENUM('person', 'company')`,
@@ -153,73 +265,16 @@ export class Init1786205764796 implements MigrationInterface {
 			`COMMENT ON TABLE "client" IS 'Stores client information for persons OR companies'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."discount_scope_enum" AS ENUM('client', 'order', 'product', 'category', 'country')`,
+			`CREATE TABLE "place_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "place_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "name" character varying NOT NULL, "type_label" character varying NOT NULL, "details" jsonb, CONSTRAINT "PK_5af1716076889988270c39bd6ff" PRIMARY KEY ("id")); COMMENT ON COLUMN "place_content"."type_label" IS 'ex: Country, Region, City, Oras, Judet'; COMMENT ON COLUMN "place_content"."details" IS 'Reserved column for future use'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."discount_reason_enum" AS ENUM('flash_sale', 'first_time_customer', 'loyalty_discount', 'birthday_discount', 'referral_discount', 'vip_discount', 'special_discount')`,
+			`CREATE UNIQUE INDEX "IDX_place_content_unique_per_lang" ON "place_content"  ("place_id", "language") WHERE deleted_at IS NULL`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."discount_type_enum" AS ENUM('percent', 'amount')`,
+			`CREATE INDEX "IDX_place_content_deleted_at" ON "place_content"  ("deleted_at") WHERE deleted_at IS NULL`,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "discount" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "label" character varying NOT NULL, "scope" "public"."discount_scope_enum" NOT NULL, "reason" "public"."discount_reason_enum" NOT NULL, "reference" character varying, "type" "public"."discount_type_enum" NOT NULL, "rules" jsonb, "value" numeric(12,2) NOT NULL, "start_at" TIMESTAMP, "end_at" TIMESTAMP, "notes" text, CONSTRAINT "PK_d05d8712e429673e459e7f1cddb" PRIMARY KEY ("id")); COMMENT ON COLUMN "discount"."label" IS 'Discount name'; COMMENT ON COLUMN "discount"."reference" IS 'Coupon code, referral code, etc'; COMMENT ON COLUMN "discount"."rules" IS 'Optional rules or conditions for discount applicability'`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_discount_scope" ON "discount"  ("scope") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_discount_reason" ON "discount"  ("reason") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_discount_reference" ON "discount"  ("reference") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_discount_active" ON "discount"  ("start_at", "end_at", "scope") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_discount_deleted_at" ON "discount"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "discount" IS 'Stores discount definitions. Note: Discount applied only for prices without VAT before exchange rate conversion'`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "image_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "image_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "title" text, "description" text, CONSTRAINT "PK_7f5b75103fb93c4bc1c1fd46496" PRIMARY KEY ("id"))`,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_image_content_unique_per_lang" ON "image_content"  ("image_id", "language") `,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "image_content" IS 'Language-specific content for images'`,
-		);
-		await queryRunner.query(
-			`CREATE TYPE "public"."category_content_type_enum" AS ENUM('product', 'article')`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "category_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "category_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "type" "public"."category_content_type_enum" NOT NULL, "label" character varying NOT NULL, "slug" character varying NOT NULL, "description" text, "meta" jsonb, "details" jsonb, CONSTRAINT "PK_266faccfe1a64cd9a8e5479deed" PRIMARY KEY ("id")); COMMENT ON COLUMN "category_content"."type" IS 'The type is duplicated here from category to be used as unique index'; COMMENT ON COLUMN "category_content"."meta" IS 'SEO metadata, canonical URL, images, structured data, etc.'; COMMENT ON COLUMN "category_content"."details" IS 'Reserved column for future use'`,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_category_content_slug_language" ON "category_content"  ("type", "slug", "language") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_category_content_category_id_language" ON "category_content"  ("category_id", "language") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_category_content_deleted_at" ON "category_content"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "category_content" IS 'Language-specific category content (slug, description, metadata)'`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "system"."permission" ("id" SERIAL NOT NULL, "entity" character varying NOT NULL, "operation" character varying NOT NULL, "deleted_at" TIMESTAMP, CONSTRAINT "PK_3b8b97af9d9d8807e41e6f48362" PRIMARY KEY ("id"))`,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_permission" ON "system"."permission"  ("entity", "operation") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_permission_deleted_at" ON "system"."permission"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "system"."permission" IS 'Stores permissions'`,
+			`COMMENT ON TABLE "place_content" IS 'Language-specific content for places'`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "system"."mail_queue_status_enum" AS ENUM('pending', 'sent', 'error')`,
@@ -268,45 +323,6 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(
 			`CREATE INDEX "IDX_log_data" ON "logs"."log_data"  ("level", "category", "created_at") `,
-		);
-		await queryRunner.query(
-			`CREATE TYPE "public"."image_section_enum" AS ENUM('product', 'category', 'brand', 'article')`,
-		);
-		await queryRunner.query(
-			`CREATE TYPE "public"."image_image_type_enum" AS ENUM('logo', 'gallery')`,
-		);
-		await queryRunner.query(
-			`CREATE TYPE "public"."image_storage_enum" AS ENUM('local', 's3')`,
-		);
-		await queryRunner.query(
-			`CREATE TYPE "public"."image_status_enum" AS ENUM('active', 'inactive')`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "image" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "section" "public"."image_section_enum" NOT NULL, "entity_id" integer NOT NULL, "image_type" "public"."image_image_type_enum" NOT NULL, "storage" "public"."image_storage_enum" NOT NULL DEFAULT 'local', "path" text NOT NULL, "properties" jsonb, "status" "public"."image_status_enum" NOT NULL DEFAULT 'active', "sort_order" integer NOT NULL DEFAULT '0', "details" jsonb, CONSTRAINT "PK_d6db1ab4ee9ad9dbe86c64e4cc3" PRIMARY KEY ("id")); COMMENT ON COLUMN "image"."section" IS 'The section this image belongs to'; COMMENT ON COLUMN "image"."entity_id" IS 'ID of the entity this image is linked to'; COMMENT ON COLUMN "image"."image_type" IS 'The type of the image'; COMMENT ON COLUMN "image"."storage" IS 'The storage destination of the image'; COMMENT ON COLUMN "image"."properties" IS 'Properties of the file'; COMMENT ON COLUMN "image"."sort_order" IS 'Order/position of the image within the entity type'; COMMENT ON COLUMN "image"."details" IS 'Reserved column for future use'`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_image_storage" ON "image"  ("storage") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_image_type_id" ON "image"  ("entity_id", "section", "image_type") `,
-		);
-		await queryRunner.query(
-			`CREATE TYPE "public"."place_place_type_enum" AS ENUM('country', 'region', 'city')`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "place" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "place_type" "public"."place_place_type_enum" NOT NULL DEFAULT 'country', "parent_id" integer, "code" character varying(3), CONSTRAINT "PK_96ab91d43aa89c5de1b59ee7cca" PRIMARY KEY ("id")); COMMENT ON COLUMN "place"."code" IS 'Abbreviation'`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_place_parent_id" ON "place"  ("parent_id") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_place_code" ON "place"  ("code") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_place_deleted_at" ON "place"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "place" IS 'Places (countries, regions, cities)'`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "public"."user_status_enum" AS ENUM('active', 'inactive', 'pending')`,
@@ -358,38 +374,43 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(`COMMENT ON TABLE "vendor" IS 'Store vendors'`);
 		await queryRunner.query(
-			`CREATE TABLE "place_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "place_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "name" character varying NOT NULL, "type_label" character varying NOT NULL, "details" jsonb, CONSTRAINT "PK_5af1716076889988270c39bd6ff" PRIMARY KEY ("id")); COMMENT ON COLUMN "place_content"."type_label" IS 'ex: Country, Region, City, Oras, Judet'; COMMENT ON COLUMN "place_content"."details" IS 'Reserved column for future use'`,
+			`CREATE TYPE "public"."place_place_type_enum" AS ENUM('country', 'region', 'city')`,
 		);
 		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_place_content_unique_per_lang" ON "place_content"  ("place_id", "language") WHERE deleted_at IS NULL`,
+			`CREATE TABLE "place" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "place_type" "public"."place_place_type_enum" NOT NULL DEFAULT 'country', "parent_id" integer, "code" character varying(3), CONSTRAINT "PK_96ab91d43aa89c5de1b59ee7cca" PRIMARY KEY ("id")); COMMENT ON COLUMN "place"."code" IS 'Abbreviation'`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_place_content_deleted_at" ON "place_content"  ("deleted_at") WHERE deleted_at IS NULL`,
+			`CREATE INDEX "IDX_place_parent_id" ON "place"  ("parent_id") `,
 		);
 		await queryRunner.query(
-			`COMMENT ON TABLE "place_content" IS 'Language-specific content for places'`,
+			`CREATE INDEX "IDX_place_code" ON "place"  ("code") `,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "address" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "city_id" integer, "details" text NOT NULL, "postal_code" character varying, CONSTRAINT "PK_d92de1f82754668b5f5f5dd4fd5" PRIMARY KEY ("id"))`,
+			`CREATE INDEX "IDX_place_deleted_at" ON "place"  ("deleted_at") WHERE deleted_at IS NULL`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_address_city_id" ON "address"  ("city_id") `,
+			`COMMENT ON TABLE "place" IS 'Places (countries, regions, cities)'`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_address_deleted_at" ON "address"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(`COMMENT ON TABLE "address" IS 'Addresses'`);
-		await queryRunner.query(
-			`CREATE TABLE "carrier" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "name" character varying NOT NULL, "website" character varying, "phone" character varying, "email" character varying, "notes" text, CONSTRAINT "PK_f615ebd1906f0270d41b3a5a8b0" PRIMARY KEY ("id"))`,
+			`CREATE TYPE "public"."term_type_enum" AS ENUM('tag', 'attribute_label', 'attribute_value', 'text')`,
 		);
 		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_carrier_name" ON "carrier"  ("name") WHERE deleted_at IS NULL`,
+			`CREATE TABLE "term" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "type" "public"."term_type_enum" NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "value" character varying(255) NOT NULL, "details" jsonb, CONSTRAINT "PK_55b0479f0743f2e5d5ec414821e" PRIMARY KEY ("id")); COMMENT ON COLUMN "term"."language" IS 'ISO language code (en will the fallback for universal terms)'; COMMENT ON COLUMN "term"."value" IS 'Localized or universal term value'; COMMENT ON COLUMN "term"."details" IS 'Reserved column for future use'`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_carrier_deleted_at" ON "carrier"  ("deleted_at") WHERE deleted_at IS NULL`,
+			`CREATE INDEX "IDX_term_type" ON "term"  ("type") `,
 		);
 		await queryRunner.query(
-			`COMMENT ON TABLE "carrier" IS 'Stores shipping carriers'`,
+			`CREATE INDEX "IDX_term_language" ON "term"  ("language") `,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_term_unique" ON "term"  ("type", "language", "value") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_term_deleted_at" ON "term"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "term" IS 'Multilingual taxonomy terms: categories, tags, attribute labels/values'`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "system"."account_identity_provider_enum" AS ENUM('google', 'facebook')`,
@@ -407,21 +428,6 @@ export class Init1786205764796 implements MigrationInterface {
 			`COMMENT ON TABLE "system"."account_identity" IS 'Links a user to an external identity provider (social sign-in)'`,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "article_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "article_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "slug" character varying NOT NULL, "author" jsonb, "title" text NOT NULL, "brief" text, "content" text NOT NULL, "content_blocks" jsonb, "meta" jsonb, CONSTRAINT "PK_5673d4aa27bd95298796b8abec7" PRIMARY KEY ("id")); COMMENT ON COLUMN "article_content"."author" IS 'Author details'; COMMENT ON COLUMN "article_content"."content_blocks" IS 'Reserved column for future use'; COMMENT ON COLUMN "article_content"."meta" IS 'SEO metadata, canonical URL, images, structured data, etc.'`,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_article_content_slug_lang" ON "article_content"  ("slug", "language") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_article_content_unique_per_lang" ON "article_content"  ("article_id", "language") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_article_content_deleted_at" ON "article_content"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "article_content" IS 'Language-specific content for articles (title, slug, brief, content, meta)'`,
-		);
-		await queryRunner.query(
 			`CREATE TABLE "system"."account_token" ("id" SERIAL NOT NULL, "user_id" integer NOT NULL, "ident" character(36) NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "metadata" json, "used_at" TIMESTAMP, "expire_at" TIMESTAMP NOT NULL, CONSTRAINT "PK_a55842d3341d42534e39f85e931" PRIMARY KEY ("id")); COMMENT ON COLUMN "system"."account_token"."metadata" IS 'Fingerprinting data'`,
 		);
 		await queryRunner.query(
@@ -432,6 +438,21 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(
 			`COMMENT ON TABLE "system"."account_token" IS 'Stores \`ident\` for account tokens to manage token revocation'`,
+		);
+		await queryRunner.query(
+			`CREATE TABLE "article_category" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "article_id" integer NOT NULL, "category_id" integer NOT NULL, "details" jsonb, CONSTRAINT "PK_cdd234ef147c8552a8abd42bd29" PRIMARY KEY ("id")); COMMENT ON COLUMN "article_category"."details" IS 'Reserved column for future use'`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_article_category_category_id" ON "article_category"  ("category_id") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_article_category_deleted_at" ON "article_category"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_article_category_unique" ON "article_category"  ("article_id", "category_id") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "article_category" IS 'Link articles to categories'`,
 		);
 		await queryRunner.query(
 			`CREATE TABLE "system"."account_recovery" ("id" SERIAL NOT NULL, "user_id" integer NOT NULL, "ident" character(36) NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "metadata" json, "used_at" TIMESTAMP, "expire_at" TIMESTAMP NOT NULL, CONSTRAINT "PK_d4901111d598239fd13e230f618" PRIMARY KEY ("id")); COMMENT ON COLUMN "system"."account_recovery"."metadata" IS 'Fingerprinting data'`,
@@ -476,6 +497,45 @@ export class Init1786205764796 implements MigrationInterface {
 			`COMMENT ON TABLE "logs"."cron_history" IS 'Stores cron usage'`,
 		);
 		await queryRunner.query(
+			`CREATE TYPE "public"."article_status_enum" AS ENUM('draft', 'pending', 'rejected', 'scheduled', 'published', 'archived')`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."article_layout_enum" AS ENUM('default')`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."article_featured_status_enum" AS ENUM('section', 'category')`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."article_visibility_enum" AS ENUM('public', 'restricted')`,
+		);
+		await queryRunner.query(
+			`CREATE TYPE "public"."article_source_mode_enum" AS ENUM('input', 'parsed')`,
+		);
+		await queryRunner.query(
+			`CREATE TABLE "article" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "status" "public"."article_status_enum" NOT NULL DEFAULT 'draft', "layout" "public"."article_layout_enum" NOT NULL DEFAULT 'default', "details" jsonb, "publish_at" TIMESTAMP, "archive_at" TIMESTAMP, "featured_status" "public"."article_featured_status_enum", "featured_order" integer NOT NULL DEFAULT '0', "visibility" "public"."article_visibility_enum" NOT NULL DEFAULT 'public', "public_at" TIMESTAMP, "source_mode" "public"."article_source_mode_enum" NOT NULL DEFAULT 'input', "source" jsonb, "author_id" integer, CONSTRAINT "PK_40808690eb7b915046558c0f81b" PRIMARY KEY ("id")); COMMENT ON COLUMN "article"."details" IS 'Reserved column for future use'; COMMENT ON COLUMN "article"."publish_at" IS 'Controls when the article should be displayed'; COMMENT ON COLUMN "article"."archive_at" IS 'Controls when the article should transition to archived'; COMMENT ON COLUMN "article"."featured_order" IS 'Order/position of the article within the featured group; Relevant only when featured_status is set'; COMMENT ON COLUMN "article"."public_at" IS 'Controls when the article with restricted visibility should transition to public'; COMMENT ON COLUMN "article"."source" IS 'Source attribution for display (label, url, disclaimer, about)'`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_article_author_id" ON "article"  ("author_id") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_article_public_at" ON "article"  ("public_at") WHERE public_at IS NOT NULL AND deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_article_archive_at" ON "article"  ("archive_at") WHERE archive_at IS NOT NULL AND deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_article_featured" ON "article"  ("featured_status", "featured_order") WHERE featured_status IS NOT NULL AND deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_article_status_publish_at" ON "article"  ("status", "publish_at") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_article_deleted_at" ON "article"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "article" IS 'Stores core article information; textual content is saved in article-content.entity'`,
+		);
+		await queryRunner.query(
 			`CREATE TYPE "public"."invoice_status_enum" AS ENUM('draft', 'issued', 'paid', 'overdue', 'cancelled', 'refunded')`,
 		);
 		await queryRunner.query(
@@ -503,25 +563,34 @@ export class Init1786205764796 implements MigrationInterface {
 			`COMMENT ON TABLE "invoice" IS 'Stores invoices generated from orders'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."article_status_enum" AS ENUM('draft', 'published', 'archived')`,
+			`CREATE TABLE "article_content" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "article_id" integer NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "slug" character varying NOT NULL, "author" jsonb, "title" text NOT NULL, "brief" text, "content" text NOT NULL, "content_blocks" jsonb, "meta" jsonb, CONSTRAINT "PK_5673d4aa27bd95298796b8abec7" PRIMARY KEY ("id")); COMMENT ON COLUMN "article_content"."author" IS 'Author details'; COMMENT ON COLUMN "article_content"."content_blocks" IS 'Reserved column for future use'; COMMENT ON COLUMN "article_content"."meta" IS 'SEO metadata, canonical URL, images, structured data, etc.'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."article_layout_enum" AS ENUM('default')`,
+			`CREATE UNIQUE INDEX "IDX_article_content_slug_lang" ON "article_content"  ("slug", "language") WHERE deleted_at IS NULL`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."article_featured_status_enum" AS ENUM('nowhere', 'home', 'category')`,
+			`CREATE UNIQUE INDEX "IDX_article_content_unique_per_lang" ON "article_content"  ("article_id", "language") WHERE deleted_at IS NULL`,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "article" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "status" "public"."article_status_enum" NOT NULL DEFAULT 'draft', "layout" "public"."article_layout_enum" NOT NULL DEFAULT 'default', "details" jsonb, "publish_at" TIMESTAMP, "show_start_at" TIMESTAMP, "show_end_at" TIMESTAMP, "featured_status" "public"."article_featured_status_enum" NOT NULL DEFAULT 'nowhere', CONSTRAINT "PK_40808690eb7b915046558c0f81b" PRIMARY KEY ("id")); COMMENT ON COLUMN "article"."details" IS 'Reserved column for future use'; COMMENT ON COLUMN "article"."show_start_at" IS 'Controls when the article should be displayed'; COMMENT ON COLUMN "article"."show_end_at" IS 'Controls when the article should be displayed'`,
+			`CREATE INDEX "IDX_article_content_deleted_at" ON "article_content"  ("deleted_at") WHERE deleted_at IS NULL`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_article_status" ON "article"  ("status") `,
+			`COMMENT ON TABLE "article_content" IS 'Language-specific content for articles (title, slug, brief, content, meta)'`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_article_deleted_at" ON "article"  ("deleted_at") WHERE deleted_at IS NULL`,
+			`CREATE TABLE "order_product" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "order_id" integer NOT NULL, "product_id" integer NOT NULL, "quantity" numeric(12,2) NOT NULL, "vat_rate" numeric(5,2) NOT NULL, "price" numeric(12,2) NOT NULL, "currency" character(3) NOT NULL DEFAULT 'RON', "exchange_rate" numeric(10,6) NOT NULL DEFAULT '1', "discount" jsonb, "notes" text, CONSTRAINT "PK_539ede39e518562dfdadfddb492" PRIMARY KEY ("id")); COMMENT ON COLUMN "order_product"."currency" IS 'Currency is specific to client'; COMMENT ON COLUMN "order_product"."exchange_rate" IS 'Exchange rate to invoice base currency (default 1 = same currency)'; COMMENT ON COLUMN "order_product"."discount" IS 'Array of discount snapshots applied'`,
 		);
 		await queryRunner.query(
-			`COMMENT ON TABLE "article" IS 'Stores core article information; textual content is saved in article-content.entity'`,
+			`CREATE INDEX "IDX_order_product_order_id" ON "order_product"  ("order_id") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_order_product_product_id" ON "order_product"  ("product_id") `,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_order_product_deleted_at" ON "order_product"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "order_product" IS 'Stores ordered products (order line items)'`,
 		);
 		await queryRunner.query(
 			`CREATE TABLE "logs"."log_history" ("id" SERIAL NOT NULL, "entity" character varying NOT NULL, "entity_id" integer NOT NULL, "action" character varying NOT NULL, "auth_id" integer, "performed_by" character varying NOT NULL, "request_id" character varying NOT NULL, "source" character varying NOT NULL, "recorded_at" TIMESTAMP NOT NULL, "details" jsonb, CONSTRAINT "PK_837ee3d001208e2b7400e7a0487" PRIMARY KEY ("id")); COMMENT ON COLUMN "logs"."log_history"."details" IS 'Log data'`,
@@ -548,49 +617,13 @@ export class Init1786205764796 implements MigrationInterface {
 			`COMMENT ON TABLE "logs"."log_history" IS 'Store entities history: created, updated, deleted, etc.'`,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "order_product" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "order_id" integer NOT NULL, "product_id" integer NOT NULL, "quantity" numeric(12,2) NOT NULL, "vat_rate" numeric(5,2) NOT NULL, "price" numeric(12,2) NOT NULL, "currency" character(3) NOT NULL DEFAULT 'RON', "exchange_rate" numeric(10,6) NOT NULL DEFAULT '1', "discount" jsonb, "notes" text, CONSTRAINT "PK_539ede39e518562dfdadfddb492" PRIMARY KEY ("id")); COMMENT ON COLUMN "order_product"."currency" IS 'Currency is specific to client'; COMMENT ON COLUMN "order_product"."exchange_rate" IS 'Exchange rate to invoice base currency (default 1 = same currency)'; COMMENT ON COLUMN "order_product"."discount" IS 'Array of discount snapshots applied'`,
+			`CREATE TABLE "article_visibility_rule" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "article_id" integer NOT NULL, "requires_auth" boolean NOT NULL DEFAULT false, "requires_subscription" character varying array, "allowed_countries" character varying(2) array, "password" character varying, "is_listed" boolean NOT NULL DEFAULT true, CONSTRAINT "REL_4a239efc040ebec82f2736f490" UNIQUE ("article_id"), CONSTRAINT "PK_f14deeb133759688c6364b51a08" PRIMARY KEY ("id")); COMMENT ON COLUMN "article_visibility_rule"."requires_auth" IS 'Only logged-in users can view the article'; COMMENT ON COLUMN "article_visibility_rule"."requires_subscription" IS 'Subscription plan identifiers granting access; null means subscription is not required'; COMMENT ON COLUMN "article_visibility_rule"."allowed_countries" IS 'ISO 3166-1 alpha-2 codes allowed to view; null means no country restriction'; COMMENT ON COLUMN "article_visibility_rule"."password" IS 'Hashed password required to view the article'; COMMENT ON COLUMN "article_visibility_rule"."is_listed" IS 'Whether the article is listed in indexes, feeds and search'`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_order_product_order_id" ON "order_product"  ("order_id") `,
+			`CREATE INDEX "IDX_article_visibility_rule_deleted_at" ON "article_visibility_rule"  ("deleted_at") WHERE deleted_at IS NULL`,
 		);
 		await queryRunner.query(
-			`CREATE INDEX "IDX_order_product_product_id" ON "order_product"  ("product_id") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_order_product_deleted_at" ON "order_product"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "order_product" IS 'Stores ordered products (order line items)'`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "article_category" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "article_id" integer NOT NULL, "category_id" integer NOT NULL, "details" jsonb, CONSTRAINT "PK_cdd234ef147c8552a8abd42bd29" PRIMARY KEY ("id")); COMMENT ON COLUMN "article_category"."details" IS 'Reserved column for future use'`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_article_category_category_id" ON "article_category"  ("category_id") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_article_category_deleted_at" ON "article_category"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_article_category_unique" ON "article_category"  ("article_id", "category_id") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "article_category" IS 'Link articles to categories'`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "order_shipping_product" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "order_product_id" integer NOT NULL, "order_shipping_id" integer NOT NULL, "quantity" numeric(12,2) NOT NULL, "notes" text, CONSTRAINT "PK_07c1c05392d97859bb43947dfc7" PRIMARY KEY ("id"))`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_order_shipping_product_order_product_id" ON "order_shipping_product"  ("order_product_id") `,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_order_shipping_product_unique" ON "order_shipping_product"  ("order_shipping_id", "order_product_id") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_order_shipping_product_deleted_at" ON "order_shipping_product"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "order_shipping_product" IS 'Allocation of ordered products to specific shipments'`,
+			`COMMENT ON TABLE "article_visibility_rule" IS 'Visibility rules for articles with restricted visibility'`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "public"."order_status_enum" AS ENUM('draft', 'pending', 'confirmed', 'completed', 'cancelled')`,
@@ -618,6 +651,21 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(
 			`COMMENT ON TABLE "order" IS 'Stores order information'`,
+		);
+		await queryRunner.query(
+			`CREATE TABLE "order_shipping_product" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "order_product_id" integer NOT NULL, "order_shipping_id" integer NOT NULL, "quantity" numeric(12,2) NOT NULL, "notes" text, CONSTRAINT "PK_07c1c05392d97859bb43947dfc7" PRIMARY KEY ("id"))`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_order_shipping_product_order_product_id" ON "order_shipping_product"  ("order_product_id") `,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_order_shipping_product_unique" ON "order_shipping_product"  ("order_shipping_id", "order_product_id") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_order_shipping_product_deleted_at" ON "order_shipping_product"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "order_shipping_product" IS 'Allocation of ordered products to specific shipments'`,
 		);
 		await queryRunner.query(
 			`CREATE TABLE "product_attribute" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "product_id" integer NOT NULL, "attribute_label_id" integer NOT NULL, "attribute_value_id" integer NOT NULL, CONSTRAINT "PK_f9b91f38df3dbbe481d9e056e5e" PRIMARY KEY ("id"))`,
@@ -701,24 +749,6 @@ export class Init1786205764796 implements MigrationInterface {
 			`COMMENT ON TABLE "product" IS 'Stores core product information; textual content is saved in a product-content.entity'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."term_type_enum" AS ENUM('tag', 'attribute_label', 'attribute_value', 'text')`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "term" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "type" "public"."term_type_enum" NOT NULL, "language" character varying(3) NOT NULL DEFAULT 'en', "value" character varying(255) NOT NULL, "details" jsonb, CONSTRAINT "PK_55b0479f0743f2e5d5ec414821e" PRIMARY KEY ("id")); COMMENT ON COLUMN "term"."language" IS 'ISO language code (en will the fallback for universal terms)'; COMMENT ON COLUMN "term"."value" IS 'Localized or universal term value'; COMMENT ON COLUMN "term"."details" IS 'Reserved column for future use'`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_term_type" ON "term"  ("type") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_term_language" ON "term"  ("language") `,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_term_deleted_at" ON "term"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "term" IS 'Multilingual taxonomy terms: categories, tags, attribute labels/values'`,
-		);
-		await queryRunner.query(
 			`CREATE TABLE "product_tag" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "product_id" integer NOT NULL, "tag_id" integer NOT NULL, "details" jsonb, CONSTRAINT "PK_1439455c6528caa94fcc8564fda" PRIMARY KEY ("id")); COMMENT ON COLUMN "product_tag"."details" IS 'Reserved column for future use'`,
 		);
 		await queryRunner.query(
@@ -750,21 +780,6 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(
 			`COMMENT ON TABLE "subscription_evidence" IS 'Used to track renewal attempts for subscriptions.'`,
-		);
-		await queryRunner.query(
-			`CREATE TABLE "product_category" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "product_id" integer NOT NULL, "category_id" integer NOT NULL, "details" jsonb, CONSTRAINT "PK_0dce9bc93c2d2c399982d04bef1" PRIMARY KEY ("id")); COMMENT ON COLUMN "product_category"."details" IS 'Reserved column for future use'`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_product_category_category_id" ON "product_category"  ("category_id") `,
-		);
-		await queryRunner.query(
-			`CREATE UNIQUE INDEX "IDX_product_category_unique" ON "product_category"  ("product_id", "category_id") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`CREATE INDEX "IDX_product_category_deleted_at" ON "product_category"  ("deleted_at") WHERE deleted_at IS NULL`,
-		);
-		await queryRunner.query(
-			`COMMENT ON TABLE "product_category" IS 'Links products to categories (multilingual via term)'`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "public"."subscription_status_enum" AS ENUM('active', 'paused', 'cancelled', 'expired')`,
@@ -809,6 +824,21 @@ export class Init1786205764796 implements MigrationInterface {
 			`COMMENT ON TABLE "product_content" IS 'Language-specific content for products (name, slug, descriptions, meta)'`,
 		);
 		await queryRunner.query(
+			`CREATE TABLE "product_category" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "product_id" integer NOT NULL, "category_id" integer NOT NULL, "details" jsonb, CONSTRAINT "PK_0dce9bc93c2d2c399982d04bef1" PRIMARY KEY ("id")); COMMENT ON COLUMN "product_category"."details" IS 'Reserved column for future use'`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_product_category_category_id" ON "product_category"  ("category_id") `,
+		);
+		await queryRunner.query(
+			`CREATE UNIQUE INDEX "IDX_product_category_unique" ON "product_category"  ("product_id", "category_id") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`CREATE INDEX "IDX_product_category_deleted_at" ON "product_category"  ("deleted_at") WHERE deleted_at IS NULL`,
+		);
+		await queryRunner.query(
+			`COMMENT ON TABLE "product_category" IS 'Links products to categories (multilingual via term)'`,
+		);
+		await queryRunner.query(
 			`CREATE TABLE "category_closure" ("id_ancestor" integer NOT NULL, "id_descendant" integer NOT NULL, CONSTRAINT "PK_8da8666fc72217687e9b4f4c7e9" PRIMARY KEY ("id_ancestor", "id_descendant"))`,
 		);
 		await queryRunner.query(
@@ -818,28 +848,31 @@ export class Init1786205764796 implements MigrationInterface {
 			`CREATE INDEX "IDX_6a22002acac4976977b1efd114" ON "category_closure"  ("id_descendant") `,
 		);
 		await queryRunner.query(
+			`ALTER TABLE "address" ADD CONSTRAINT "FK_714a4ca3cfd66a718b5f7c3fee5" FOREIGN KEY ("city_id") REFERENCES "place"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "category" ADD CONSTRAINT "FK_1117b4fcb3cd4abb4383e1c2743" FOREIGN KEY ("parent_id") REFERENCES "category"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "category_content" ADD CONSTRAINT "FK_c9c9c3b03be3b5d980ec8cee4ee" FOREIGN KEY ("category_id") REFERENCES "category"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "brand_content" ADD CONSTRAINT "FK_6699af3eb85f6ba17010c71167f" FOREIGN KEY ("brand_id") REFERENCES "brand"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
 			`ALTER TABLE "operational_record" ADD CONSTRAINT "FK_55d872f7ba7f7e7692375b1dcf0" FOREIGN KEY ("cash_flow_id") REFERENCES "cash_flow"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "cash_flow" ADD CONSTRAINT "FK_834b8e126ec58955db3a985edfb" FOREIGN KEY ("parent_id") REFERENCES "cash_flow"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "brand_content" ADD CONSTRAINT "FK_6699af3eb85f6ba17010c71167f" FOREIGN KEY ("brand_id") REFERENCES "brand"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "category" ADD CONSTRAINT "FK_1117b4fcb3cd4abb4383e1c2743" FOREIGN KEY ("parent_id") REFERENCES "category"("id") ON DELETE NO ACTION ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
 			`ALTER TABLE "image_content" ADD CONSTRAINT "FK_c1718000e7e049b9841f8b4b222" FOREIGN KEY ("image_id") REFERENCES "image"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "category_content" ADD CONSTRAINT "FK_c9c9c3b03be3b5d980ec8cee4ee" FOREIGN KEY ("category_id") REFERENCES "category"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+			`ALTER TABLE "place_content" ADD CONSTRAINT "FK_9f8efc4eaa0dadccb2a8f4794b1" FOREIGN KEY ("place_id") REFERENCES "place"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "system"."mail_queue" ADD CONSTRAINT "FK_3871a34c42cb0ceaf17ee65bd6d" FOREIGN KEY ("template_id") REFERENCES "system"."template"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "place" ADD CONSTRAINT "FK_e8f42244c2d9143a42b13bd1d0c" FOREIGN KEY ("parent_id") REFERENCES "place"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "user_permission" ADD CONSTRAINT "FK_2305dfa7330dd7f8e211f4f35d9" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
@@ -848,40 +881,13 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "user_permission" ADD CONSTRAINT "FK_8a4d5521c1ced158c13438df3df" FOREIGN KEY ("permission_id") REFERENCES "system"."permission"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "place_content" ADD CONSTRAINT "FK_9f8efc4eaa0dadccb2a8f4794b1" FOREIGN KEY ("place_id") REFERENCES "place"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "address" ADD CONSTRAINT "FK_714a4ca3cfd66a718b5f7c3fee5" FOREIGN KEY ("city_id") REFERENCES "place"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+			`ALTER TABLE "place" ADD CONSTRAINT "FK_e8f42244c2d9143a42b13bd1d0c" FOREIGN KEY ("parent_id") REFERENCES "place"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "system"."account_identity" ADD CONSTRAINT "FK_51838685440a76e0e0495225836" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "article_content" ADD CONSTRAINT "FK_695e2a3fb3e8f1995d703d5b91c" FOREIGN KEY ("article_id") REFERENCES "article"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
 			`ALTER TABLE "system"."account_token" ADD CONSTRAINT "FK_ab3c66669facfe429164e60ab82" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "system"."account_recovery" ADD CONSTRAINT "FK_604c2b655029e47091f671ba875" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "article_tag" ADD CONSTRAINT "FK_26455b396109a0b535ddb614832" FOREIGN KEY ("article_id") REFERENCES "article"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "article_tag" ADD CONSTRAINT "FK_cdc3f155737b763c298ab080f84" FOREIGN KEY ("tag_id") REFERENCES "term"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "invoice" ADD CONSTRAINT "FK_1e74a9888e5e228184769ba3dfd" FOREIGN KEY ("order_id") REFERENCES "order"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "logs"."log_history" ADD CONSTRAINT "FK_4daa26d01591f9e64dd97670ea4" FOREIGN KEY ("auth_id") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "order_product" ADD CONSTRAINT "FK_ea143999ecfa6a152f2202895e2" FOREIGN KEY ("order_id") REFERENCES "order"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "order_product" ADD CONSTRAINT "FK_400f1584bf37c21172da3b15e2d" FOREIGN KEY ("product_id") REFERENCES "product"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "article_category" ADD CONSTRAINT "FK_0f261c64d873b8dc5a26ecab44e" FOREIGN KEY ("article_id") REFERENCES "article"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
@@ -890,22 +896,52 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "article_category" ADD CONSTRAINT "FK_20b9ebf3cb2834a02fd65fa0950" FOREIGN KEY ("category_id") REFERENCES "category"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
+			`ALTER TABLE "system"."account_recovery" ADD CONSTRAINT "FK_604c2b655029e47091f671ba875" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "article_tag" ADD CONSTRAINT "FK_26455b396109a0b535ddb614832" FOREIGN KEY ("article_id") REFERENCES "article"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "article_tag" ADD CONSTRAINT "FK_cdc3f155737b763c298ab080f84" FOREIGN KEY ("tag_id") REFERENCES "term"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "article" ADD CONSTRAINT "FK_16d4ce4c84bd9b8562c6f396262" FOREIGN KEY ("author_id") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "invoice" ADD CONSTRAINT "FK_1e74a9888e5e228184769ba3dfd" FOREIGN KEY ("order_id") REFERENCES "order"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "article_content" ADD CONSTRAINT "FK_695e2a3fb3e8f1995d703d5b91c" FOREIGN KEY ("article_id") REFERENCES "article"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "order_product" ADD CONSTRAINT "FK_ea143999ecfa6a152f2202895e2" FOREIGN KEY ("order_id") REFERENCES "order"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "order_product" ADD CONSTRAINT "FK_400f1584bf37c21172da3b15e2d" FOREIGN KEY ("product_id") REFERENCES "product"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "logs"."log_history" ADD CONSTRAINT "FK_4daa26d01591f9e64dd97670ea4" FOREIGN KEY ("auth_id") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "article_visibility_rule" ADD CONSTRAINT "FK_4a239efc040ebec82f2736f490a" FOREIGN KEY ("article_id") REFERENCES "article"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "order" ADD CONSTRAINT "FK_a0d9cbb7f4a017bac3198dd8ca0" FOREIGN KEY ("client_id") REFERENCES "client"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
 			`ALTER TABLE "order_shipping_product" ADD CONSTRAINT "FK_66811564f24eb71ac15e5ea124b" FOREIGN KEY ("order_product_id") REFERENCES "order_product"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "order_shipping_product" ADD CONSTRAINT "FK_08f57f381c1c316fd7bc0d8b3e6" FOREIGN KEY ("order_shipping_id") REFERENCES "order_shipping"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "order" ADD CONSTRAINT "FK_a0d9cbb7f4a017bac3198dd8ca0" FOREIGN KEY ("client_id") REFERENCES "client"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
 			`ALTER TABLE "product_attribute" ADD CONSTRAINT "FK_c8f119684d209b55cf5e8b42532" FOREIGN KEY ("product_id") REFERENCES "product"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "product_attribute" ADD CONSTRAINT "FK_c7b5ed8e690ecc7758ecd515844" FOREIGN KEY ("attribute_label_id") REFERENCES "term"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
+			`ALTER TABLE "product_attribute" ADD CONSTRAINT "FK_c7b5ed8e690ecc7758ecd515844" FOREIGN KEY ("attribute_label_id") REFERENCES "term"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "product_attribute" ADD CONSTRAINT "FK_e9d73f2bb641f92f8d48b13ee7d" FOREIGN KEY ("attribute_value_id") REFERENCES "term"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
+			`ALTER TABLE "product_attribute" ADD CONSTRAINT "FK_e9d73f2bb641f92f8d48b13ee7d" FOREIGN KEY ("attribute_value_id") REFERENCES "term"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "order_shipping" ADD CONSTRAINT "FK_b4a21d5bd902c38f79c019fbe99" FOREIGN KEY ("order_id") REFERENCES "order"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
@@ -920,19 +956,13 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "product_tag" ADD CONSTRAINT "FK_d08cb260c60a9bf0a5e0424768d" FOREIGN KEY ("product_id") REFERENCES "product"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "product_tag" ADD CONSTRAINT "FK_7bf0b673c19b33c9456d54b2b37" FOREIGN KEY ("tag_id") REFERENCES "term"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
+			`ALTER TABLE "product_tag" ADD CONSTRAINT "FK_7bf0b673c19b33c9456d54b2b37" FOREIGN KEY ("tag_id") REFERENCES "term"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "subscription_evidence" ADD CONSTRAINT "FK_cc9eb4c92df6a79526d30655c1f" FOREIGN KEY ("subscription_id") REFERENCES "subscription"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "subscription_evidence" ADD CONSTRAINT "FK_ce67597df9377e2f93ef86c667a" FOREIGN KEY ("invoice_id") REFERENCES "invoice"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "product_category" ADD CONSTRAINT "FK_0374879a971928bc3f57eed0a59" FOREIGN KEY ("product_id") REFERENCES "product"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "product_category" ADD CONSTRAINT "FK_2df1f83329c00e6eadde0493e16" FOREIGN KEY ("category_id") REFERENCES "category"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "subscription" ADD CONSTRAINT "FK_32ddbd23837b1229248a5cc232b" FOREIGN KEY ("order_id") REFERENCES "order"("id") ON DELETE RESTRICT ON UPDATE NO ACTION`,
@@ -942,6 +972,12 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(
 			`ALTER TABLE "product_content" ADD CONSTRAINT "FK_f768662205b901ba35c9c9255a0" FOREIGN KEY ("product_id") REFERENCES "product"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "product_category" ADD CONSTRAINT "FK_0374879a971928bc3f57eed0a59" FOREIGN KEY ("product_id") REFERENCES "product"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "product_category" ADD CONSTRAINT "FK_2df1f83329c00e6eadde0493e16" FOREIGN KEY ("category_id") REFERENCES "category"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "category_closure" ADD CONSTRAINT "FK_4aa1348fc4b7da9bef0fae8ff48" FOREIGN KEY ("id_ancestor") REFERENCES "category"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
@@ -959,6 +995,12 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "category_closure" DROP CONSTRAINT "FK_4aa1348fc4b7da9bef0fae8ff48"`,
 		);
 		await queryRunner.query(
+			`ALTER TABLE "product_category" DROP CONSTRAINT "FK_2df1f83329c00e6eadde0493e16"`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "product_category" DROP CONSTRAINT "FK_0374879a971928bc3f57eed0a59"`,
+		);
+		await queryRunner.query(
 			`ALTER TABLE "product_content" DROP CONSTRAINT "FK_f768662205b901ba35c9c9255a0"`,
 		);
 		await queryRunner.query(
@@ -966,12 +1008,6 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(
 			`ALTER TABLE "subscription" DROP CONSTRAINT "FK_32ddbd23837b1229248a5cc232b"`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "product_category" DROP CONSTRAINT "FK_2df1f83329c00e6eadde0493e16"`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "product_category" DROP CONSTRAINT "FK_0374879a971928bc3f57eed0a59"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "subscription_evidence" DROP CONSTRAINT "FK_ce67597df9377e2f93ef86c667a"`,
@@ -1004,19 +1040,19 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "product_attribute" DROP CONSTRAINT "FK_c8f119684d209b55cf5e8b42532"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "order" DROP CONSTRAINT "FK_a0d9cbb7f4a017bac3198dd8ca0"`,
-		);
-		await queryRunner.query(
 			`ALTER TABLE "order_shipping_product" DROP CONSTRAINT "FK_08f57f381c1c316fd7bc0d8b3e6"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "order_shipping_product" DROP CONSTRAINT "FK_66811564f24eb71ac15e5ea124b"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "article_category" DROP CONSTRAINT "FK_20b9ebf3cb2834a02fd65fa0950"`,
+			`ALTER TABLE "order" DROP CONSTRAINT "FK_a0d9cbb7f4a017bac3198dd8ca0"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "article_category" DROP CONSTRAINT "FK_0f261c64d873b8dc5a26ecab44e"`,
+			`ALTER TABLE "article_visibility_rule" DROP CONSTRAINT "FK_4a239efc040ebec82f2736f490a"`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "logs"."log_history" DROP CONSTRAINT "FK_4daa26d01591f9e64dd97670ea4"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "order_product" DROP CONSTRAINT "FK_400f1584bf37c21172da3b15e2d"`,
@@ -1025,10 +1061,13 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "order_product" DROP CONSTRAINT "FK_ea143999ecfa6a152f2202895e2"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "logs"."log_history" DROP CONSTRAINT "FK_4daa26d01591f9e64dd97670ea4"`,
+			`ALTER TABLE "article_content" DROP CONSTRAINT "FK_695e2a3fb3e8f1995d703d5b91c"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "invoice" DROP CONSTRAINT "FK_1e74a9888e5e228184769ba3dfd"`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "article" DROP CONSTRAINT "FK_16d4ce4c84bd9b8562c6f396262"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "article_tag" DROP CONSTRAINT "FK_cdc3f155737b763c298ab080f84"`,
@@ -1040,19 +1079,19 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "system"."account_recovery" DROP CONSTRAINT "FK_604c2b655029e47091f671ba875"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "system"."account_token" DROP CONSTRAINT "FK_ab3c66669facfe429164e60ab82"`,
+			`ALTER TABLE "article_category" DROP CONSTRAINT "FK_20b9ebf3cb2834a02fd65fa0950"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "article_content" DROP CONSTRAINT "FK_695e2a3fb3e8f1995d703d5b91c"`,
+			`ALTER TABLE "article_category" DROP CONSTRAINT "FK_0f261c64d873b8dc5a26ecab44e"`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "system"."account_token" DROP CONSTRAINT "FK_ab3c66669facfe429164e60ab82"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "system"."account_identity" DROP CONSTRAINT "FK_51838685440a76e0e0495225836"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "address" DROP CONSTRAINT "FK_714a4ca3cfd66a718b5f7c3fee5"`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "place_content" DROP CONSTRAINT "FK_9f8efc4eaa0dadccb2a8f4794b1"`,
+			`ALTER TABLE "place" DROP CONSTRAINT "FK_e8f42244c2d9143a42b13bd1d0c"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "user_permission" DROP CONSTRAINT "FK_8a4d5521c1ced158c13438df3df"`,
@@ -1061,22 +1100,13 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "user_permission" DROP CONSTRAINT "FK_2305dfa7330dd7f8e211f4f35d9"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "place" DROP CONSTRAINT "FK_e8f42244c2d9143a42b13bd1d0c"`,
-		);
-		await queryRunner.query(
 			`ALTER TABLE "system"."mail_queue" DROP CONSTRAINT "FK_3871a34c42cb0ceaf17ee65bd6d"`,
 		);
 		await queryRunner.query(
-			`ALTER TABLE "category_content" DROP CONSTRAINT "FK_c9c9c3b03be3b5d980ec8cee4ee"`,
+			`ALTER TABLE "place_content" DROP CONSTRAINT "FK_9f8efc4eaa0dadccb2a8f4794b1"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "image_content" DROP CONSTRAINT "FK_c1718000e7e049b9841f8b4b222"`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "category" DROP CONSTRAINT "FK_1117b4fcb3cd4abb4383e1c2743"`,
-		);
-		await queryRunner.query(
-			`ALTER TABLE "brand_content" DROP CONSTRAINT "FK_6699af3eb85f6ba17010c71167f"`,
 		);
 		await queryRunner.query(
 			`ALTER TABLE "cash_flow" DROP CONSTRAINT "FK_834b8e126ec58955db3a985edfb"`,
@@ -1085,12 +1115,35 @@ export class Init1786205764796 implements MigrationInterface {
 			`ALTER TABLE "operational_record" DROP CONSTRAINT "FK_55d872f7ba7f7e7692375b1dcf0"`,
 		);
 		await queryRunner.query(
+			`ALTER TABLE "brand_content" DROP CONSTRAINT "FK_6699af3eb85f6ba17010c71167f"`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "category_content" DROP CONSTRAINT "FK_c9c9c3b03be3b5d980ec8cee4ee"`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "category" DROP CONSTRAINT "FK_1117b4fcb3cd4abb4383e1c2743"`,
+		);
+		await queryRunner.query(
+			`ALTER TABLE "address" DROP CONSTRAINT "FK_714a4ca3cfd66a718b5f7c3fee5"`,
+		);
+		await queryRunner.query(
 			`DROP INDEX "public"."IDX_6a22002acac4976977b1efd114"`,
 		);
 		await queryRunner.query(
 			`DROP INDEX "public"."IDX_4aa1348fc4b7da9bef0fae8ff4"`,
 		);
 		await queryRunner.query(`DROP TABLE "category_closure"`);
+		await queryRunner.query(`COMMENT ON TABLE "product_category" IS NULL`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_product_category_deleted_at"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_product_category_unique"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_product_category_category_id"`,
+		);
+		await queryRunner.query(`DROP TABLE "product_category"`);
 		await queryRunner.query(`COMMENT ON TABLE "product_content" IS NULL`);
 		await queryRunner.query(
 			`DROP INDEX "public"."IDX_product_content_deleted_at"`,
@@ -1125,17 +1178,6 @@ export class Init1786205764796 implements MigrationInterface {
 		await queryRunner.query(
 			`DROP TYPE "public"."subscription_status_enum"`,
 		);
-		await queryRunner.query(`COMMENT ON TABLE "product_category" IS NULL`);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_product_category_deleted_at"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_product_category_unique"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_product_category_category_id"`,
-		);
-		await queryRunner.query(`DROP TABLE "product_category"`);
 		await queryRunner.query(
 			`COMMENT ON TABLE "subscription_evidence" IS NULL`,
 		);
@@ -1159,12 +1201,6 @@ export class Init1786205764796 implements MigrationInterface {
 		await queryRunner.query(`DROP INDEX "public"."IDX_product_tag_unique"`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_product_tag_tag_id"`);
 		await queryRunner.query(`DROP TABLE "product_tag"`);
-		await queryRunner.query(`COMMENT ON TABLE "term" IS NULL`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_term_deleted_at"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_term_language"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_term_type"`);
-		await queryRunner.query(`DROP TABLE "term"`);
-		await queryRunner.query(`DROP TYPE "public"."term_type_enum"`);
 		await queryRunner.query(`COMMENT ON TABLE "product" IS NULL`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_product_deleted_at"`);
 		await queryRunner.query(
@@ -1222,15 +1258,6 @@ export class Init1786205764796 implements MigrationInterface {
 			`DROP INDEX "public"."IDX_product_attribute_product_id"`,
 		);
 		await queryRunner.query(`DROP TABLE "product_attribute"`);
-		await queryRunner.query(`COMMENT ON TABLE "order" IS NULL`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_order_deleted_at"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_order_issued_at"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_order_status"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_order_ref_number"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_order_client_id"`);
-		await queryRunner.query(`DROP TABLE "order"`);
-		await queryRunner.query(`DROP TYPE "public"."order_type_enum"`);
-		await queryRunner.query(`DROP TYPE "public"."order_status_enum"`);
 		await queryRunner.query(
 			`COMMENT ON TABLE "order_shipping_product" IS NULL`,
 		);
@@ -1244,28 +1271,22 @@ export class Init1786205764796 implements MigrationInterface {
 			`DROP INDEX "public"."IDX_order_shipping_product_order_product_id"`,
 		);
 		await queryRunner.query(`DROP TABLE "order_shipping_product"`);
-		await queryRunner.query(`COMMENT ON TABLE "article_category" IS NULL`);
+		await queryRunner.query(`COMMENT ON TABLE "order" IS NULL`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_order_deleted_at"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_order_issued_at"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_order_status"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_order_ref_number"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_order_client_id"`);
+		await queryRunner.query(`DROP TABLE "order"`);
+		await queryRunner.query(`DROP TYPE "public"."order_type_enum"`);
+		await queryRunner.query(`DROP TYPE "public"."order_status_enum"`);
 		await queryRunner.query(
-			`DROP INDEX "public"."IDX_article_category_unique"`,
+			`COMMENT ON TABLE "article_visibility_rule" IS NULL`,
 		);
 		await queryRunner.query(
-			`DROP INDEX "public"."IDX_article_category_deleted_at"`,
+			`DROP INDEX "public"."IDX_article_visibility_rule_deleted_at"`,
 		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_article_category_category_id"`,
-		);
-		await queryRunner.query(`DROP TABLE "article_category"`);
-		await queryRunner.query(`COMMENT ON TABLE "order_product" IS NULL`);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_order_product_deleted_at"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_order_product_product_id"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_order_product_order_id"`,
-		);
-		await queryRunner.query(`DROP TABLE "order_product"`);
+		await queryRunner.query(`DROP TABLE "article_visibility_rule"`);
 		await queryRunner.query(
 			`COMMENT ON TABLE "logs"."log_history" IS NULL`,
 		);
@@ -1284,15 +1305,28 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(`DROP INDEX "logs"."IDX_log_history_auth_id"`);
 		await queryRunner.query(`DROP TABLE "logs"."log_history"`);
-		await queryRunner.query(`COMMENT ON TABLE "article" IS NULL`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_article_deleted_at"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_article_status"`);
-		await queryRunner.query(`DROP TABLE "article"`);
+		await queryRunner.query(`COMMENT ON TABLE "order_product" IS NULL`);
 		await queryRunner.query(
-			`DROP TYPE "public"."article_featured_status_enum"`,
+			`DROP INDEX "public"."IDX_order_product_deleted_at"`,
 		);
-		await queryRunner.query(`DROP TYPE "public"."article_layout_enum"`);
-		await queryRunner.query(`DROP TYPE "public"."article_status_enum"`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_order_product_product_id"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_order_product_order_id"`,
+		);
+		await queryRunner.query(`DROP TABLE "order_product"`);
+		await queryRunner.query(`COMMENT ON TABLE "article_content" IS NULL`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_article_content_deleted_at"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_article_content_unique_per_lang"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_article_content_slug_lang"`,
+		);
+		await queryRunner.query(`DROP TABLE "article_content"`);
 		await queryRunner.query(`COMMENT ON TABLE "invoice" IS NULL`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_invoice_deleted_at"`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_invoice_ref"`);
@@ -1302,6 +1336,25 @@ export class Init1786205764796 implements MigrationInterface {
 		await queryRunner.query(`DROP TABLE "invoice"`);
 		await queryRunner.query(`DROP TYPE "public"."invoice_type_enum"`);
 		await queryRunner.query(`DROP TYPE "public"."invoice_status_enum"`);
+		await queryRunner.query(`COMMENT ON TABLE "article" IS NULL`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_article_deleted_at"`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_article_status_publish_at"`,
+		);
+		await queryRunner.query(`DROP INDEX "public"."IDX_article_featured"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_article_archive_at"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_article_public_at"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_article_author_id"`);
+		await queryRunner.query(`DROP TABLE "article"`);
+		await queryRunner.query(
+			`DROP TYPE "public"."article_source_mode_enum"`,
+		);
+		await queryRunner.query(`DROP TYPE "public"."article_visibility_enum"`);
+		await queryRunner.query(
+			`DROP TYPE "public"."article_featured_status_enum"`,
+		);
+		await queryRunner.query(`DROP TYPE "public"."article_layout_enum"`);
+		await queryRunner.query(`DROP TYPE "public"."article_status_enum"`);
 		await queryRunner.query(
 			`COMMENT ON TABLE "logs"."cron_history" IS NULL`,
 		);
@@ -1328,6 +1381,17 @@ export class Init1786205764796 implements MigrationInterface {
 			`DROP INDEX "system"."IDX_account_recovery_user_id"`,
 		);
 		await queryRunner.query(`DROP TABLE "system"."account_recovery"`);
+		await queryRunner.query(`COMMENT ON TABLE "article_category" IS NULL`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_article_category_unique"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_article_category_deleted_at"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_article_category_category_id"`,
+		);
+		await queryRunner.query(`DROP TABLE "article_category"`);
 		await queryRunner.query(
 			`COMMENT ON TABLE "system"."account_token" IS NULL`,
 		);
@@ -1338,17 +1402,6 @@ export class Init1786205764796 implements MigrationInterface {
 			`DROP INDEX "system"."IDX_account_token_user_id"`,
 		);
 		await queryRunner.query(`DROP TABLE "system"."account_token"`);
-		await queryRunner.query(`COMMENT ON TABLE "article_content" IS NULL`);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_article_content_deleted_at"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_article_content_unique_per_lang"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_article_content_slug_lang"`,
-		);
-		await queryRunner.query(`DROP TABLE "article_content"`);
 		await queryRunner.query(
 			`COMMENT ON TABLE "system"."account_identity" IS NULL`,
 		);
@@ -1362,22 +1415,19 @@ export class Init1786205764796 implements MigrationInterface {
 		await queryRunner.query(
 			`DROP TYPE "system"."account_identity_provider_enum"`,
 		);
-		await queryRunner.query(`COMMENT ON TABLE "carrier" IS NULL`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_carrier_deleted_at"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_carrier_name"`);
-		await queryRunner.query(`DROP TABLE "carrier"`);
-		await queryRunner.query(`COMMENT ON TABLE "address" IS NULL`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_address_deleted_at"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_address_city_id"`);
-		await queryRunner.query(`DROP TABLE "address"`);
-		await queryRunner.query(`COMMENT ON TABLE "place_content" IS NULL`);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_place_content_deleted_at"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_place_content_unique_per_lang"`,
-		);
-		await queryRunner.query(`DROP TABLE "place_content"`);
+		await queryRunner.query(`COMMENT ON TABLE "term" IS NULL`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_term_deleted_at"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_term_unique"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_term_language"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_term_type"`);
+		await queryRunner.query(`DROP TABLE "term"`);
+		await queryRunner.query(`DROP TYPE "public"."term_type_enum"`);
+		await queryRunner.query(`COMMENT ON TABLE "place" IS NULL`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_place_deleted_at"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_place_code"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_place_parent_id"`);
+		await queryRunner.query(`DROP TABLE "place"`);
+		await queryRunner.query(`DROP TYPE "public"."place_place_type_enum"`);
 		await queryRunner.query(`COMMENT ON TABLE "vendor" IS NULL`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_vendor_deleted_at"`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_vendor_status"`);
@@ -1401,19 +1451,6 @@ export class Init1786205764796 implements MigrationInterface {
 		await queryRunner.query(`DROP TYPE "public"."user_operator_type_enum"`);
 		await queryRunner.query(`DROP TYPE "public"."user_role_enum"`);
 		await queryRunner.query(`DROP TYPE "public"."user_status_enum"`);
-		await queryRunner.query(`COMMENT ON TABLE "place" IS NULL`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_place_deleted_at"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_place_code"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_place_parent_id"`);
-		await queryRunner.query(`DROP TABLE "place"`);
-		await queryRunner.query(`DROP TYPE "public"."place_place_type_enum"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_image_type_id"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_image_storage"`);
-		await queryRunner.query(`DROP TABLE "image"`);
-		await queryRunner.query(`DROP TYPE "public"."image_status_enum"`);
-		await queryRunner.query(`DROP TYPE "public"."image_storage_enum"`);
-		await queryRunner.query(`DROP TYPE "public"."image_image_type_enum"`);
-		await queryRunner.query(`DROP TYPE "public"."image_section_enum"`);
 		await queryRunner.query(`DROP INDEX "logs"."IDX_log_data"`);
 		await queryRunner.query(`DROP INDEX "logs"."IDX_log_data_request_id"`);
 		await queryRunner.query(`DROP INDEX "logs"."IDX_log_data_pid"`);
@@ -1436,45 +1473,14 @@ export class Init1786205764796 implements MigrationInterface {
 		);
 		await queryRunner.query(`DROP TABLE "system"."mail_queue"`);
 		await queryRunner.query(`DROP TYPE "system"."mail_queue_status_enum"`);
+		await queryRunner.query(`COMMENT ON TABLE "place_content" IS NULL`);
 		await queryRunner.query(
-			`COMMENT ON TABLE "system"."permission" IS NULL`,
+			`DROP INDEX "public"."IDX_place_content_deleted_at"`,
 		);
 		await queryRunner.query(
-			`DROP INDEX "system"."IDX_permission_deleted_at"`,
+			`DROP INDEX "public"."IDX_place_content_unique_per_lang"`,
 		);
-		await queryRunner.query(`DROP INDEX "system"."IDX_permission"`);
-		await queryRunner.query(`DROP TABLE "system"."permission"`);
-		await queryRunner.query(`COMMENT ON TABLE "category_content" IS NULL`);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_category_content_deleted_at"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_category_content_category_id_language"`,
-		);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_category_content_slug_language"`,
-		);
-		await queryRunner.query(`DROP TABLE "category_content"`);
-		await queryRunner.query(
-			`DROP TYPE "public"."category_content_type_enum"`,
-		);
-		await queryRunner.query(`COMMENT ON TABLE "image_content" IS NULL`);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_image_content_unique_per_lang"`,
-		);
-		await queryRunner.query(`DROP TABLE "image_content"`);
-		await queryRunner.query(`COMMENT ON TABLE "discount" IS NULL`);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_discount_deleted_at"`,
-		);
-		await queryRunner.query(`DROP INDEX "public"."IDX_discount_active"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_discount_reference"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_discount_reason"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_discount_scope"`);
-		await queryRunner.query(`DROP TABLE "discount"`);
-		await queryRunner.query(`DROP TYPE "public"."discount_type_enum"`);
-		await queryRunner.query(`DROP TYPE "public"."discount_reason_enum"`);
-		await queryRunner.query(`DROP TYPE "public"."discount_scope_enum"`);
+		await queryRunner.query(`DROP TABLE "place_content"`);
 		await queryRunner.query(`COMMENT ON TABLE "client" IS NULL`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_client_deleted_at"`);
 		await queryRunner.query(
@@ -1488,23 +1494,26 @@ export class Init1786205764796 implements MigrationInterface {
 		await queryRunner.query(`DROP TABLE "client"`);
 		await queryRunner.query(`DROP TYPE "public"."client_status_enum"`);
 		await queryRunner.query(`DROP TYPE "public"."client_client_type_enum"`);
-		await queryRunner.query(`COMMENT ON TABLE "category" IS NULL`);
 		await queryRunner.query(
-			`DROP INDEX "public"."IDX_category_deleted_at"`,
-		);
-		await queryRunner.query(`DROP INDEX "public"."IDX_category_type"`);
-		await queryRunner.query(`DROP INDEX "public"."IDX_category_parent_id"`);
-		await queryRunner.query(`DROP TABLE "category"`);
-		await queryRunner.query(`DROP TYPE "public"."category_type_enum"`);
-		await queryRunner.query(`DROP TYPE "public"."category_status_enum"`);
-		await queryRunner.query(`COMMENT ON TABLE "brand_content" IS NULL`);
-		await queryRunner.query(
-			`DROP INDEX "public"."IDX_brand_content_unique_per_lang"`,
+			`COMMENT ON TABLE "system"."permission" IS NULL`,
 		);
 		await queryRunner.query(
-			`DROP INDEX "public"."IDX_brand_content_deleted_at"`,
+			`DROP INDEX "system"."IDX_permission_deleted_at"`,
 		);
-		await queryRunner.query(`DROP TABLE "brand_content"`);
+		await queryRunner.query(`DROP INDEX "system"."IDX_permission"`);
+		await queryRunner.query(`DROP TABLE "system"."permission"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_image_type_id"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_image_storage"`);
+		await queryRunner.query(`DROP TABLE "image"`);
+		await queryRunner.query(`DROP TYPE "public"."image_status_enum"`);
+		await queryRunner.query(`DROP TYPE "public"."image_storage_enum"`);
+		await queryRunner.query(`DROP TYPE "public"."image_image_type_enum"`);
+		await queryRunner.query(`DROP TYPE "public"."image_section_enum"`);
+		await queryRunner.query(`COMMENT ON TABLE "image_content" IS NULL`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_image_content_unique_per_lang"`,
+		);
+		await queryRunner.query(`DROP TABLE "image_content"`);
 		await queryRunner.query(`COMMENT ON TABLE "cash_flow" IS NULL`);
 		await queryRunner.query(
 			`DROP INDEX "public"."IDX_cash_flow_deleted_at"`,
@@ -1554,10 +1563,61 @@ export class Init1786205764796 implements MigrationInterface {
 		await queryRunner.query(
 			`DROP TYPE "public"."operational_record_operational_record_type_enum"`,
 		);
+		await queryRunner.query(`COMMENT ON TABLE "discount" IS NULL`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_discount_deleted_at"`,
+		);
+		await queryRunner.query(`DROP INDEX "public"."IDX_discount_active"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_discount_reference"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_discount_reason"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_discount_scope"`);
+		await queryRunner.query(`DROP TABLE "discount"`);
+		await queryRunner.query(`DROP TYPE "public"."discount_type_enum"`);
+		await queryRunner.query(`DROP TYPE "public"."discount_reason_enum"`);
+		await queryRunner.query(`DROP TYPE "public"."discount_scope_enum"`);
+		await queryRunner.query(`COMMENT ON TABLE "brand_content" IS NULL`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_brand_content_unique_per_lang"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_brand_content_deleted_at"`,
+		);
+		await queryRunner.query(`DROP TABLE "brand_content"`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_brand_deleted_at"`);
 		await queryRunner.query(`DROP INDEX "public"."IDX_brand_slug"`);
 		await queryRunner.query(`DROP TABLE "brand"`);
 		await queryRunner.query(`DROP TYPE "public"."brand_brand_type_enum"`);
 		await queryRunner.query(`DROP TYPE "public"."brand_status_enum"`);
+		await queryRunner.query(`COMMENT ON TABLE "category_content" IS NULL`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_category_content_deleted_at"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_category_content_category_id_language"`,
+		);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_category_content_slug_language"`,
+		);
+		await queryRunner.query(`DROP TABLE "category_content"`);
+		await queryRunner.query(
+			`DROP TYPE "public"."category_content_type_enum"`,
+		);
+		await queryRunner.query(`COMMENT ON TABLE "category" IS NULL`);
+		await queryRunner.query(
+			`DROP INDEX "public"."IDX_category_deleted_at"`,
+		);
+		await queryRunner.query(`DROP INDEX "public"."IDX_category_type"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_category_parent_id"`);
+		await queryRunner.query(`DROP TABLE "category"`);
+		await queryRunner.query(`DROP TYPE "public"."category_type_enum"`);
+		await queryRunner.query(`DROP TYPE "public"."category_status_enum"`);
+		await queryRunner.query(`COMMENT ON TABLE "carrier" IS NULL`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_carrier_deleted_at"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_carrier_name"`);
+		await queryRunner.query(`DROP TABLE "carrier"`);
+		await queryRunner.query(`COMMENT ON TABLE "address" IS NULL`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_address_deleted_at"`);
+		await queryRunner.query(`DROP INDEX "public"."IDX_address_city_id"`);
+		await queryRunner.query(`DROP TABLE "address"`);
 	}
 }
