@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
-import { buildSrcPath } from '@/helpers';
+import { buildSrcPath } from '@/helpers/system.helper';
 
 const filesExtension = process.env.APP_ENV === 'production' ? 'js' : 'ts';
 

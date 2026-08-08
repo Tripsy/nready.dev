@@ -6,7 +6,7 @@ import {
 	getErrorMessage,
 	getFeaturesFilesPathByFolderAndExtension,
 	getFileNameWithoutExtension,
-} from '@/helpers';
+} from '@/helpers/system.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 
 type CleanupFn = () => void;
@@ -33,9 +33,7 @@ async function startWebSocket(filePath: string, server: Server) {
 }
 
 export async function setupWebSockets(server: Server): Promise<void> {
-	const featuresFolder = Configuration.get<string>(
-		'folder.features',
-	) as string;
+	const featuresFolder = Configuration.get('folder.features') as string;
 	const fileExtension = `gateway.${Configuration.resolveExtension()}`;
 
 	const webSocketPaths = getFeaturesFilesPathByFolderAndExtension(

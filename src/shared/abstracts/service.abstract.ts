@@ -1,4 +1,4 @@
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import type { StatusTransitions } from '@/shared/types/common.type';
 

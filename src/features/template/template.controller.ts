@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import TemplateEntity, {
 	TemplateTypeEnum,
 } from '@/features/template/template.entity';
@@ -13,6 +13,7 @@ import {
 } from '@/features/template/template.service';
 import { TemplateValidator } from '@/features/template/template.validator';
 import asyncHandler from '@/helpers/async.handler';
+import { getRouteParam } from '@/helpers/request.helper';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
 
@@ -91,18 +92,25 @@ class TemplateController extends BaseController {
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canUpdate(res.locals.auth);
 
+		/*
+		 * The id is read straight from the route: `validateParamsWhenId('id')` has already
+		 * rejected anything that is not a positive integer. It is needed before validation
+		 * because `type` discriminates the update union and may be absent from the body, so
+		 * the stored value has to fill in for it.
+		 */
+		const existingEntry = await this.templateService.findById(
+			parseInt(getRouteParam(req, 'id') ?? '', 10),
+			false,
+		);
+
 		const data = this.validate(
 			this.validator.update,
 			{
-				...req.body,
-				id: req.params.id,
+				type: req.body.type ?? existingEntry.type, // Because `type` is not required but needed for validation
+				...req.body, // type (DB value will be overwritten by the one in the body if it exists)
+				id: existingEntry.id, // Required by the schema; the path wins over anything in the body
 			},
 			res,
-		);
-
-		const existingEntry = await this.templateService.findById(
-			data.id,
-			false,
 		);
 
 		const entry = await this.templateService.updateData(

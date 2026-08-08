@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import {
 	ImageMimeEnum,
@@ -8,14 +8,14 @@ import {
 	ImageStorageEnum,
 	ImageTypeEnum,
 } from '@/features/image/image.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
 
-export const paramsUpdateList: string[] = [];
+export const paramsUpdateList: string[] = ['contents'];
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -135,9 +135,9 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 					{ message: this.getMessage('duplicate_contents') },
 				),
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
-				params: [...paramsUpdateList, 'contents'].join(', '),
+				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
 		});
@@ -153,7 +153,7 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {

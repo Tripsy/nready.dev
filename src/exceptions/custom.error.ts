@@ -11,7 +11,9 @@ export type HttpStatusCode =
 	| 422 // Unprocessable Content
 	| 425 // Indicates that the server is unwilling to risk processing a request that might be replayed.
 	| 429 // Too Many Requests
-	| 500; // Internal Server Error
+	| 500 // Internal Server Error
+	| 501 // Not Implemented - the request is well-formed, this deployment does not offer the capability (e.g. an unconfigured OAuth provider)
+	| 502; // Bad Gateway - an upstream the server depends on failed (e.g. an identity provider)
 
 export class CustomError extends Error {
 	public statusCode: HttpStatusCode;

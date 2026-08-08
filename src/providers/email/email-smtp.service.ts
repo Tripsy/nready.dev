@@ -1,7 +1,8 @@
 import nodemailer, { type Transporter } from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
+import { getErrorMessage } from '@/helpers/system.helper';
 import type {
 	EmailAddressType,
 	EmailContent,
@@ -54,13 +55,22 @@ export class SmtpEmailService implements EmailService {
 			});
 
 			console.debug(
-				lang('app.email.sent_success', {
+				lang('shared.debug.email_sent', {
 					subject: content.subject,
 					to: to.address,
 				}),
 			);
 		} catch (error) {
-			console.error('SMTP Error:', error);
+			console.error(
+				error,
+				lang('shared.debug.email_error', {
+					subject: content.subject,
+					to: to.address,
+					error: getErrorMessage(error),
+				}),
+			);
+
+			// Re-throw the error so calling code can handle it too
 			throw error;
 		}
 	}

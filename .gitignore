@@ -33,6 +33,11 @@ Thumbs.db
 /logs/
 audit.json
 
+# Agents
+.claude/settings.local.json
+.claude/projects/
+.claude/mcp/node_modules/
+
 # Custom
 /backup/*
 !/backup/.gitkeep

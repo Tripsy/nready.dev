@@ -7,7 +7,7 @@ import {
 	ImageTypeEnum,
 } from '@/features/image/image.entity';
 import { ImageValidator, OrderByEnum } from '@/features/image/image.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const imageValidator = new ImageValidator('image');

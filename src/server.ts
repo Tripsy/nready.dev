@@ -10,7 +10,7 @@ import {
 import { getRoutesInfo } from '@/config/routes.setup';
 import { Configuration } from '@/config/settings.config';
 import { destroyDatabase } from '@/providers/database.provider';
-import { getSystemLogger, LogStream } from '@/providers/logger.provider';
+import { getLogStream, getSystemLogger } from '@/providers/logger.provider';
 import { queueFactory } from '@/queues/queue.factory';
 
 export let server: Server;
@@ -36,7 +36,7 @@ async function start() {
 
 	await new Promise<void>((resolve) => {
 		server = app.listen(appPort, () => {
-			getSystemLogger().info(`Server listening on port ${appPort}`);
+			getSystemLogger().debug(`Server listening on port ${appPort}`);
 			resolve();
 		});
 	});
@@ -117,7 +117,7 @@ export async function closeHandler(): Promise<void> {
 		{ name: 'Redis', fn: redisClose },
 		{ name: 'Queues', fn: () => queueFactory.closeAll() },
 		{ name: 'Database', fn: destroyDatabase },
-		{ name: 'Log streams', fn: () => new LogStream().closeFileStreams() },
+		{ name: 'Log streams', fn: () => getLogStream().close() },
 		{ name: 'WebSockets', fn: () => cleanupWebSockets() },
 	];
 
@@ -137,10 +137,10 @@ export async function closeHandler(): Promise<void> {
 // Print startup info
 function printStartupInfo(): void {
 	const appConfig = {
-		port: Configuration.get('app.port') as string,
-		environment: Configuration.environment() as string,
-		name: Configuration.get('app.name') as string,
-		url: Configuration.get('app.url') as string,
+		port: Configuration.get('app.port'),
+		environment: Configuration.environment(),
+		name: Configuration.get('app.name'),
+		url: Configuration.get('app.url'),
 	};
 
 	if (appConfig.environment === 'test') {

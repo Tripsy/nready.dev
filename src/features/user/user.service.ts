@@ -1,5 +1,5 @@
 import type { DeepPartial } from 'typeorm';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError, NotFoundError } from '@/exceptions';
 import {
 	type AccountTokenService,
@@ -15,7 +15,7 @@ import {
 	paramsUpdateList,
 	type UserValidator,
 } from '@/features/user/user.validator';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
@@ -143,6 +143,21 @@ export class UserService {
 			.createQuery()
 			.filterById(id)
 			.withDeleted(withDeleted)
+			.firstOrFail();
+	}
+
+	/**
+	 * @description Same as `findById`, but with the `password` column loaded.
+	 *
+	 * `password` is declared `select: false`, so the default query never returns it — a
+	 * caller that has to verify a password (or find out whether the account has one at all,
+	 * now that social sign-in accounts may not) must ask for the column explicitly.
+	 */
+	public findByIdWithPassword(id: number): Promise<UserEntity> {
+		return this.repository
+			.createQuery()
+			.select(['id', 'name', 'email', 'language', 'status', 'password'])
+			.filterById(id)
 			.firstOrFail();
 	}
 

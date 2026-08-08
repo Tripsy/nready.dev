@@ -1,7 +1,35 @@
 import type { NextFunction, Request, Response } from 'express';
+import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import { CustomError } from '@/exceptions';
 import { getSystemLogger } from '@/providers/logger.provider';
+
+/**
+ * Decides what the client is allowed to read.
+ *
+ * Anything that is not a `CustomError` reached us unplanned — a TypeORM driver error, a
+ * failed JSON parse, a `TypeError` — and its `message` routinely contains SQL fragments,
+ * file paths or column names. The same holds for deliberate 5xx (`CustomError(500, ...)`),
+ * whose messages describe internal repository state. So every 5xx collapses to one generic
+ * string unless `app.debug` is on; 4xx messages are written for the client and pass through.
+ *
+ * The real error is still logged in full below — masking is a response-shaping concern only.
+ *
+ * Not applied under `test`: the suite runs with `APP_DEBUG=false`, so masking would leave
+ * every failing controller test reporting only `shared.error.server_error` and hide the
+ * actual cause from `withDebugResponse`.
+ */
+function clientMessage(err: Error, status: number): string {
+	if (
+		status < 500 ||
+		Configuration.get('app.debug') ||
+		Configuration.isEnvironment('test')
+	) {
+		return err.message;
+	}
+
+	return lang('shared.error.server_error');
+}
 
 export const errorHandler = (
 	err: Error,
@@ -50,10 +78,14 @@ export const errorHandler = (
 
 	res.status(status);
 
+	const message = clientMessage(err, status);
+
 	if (res.locals?.output) {
-		res.locals.output.message(err.message);
+		res.locals.output.success(false).message(message);
 		res.json(res.locals.output);
 	} else {
-		res.json({ err });
+		// No `outputHandler` yet — the error was thrown before it ran. Hand back the
+		// standard envelope by hand rather than serializing the raw error object.
+		res.json({ success: false, message });
 	}
 };

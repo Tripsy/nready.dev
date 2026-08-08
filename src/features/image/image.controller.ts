@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import ImageEntity from '@/features/image/image.entity';
 import { type ImagePolicy, imagePolicy } from '@/features/image/image.policy';
 import {

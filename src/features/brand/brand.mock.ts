@@ -1,7 +1,7 @@
 import type BrandEntity from '@/features/brand/brand.entity';
 import { BrandStatusEnum, BrandTypeEnum } from '@/features/brand/brand.entity';
 import { BrandValidator, OrderByEnum } from '@/features/brand/brand.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const brandValidator = new BrandValidator('brand');

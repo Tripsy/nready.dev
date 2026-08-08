@@ -4,7 +4,7 @@ import type AccountTokenEntity from '@/features/account/account-token.entity';
 import type { AccountTokenQuery } from '@/features/account/account-token.repository';
 import { AccountTokenService } from '@/features/account/account-token.service';
 import { getUserEntityMock } from '@/features/user/user.mock';
-import { createCurrentDate } from '@/helpers';
+import { createCurrentDate } from '@/helpers/date.helper';
 import { createMockRepository } from '@/tests/jest-service.setup';
 
 /**

@@ -36,7 +36,7 @@ describe('BrandService', () => {
 		const entity = getBrandEntityMock();
 		const createData = brandOutputPayloads.create;
 
-		const { transaction } = setupTransactionMock();
+		const { transaction } = setupTransactionMock(mockBrand.repository);
 
 		mockBrand.repository.save.mockResolvedValue(entity);
 

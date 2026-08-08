@@ -33,7 +33,7 @@ describe('ImageService', () => {
 		const entity = getImageEntityMock();
 		const createData = imageOutputPayloads.create;
 
-		const { transaction } = setupTransactionMock();
+		const { transaction } = setupTransactionMock(mockImage.repository);
 
 		mockImage.repository.save.mockResolvedValue(entity);
 
@@ -49,6 +49,10 @@ describe('ImageService', () => {
 			section: createData.section,
 			entity_id: createData.entity_id,
 			image_type: createData.image_type,
+			storage: createData.storage,
+			path: createData.path,
+			properties: createData.properties,
+			sort_order: createData.sort_order,
 		});
 
 		expect(result).toBe(entity);
@@ -67,20 +71,37 @@ describe('ImageService', () => {
 	);
 
 	it('updateOrder - success', async () => {
-		mockImage.query.count.mockResolvedValue(2);
-
-		const { transaction, manager } = setupTransactionMock();
-
 		const orderData = imageOutputPayloads.orderUpdate;
 
+		const { transaction } = setupTransactionMock(mockImage.repository);
+
+		// The service loads the images by id, rejects the request if any is missing, then
+		// saves them back with their new sort_order — so the builder has to return one
+		// image per requested position.
+		const images = orderData.positions.map((position) => ({
+			...getImageEntityMock(),
+			id: position.id,
+			sort_order: 0,
+		}));
+
+		mockImage.queryBuilder.getMany.mockResolvedValue(images);
+
 		await serviceImage.updateOrder(
-			imageOutputPayloads.orderUpdate.section,
-			imageOutputPayloads.orderUpdate.entity_id,
+			orderData.section,
+			orderData.entity_id,
 			orderData.positions,
 		);
 
 		expect(transaction).toHaveBeenCalled();
-		expect(manager.query).toHaveBeenCalled();
+
+		expect(mockImage.repository.save).toHaveBeenCalledWith(
+			orderData.positions.map((position) =>
+				expect.objectContaining({
+					id: position.id,
+					sort_order: position.sort_order,
+				}),
+			),
+		);
 	});
 
 	testServiceFindById<ImageEntity, ImageQuery>(mockImage.query, serviceImage);
@@ -91,5 +112,8 @@ describe('ImageService', () => {
 		imageInputPayloads.find,
 	);
 
-	testServiceDelete<ImageEntity, ImageQuery>(mockImage.query, serviceImage);
+	// `image` hard-deletes (`.delete(false)`) rather than soft-deleting.
+	testServiceDelete<ImageEntity, ImageQuery>(mockImage.query, serviceImage, [
+		false,
+	]);
 });

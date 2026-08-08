@@ -7,7 +7,7 @@ import {
 	CategoryValidator,
 	OrderByEnum,
 } from '@/features/category/category.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const categoryValidator = new CategoryValidator('category');

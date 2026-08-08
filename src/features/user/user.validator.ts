@@ -4,7 +4,7 @@ import {
 	UserOperatorTypeEnum,
 	UserStatusEnum,
 } from '@/features/user/user.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,
@@ -17,6 +17,7 @@ export const paramsUpdateList: string[] = [
 	'email',
 	'password',
 	'language',
+	'status',
 	'role',
 	'operator_type',
 ];
@@ -55,7 +56,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 					min_chars: this.getMessage('name_min'),
 				},
 				{
-					minChars: Configuration.get('user.nameMinChars') as number,
+					minChars: Configuration.get('user.nameMinChars'),
 				},
 			),
 			email: this.validateEmail(this.getMessage('invalid_email')),
@@ -145,7 +146,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 				},
 				{
 					required: false,
-					minChars: Configuration.get('user.nameMinChars') as number,
+					minChars: Configuration.get('user.nameMinChars'),
 				},
 			),
 			email: this.validateEmail(this.getMessage('invalid_email'), {
@@ -198,7 +199,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 				{ required: false },
 			),
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
@@ -256,7 +257,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {
@@ -265,7 +266,7 @@ export class UserValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
-				minChars: Configuration.get('filter.termMinLength') as number,
+				minChars: Configuration.get('filter.termMinLength'),
 			}),
 			status: this.validateEnum(
 				UserStatusEnum,

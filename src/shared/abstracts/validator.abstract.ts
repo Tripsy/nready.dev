@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import {
 	createCurrentDate,
 	dateDiff,
 	isValidDate,
 	stringToDate,
-} from '@/helpers';
+} from '@/helpers/date.helper';
 
 export const sharedValidatorMessages = [
 	'invalid_enum',
@@ -32,6 +32,7 @@ export const sharedValidatorMessages = [
 	'duplicate_contents',
 	'duplicate_position_ids',
 	'params_at_least_one',
+	'only_positive',
 ] as const;
 
 export abstract class IsValidator {
@@ -44,8 +45,10 @@ export abstract class IsValidator {
 	protected isValidIBAN(iban: string): boolean {
 		const clean = iban.replace(/\s+/g, '').toUpperCase();
 
-		// Must be exactly 24 chars
-		if (!/^RO\d{2}[A-Z]{4}\d{16}$/.test(clean)) {
+		// ISO 13616 registers Romania as RO2!n4!a16!c — two check digits, a four-letter bank
+		// code, then sixteen *alphanumeric* characters. The account part is not digits-only:
+		// the ECBS reference value RO49AAAA1B31007593840000 carries letters there.
+		if (!/^RO\d{2}[A-Z]{4}[A-Z0-9]{16}$/.test(clean)) {
 			return false;
 		}
 
@@ -77,21 +80,65 @@ export abstract class IsValidator {
 	/**
 	 * Checks if the provided phone number is valid.
 	 *
-	 * @param {string} _phoneNumber
+	 * Deliberately an E.164 *shape* check rather than a per-country rule: these numbers
+	 * belong to clients, carriers and CMR contacts who are routinely outside Romania, so
+	 * anything narrower would reject legitimate counterparties. Optional leading `+` then
+	 * 7 to 15 digits — E.164 caps a number at 15, and 7 is the shortest plausible national
+	 * one. A leading trunk zero (0722…) is accepted because that is how numbers are written
+	 * locally.
+	 *
+	 * @param {string} phoneNumber
 	 * @returns {boolean}
 	 */
-	protected isValidPhoneNumber(_phoneNumber: string): boolean {
-		return true;
+	protected isValidPhoneNumber(phoneNumber: string): boolean {
+		// Separators are a presentation choice — numbers get pasted with spaces, dots,
+		// dashes or parentheses — so strip them before looking at the digits.
+		const clean = phoneNumber.replace(/[\s.\-()]/g, '');
+
+		return /^\+?\d{7,15}$/.test(clean);
 	}
 
 	/**
 	 * Checks if the provided CNP is valid.
 	 *
+	 * Verifies the structure that is safe to assume for every CNP — 13 digits, a sex/century
+	 * digit of 1-9, and a real month — plus the control digit, which is what actually catches
+	 * a mistyped number. The birth day and county code are deliberately *not* checked: those
+	 * follow different conventions for CNPs issued to foreign residents, so enforcing them
+	 * risks rejecting valid numbers.
+	 *
 	 * @param {string} cnp
 	 * @returns {boolean}
 	 */
 	protected isValidCNP(cnp: string): boolean {
-		return /^[0-9]{13}$/.test(cnp);
+		if (!/^[0-9]{13}$/.test(cnp)) {
+			return false;
+		}
+
+		// First digit encodes sex and century; 0 is never issued.
+		if (cnp[0] === '0') {
+			return false;
+		}
+
+		const month = Number(cnp.slice(3, 5));
+
+		if (month < 1 || month > 12) {
+			return false;
+		}
+
+		// Control digit: weight the first twelve digits by the national constant, sum, then
+		// take mod 11 — a remainder of 10 stands for a control digit of 1.
+		const controlKey = '279146358279';
+
+		let sum = 0;
+
+		for (let i = 0; i < 12; i++) {
+			sum += Number(cnp[i]) * Number(controlKey[i]);
+		}
+
+		const remainder = sum % 11;
+
+		return (remainder === 10 ? 1 : remainder) === Number(cnp[12]);
 	}
 }
 
@@ -266,13 +313,16 @@ export abstract class BaseValidator<
 		}
 
 		if (options.required) {
-			if (!options?.minChars && !options?.maxChars) {
-				return this.coerceEmpty(
-					baseSchema.min(1, { message: message.invalid }),
-				) as z.ZodType<string>;
-			} else {
-				return this.coerceEmpty(baseSchema) as z.ZodType<string>;
-			}
+			/*
+			 * A required field has to reject the empty string, and only `minChars` implies
+			 * that on its own — `maxChars` does not. Key the guard off `minChars` alone, so
+			 * that `{ required: true, maxChars: n }` cannot quietly accept ''.
+			 */
+			const requiredSchema = options.minChars
+				? baseSchema
+				: baseSchema.min(1, { message: message.invalid });
+
+			return this.coerceEmpty(requiredSchema) as z.ZodType<string>;
 		}
 
 		return this.preprocessOptional(baseSchema) as z.ZodType<
@@ -360,7 +410,20 @@ export abstract class BaseValidator<
 		};
 
 		if (options.onlyPositive) {
-			defaultMessages.onlyPositive = 'Must be a positive number';
+			/*
+			 * Resolved from the shared namespace rather than hardcoded, so all ~57 call sites
+			 * get a translated message without each having to pass one. Read directly through
+			 * `lang` instead of `this.getMessage`: the key lives in `sharedValidatorMessages`,
+			 * but from inside this class TypeScript cannot prove it is a member of the
+			 * entity's own `TMessage`.
+			 *
+			 * The key has to match how it is read below (`message.only_positive`). Get that
+			 * wrong and the default silently never resolves — Zod falls back to its own
+			 * untranslated "Too small: expected number to be >0".
+			 */
+			defaultMessages.only_positive = lang(
+				'shared.validation.only_positive',
+			);
 		}
 
 		if (options.allowDecimals < 1) {
@@ -855,13 +918,6 @@ export abstract class BaseValidator<
 			return hours * 60 + minutes;
 		};
 
-		const formatMinutesToTime = (minutes: number): string => {
-			const hours = Math.floor(minutes / 60);
-			const mins = minutes % 60;
-
-			return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-		};
-
 		let baseSchema = z.string({ message: message.invalid });
 
 		// Validate format (HH:MM)
@@ -920,36 +976,22 @@ export abstract class BaseValidator<
 			);
 		}
 
-		// Optional step to round to nearest interval if needed
-		const timeSchema =
-			options.minuteInterval && options.minuteInterval > 1
-				? baseSchema.transform((val) => {
-						const minutes = parseTimeToMinutes(val);
-
-						if (minutes === null) {
-							return val;
-						}
-
-						// Round to nearest interval
-						const remainder = minutes % options.minuteInterval;
-
-						if (remainder === 0) {
-							return val;
-						}
-
-						const roundedMinutes = minutes - remainder;
-
-						return formatMinutesToTime(roundedMinutes);
-					})
-				: baseSchema;
+		/*
+		 * A time off the interval is rejected, not rounded onto it — the `minuteInterval`
+		 * refinement above enforces that, so nothing downstream ever needs to snap a value.
+		 * Rounding instead means dropping that refinement first; adding a transform alongside
+		 * it is dead code, since no value that fails it gets this far.
+		 */
+		const timeSchema = baseSchema;
 
 		if (options.required) {
 			return this.coerceEmpty(timeSchema) as z.ZodType<string>;
 		}
 
-		const optionalSchema = timeSchema
-			.transform((val) => (val === '' ? undefined : val))
-			.optional();
+		// `.optional()` is enough on its own: the refinements above reject the empty string,
+		// and form values arrive as null (getFormDataAsString), which coerceEmpty already
+		// maps to the empty value. A '' -> undefined transform here would never fire.
+		const optionalSchema = timeSchema.optional();
 
 		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
@@ -1211,9 +1253,10 @@ export abstract class BaseValidator<
 			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
-		const optionalSchema = baseSchema
-			.transform((val) => (val === '' ? undefined : val))
-			.optional();
+		// `.optional()` is enough on its own: the refinements above reject the empty string,
+		// and form values arrive as null (getFormDataAsString), which coerceEmpty already
+		// maps to the empty value. A '' -> undefined transform here would never fire.
+		const optionalSchema = baseSchema.optional();
 
 		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
@@ -1250,9 +1293,10 @@ export abstract class BaseValidator<
 			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
-		const optionalSchema = baseSchema
-			.transform((val) => (val === '' ? undefined : val))
-			.optional();
+		// `.optional()` is enough on its own: the refinements above reject the empty string,
+		// and form values arrive as null (getFormDataAsString), which coerceEmpty already
+		// maps to the empty value. A '' -> undefined transform here would never fire.
+		const optionalSchema = baseSchema.optional();
 
 		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
@@ -1289,9 +1333,10 @@ export abstract class BaseValidator<
 			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
-		const optionalSchema = baseSchema
-			.transform((val) => (val === '' ? undefined : val))
-			.optional();
+		// `.optional()` is enough on its own: the refinements above reject the empty string,
+		// and form values arrive as null (getFormDataAsString), which coerceEmpty already
+		// maps to the empty value. A '' -> undefined transform here would never fire.
+		const optionalSchema = baseSchema.optional();
 
 		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
@@ -1328,9 +1373,10 @@ export abstract class BaseValidator<
 			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
-		const optionalSchema = baseSchema
-			.transform((val) => (val === '' ? undefined : val))
-			.optional();
+		// `.optional()` is enough on its own: the refinements above reject the empty string,
+		// and form values arrive as null (getFormDataAsString), which coerceEmpty already
+		// maps to the empty value. A '' -> undefined transform here would never fire.
+		const optionalSchema = baseSchema.optional();
 
 		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}
@@ -1367,9 +1413,10 @@ export abstract class BaseValidator<
 			return this.coerceEmpty(baseSchema) as z.ZodType<string>;
 		}
 
-		const optionalSchema = baseSchema
-			.transform((val) => (val === '' ? undefined : val))
-			.optional();
+		// `.optional()` is enough on its own: the refinements above reject the empty string,
+		// and form values arrive as null (getFormDataAsString), which coerceEmpty already
+		// maps to the empty value. A '' -> undefined transform here would never fire.
+		const optionalSchema = baseSchema.optional();
 
 		return this.coerceEmpty(optionalSchema) as z.ZodType<string | TEmpty>;
 	}

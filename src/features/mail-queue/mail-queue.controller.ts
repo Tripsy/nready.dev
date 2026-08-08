@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { eventEmitter } from '@/config/event.config';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import MailQueueEntity from '@/features/mail-queue/mail-queue.entity';
 import {
 	type MailQueuePolicy,

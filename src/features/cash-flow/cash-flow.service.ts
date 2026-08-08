@@ -1,6 +1,6 @@
 import type { DeepPartial } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import { BadRequestError, CustomError } from '@/exceptions';
 import CashFlowEntity, {
@@ -34,7 +34,7 @@ import {
 import { getOperationalRecordRepository } from '@/features/cash-flow/operational-record.repository';
 import { clientService } from '@/features/client/client.service';
 import { vendorService } from '@/features/vendor/vendor.service';
-import { arrayHasValue, pickValuesFromObject } from '@/helpers';
+import { arrayHasValue, pickValuesFromObject } from '@/helpers/objects.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 

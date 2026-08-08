@@ -4,12 +4,14 @@ import {
 	CategoryStatusEnum,
 	CategoryTypeEnum,
 } from '@/features/category/category.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
+
+export const paramsUpdateList: string[] = ['parent_id', 'contents'];
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -78,9 +80,9 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			contents: this.contentsSchema().array().optional(),
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
-				params: ['parent_id', 'contents'].join(', '),
+				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
 		});
@@ -100,7 +102,7 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {
@@ -123,7 +125,7 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 			),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
-				minChars: Configuration.get('filter.termMinLength') as number,
+				minChars: Configuration.get('filter.termMinLength'),
 			}),
 			is_deleted: this.validateBoolean(
 				this.getMessage('invalid_boolean'),

@@ -1,5 +1,5 @@
 import { NotAllowedError, UnauthorizedError } from '@/exceptions';
-import { toKebabCase } from '@/helpers';
+import { toKebabCase } from '@/helpers/string.helper';
 import type {
 	AuthContext,
 	AuthContextPermissions,

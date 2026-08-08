@@ -14,10 +14,7 @@ export class TemplateQuery extends RepositoryAbstract<TemplateEntity> {
 			if (!Number.isNaN(Number(term)) && term.trim() !== '') {
 				this.filterBy('id', Number(term));
 			} else {
-				if (
-					term.length >
-					(Configuration.get('filter.termMinLength') as number)
-				) {
+				if (term.length > Configuration.get('filter.termMinLength')) {
 					this.filterAny([
 						{
 							column: 'label',

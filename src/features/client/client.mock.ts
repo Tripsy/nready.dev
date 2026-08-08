@@ -8,7 +8,7 @@ import {
 	ClientValidator,
 	OrderByEnum,
 } from '@/features/client/client.validator';
-import { createPastDate, formatDate } from '@/helpers';
+import { createPastDate, formatDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const clientValidator = new ClientValidator('client');

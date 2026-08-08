@@ -1,13 +1,13 @@
-import { initializeI18next } from '@/config/i18n.setup';
 import { initQueues } from '@/config/init-queue.config';
 import { setupListeners } from '@/config/listeners.setup';
+import { initializeMessages } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import startCronJobs from '@/providers/cron.provider';
 import { initDatabase } from '@/providers/database.provider';
 
 // Validate critical configuration
 function validateConfig(): void {
-	const required = ['app.port'];
+	const required = ['app.port'] as const;
 	const missing = required.filter((key) => !Configuration.get(key));
 
 	if (missing.length > 0) {
@@ -26,7 +26,7 @@ function validateConfig(): void {
 export async function bootstrap(): Promise<void> {
 	validateConfig();
 
-	await initializeI18next();
+	await initializeMessages();
 
 	if (!Configuration.isEnvironment('test')) {
 		await initDatabase();

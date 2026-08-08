@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
+import { AccountIdentityProviderEnum } from '@/features/account/account-identity.entity';
 import {
 	BaseValidator,
 	sharedValidatorMessages,
@@ -24,6 +25,9 @@ const validatorMessages = [
 	'invalid_ident',
 	'invalid_token',
 	'invalid_password_current',
+	'invalid_oauth_provider',
+	'invalid_oauth_code',
+	'invalid_oauth_redirect_uri',
 ] as const;
 
 export class AccountValidator extends BaseValidator<typeof validatorMessages> {
@@ -36,7 +40,7 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 				},
 				{
 					required: true,
-					minChars: Configuration.get('user.nameMinChars') as number,
+					minChars: Configuration.get('user.nameMinChars'),
 				},
 			),
 			email: this.validateEmail(this.getMessage('invalid_email')),
@@ -84,6 +88,29 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 	readonly login = z.object({
 		email: this.validateEmail(this.getMessage('invalid_email')),
 		password: this.validateString(this.getMessage('invalid_password')),
+	});
+
+	/**
+	 * `provider` arrives as a route param, `code`/`redirect_uri` in the body — the
+	 * controller merges both before validating.
+	 */
+	readonly oauthLogin = z.object({
+		provider: z.enum(AccountIdentityProviderEnum, {
+			message: this.getMessage('invalid_oauth_provider'),
+		}),
+		code: this.validateString(this.getMessage('invalid_oauth_code')),
+		redirect_uri: this.validateString(
+			this.getMessage('invalid_oauth_redirect_uri'),
+		),
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}),
+	});
+
+	readonly oauthUnlink = z.object({
+		provider: z.enum(AccountIdentityProviderEnum, {
+			message: this.getMessage('invalid_oauth_provider'),
+		}),
 	});
 
 	readonly passwordRecover = z.object({
@@ -196,7 +223,7 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 			},
 			{
 				required: true,
-				minChars: Configuration.get('user.nameMinChars') as number,
+				minChars: Configuration.get('user.nameMinChars'),
 			},
 		),
 		language: this.validateLanguage(this.getMessage('invalid_language'), {
@@ -204,9 +231,15 @@ export class AccountValidator extends BaseValidator<typeof validatorMessages> {
 		}),
 	});
 
+	/**
+	 * `password_current` is optional at the schema level because a social sign-in account
+	 * has none to send. The controller still requires it whenever the account does have a
+	 * password — the check needs the user row, which is not available here.
+	 */
 	readonly meDelete = z.object({
 		password_current: this.validateString(
 			this.getMessage('invalid_password_current'),
+			{ required: false },
 		),
 	});
 }

@@ -23,10 +23,7 @@ export class UserQuery extends RepositoryAbstract<UserEntity> {
 			if (!Number.isNaN(Number(term)) && term.trim() !== '') {
 				this.filterBy('id', Number(term));
 			} else {
-				if (
-					term.length >
-					(Configuration.get('filter.termMinLength') as number)
-				) {
+				if (term.length > Configuration.get('filter.termMinLength')) {
 					this.filterAny([
 						{
 							column: 'name',

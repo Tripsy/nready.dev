@@ -1,5 +1,5 @@
 import type { DeepPartial } from 'typeorm';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import type ClientEntity from '@/features/client/client.entity';
 import {
@@ -14,7 +14,7 @@ import {
 	type ClientValidator,
 	paramsUpdateList,
 } from '@/features/client/client.validator';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 

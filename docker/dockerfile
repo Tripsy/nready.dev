@@ -1,4 +1,4 @@
-FROM node:22
+FROM node:24
 
 WORKDIR /var/www/html
 
@@ -11,13 +11,15 @@ ENV SHELL=/bin/bash
 # Install pnpm
 RUN wget -qO- https://get.pnpm.io/install.sh | sh -
 
-# Update PATH to include pnpm
-ENV PATH="/root/.local/share/pnpm:$PATH"
+# pnpm 11 puts its binaries in $PNPM_HOME/bin; pnpm 10 and earlier put them directly in
+# $PNPM_HOME. Both are on PATH so the image builds either way.
+ENV PNPM_HOME="/root/.local/share/pnpm"
+ENV PATH="$PNPM_HOME/bin:$PNPM_HOME:$PATH"
 
 # Init
 RUN pnpm init
 
-# Expose port 3000 (or any port your app runs on)
+# Dev port, matching the mapping in docker-compose.yml. Production runs on 80.
 EXPOSE 3000
 
 # Define the command to run your application

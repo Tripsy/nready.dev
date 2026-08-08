@@ -1,4 +1,4 @@
-import type { DeepPartial, Repository } from 'typeorm';
+import type { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { Configuration } from '@/config/settings.config';
 import AccountRecoveryEntity from '@/features/account/account-recovery.entity';
@@ -7,7 +7,8 @@ import {
 	getAccountRecoveryRepository,
 } from '@/features/account/account-recovery.repository';
 import type UserEntity from '@/features/user/user.entity';
-import { createFutureDate, type TokenMetadata } from '@/helpers';
+import { createCurrentDate, createFutureDate } from '@/helpers/date.helper';
+import type { TokenMetadata } from '@/helpers/meta-data.helper';
 
 export class AccountRecoveryService {
 	constructor(
@@ -17,12 +18,17 @@ export class AccountRecoveryService {
 	) {}
 
 	/**
-	 * @description Update any data
+	 * @description Marks a recovery token as redeemed
+	 *
+	 * Deliberately `repository.update` rather than `save`: `save` resolves a partial by
+	 * primary key and falls back to an INSERT when no such row exists, which is how a
+	 * successful recovery once ended as a not-null violation on `user_id`. `update` issues
+	 * a plain `UPDATE ... WHERE id = ?` and is a no-op when the row is gone.
 	 */
-	public update(
-		data: DeepPartial<AccountRecoveryEntity> & { id: number },
-	): Promise<AccountRecoveryEntity> {
-		return this.accountRecoveryRepository.save(data);
+	public async markAsUsed(id: number): Promise<void> {
+		await this.accountRecoveryRepository.update(id, {
+			used_at: createCurrentDate(),
+		});
 	}
 
 	/**
@@ -34,7 +40,7 @@ export class AccountRecoveryService {
 	): Promise<[string, Date]> {
 		const ident: string = uuid();
 		const expire_at = createFutureDate(
-			Configuration.get('user.recoveryIdentExpiresIn') as number,
+			Configuration.get('user.recoveryIdentExpiresIn'),
 		);
 
 		const accountRecoveryEntity = new AccountRecoveryEntity();
@@ -49,13 +55,26 @@ export class AccountRecoveryService {
 	}
 
 	/**
-	 * @description Removes all recovery tokens for a user
+	 * @description Removes the recovery tokens of a user
+	 *
+	 * `exceptId` keeps a single row alive — the one being redeemed, so a second click on
+	 * the same link can still be told it was already used instead of falling through to a
+	 * bare "not authorized". The cron in `clean-account-recovery.cron.ts` prunes it once it
+	 * is 30 days past expiry.
 	 */
-	public async removeAccountRecoveryForUser(user_id: number): Promise<void> {
-		await this.accountRecoveryRepository
+	public async removeAccountRecoveryForUser(
+		user_id: number,
+		exceptId?: number,
+	): Promise<void> {
+		const query = this.accountRecoveryRepository
 			.createQuery()
-			.filterBy('user_id', user_id)
-			.delete(false, true);
+			.filterBy('user_id', user_id);
+
+		if (exceptId) {
+			query.filterBy('id', exceptId, '!=');
+		}
+
+		await query.delete(false, true);
 	}
 
 	public async countRecoveryAttempts(user_id: number, sinceDate: Date) {

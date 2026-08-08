@@ -14,10 +14,7 @@ export class PlaceQuery extends RepositoryAbstract<PlaceEntity> {
 			if (!Number.isNaN(Number(term)) && term.trim() !== '') {
 				this.filterBy('place.id', Number(term));
 			} else {
-				if (
-					term.length >
-					(Configuration.get('filter.termMinLength') as number)
-				) {
+				if (term.length > Configuration.get('filter.termMinLength')) {
 					this.filterRaw(
 						`to_tsvector('simple', COALESCE(content.name, '')) @@ to_tsquery('simple', :term || ':*')`,
 						{ term: this.prepareTsTerm(term) },

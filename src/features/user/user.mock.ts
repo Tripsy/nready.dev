@@ -1,7 +1,7 @@
 import type UserEntity from '@/features/user/user.entity';
 import { UserStatusEnum } from '@/features/user/user.entity';
 import { OrderByEnum, userValidator } from '@/features/user/user.validator';
-import { createPastDate, formatDate } from '@/helpers';
+import { createPastDate, formatDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
 

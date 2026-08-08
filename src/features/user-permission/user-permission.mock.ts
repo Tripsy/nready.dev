@@ -3,7 +3,7 @@ import {
 	OrderByEnum,
 	UserPermissionValidator,
 } from '@/features/user-permission/user-permission.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const userPermissionValidator = new UserPermissionValidator('user_permission');

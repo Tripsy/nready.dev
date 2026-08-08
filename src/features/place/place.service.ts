@@ -1,5 +1,5 @@
 import dataSource from '@/config/data-source.config';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import PlaceEntity, {
 	type PlaceType,
@@ -11,7 +11,7 @@ import {
 	paramsUpdateList,
 } from '@/features/place/place.validator';
 import PlaceContentRepository from '@/features/place/place-content.repository';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class PlaceService {

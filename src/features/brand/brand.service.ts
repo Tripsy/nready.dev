@@ -1,6 +1,6 @@
 import type { DeepPartial } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import BrandEntity, {
 	type BrandStatus,
@@ -14,7 +14,7 @@ import {
 	paramsUpdateList,
 } from '@/features/brand/brand.validator';
 import BrandContentRepository from '@/features/brand/brand-content.repository';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 

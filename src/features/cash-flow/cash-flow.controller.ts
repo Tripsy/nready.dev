@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import CashFlowEntity from '@/features/cash-flow/cash-flow.entity';
 import {
@@ -113,7 +113,15 @@ class CashFlowController extends BaseController {
 	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
-		const data = this.validate(this.validator.delete, req.query, res);
+		// `id` comes from the path (`/:id`), `force` from the query string.
+		const data = this.validate(
+			this.validator.delete,
+			{
+				...req.query,
+				id: req.params.id,
+			},
+			res,
+		);
 
 		await this.cashFlowService.delete(data.id, data.force);
 

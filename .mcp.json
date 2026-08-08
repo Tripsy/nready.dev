@@ -1,0 +1,18 @@
+{
+	"mcpServers": {
+		"postgres": {
+			"command": "node",
+			"args": [
+				".claude/mcp/node_modules/tsx/dist/cli.mjs",
+				".claude/mcp/src/postgres/index.ts"
+			]
+		},
+		"redis": {
+			"command": "node",
+			"args": [
+				".claude/mcp/node_modules/tsx/dist/cli.mjs",
+				".claude/mcp/src/redis/index.ts"
+			]
+		}
+	}
+}

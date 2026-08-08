@@ -1,0 +1,78 @@
+{
+	"env": {
+		"DOCKER_CONTAINER": "nready",
+		"USER_NAME": "David Gabriel"
+	},
+	"attribution": {
+		"commit": "",
+		"pr": ""
+	},
+	"hooks": {
+		"PreToolUse": [
+			{
+				"matcher": "Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"if": "Bash(git commit:*)",
+						"command": "b=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); if [ \"$b\" = \"main\" ]; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Refusing to commit on main: GitHub rejects a direct push, so the commit would have to be moved off. Run: git switch -c <type>/<short-name>\"}}'; fi",
+						"statusMessage": "Checking branch"
+					}
+				]
+			}
+		]
+	},
+	"permissions": {
+		"additionalDirectories": ["../star-api"],
+		"allow": [
+			"Bash(git add:*)",
+			"Bash(git status:*)",
+			"Bash(git diff:*)",
+			"Bash(git commit:*)",
+			"Bash(git log:*)",
+			"Bash(git show:*)",
+			"Bash(git ls-files:*)",
+			"Bash(git check-ignore:*)",
+			"Bash(git rev-parse:*)",
+			"Bash(git branch:*)",
+			"Bash(git --no-pager log:*)",
+			"Bash(git --no-pager diff:*)",
+			"Bash(git --no-pager show:*)",
+			"Bash(docker exec $DOCKER_CONTAINER pnpm run biome)",
+			"Bash(docker inspect:*)",
+			"Bash(docker cp:*)",
+			"Bash(cat:*)",
+			"Bash(ls:*)",
+			"Bash(grep:*)",
+			"Bash(rg:*)",
+			"Bash(find:*)",
+			"Bash(head:*)",
+			"Bash(tail:*)",
+			"Bash(wc:*)",
+			"Bash(sed -n:*)",
+			"Bash(awk:*)",
+			"Bash(cd:*)",
+			"Bash(pwd:*)",
+			"Bash(du:*)",
+			"Bash(df:*)",
+			"Bash(file:*)",
+			"Bash(stat:*)",
+			"Bash(which:*)",
+			"Bash(tr:*)",
+			"Bash(sort:*)",
+			"Bash(uniq:*)",
+			"Bash(diff:*)",
+			"Bash(basename:*)",
+			"Bash(dirname:*)",
+			"Bash(echo:*)",
+			"WebSearch"
+		],
+		"deny": [
+			"Bash(find * -delete*)",
+			"Bash(find * -exec*)",
+			"Bash(find * -execdir*)",
+			"Bash(git push:*)",
+			"Bash(rm:*)"
+		]
+	}
+}

@@ -3,7 +3,7 @@ import { Configuration } from '@/config/settings.config';
 import { NotAllowedError } from '@/exceptions';
 
 const allowedOrigins = new Set(
-	(Configuration.get('security.allowedOrigins') as string[]) || [],
+	Configuration.get('security.allowedOrigins') || [],
 );
 
 export const corsHandler = cors({

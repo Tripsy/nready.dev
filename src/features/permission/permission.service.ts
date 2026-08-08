@@ -1,4 +1,4 @@
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import type PermissionEntity from '@/features/permission/permission.entity';
 import { getPermissionRepository } from '@/features/permission/permission.repository';

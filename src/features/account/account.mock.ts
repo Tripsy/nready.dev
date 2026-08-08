@@ -2,7 +2,7 @@ import type { ConfirmationTokenPayload } from '@/features/account/account.servic
 import type AccountRecoveryEntity from '@/features/account/account-recovery.entity';
 import type AccountTokenEntity from '@/features/account/account-token.entity';
 import type { AuthValidToken } from '@/features/account/account-token.service';
-import { createFutureDate, createPastDate } from '@/helpers';
+import { createFutureDate, createPastDate } from '@/helpers/date.helper';
 import { mockUuid } from '@/tests/mocks/helpers.mock';
 
 export function getAccountTokenMock(): AccountTokenEntity {
@@ -67,10 +67,23 @@ export const accountInputPayloads = {
 		email: 'john.doe@example.com',
 		password: 'Secure@123',
 	},
+	oauthLogin: {
+		// The controller merges `provider` from the path before validating.
+		provider: 'google',
+		code: 'provider_authorization_code',
+		redirect_uri: 'http://dashboard.test/auth/callback/google',
+		language: 'en',
+	},
+	oauthUnlink: {
+		provider: 'google',
+	},
 	passwordRecover: {
 		email: 'john.doe@example.com',
 	},
 	passwordRecoverChange: {
+		// The controller merges `ident` from the path before validating, so the payload
+		// the validator sees always carries it.
+		ident: mockUuid(),
 		password: 'Secure@123',
 		password_confirm: 'Secure@123',
 	},

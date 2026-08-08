@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { z } from 'zod';
+import { Configuration } from '@/config/settings.config';
 
 type OutputData = Record<string, unknown>;
 type ZodIssue = z.core.$ZodIssue;
@@ -10,7 +11,7 @@ interface OutputWrapperInterface {
 	errors: Array<ZodIssue | OutputData>;
 	data: OutputData;
 	meta: OutputData;
-	request: {
+	request?: {
 		url: string;
 		headers: OutputData;
 		method: string;
@@ -128,6 +129,19 @@ export class OutputWrapper {
 				Object.keys(filteredResult.meta).length === 0
 			) {
 				delete filteredResult.meta;
+			}
+
+			/*
+			 * The echoed request is a debugging aid only. `headers` carries the
+			 * `Authorization` bearer token and the cookie jar, so outside debug it is
+			 * dropped wholesale rather than field-by-field — reflecting credentials back
+			 * to the client (and into any log or error reporter that captures the
+			 * response body) is a leak, not a convenience.
+			 */
+			if (!Configuration.get('app.debug')) {
+				delete filteredResult.request;
+
+				return filteredResult as OutputWrapperInterface;
 			}
 
 			if (

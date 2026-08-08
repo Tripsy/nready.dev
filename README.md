@@ -227,9 +227,12 @@ $ pnpm run test --testTimeout=60000
 $ pnpm run test account.functional.ts --testTimeout=60000 --detectOpenHandles
 $ pnpm run test account.unit.ts --detect-open-handles
 
-// Code sanity
+// Code sanity (lint, format, circular dependencies)
 $ pnpm run biome
-$ pnpm run madge
+
+// Production build (-> dist/src) and run it
+$ pnpm run build
+$ pnpm run start
 
 // CLI
 $ pnpx tsx cli/cron.ts list -s  
@@ -285,23 +288,22 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 │   └── bootstrap.ts          
 │   └── server.ts          
 ├── .env
-├── .madgerc
 ├── biome.json
 ├── docker-compose.yml
 ├── package.json
 ├── pnpm-lock.yaml
+├── tsconfig.build.json
 ├── jest.config.js
 └── tsconfig.json
 ```
 
 # 📌 TODO
 
-1. pnpm run madge
-2. Category needs ordering too
-3. Go on FE → category
-4. Deploy on AWS
-5. API documentation (`done` for discounts)
-6. create CLI script which should generate something like:
+1. Category needs ordering too
+2. Go on FE → category
+3. Deploy on AWS
+4. API documentation (`done` for discounts)
+5. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -323,9 +325,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
     }
-7. Tests for account-recovery.service.ts are missing 
-8. Go on FE #2 → carrier, discount,
-9. Prepared entities:
+6. Go on FE #2 → carrier, discount,
+7. Prepared entities:
     - article
         - article-category
         - article-content
@@ -344,8 +345,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - subscription
         - subscription-evidence
     - term
-10. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-11. cron hanging / delaying / semaphore 
+8. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+9. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     
@@ -370,6 +371,6 @@ Dev only:
 - [typescript](https://www.typescriptlang.org/) 
 - [jest](https://jestjs.io/) — JavaScript testing framework
 - [supertest](https://www.npmjs.com/package/supertest) — HTTP assertion library for testing Node.js servers
-- [madge](https://github.com/pahen/madge) — Helps finding circular dependencies
 - [mailtrap](https://github.com/mailtrap/mailtrap-nodejs) — Mailtrap client for Node.js
+- [tsc-alias](https://github.com/justkey007/tsc-alias) — Rewrites the `@/*` alias to relative paths in the build output
 - [biome](https://biomejs.dev/) — Biome is a fast formatter for JavaScript, TypeScript, JSX, TSX, JSON, HTML, CSS and GraphQL 

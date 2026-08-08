@@ -3,7 +3,7 @@ import {
 	CarrierValidator,
 	OrderByEnum,
 } from '@/features/carrier/carrier.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const carrierValidator = new CarrierValidator('carrier');
@@ -13,7 +13,7 @@ export function getCarrierEntityMock(): CarrierEntity {
 		id: 1,
 		name: 'Fun Drive',
 		website: 'http://www.fundrive.dev',
-		phone: '12345',
+		phone: '0722123456',
 		email: 'fundrive@sample.com',
 		notes: 'Test carrier entry',
 		created_at: createPastDate(28800),
@@ -26,7 +26,7 @@ export const carrierInputPayloads = {
 	create: {
 		name: 'Fun Drive',
 		website: 'http://www.fundrive.dev',
-		phone: '12345',
+		phone: '0722123456',
 		email: 'fundrive@sample.com',
 		notes: 'Test carrier entry',
 	},
@@ -34,7 +34,7 @@ export const carrierInputPayloads = {
 		id: 1,
 		name: 'Fun Drive Update',
 		website: 'http://www.fundrive.dev',
-		phone: '12345',
+		phone: '0722123456',
 		email: 'fundrive@sample.com',
 		notes: 'Test carrier entry',
 	},

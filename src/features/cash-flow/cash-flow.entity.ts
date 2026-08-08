@@ -14,7 +14,7 @@ import {
 	CashFlowCategoryEnum,
 } from '@/features/cash-flow/cash-flow-category.enum';
 import OperationalRecordEntity from '@/features/cash-flow/operational-record.entity';
-import { arrayHasValue } from '@/helpers';
+import { arrayHasValue } from '@/helpers/objects.helper';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 import type { StatusTransitions } from '@/shared/types/common.type';

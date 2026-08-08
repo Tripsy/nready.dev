@@ -2,13 +2,14 @@ import {
 	eventEmitter,
 	type LogHistoryEventPayload,
 } from '@/config/event.config';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import {
 	RequestContextSourceEnum,
 	requestContext,
 } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
 import { getLogHistoryRepository } from '@/features/log-history/log-history.repository';
+import { runInBackground } from '@/helpers/background.helper';
 import { getHistoryLogger } from '@/providers/logger.provider';
 import {
 	LogHistoryActionEnum,
@@ -55,15 +56,18 @@ export default function registerLogHistoryListener() {
 			}
 
 			case 'db': {
-				void getLogHistoryRepository().createLogs(
-					payload.entity,
-					payload.entity_ids,
-					payload.action,
-					ctx?.auth_id || null,
-					ctx?.performed_by || 'unknown',
-					ctx?.request_id || 'unknown',
-					ctx?.source || RequestContextSourceEnum.UNKNOWN,
-					payload.data,
+				runInBackground(
+					getLogHistoryRepository().createLogs(
+						payload.entity,
+						payload.entity_ids,
+						payload.action,
+						ctx?.auth_id || null,
+						ctx?.performed_by || 'unknown',
+						ctx?.request_id || 'unknown',
+						ctx?.source || RequestContextSourceEnum.UNKNOWN,
+						payload.data,
+					),
+					`Failed to write history for ${payload.entity} ${payload.entity_ids.join(', ')}`,
 				);
 
 				break;

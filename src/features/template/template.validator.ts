@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import { TemplateTypeEnum } from '@/features/template/template.entity';
-import { hasAtLeastOneValue, safeHtml } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
+import { safeHtml } from '@/helpers/string.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,
@@ -14,6 +15,20 @@ export const paramsUpdateList: string[] = [
 	'type',
 	'content',
 ];
+
+/*
+ * `type` discriminates the update union, so the controller fills it in from the stored row
+ * whenever the body omits it — by the time the schema runs it is always present, and counting
+ * it would defeat the empty-update check exactly as `id` would. It stays in
+ * `paramsUpdateList` because it is genuinely updatable and the message should say so.
+ *
+ * The cost is that an update carrying *only* `type` is rejected. That is not a real loss:
+ * switching a template between email and page means sending the matching `content` too, and
+ * that is counted.
+ */
+const paramsUpdateCheckList = paramsUpdateList.filter(
+	(param) => param !== 'type',
+);
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -164,7 +179,7 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 				})
 				.extend(this.baseUpdateSchema),
 		])
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateCheckList), {
 			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
@@ -186,7 +201,7 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {
@@ -195,7 +210,7 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
-				minChars: Configuration.get('filter.termMinLength') as number,
+				minChars: Configuration.get('filter.termMinLength'),
 			}),
 			language: this.validateLanguage(
 				this.getMessage('invalid_language'),

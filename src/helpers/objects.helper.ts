@@ -22,11 +22,13 @@ export function getObjectValue(
 	key: string,
 ): ObjectValue | undefined {
 	return key.split('.').reduce<ObjectValue | undefined>((acc, part) => {
+		// `Object.hasOwn` rather than `in`: `in` walks the prototype chain, so a path segment
+		// like `constructor` or `toString` would resolve to a built-in instead of missing.
 		if (
 			acc &&
 			typeof acc === 'object' &&
 			!Array.isArray(acc) &&
-			part in acc
+			Object.hasOwn(acc, part)
 		) {
 			return (acc as { [key: string]: ObjectValue })[part];
 		}
@@ -74,20 +76,53 @@ export function setObjectValue(
 }
 
 /**
- * Check if an object has at least one not `undefined` value
+ * A plain `{}` or an object with a null prototype — something whose contents live in its own
+ * enumerable properties. A `Date`, `RegExp` or class instance is not: its value is internal
+ * state, so `Object.values()` on one returns `[]`.
+ */
+function isPlainObject(value: object): boolean {
+	const prototype = Object.getPrototypeOf(value);
+
+	return prototype === Object.prototype || prototype === null;
+}
+
+/**
+ * Check if an object has at least one not `undefined` value.
  *
  * @param {unknown} obj - The object to check
+ * @param {readonly string[]} keys - Restrict the check to these properties. Update schemas pass
+ *   their `paramsUpdateList`: the controller merges the path `id` into the payload before
+ *   validating, and counting that would make every update look non-empty — including one whose
+ *   body was empty, which is precisely what the check exists to reject.
  * @returns {boolean} - True if the object has at least one not `undefined` value, false otherwise
  */
-export function hasAtLeastOneValue(obj: unknown): boolean {
+export function hasAtLeastOneValue(
+	obj: unknown,
+	keys?: readonly string[],
+): boolean {
 	if (obj === null || obj === undefined) return false;
 
 	if (typeof obj !== 'object') {
 		return true;
 	}
 
-	// For arrays: treat values like a normal object
-	const values = Object.values(obj);
+	/*
+	 * A `Date` or `RegExp` is a value, not a container to look inside — recursing would find no
+	 * enumerable properties and report it as empty. This matters wherever the only updatable
+	 * fields are dates (`work-session` accepts `start_at`/`end_at` and nothing else): such a
+	 * payload has to count as sent, not as empty.
+	 */
+	if (!Array.isArray(obj) && !isPlainObject(obj)) {
+		return true;
+	}
+
+	const record = obj as Record<string, unknown>;
+
+	// Arrays are treated like any other object; only the top-level call narrows by `keys`,
+	// because a nested object should be examined in full.
+	const values = keys
+		? keys.map((key) => record[key])
+		: Object.values(record);
 
 	// No keys → empty
 	if (values.length === 0) {

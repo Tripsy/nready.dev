@@ -101,6 +101,10 @@ describe(`${controller} - update`, () => {
 	it('should return success', async () => {
 		authorizedSpy(permissionPolicy);
 
+		jest.spyOn(permissionService, 'findById').mockResolvedValue(
+			getPermissionEntityMock(),
+		);
+
 		jest.spyOn(permissionService, 'updateData').mockResolvedValue(
 			getPermissionEntityMock(),
 		);

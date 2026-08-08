@@ -1,14 +1,19 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import { PlaceTypeEnum } from '@/features/place/place.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
 
-export const paramsUpdateList: string[] = ['place_type', 'code', 'parent_id'];
+export const paramsUpdateList: string[] = [
+	'place_type',
+	'code',
+	'parent_id',
+	'contents',
+];
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -88,9 +93,9 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 				)
 				.optional(),
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
-				params: [...paramsUpdateList, 'contents'].join(', '),
+				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
 		})
@@ -124,7 +129,7 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {
@@ -133,7 +138,7 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
-				minChars: Configuration.get('filter.termMinLength') as number,
+				minChars: Configuration.get('filter.termMinLength'),
 			}),
 			place_type: this.validateEnum(
 				PlaceTypeEnum,

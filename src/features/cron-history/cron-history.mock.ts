@@ -4,7 +4,7 @@ import {
 	CronHistoryValidator,
 	OrderByEnum,
 } from '@/features/cron-history/cron-history.validator';
-import { createPastDate, formatDate } from '@/helpers';
+import { createPastDate, formatDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 export function getCronHistoryEntityMock(): CronHistoryEntity {

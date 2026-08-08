@@ -1,0 +1,20 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"rootDir": ".",
+		"outDir": "dist",
+		"sourceMap": true,
+		"removeComments": true
+	},
+	"tsc-alias": {
+		"resolveFullPaths": true
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": [
+		"node_modules",
+		"jest.config.js",
+		"src/tests/**",
+		"src/**/tests/**",
+		"src/**/*.mock.ts"
+	]
+}

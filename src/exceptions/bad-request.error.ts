@@ -1,4 +1,4 @@
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions/custom.error';
 
 export class BadRequestError extends CustomError {

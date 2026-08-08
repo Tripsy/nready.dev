@@ -10,7 +10,7 @@ import {
 } from '@/features/cash-flow/cash-flow.entity';
 import { CashFlowCategoryEnum } from '@/features/cash-flow/cash-flow-category.enum';
 import { OperationalRecordTypeEnum } from '@/features/cash-flow/operational-record.entity';
-import { hasAtLeastOneValue } from '@/helpers';
+import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,
@@ -21,16 +21,14 @@ export const paramsUpdateList: string[] = [
 	'direction',
 	'category_type',
 	'category',
-	'gateway',
 	'method',
 	'amount',
 	'vat_rate',
 	'currency',
 	'external_reference',
 	'notes',
-	// operational record
-	'client_id',
-	'vendor_id',
+	// The individual records are nested under this one key in the update schema
+	'operational_records',
 ];
 
 export const OrderByEnum = {
@@ -165,7 +163,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			operational_records: this.operationalRecordsSchema,
 		})
-		.refine((data) => hasAtLeastOneValue(data), {
+		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
 				params: paramsUpdateList.join(', '),
 			}),
@@ -187,7 +185,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {
@@ -242,7 +240,7 @@ export class CashFlowValidator extends BaseValidator<typeof validatorMessages> {
 			),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
-				minChars: Configuration.get('filter.termMinLength') as number,
+				minChars: Configuration.get('filter.termMinLength'),
 			}),
 			client_id: this.validateId(this.getMessage('invalid_number'), {
 				required: false,

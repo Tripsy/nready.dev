@@ -1,4 +1,4 @@
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import type { UserPermissionValidator } from '@/features/user-permission/user-permission.validator';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
@@ -49,7 +49,7 @@ export class UserPermissionService {
 
 				return {
 					permission_id,
-					message: lang('user-permission.success.created'),
+					message: lang('user-permission.success.create'),
 				};
 			}),
 		);

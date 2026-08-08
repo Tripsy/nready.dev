@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import CronHistoryEntity from '@/features/cron-history/cron-history.entity';
 import {
 	type CronHistoryPolicy,

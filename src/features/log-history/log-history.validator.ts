@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { RequestContextSourceEnum } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
@@ -51,7 +51,7 @@ export class LogHistoryValidator extends BaseValidator<
 		directionEnum: OrderDirectionEnum,
 		defaultDirection: OrderDirectionEnum.ASC,
 
-		defaultLimit: Configuration.get('filter.limit') as number,
+		defaultLimit: Configuration.get('filter.limit'),
 		defaultPage: 1,
 
 		filterSchema: {

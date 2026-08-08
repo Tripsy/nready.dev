@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import BrandEntity from '@/features/brand/brand.entity';
 import { type BrandPolicy, brandPolicy } from '@/features/brand/brand.policy';
 import {

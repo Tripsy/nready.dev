@@ -171,6 +171,10 @@ export type UpdateValidator = {
 };
 
 type UpdateService<E, V extends UpdateValidator> = {
+	// Update actions load the entity before mutating it, so the builder has to stub
+	// `findById` too — otherwise it reaches the real repository, and the data source is
+	// never initialized under `test` ("No metadata for <Entity> was found").
+	findById(id: number, withDeleted?: boolean): Promise<E>;
 	updateData(
 		entry: E,
 		data: ValidatorOutput<V, 'update'>,
@@ -213,6 +217,10 @@ export function testControllerUpdate<E, V extends UpdateValidator>(
 		it('should return success', async () => {
 			authorizedSpy(config.policy);
 
+			jest.spyOn(config.service, 'findById').mockResolvedValue(
+				config.entityMock,
+			);
+
 			jest.spyOn(config.service, 'updateData').mockResolvedValue(
 				config.entityMock,
 			);
@@ -234,6 +242,7 @@ export function testControllerUpdate<E, V extends UpdateValidator>(
 }
 
 type UpdateWithContentService<E, V extends UpdateValidator> = {
+	findById(id: number, withDeleted?: boolean): Promise<E>;
 	updateDataWithContent(
 		entry: E,
 		data: ValidatorOutput<V, 'update'>,
@@ -275,6 +284,10 @@ export function testControllerUpdateWithContent<E, V extends UpdateValidator>(
 
 		it('should return success', async () => {
 			authorizedSpy(config.policy);
+
+			jest.spyOn(config.service, 'findById').mockResolvedValue(
+				config.entityMock,
+			);
 
 			jest.spyOn(
 				config.service,
@@ -515,6 +528,7 @@ export function testControllerFind<E, V extends FindValidator>(
 
 // Controller test - Update
 type StatusUpdateService<E> = {
+	findById(id: number, withDeleted?: boolean): Promise<E>;
 	updateStatus(entry: E, status: string): Promise<void>;
 };
 
@@ -552,6 +566,10 @@ export function testControllerStatusUpdate<E>(
 
 		it('should return success', async () => {
 			authorizedSpy(config.policy);
+
+			jest.spyOn(config.service, 'findById').mockResolvedValue(
+				config.entityMock,
+			);
 
 			jest.spyOn(config.service, 'updateStatus').mockResolvedValue(
 				undefined,

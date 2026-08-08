@@ -3,7 +3,7 @@ import {
 	AddressValidator,
 	OrderByEnum,
 } from '@/features/address/address.validator';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
 const addressValidator = new AddressValidator('address');

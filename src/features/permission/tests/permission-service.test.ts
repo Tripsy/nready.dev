@@ -8,7 +8,7 @@ import {
 import type { PermissionQuery } from '@/features/permission/permission.repository';
 import { PermissionService } from '@/features/permission/permission.service';
 import type { PermissionValidator } from '@/features/permission/permission.validator';
-import { createCurrentDate } from '@/helpers';
+import { createCurrentDate } from '@/helpers/date.helper';
 import {
 	createMockRepository,
 	testServiceDelete,
@@ -52,7 +52,9 @@ describe('PermissionService', () => {
 		mockPermission.query.first.mockResolvedValue(entity);
 		mockPermission.query.restore.mockReturnThis();
 
-		const result = await servicePermission.create(createData, false);
+		// `withDeleted: true` is what selects the restore branch; with `false` the service
+		// rejects a soft-deleted duplicate with a 409 instead.
+		const result = await servicePermission.create(createData, true);
 
 		expect(result.action).toBe('restore');
 		expect(mockPermission.query.restore).toHaveBeenCalled();

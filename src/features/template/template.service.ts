@@ -1,5 +1,5 @@
 import type { DeepPartial } from 'typeorm';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import type TemplateEntity from '@/features/template/template.entity';
 import type { TemplateType } from '@/features/template/template.entity';
@@ -8,7 +8,7 @@ import {
 	paramsUpdateList,
 	type TemplateValidator,
 } from '@/features/template/template.validator';
-import { pickValuesFromObject } from '@/helpers';
+import { pickValuesFromObject } from '@/helpers/objects.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class TemplateService {

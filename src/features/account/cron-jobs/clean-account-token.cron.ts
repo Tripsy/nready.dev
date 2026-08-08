@@ -1,5 +1,5 @@
 import { getAccountTokenRepository } from '@/features/account/account-token.repository';
-import { createPastDate } from '@/helpers';
+import { createPastDate } from '@/helpers/date.helper';
 
 export const SCHEDULE_EXPRESSION = '02 */3 * * *';
 export const EXPECTED_RUN_TIME = 3; // seconds

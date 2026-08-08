@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { lang } from '@/config/i18n.setup';
+import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 import { BadRequestError, CustomError } from '@/exceptions';
 import type { AccountValidator } from '@/features/account/account.validator';
@@ -15,7 +15,8 @@ import {
 import type UserEntity from '@/features/user/user.entity';
 import { type UserStatus, UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
-import { createCurrentDate, createFutureDate } from '@/helpers';
+import { runInBackground } from '@/helpers/background.helper';
+import { createCurrentDate, createFutureDate } from '@/helpers/date.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export type ConfirmationTokenPayload = {
@@ -42,18 +43,27 @@ export class AccountService {
 	}
 
 	/**
-	 * @description Updates a user password and removes all recovery tokens for a user
+	 * @description Updates a user password and drops the user's recovery tokens
+	 *
+	 * `keepRecoveryId` spares one row — the recovery link currently being redeemed, which
+	 * `passwordRecoverChange` then marks as used. Every other outstanding recovery for this
+	 * user dies here: once the password changes, any link requested beforehand must stop
+	 * working, including ones requested by someone else.
 	 */
 	public async updatePassword(
 		user: UserEntity,
 		password: string,
+		keepRecoveryId?: number,
 	): Promise<void> {
 		user.password = password; // Subscriber hashes it
 		user.password_updated_at = createCurrentDate();
 
 		await this.userService.update(user);
 
-		await this.accountRecoveryService.removeAccountRecoveryForUser(user.id);
+		await this.accountRecoveryService.removeAccountRecoveryForUser(
+			user.id,
+			keepRecoveryId,
+		);
 	}
 
 	public async register(
@@ -117,7 +127,7 @@ export class AccountService {
 
 		const token = jwt.sign(
 			payload,
-			Configuration.get('user.emailConfirmationSecret') as string,
+			Configuration.get('user.emailConfirmationSecret'),
 			{
 				expiresIn:
 					(Configuration.get(
@@ -127,8 +137,7 @@ export class AccountService {
 		);
 
 		const expire_at = createFutureDate(
-			(Configuration.get('user.emailConfirmationExpiresIn') as number) *
-				86400,
+			Configuration.get('user.emailConfirmationExpiresIn') * 86400,
 		);
 
 		return { token, expire_at };
@@ -145,10 +154,13 @@ export class AccountService {
 	): void {
 		const { token, expire_at } = this.createConfirmationToken(user);
 
-		void this.accountEmailService.sendEmailConfirmCreate(
-			user,
-			token,
-			expire_at,
+		runInBackground(
+			this.accountEmailService.sendEmailConfirmCreate(
+				user,
+				token,
+				expire_at,
+			),
+			`Failed to send the account-confirmation email to user #${user.id}`,
 		);
 	}
 
@@ -163,10 +175,14 @@ export class AccountService {
 	): void {
 		switch (user.status) {
 			case UserStatusEnum.ACTIVE:
-				void this.accountEmailService.sendWelcomeEmail(user);
+				runInBackground(
+					this.accountEmailService.sendWelcomeEmail(user),
+					`Failed to send the welcome email to user #${user.id}`,
+				);
 				break;
 			case UserStatusEnum.PENDING:
-				void this.processEmailConfirmCreate(user);
+				// Synchronous — it wraps its own send in `runInBackground`.
+				this.processEmailConfirmCreate(user);
 				break;
 		}
 	}
@@ -181,7 +197,7 @@ export class AccountService {
 		try {
 			return jwt.verify(
 				token,
-				Configuration.get('user.emailConfirmationSecret') as string,
+				Configuration.get('user.emailConfirmationSecret'),
 			) as ConfirmationTokenPayload;
 		} catch {
 			throw new BadRequestError(

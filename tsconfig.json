@@ -1,9 +1,16 @@
 {
 	"compilerOptions": {
-		"baseUrl": ".",
+		// No `baseUrl`: TypeScript 7 removes it, and `paths` alone has resolved relative to
+		// this file since 4.1. Without it the target must be relative (TS6 errors on a bare
+		// `src/*`), so `./src/*` points where `baseUrl: "."` used to send it.
 		"paths": {
-			"@/*": ["src/*"]
+			"@/*": ["./src/*"]
 		},
+		// TypeScript 6 no longer pulls in every package under `node_modules/@types`
+		// automatically, so the two that contribute *globals* have to be named. The rest
+		// (@types/express, @types/pg, ...) describe modules and still resolve through the
+		// imports that use them — they do not belong here.
+		"types": ["node", "jest"],
 		"experimentalDecorators": true,
 		"emitDecoratorMetadata": true,
 		"target": "ESNext",

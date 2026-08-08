@@ -1,6 +1,10 @@
 import dataSource from '@/config/data-source.config';
 import { Configuration } from '@/config/settings.config';
-import { createCurrentDate, createPastDate, formatDate } from '@/helpers';
+import {
+	createCurrentDate,
+	createPastDate,
+	formatDate,
+} from '@/helpers/date.helper';
 import { loadEmailTemplate, queueEmail } from '@/providers/email.provider';
 
 export const SCHEDULE_EXPRESSION = '03 02 * * *';
@@ -84,8 +88,8 @@ const cronTimeCheck = async () => {
 		};
 
 		await queueEmail(emailTemplate, {
-			name: Configuration.get('app.name') as string,
-			address: Configuration.get('app.email') as string,
+			name: Configuration.get('app.name'),
+			address: Configuration.get('app.email'),
 		});
 	}
 

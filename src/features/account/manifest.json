@@ -2,7 +2,7 @@
 	"name": "account",
 	"version": "1.0.0",
 	"relativePath": "/account",
-	"entities": ["account_recovery", "account_token"],
+	"entities": ["account_identity", "account_recovery", "account_token"],
 	"depends_on": ["user"],
 	"depends_off": []
 }

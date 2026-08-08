@@ -1,9 +1,9 @@
-import type { FeatureRoutesModule } from '@/config/routes.setup';
 import { CategoryStatusEnum } from '@/features/category/category.entity';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
 } from '@/middleware/validate-params.middleware';
+import type { FeatureRoutesModule } from '@/shared/types/routes.type';
 
 export default async () => {
 	const { categoryController } = await import(

@@ -11,21 +11,18 @@ import CronHistoryEntity, {
 	CronHistoryStatusEnum,
 } from '@/features/cron-history/cron-history.entity';
 import { getCronHistoryRepository } from '@/features/cron-history/cron-history.repository';
+import { createCurrentDate, dateDiff } from '@/helpers/date.helper';
 import {
-	createCurrentDate,
-	dateDiff,
 	getErrorMessage,
 	getFeaturesFilesPathByFolderAndExtension,
 	getFileNameWithoutExtension,
 	getSharedFilePathsByExtension,
-} from '@/helpers';
+} from '@/helpers/system.helper';
 import { getCronLogger, getSystemLogger } from '@/providers/logger.provider';
 
 export function getCronJobsPaths() {
-	const sharedFolder = `${Configuration.get('folder.shared') as string}/cron-jobs`;
-	const featuresFolder = Configuration.get<string>(
-		'folder.features',
-	) as string;
+	const sharedFolder = `${Configuration.get('folder.shared')}/cron-jobs`;
+	const featuresFolder = Configuration.get('folder.features') as string;
 	const fileExtension = `cron.${Configuration.resolveExtension()}`;
 
 	const sharedPaths = getSharedFilePathsByExtension(
@@ -209,7 +206,7 @@ function scheduleCronJob(data: CronJobData) {
 			await executeCron(data.jobFunction, 1);
 		},
 		{
-			timezone: Configuration.get<string>('app.timezone') || 'UTC',
+			timezone: Configuration.get('app.timezone') || 'UTC',
 		},
 	);
 }
