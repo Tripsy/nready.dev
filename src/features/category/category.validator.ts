@@ -134,6 +134,31 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 		},
 	});
 
+	/**
+	 * `parent_id` scopes the reorder to one sibling group; omitting it targets the roots of
+	 * that type. Positions are the group's ids in the desired order.
+	 */
+	readonly orderUpdate = z.object({
+		type: this.validateEnum(
+			CategoryTypeEnum,
+			this.getMessage('invalid_type'),
+		),
+		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
+			required: false,
+		}),
+		positions: z
+			.array(
+				z.number({
+					message: this.getMessage('invalid_number'),
+				}),
+			)
+			.min(2, {
+				message: this.getMessage('array_min', {
+					length: '2',
+				}),
+			}),
+	});
+
 	readonly statusUpdate = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 		status: this.validateEnum(

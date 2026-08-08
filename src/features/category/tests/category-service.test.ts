@@ -1,20 +1,59 @@
 import { expect, jest } from '@jest/globals';
-import type { EntityManager, Repository, TreeRepository } from 'typeorm';
+import type {
+	DeepPartial,
+	EntityManager,
+	Repository,
+	TreeRepository,
+} from 'typeorm';
 import type CategoryEntity from '@/features/category/category.entity';
 import {
+	CategoryStatusEnum,
+	CategoryTypeEnum,
+} from '@/features/category/category.entity';
+import {
 	categoryInputPayloads,
+	categoryOutputPayloads,
 	getCategoryEntityMock,
 } from '@/features/category/category.mock';
 import type { CategoryQuery } from '@/features/category/category.repository';
 import { CategoryService } from '@/features/category/category.service';
 import type { CategoryValidator } from '@/features/category/category.validator';
+import CategoryContentRepository from '@/features/category/category-content.repository';
 import { createCurrentDate } from '@/helpers/date.helper';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
 	createMockRepository,
+	setupTransactionMock,
 	testServiceFindByFilter,
 	testServiceFindById,
 } from '@/tests/jest-service.setup';
+
+/** A category with the fields each tree test cares about, defaults left alone. */
+function buildCategory(
+	overrides: Partial<CategoryEntity> = {},
+): CategoryEntity {
+	return {
+		...getCategoryEntityMock(),
+		...overrides,
+	};
+}
+
+/**
+ * Stubs the tree repository behind `RepositoryAbstract.getTreeRepository`, which the
+ * service reaches for statically — `findDescendants` is what guards reparenting and
+ * deletion, so every tree test needs it to answer.
+ */
+function mockTreeRepository(descendants: CategoryEntity[]) {
+	const findDescendants = jest
+		.fn<(entity: CategoryEntity) => Promise<CategoryEntity[]>>()
+		.mockResolvedValue(descendants);
+
+	jest.spyOn(RepositoryAbstract, 'getTreeRepository').mockReturnValue({
+		findDescendants,
+	} as unknown as TreeRepository<CategoryEntity>);
+
+	return findDescendants;
+}
 
 describe('CategoryService', () => {
 	beforeEach(() => {
@@ -31,10 +70,631 @@ describe('CategoryService', () => {
 		getScopedCategoryRepository,
 	);
 
-	// TODO
-	// create
-	// updateDataWithContent
-	// updateStatus
+	/**
+	 * `create` resolves the parent through a scoped repository so the lookup joins the
+	 * transaction; the parent is assigned as an *entity* rather than a `parent_id`, which
+	 * is what makes TypeORM write the closure rows.
+	 */
+	describe('create - parent resolution', () => {
+		function mockScopedRepository(
+			parent: CategoryEntity | null,
+			saved: CategoryEntity,
+		) {
+			const queryBuilder = {
+				where: jest.fn().mockReturnThis(),
+				getOne: jest
+					.fn<() => Promise<CategoryEntity | null>>()
+					.mockResolvedValue(parent),
+			};
+
+			const repository = {
+				createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+				save: jest
+					.fn<
+						(
+							entry: DeepPartial<CategoryEntity>,
+						) => Promise<CategoryEntity>
+					>()
+					.mockResolvedValue(saved),
+			};
+
+			getScopedCategoryRepository.mockReturnValue(
+				repository as unknown as Repository<CategoryEntity>,
+			);
+
+			return repository;
+		}
+
+		it('should attach the resolved parent entity and save inside the transaction', async () => {
+			const createData = categoryOutputPayloads.create;
+			const parent = buildCategory({ id: 5, type: createData.type });
+			const saved = buildCategory({ id: 9, type: createData.type });
+
+			const { transaction } = setupTransactionMock();
+			const repository = mockScopedRepository(parent, saved);
+
+			const saveContent = jest
+				.spyOn(CategoryContentRepository, 'saveContent')
+				.mockResolvedValue(undefined);
+
+			const result = await serviceCategory.create(createData);
+
+			expect(transaction).toHaveBeenCalled();
+			expect(repository.save).toHaveBeenCalledWith({
+				type: createData.type,
+				parent,
+			});
+			expect(saveContent).toHaveBeenCalledWith(
+				expect.anything(),
+				createData.contents,
+				saved.id,
+				saved.type,
+			);
+			expect(result).toBe(saved);
+		});
+
+		it('should throw when the parent belongs to another type', async () => {
+			const createData = categoryOutputPayloads.create;
+
+			setupTransactionMock();
+			mockScopedRepository(
+				buildCategory({ id: 5, type: CategoryTypeEnum.PRODUCT }),
+				buildCategory(),
+			);
+
+			await expect(serviceCategory.create(createData)).rejects.toThrow(
+				'category.error.invalid_parent_type',
+			);
+		});
+
+		it('should throw when the parent does not exist', async () => {
+			const createData = categoryOutputPayloads.create;
+
+			setupTransactionMock();
+			const repository = mockScopedRepository(null, buildCategory());
+
+			await expect(serviceCategory.create(createData)).rejects.toThrow(
+				'category.error.parent_not_found',
+			);
+
+			expect(repository.save).not.toHaveBeenCalled();
+		});
+	});
+
+	/**
+	 * Reparenting is the operation that can corrupt the tree — every guard below exists to
+	 * stop a cycle, a cross-type graft or a move under a row that is on its way out.
+	 */
+	describe('updateDataWithContent - reparenting guards', () => {
+		const updateData = categoryOutputPayloads.update; // parent_id: 3
+
+		it('should reject moving a category under its current parent', async () => {
+			const entry = buildCategory({
+				id: 1,
+				parent: buildCategory({ id: updateData.parent_id }),
+			});
+
+			await expect(
+				serviceCategory.updateDataWithContent(entry, updateData),
+			).rejects.toThrow('category.error.parent_same');
+		});
+
+		it('should reject a deleted parent for a live category', async () => {
+			const entry = buildCategory({
+				id: 1,
+				deleted_at: null,
+				parent: buildCategory({ id: 9 }),
+			});
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(
+				buildCategory({
+					id: updateData.parent_id,
+					deleted_at: createCurrentDate(),
+				}),
+			);
+
+			await expect(
+				serviceCategory.updateDataWithContent(entry, updateData),
+			).rejects.toThrow('category.error.parent_deleted');
+		});
+
+		it('should reject an inactive parent for an active category', async () => {
+			const entry = buildCategory({
+				id: 1,
+				status: CategoryStatusEnum.ACTIVE,
+				parent: buildCategory({ id: 9 }),
+			});
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(
+				buildCategory({
+					id: updateData.parent_id,
+					status: CategoryStatusEnum.PENDING,
+				}),
+			);
+
+			await expect(
+				serviceCategory.updateDataWithContent(entry, updateData),
+			).rejects.toThrow('category.error.parent_not_active');
+		});
+
+		it('should reject a parent of a different type', async () => {
+			const entry = buildCategory({
+				id: 1,
+				type: CategoryTypeEnum.ARTICLE,
+				parent: buildCategory({ id: 9 }),
+			});
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(
+				buildCategory({
+					id: updateData.parent_id,
+					type: CategoryTypeEnum.PRODUCT,
+				}),
+			);
+
+			await expect(
+				serviceCategory.updateDataWithContent(entry, updateData),
+			).rejects.toThrow('category.error.invalid_parent_type');
+		});
+
+		it('should reject moving a category under its own descendant (cycle)', async () => {
+			const entry = buildCategory({
+				id: 1,
+				parent: buildCategory({ id: 9 }),
+			});
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(
+				buildCategory({ id: updateData.parent_id }),
+			);
+
+			// `findDescendants` includes the subject itself, hence both ids.
+			const findDescendants = mockTreeRepository([
+				buildCategory({ id: 1 }),
+				buildCategory({ id: updateData.parent_id }),
+			]);
+
+			await expect(
+				serviceCategory.updateDataWithContent(entry, updateData),
+			).rejects.toThrow('category.error.parent_descendant');
+
+			expect(findDescendants).toHaveBeenCalledWith(entry);
+		});
+
+		it('should save the new parent and the contents when every guard passes', async () => {
+			const entry = buildCategory({
+				id: 1,
+				sort_order: 30,
+				parent: buildCategory({ id: 9 }),
+			});
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(
+				buildCategory({ id: updateData.parent_id }),
+			);
+
+			mockTreeRepository([buildCategory({ id: 1 })]);
+
+			const scopedRepository = {
+				save: jest.fn<
+					(entry: CategoryEntity) => Promise<CategoryEntity>
+				>(),
+			};
+
+			const { transaction, manager } = setupTransactionMock();
+			manager.getRepository.mockReturnValue(scopedRepository);
+
+			const saveContent = jest
+				.spyOn(CategoryContentRepository, 'saveContent')
+				.mockResolvedValue(undefined);
+
+			const result = await serviceCategory.updateDataWithContent(
+				entry,
+				updateData,
+			);
+
+			expect(transaction).toHaveBeenCalled();
+			expect(entry.parent).toEqual({ id: updateData.parent_id });
+			// The move lands it in a group it was never ordered against.
+			expect(entry.sort_order).toBe(0);
+			expect(scopedRepository.save).toHaveBeenCalledWith(entry);
+			expect(saveContent).toHaveBeenCalledWith(
+				expect.anything(),
+				expect.any(Array),
+				entry.id,
+				entry.type,
+			);
+			expect(result).toBe(entry);
+		});
+
+		/*
+		 * A client detaches by sending `parent_id: null`, which the validator folds to
+		 * `undefined` — so the payload reaching the service carries the key with a falsy
+		 * value. Sent alongside `contents` because the `params_at_least_one` refine still
+		 * rejects a detach-only body.
+		 */
+		it('should detach the parent when parent_id is sent empty', async () => {
+			const entry = buildCategory({
+				id: 1,
+				sort_order: 30,
+				parent: buildCategory({ id: 9 }),
+			});
+
+			const detachData = { ...updateData, parent_id: undefined };
+
+			const findById = jest.spyOn(serviceCategory, 'findById');
+
+			const scopedRepository = {
+				save: jest.fn<
+					(entry: CategoryEntity) => Promise<CategoryEntity>
+				>(),
+			};
+
+			const { manager } = setupTransactionMock();
+			manager.getRepository.mockReturnValue(scopedRepository);
+
+			jest.spyOn(
+				CategoryContentRepository,
+				'saveContent',
+			).mockResolvedValue(undefined);
+
+			await serviceCategory.updateDataWithContent(entry, detachData);
+
+			// No parent to resolve, so none of the reparenting guards should run.
+			expect(findById).not.toHaveBeenCalled();
+			expect(entry.parent).toBeNull();
+			expect(entry.sort_order).toBe(0);
+			expect(scopedRepository.save).toHaveBeenCalledWith(entry);
+		});
+	});
+
+	/**
+	 * Deactivating a branch has to take the branch with it, or the tree ends up with active
+	 * children hanging off an inactive parent.
+	 */
+	describe('updateStatus - descendant cascade', () => {
+		function mockDescendantsQuery(activeIds: number[]) {
+			const descendantsQueryBuilder = {
+				select: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				getRawMany: jest
+					.fn<() => Promise<{ id: number }[]>>()
+					.mockResolvedValue(activeIds.map((id) => ({ id }))),
+			};
+
+			const treeRepository = {
+				createDescendantsQueryBuilder: jest
+					.fn()
+					.mockReturnValue(descendantsQueryBuilder),
+			};
+
+			const updateQueryBuilder = {
+				update: jest.fn().mockReturnThis(),
+				set: jest.fn().mockReturnThis(),
+				where: jest.fn().mockReturnThis(),
+				execute: jest
+					.fn<() => Promise<unknown>>()
+					.mockResolvedValue({}),
+			};
+
+			const scopedRepository = {
+				createQueryBuilder: jest
+					.fn()
+					.mockReturnValue(updateQueryBuilder),
+				save: jest.fn<
+					(entry: CategoryEntity) => Promise<CategoryEntity>
+				>(),
+			};
+
+			const { transaction, manager } = setupTransactionMock();
+
+			manager.getRepository.mockReturnValue(scopedRepository);
+			// `setupTransactionMock` builds a plain object, so the tree accessor the
+			// service calls on the manager has to be added here.
+			Object.assign(manager, {
+				getTreeRepository: jest.fn().mockReturnValue(treeRepository),
+			});
+
+			return {
+				transaction,
+				scopedRepository,
+				updateQueryBuilder,
+				treeRepository,
+			};
+		}
+
+		it('should refuse to deactivate a category that still has active descendants', async () => {
+			const entry = buildCategory({
+				id: 1,
+				status: CategoryStatusEnum.ACTIVE,
+			});
+
+			mockDescendantsQuery([1, 2, 3]);
+
+			await expect(
+				serviceCategory.updateStatus(
+					entry,
+					CategoryStatusEnum.INACTIVE,
+				),
+			).rejects.toThrow('category.error.has_active_descendants');
+		});
+
+		it('should cascade to the active descendants when forced', async () => {
+			const entry = buildCategory({
+				id: 1,
+				status: CategoryStatusEnum.ACTIVE,
+				sort_order: 30,
+			});
+
+			const { scopedRepository, updateQueryBuilder } =
+				mockDescendantsQuery([1, 2, 3]);
+
+			await serviceCategory.updateStatus(
+				entry,
+				CategoryStatusEnum.INACTIVE,
+				true,
+			);
+
+			// The subject's own id is filtered out — it is saved below, not bulk-updated.
+			expect(updateQueryBuilder.where).toHaveBeenCalledWith(
+				'id IN (:...ids)',
+				{ ids: [2, 3] },
+			);
+			// Cascaded rows leave their sibling group too, so they reset alongside.
+			expect(updateQueryBuilder.set).toHaveBeenCalledWith({
+				status: CategoryStatusEnum.INACTIVE,
+				sort_order: 0,
+			});
+			expect(updateQueryBuilder.execute).toHaveBeenCalled();
+			expect(entry.status).toBe(CategoryStatusEnum.INACTIVE);
+			expect(entry.sort_order).toBe(0);
+			expect(scopedRepository.save).toHaveBeenCalledWith(entry);
+		});
+
+		it('should skip the descendant lookup when the category is being activated', async () => {
+			const entry = buildCategory({
+				id: 1,
+				status: CategoryStatusEnum.INACTIVE,
+				sort_order: 30,
+			});
+
+			const { scopedRepository, treeRepository } = mockDescendantsQuery(
+				[],
+			);
+
+			await serviceCategory.updateStatus(
+				entry,
+				CategoryStatusEnum.ACTIVE,
+			);
+
+			expect(
+				treeRepository.createDescendantsQueryBuilder,
+			).not.toHaveBeenCalled();
+			expect(entry.status).toBe(CategoryStatusEnum.ACTIVE);
+			// Reactivating rejoins a group that may have been reordered meanwhile, so the
+			// stored position is stale in this direction too.
+			expect(entry.sort_order).toBe(0);
+			expect(scopedRepository.save).toHaveBeenCalledWith(entry);
+		});
+	});
+
+	/**
+	 * A position is only meaningful among siblings, so a reorder addresses exactly one
+	 * group — same type, same parent, or the roots of that type.
+	 */
+	describe('updateOrder - sibling group', () => {
+		function mockSiblingGroup(siblings: CategoryEntity[]) {
+			const queryBuilder = {
+				where: jest.fn().mockReturnThis(),
+				andWhere: jest.fn().mockReturnThis(),
+				getMany: jest
+					.fn<() => Promise<CategoryEntity[]>>()
+					.mockResolvedValue(siblings),
+			};
+
+			const scopedRepository = {
+				createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+				save: jest.fn<
+					(entries: CategoryEntity[]) => Promise<CategoryEntity[]>
+				>(),
+			};
+
+			const { transaction, manager } = setupTransactionMock();
+			manager.getRepository.mockReturnValue(scopedRepository);
+
+			return { transaction, scopedRepository, queryBuilder };
+		}
+
+		it('should assign descending positions across the group', async () => {
+			const siblings = [
+				buildCategory({ id: 13, sort_order: 10 }),
+				buildCategory({ id: 14, sort_order: 20 }),
+				buildCategory({ id: 15, sort_order: 30 }),
+			];
+
+			const { transaction, scopedRepository } =
+				mockSiblingGroup(siblings);
+
+			await serviceCategory.updateOrder(
+				CategoryTypeEnum.PRODUCT,
+				9,
+				[15, 13, 14],
+			);
+
+			expect(transaction).toHaveBeenCalled();
+			expect(
+				siblings.map((sibling) => [sibling.id, sibling.sort_order]),
+			).toEqual([
+				[13, 2],
+				[14, 1],
+				[15, 3],
+			]);
+			expect(scopedRepository.save).toHaveBeenCalledWith(siblings);
+		});
+
+		it('should scope the group to a parent when one is given', async () => {
+			const { queryBuilder } = mockSiblingGroup([
+				buildCategory({ id: 13 }),
+				buildCategory({ id: 14 }),
+			]);
+
+			await serviceCategory.updateOrder(
+				CategoryTypeEnum.PRODUCT,
+				9,
+				[14, 13],
+			);
+
+			expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+				'category.parent_id = :parent_id',
+				{ parent_id: 9 },
+			);
+		});
+
+		it('should scope the group to the roots when no parent is given', async () => {
+			const { queryBuilder } = mockSiblingGroup([
+				buildCategory({ id: 9 }),
+				buildCategory({ id: 10 }),
+			]);
+
+			await serviceCategory.updateOrder(
+				CategoryTypeEnum.PRODUCT,
+				undefined,
+				[10, 9],
+			);
+
+			expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+				'category.parent_id IS NULL',
+			);
+			// Product and article roots share a null parent, so the type has to narrow it.
+			expect(queryBuilder.where).toHaveBeenCalledWith(
+				'category.type = :type',
+				{ type: CategoryTypeEnum.PRODUCT },
+			);
+		});
+
+		it('should reject a subset of the group', async () => {
+			const { scopedRepository } = mockSiblingGroup([
+				buildCategory({ id: 13 }),
+				buildCategory({ id: 14 }),
+				buildCategory({ id: 15 }),
+			]);
+
+			await expect(
+				serviceCategory.updateOrder(
+					CategoryTypeEnum.PRODUCT,
+					9,
+					[13, 14],
+				),
+			).rejects.toThrow('category.validation.invalid_ids_provided');
+
+			expect(scopedRepository.save).not.toHaveBeenCalled();
+		});
+
+		it('should reject an id that belongs to another group', async () => {
+			const { scopedRepository } = mockSiblingGroup([
+				buildCategory({ id: 13 }),
+				buildCategory({ id: 14 }),
+			]);
+
+			await expect(
+				serviceCategory.updateOrder(
+					CategoryTypeEnum.PRODUCT,
+					9,
+					[13, 99],
+				),
+			).rejects.toThrow('category.validation.invalid_ids_provided');
+
+			expect(scopedRepository.save).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('delete - descendant guard', () => {
+		it('should refuse to delete a category that still has live descendants', async () => {
+			const category = buildCategory({ id: 1, deleted_at: null });
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(category);
+			mockTreeRepository([
+				category,
+				buildCategory({ id: 2, deleted_at: null }),
+			]);
+
+			await expect(serviceCategory.delete(1)).rejects.toThrow(
+				'category.error.has_descendants',
+			);
+
+			expect(mockCategory.query.delete).not.toHaveBeenCalled();
+		});
+
+		it('should ignore descendants that are already soft-deleted', async () => {
+			const category = buildCategory({ id: 1, deleted_at: null });
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(category);
+			mockTreeRepository([
+				category,
+				buildCategory({ id: 2, deleted_at: createCurrentDate() }),
+			]);
+			mockCategory.query.delete.mockResolvedValue(1);
+
+			await serviceCategory.delete(1);
+
+			expect(mockCategory.query.filterById).toHaveBeenCalledWith(1);
+			expect(mockCategory.query.delete).toHaveBeenCalledWith();
+		});
+
+		it('should refuse to delete an already deleted category', async () => {
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(
+				buildCategory({ id: 1, deleted_at: createCurrentDate() }),
+			);
+
+			await expect(serviceCategory.delete(1)).rejects.toThrow(
+				'category.error.already_deleted',
+			);
+		});
+	});
+
+	describe('restore - parent guards', () => {
+		it('should refuse to restore a category that is not deleted', async () => {
+			mockCategory.query.firstOrFail.mockResolvedValue(
+				buildCategory({ id: 1, deleted_at: null }),
+			);
+
+			await expect(serviceCategory.restore(1)).rejects.toThrow(
+				'category.error.not_deleted',
+			);
+		});
+
+		it('should refuse to restore under a deleted parent', async () => {
+			mockCategory.query.firstOrFail.mockResolvedValue(
+				buildCategory({
+					id: 1,
+					deleted_at: createCurrentDate(),
+					parent: buildCategory({
+						id: 2,
+						deleted_at: createCurrentDate(),
+					}),
+				}),
+			);
+
+			await expect(serviceCategory.restore(1)).rejects.toThrow(
+				'category.error.parent_deleted',
+			);
+		});
+
+		it('should refuse to restore under an inactive parent', async () => {
+			mockCategory.query.firstOrFail.mockResolvedValue(
+				buildCategory({
+					id: 1,
+					deleted_at: createCurrentDate(),
+					parent: buildCategory({
+						id: 2,
+						deleted_at: null,
+						status: CategoryStatusEnum.INACTIVE,
+					}),
+				}),
+			);
+
+			await expect(serviceCategory.restore(1)).rejects.toThrow(
+				'category.error.parent_not_active',
+			);
+		});
+	});
 
 	testServiceFindById<CategoryEntity, CategoryQuery>(
 		mockCategory.query,
@@ -54,13 +714,7 @@ describe('CategoryService', () => {
 		});
 		mockCategory.query.delete.mockResolvedValue(1);
 
-		const mockFindDescendants = jest
-			.fn<(entity: CategoryEntity) => Promise<CategoryEntity[]>>()
-			.mockResolvedValue([getCategoryEntityMock()]);
-
-		jest.spyOn(RepositoryAbstract, 'getTreeRepository').mockReturnValue({
-			findDescendants: mockFindDescendants,
-		} as unknown as TreeRepository<CategoryEntity>);
+		mockTreeRepository([getCategoryEntityMock()]);
 
 		await serviceCategory.delete(1);
 

@@ -1,10 +1,11 @@
 import type { DeepPartial, EntityManager, Repository } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/message.setup';
-import { CustomError } from '@/exceptions';
+import { BadRequestError, CustomError } from '@/exceptions';
 import CategoryEntity, {
 	type CategoryStatus,
 	CategoryStatusEnum,
+	type CategoryType,
 	STATUS_TRANSITIONS,
 } from '@/features/category/category.entity';
 import { getCategoryRepository } from '@/features/category/category.repository';
@@ -137,7 +138,15 @@ export class CategoryService {
 			if (entry.parent && 'parent_id' in data) {
 				let flagUpdate = false;
 
-				if (data.parent_id === null) {
+				/*
+				 * Key presence is what marks an intentional detach, not the value: the
+				 * validator's `preprocessOptional` folds a client's `null` onto the
+				 * configured empty value (`undefined` on the backend), so the only signal
+				 * left is that `parent_id` was sent at all — which the guard above
+				 * establishes. A falsy value here therefore means "clear the parent";
+				 * `validateId` rejects `0`, so no real id can reach this branch.
+				 */
+				if (!data.parent_id) {
 					entry.parent = null;
 
 					flagUpdate = true;
@@ -151,6 +160,14 @@ export class CategoryService {
 
 				if (flagUpdate) {
 					const repository = manager.getRepository(CategoryEntity); // We use the manager -> `getCategoryRepository` is not bound to the transaction
+
+					/*
+					 * Position is meaningful only among siblings, and the move lands the
+					 * category in a group it was never ordered against — carrying the old
+					 * value over would place it arbitrarily. Zero puts it at the end until
+					 * the group is reordered.
+					 */
+					entry.sort_order = 0;
 
 					await repository.save(entry);
 				}
@@ -209,7 +226,12 @@ export class CategoryService {
 						await repository
 							.createQueryBuilder()
 							.update(CategoryEntity)
-							.set({ status: CategoryStatusEnum.INACTIVE })
+							.set({
+								status: CategoryStatusEnum.INACTIVE,
+								// Cascaded rows leave their sibling group as well, so
+								// they are reset for the same reason `entry` is.
+								sort_order: 0,
+							})
 							.where('id IN (:...ids)', {
 								ids: activeDescendants.map((d) => d.id),
 							})
@@ -220,7 +242,73 @@ export class CategoryService {
 
 			entry.status = newStatus;
 
+			/*
+			 * Only active categories are orderable, so a status change takes the row out of
+			 * its sibling group — or brings it back into one that has been reordered since.
+			 * Either way the stored position is stale; zero puts it at the end until the
+			 * group is reordered. Same rule as `brand`.
+			 */
+			entry.sort_order = 0;
+
 			await repository.save(entry);
+		});
+	}
+
+	/**
+	 * @description Used in `orderUpdate` method from controller; reorders one sibling group
+	 */
+	public async updateOrder(
+		type: CategoryType,
+		parent_id: number | undefined,
+		ids: number[], // Array of IDs in the desired order
+	): Promise<void> {
+		await dataSource.transaction(async (manager) => {
+			const categoryRepository = manager.getRepository(CategoryEntity);
+
+			/*
+			 * A position only means something among siblings, so the orderable set is one
+			 * group: same type, same parent — or the roots when no parent is given. `type`
+			 * is part of it because product and article roots both carry a null parent and
+			 * would otherwise be ordered against each other.
+			 */
+			const categoryQuery = categoryRepository
+				.createQueryBuilder('category')
+				.where('category.type = :type', { type })
+				.andWhere('category.status = :status', {
+					status: CategoryStatusEnum.ACTIVE,
+				});
+
+			if (parent_id) {
+				categoryQuery.andWhere('category.parent_id = :parent_id', {
+					parent_id,
+				});
+			} else {
+				categoryQuery.andWhere('category.parent_id IS NULL');
+			}
+
+			const categories = await categoryQuery.getMany();
+
+			// The submitted ids must be a complete reordering of that exact set, not a
+			// subset and not a mix with ids from another group.
+			const foundIds = new Set(categories.map((category) => category.id));
+			const allProvidedAreValid = ids.every((id) => foundIds.has(id));
+
+			if (categories.length !== ids.length || !allProvidedAreValid) {
+				throw new BadRequestError(
+					lang('category.validation.invalid_ids_provided'),
+				);
+			}
+
+			const updatedCategories = categories.map((category) => {
+				const position = ids.indexOf(category.id);
+
+				category.sort_order = ids.length - position;
+
+				return category;
+			});
+
+			// Save all - triggers subscribers (cache invalidation + audit log)
+			await categoryRepository.save(updatedCategories);
 		});
 	}
 

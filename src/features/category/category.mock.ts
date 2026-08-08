@@ -92,6 +92,11 @@ export const categoryInputPayloads = {
 	statusUpdate: {
 		force: false,
 	},
+	orderUpdate: {
+		type: CategoryTypeEnum.ARTICLE,
+		parent_id: 1,
+		positions: [3, 2],
+	},
 };
 
 export const categoryOutputPayloads = {

@@ -1,4 +1,7 @@
-import { jest } from '@jest/globals';
+import { expect, jest } from '@jest/globals';
+import type { Express } from 'express';
+import request from 'supertest';
+import { createApp } from '@/app';
 import type CategoryEntity from '@/features/category/category.entity';
 import {
 	categoryInputPayloads,
@@ -16,7 +19,15 @@ import {
 	testControllerRestoreSingle,
 	testControllerStatusUpdate,
 	testControllerUpdateWithContent,
+	withDebugResponse,
 } from '@/tests/jest-controller.setup';
+import { authorizedSpy, notAuthorizedSpy } from '@/tests/mocks/policies.mock';
+
+let app: Express;
+
+beforeAll(async () => {
+	app = await createApp();
+});
 
 beforeEach(() => {
 	jest.restoreAllMocks();
@@ -79,4 +90,75 @@ testControllerStatusUpdate<CategoryEntity>({
 	entityMock: getCategoryEntityMock(),
 	policy: categoryPolicy,
 	service: categoryService,
+});
+
+describe(`${controller} - orderUpdate`, () => {
+	const route = `${basePath}/${categoryInputPayloads.orderUpdate.type}/order`;
+
+	it('should fail if not authenticated', async () => {
+		const response = await request(app).patch(route).send();
+
+		withDebugResponse(() => {
+			expect(response.status).toBe(401);
+		}, response);
+	});
+
+	it("should fail if it doesn't have proper permission", async () => {
+		notAuthorizedSpy(categoryPolicy);
+
+		const response = await request(app).patch(route).send();
+
+		withDebugResponse(() => {
+			expect(response.status).toBe(403);
+		}, response);
+	});
+
+	it('should return success', async () => {
+		authorizedSpy(categoryPolicy);
+
+		const updateOrder = jest
+			.spyOn(categoryService, 'updateOrder')
+			.mockResolvedValue();
+
+		const response = await request(app)
+			.patch(route)
+			.send(categoryInputPayloads.orderUpdate);
+
+		withDebugResponse(() => {
+			expect(response.status).toBe(200);
+			expect(response.body).toHaveProperty('success', true);
+		}, response);
+
+		expect(updateOrder).toHaveBeenCalledWith(
+			categoryInputPayloads.orderUpdate.type,
+			categoryInputPayloads.orderUpdate.parent_id,
+			categoryInputPayloads.orderUpdate.positions,
+		);
+	});
+
+	// `validateParamsWhenEnum` runs as route middleware and throws `BadRequestError`, so
+	// this fails with 400 rather than the 422 a schema failure would produce.
+	it('should reject a type outside the enum before reaching the controller', async () => {
+		authorizedSpy(categoryPolicy);
+
+		const response = await request(app)
+			.patch(`${basePath}/nonsense/order`)
+			.send(categoryInputPayloads.orderUpdate);
+
+		withDebugResponse(() => {
+			expect(response.status).toBe(400);
+		}, response);
+	});
+
+	it('should reject fewer than two positions', async () => {
+		authorizedSpy(categoryPolicy);
+
+		const response = await request(app)
+			.patch(route)
+			.send({ ...categoryInputPayloads.orderUpdate, positions: [3] });
+
+		withDebugResponse(() => {
+			expect(response.status).toBe(422);
+		}, response);
+	});
 });
