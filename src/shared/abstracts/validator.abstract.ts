@@ -156,7 +156,15 @@ export abstract class BaseValidator<
 	) {
 		super();
 
-		this.emptyValue = options?.emptyValue ?? (undefined as TEmpty);
+		/*
+		 * Presence check rather than `??`: `null` is a meaningful choice here, and the
+		 * nullish operator would fold it back into `undefined` — making `emptyValue: null`
+		 * impossible to set and silently leaving every optional field `.optional()`.
+		 */
+		this.emptyValue =
+			options && 'emptyValue' in options
+				? (options.emptyValue as TEmpty)
+				: (undefined as TEmpty);
 	}
 
 	protected getMessage(

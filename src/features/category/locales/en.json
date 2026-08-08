@@ -4,7 +4,8 @@
 		"invalid_slug": "Invalid slug",
 		"invalid_description": "Invalid description",
 		"invalid_type": "Select type",
-		"invalid_parent_id": "Invalid parent ID"
+		"invalid_parent_id": "Invalid parent ID",
+		"invalid_ids_provided": "Invalid ids provided for ordering"
 	},
 	"error": {
 		"not_found": "Category not found",
@@ -25,7 +26,8 @@
 		"update": "Category updated successfully",
 		"delete": "Category deleted successfully",
 		"restore": "Category restored successfully",
-		"status_update": "Category status updated successfully"
+		"status_update": "Category status updated successfully",
+		"order_update": "Category order updated successfully"
 	},
 	"history": {
 		"created": "Category #{{entity_id}} created by user #{{auth_id}}",

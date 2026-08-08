@@ -299,34 +299,12 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Category needs ordering too
+1. Remaining, unchanged: the nready.dev migration (deferred by you), no pushes on any branch, empty OAuth credentials in all three .env files (so nothing is live until you fill    
+   them and register {APP_URL}/account/oauth/{provider} in each provider console), and the optional POST /account/oauth/:provider/link follow-up for linking a provider while signed
+   in.
 2. Go on FE → category
-3. Deploy on AWS
-4. API documentation (`done` for discounts)
-5. create CLI script which should generate something like:
-   POST /discounts HTTP/1.1
-   Host: nready.dev:3000
-   Content-Type: application/json
-   Authorization: Bearer ****
-   Content-Length: 344
-    {
-    
-        "scope": "order",
-        "reason": "flash_sale",
-        "reference": "#345",
-        "type": "percent",
-        "value": 7,
-        "rules":     {
-          "min_order_value": 101,
-          "eligible_categories": [1, 2, 5],
-          "applicable_countries": ["RO"]
-        },
-        "start_at": "2025-12-18",
-        "end_at": "2025-12-28",
-        "notes": "Lorem ipsum ..."
-    }
-6. Go on FE #2 → carrier, discount,
-7. Prepared entities:
+3. Go on FE #2 → carrier, discount,
+4. Prepared entities:
     - article
         - article-category
         - article-content
@@ -345,8 +323,34 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - subscription
         - subscription-evidence
     - term
-8. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-9. cron hanging / delaying / semaphore 
+
+# 📌 TODO - EXTRA
+
+1. API documentation (`done` for discounts)
+2. create CLI script which should generate something like:
+   POST /discounts HTTP/1.1
+   Host: nready.dev:3000
+   Content-Type: application/json
+   Authorization: Bearer ****
+   Content-Length: 344
+   {
+
+        "scope": "order",
+        "reason": "flash_sale",
+        "reference": "#345",
+        "type": "percent",
+        "value": 7,
+        "rules":     {
+          "min_order_value": 101,
+          "eligible_categories": [1, 2, 5],
+          "applicable_countries": ["RO"]
+        },
+        "start_at": "2025-12-18",
+        "end_at": "2025-12-28",
+        "notes": "Lorem ipsum ..."
+   }   
+3. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+4. cron hanging / delaying / semaphore 
 
 # 🔗 Dependencies
     

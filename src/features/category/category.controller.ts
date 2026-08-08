@@ -181,6 +181,31 @@ class CategoryController extends BaseController {
 
 		res.json(res.locals.output);
 	});
+
+	public orderUpdate = asyncHandler(async (req: Request, res: Response) => {
+		this.policy.canUpdate(res.locals.auth);
+
+		// `type` comes from the path (`/:type/order`); `parent_id` and `positions` from the
+		// body, since the group being reordered may be the roots (no parent).
+		const data = this.validate(
+			this.validator.orderUpdate,
+			{
+				...req.body,
+				type: req.params.type,
+			},
+			res,
+		);
+
+		await this.categoryService.updateOrder(
+			data.type,
+			data.parent_id,
+			data.positions,
+		);
+
+		res.locals.output.message(lang('category.success.order_update'));
+
+		res.json(res.locals.output);
+	});
 }
 
 export const categoryController = new CategoryController(

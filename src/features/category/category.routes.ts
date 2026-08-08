@@ -1,4 +1,7 @@
-import { CategoryStatusEnum } from '@/features/category/category.entity';
+import {
+	CategoryStatusEnum,
+	CategoryTypeEnum,
+} from '@/features/category/category.entity';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
@@ -41,6 +44,15 @@ export default async () => {
 			find: {
 				path: '',
 				method: 'get',
+			},
+			orderUpdate: {
+				path: '/:type/order',
+				method: 'patch',
+				handlers: [
+					validateParamsWhenEnum({
+						type: Object.values(CategoryTypeEnum),
+					}),
+				],
 			},
 			statusUpdate: {
 				path: '/:id/status/:status',
