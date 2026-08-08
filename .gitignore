@@ -43,4 +43,5 @@ audit.json
 !/backup/.gitkeep
 /cli/tmp
 /cli/history.txt
+/.migrations-backup
 

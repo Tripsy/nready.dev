@@ -299,12 +299,9 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Make a skill command to create a consolidated migration
-2. 
-
-2. Go on FE → category
-3. Go on FE #2 → carrier, discount,
-4. Prepared entities:
+1. Go on FE → category
+2. Go on FE #2 → carrier, discount,
+3. Prepared entities:
     - article
         - article-category
         - article-content

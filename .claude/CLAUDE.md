@@ -115,6 +115,11 @@ pnpm run migration:generate ./src/database/migrations/<name>
 pnpm run migration:run
 pnpm run migration:revert
 
+# Collapse all migrations into one `init` generated from the entities.
+# Pre-production only — see .claude/skills/migration-consolidate/SKILL.md.
+# Use `pnpm exec`: `pnpm run … --` forwards `--` literally and commander rejects it.
+pnpm exec tsx ./cli/migration-consolidate.ts --baseline
+
 # Seeds — reference data and the bootstrap admin run on their own
 tsx src/features/template/database/template.seed.ts
 tsx src/features/permission/database/permission.seed.ts
