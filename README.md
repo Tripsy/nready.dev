@@ -346,7 +346,6 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         - article-category
         - article-content
         - article-tag  
-        - article-track
     - invoice
     - order
         - order-product
