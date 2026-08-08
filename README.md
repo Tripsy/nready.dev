@@ -136,7 +136,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - [x] place: create, read, update, delete, restore, find
 - [ ] product:
 - [ ] subscription:
-- [ ] term:
+- [x] term: create, read, update, delete, restore, find
 
 # 🛠 Setup
 
@@ -299,9 +299,10 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Go on FE → category
-2. Go on FE #2 → carrier, discount,
-3. Prepared entities:
+1. Go on FE → carrier, discount,
+2. Go on FE → term
+3. Go on FE → category
+4. Prepared entities:
     - article
         - article-category
         - article-content
@@ -319,7 +320,6 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         - product-content
     - subscription
         - subscription-evidence
-    - term
 
 # 📌 TODO - EXTRA
 

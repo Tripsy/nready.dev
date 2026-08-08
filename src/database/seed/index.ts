@@ -6,6 +6,7 @@ import { cashFlowSeed } from '@/features/cash-flow/database/cash-flow.seed';
 import { categorySeed } from '@/features/category/database/category.seed';
 import { clientSeed } from '@/features/client/database/client.seed';
 import { placeSeed } from '@/features/place/database/place.seed';
+import { termSeed } from '@/features/term/database/term.seed';
 import { userSeed } from '@/features/user/database/user.seed';
 import { vendorSeed } from '@/features/vendor/database/vendor.seed';
 
@@ -27,6 +28,9 @@ const seeds: readonly SeedDefinition[] = [
 	vendorSeed,
 	userSeed,
 	cashFlowSeed,
+	// No parents of its own; placed last so it stays ahead of the product/article seeds
+	// that will consume its tags and attributes.
+	termSeed,
 ];
 
 function resolveSeeds(

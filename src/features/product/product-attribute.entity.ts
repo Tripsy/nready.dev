@@ -45,13 +45,13 @@ export default class ProductAttributeEntity extends EntityAbstract {
 	product!: ProductEntity;
 
 	@ManyToOne('TermEntity', {
-		onDelete: 'RESTRICT',
+		onDelete: 'CASCADE',
 	})
 	@JoinColumn({ name: 'attribute_label_id' })
 	attribute_label!: TermEntity;
 
 	@ManyToOne('TermEntity', {
-		onDelete: 'RESTRICT',
+		onDelete: 'CASCADE',
 	})
 	@JoinColumn({ name: 'attribute_value_id' })
 	attribute_value!: TermEntity;

@@ -40,8 +40,10 @@ export default class ArticleTagEntity extends EntityAbstract {
 	@JoinColumn({ name: 'article_id' })
 	article!: ArticleEntity;
 
+	// CASCADE: a term is vocabulary, not a record worth protecting — removing it should take
+	// its links with it rather than block the delete
 	@ManyToOne('TermEntity', {
-		onDelete: 'RESTRICT',
+		onDelete: 'CASCADE',
 	})
 	@JoinColumn({ name: 'tag_id' })
 	tag!: TermEntity;
