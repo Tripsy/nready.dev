@@ -20,6 +20,10 @@ const ENTITY_TABLE_NAME = 'term';
 		'Multilingual taxonomy terms: categories, tags, attribute labels/values',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
+@Index('IDX_term_unique', ['type', 'language', 'value'], {
+	unique: true,
+	where: 'deleted_at IS NULL',
+})
 export default class TermEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

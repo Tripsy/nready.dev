@@ -6,8 +6,7 @@
 		"article",
 		"article_category",
 		"article_content",
-		"article_tag",
-		"article_track"
+		"article_tag"
 	],
 	"depends_on": ["category", "term"],
 	"depends_off": []
