@@ -15,7 +15,10 @@ import {
 } from '@/features/brand/brand.validator';
 import BrandContentRepository from '@/features/brand/brand-content.repository';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
-import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import {
+	assertValidStatusTransition,
+	cleanEntityCache,
+} from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class BrandService {
@@ -79,12 +82,12 @@ export class BrandService {
 			}
 		}
 
-		return dataSource.transaction(async (manager) => {
+		const updatedEntity = await dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(BrandEntity);
 
 			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
-			const updatedEntity = await repository.save(entry);
+			const saved = await repository.save(entry);
 
 			await BrandContentRepository.saveContent(
 				manager,
@@ -92,8 +95,14 @@ export class BrandService {
 				entry.id,
 			);
 
-			return updatedEntity;
+			return saved;
 		});
+
+		// One clean for the whole operation, after commit — the content rows written above
+		// have no subscriber invalidating the brand's keys. See `cleanEntityCache`
+		cleanEntityCache(BrandEntity, updatedEntity.id);
+
+		return updatedEntity;
 	}
 
 	public async updateStatus(

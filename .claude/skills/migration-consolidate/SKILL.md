@@ -21,7 +21,22 @@ would try to recreate every table. Stop and say so rather than running it.
 ## Before running
 
 1. Confirm the working tree is committed — the command deletes migration files.
-2. Check for schema drift:
+2. **Check for hand-written schema that `migration:generate` cannot see.** The consolidated
+   migration is generated from the entities, so anything a decorator cannot express is lost —
+   silently, since the replaced files are only kept as a backup.
+
+   ```bash
+   grep -rlE "USING GIN|USING GIST|to_tsvector|CREATE FUNCTION|CREATE TRIGGER|CREATE MATERIALIZED VIEW" src/database/migrations
+   ```
+
+   The known case is full-text search: `@Index` only describes column lists, so a GIN index over
+   an *expression* — `to_tsvector('simple', COALESCE("title", ''))`, backing a repository's
+   `filterByTerm` — exists only in a hand-written migration. Losing it is invisible: the query
+   still returns correct rows, it just reverts to a sequential scan.
+
+   Copy any such statements out first and re-add them to the generated `init` (or keep them in
+   a separate migration that survives the consolidation, and exclude it from the run).
+3. Check for schema drift:
 
    ```bash
    docker exec -w /var/www/html $DOCKER_CONTAINER pnpm exec tsx \
@@ -70,4 +85,14 @@ On any failure it restores the original migrations and drops the scratch databas
   formatting until Biome rewrites it.
 - Read the generated migration before committing. `migration:generate` has dropped columns
   unexpectedly before — this is the same warning that applies to any generated migration.
+- **Diff the index list against the previous schema**, not just the columns. The verification
+  step replays the generated migration and asserts `schema:log` reports no drift, but `schema:log`
+  compares the database against the *entities* — an index no entity declares is absent from both
+  sides, so a dropped expression index passes every check the command makes:
+
+  ```sql
+  SELECT indexname FROM pg_indexes WHERE schemaname = 'public' ORDER BY indexname;
+  ```
+
+  Run it before and after; anything missing afterwards was hand-written and has to be restored.
 - Every other database built from the old history must be rebuilt or baselined the same way.

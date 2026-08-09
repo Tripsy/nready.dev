@@ -148,7 +148,7 @@ export const STATUS_TRANSITIONS: StatusTransitions<CashFlowStatus> = {
 	],
 
 	[CashFlowStatusEnum.COMPLETED]: [
-		// maybe allow nothing
+		// Allow nothing
 	],
 
 	[CashFlowStatusEnum.FAILED]: [],

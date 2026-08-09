@@ -12,6 +12,7 @@ import {
 } from '@/features/place/place.validator';
 import PlaceContentRepository from '@/features/place/place-content.repository';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
+import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class PlaceService {
@@ -129,12 +130,12 @@ export class PlaceService {
 			}
 		}
 
-		return dataSource.transaction(async (manager) => {
+		const updatedEntity = await dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(PlaceEntity); // We use the manager -> `getPlaceRepository` is not bound to the transaction
 
 			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
-			const updatedEntity = await repository.save(entry);
+			const saved = await repository.save(entry);
 
 			await PlaceContentRepository.saveContent(
 				manager,
@@ -142,8 +143,14 @@ export class PlaceService {
 				entry.id,
 			);
 
-			return updatedEntity;
+			return saved;
 		});
+
+		// One clean for the whole operation, after commit — the content rows written above
+		// have no subscriber invalidating the place's keys. See `cleanEntityCache`
+		cleanEntityCache(PlaceEntity, updatedEntity.id);
+
+		return updatedEntity;
 	}
 
 	public async delete(id: number) {

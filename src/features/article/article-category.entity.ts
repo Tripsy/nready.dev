@@ -17,6 +17,9 @@ const ENTITY_TABLE_NAME = 'article_category';
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
 export default class ArticleCategoryEntity extends EntityAbstract {
+	static readonly NAME: string = ENTITY_TABLE_NAME;
+	static readonly HAS_CACHE: boolean = false;
+
 	@Column('int', { nullable: false })
 	article_id!: number;
 

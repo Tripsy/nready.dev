@@ -369,6 +369,13 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 2. For template section
    - would be a nice idea to keep track of the last changes (maybe add a new column - prev version id and a button to restore to that version)
    - view presentation could be enhanced
+4. Extend `article` 
+     - parsing capabilities
+     - `article_source` - list of available sources from where articles were parsed; `article`
+       already carries `source_mode` (`input` / `parsed`) and a `source` jsonb holding the
+       display side (`label`, `url`, `disclaimer`, `about`), so this only needs the table plus a
+       nullable `source_id` FK on `article`. The jsonb then stays as the per-article override for
+       one-off sources that don't deserve a row.
 3. API documentation (`done` for discounts)
 4. create CLI script which should generate something like:
    POST /discounts HTTP/1.1

@@ -12,7 +12,10 @@ import { getCategoryRepository } from '@/features/category/category.repository';
 import type { CategoryValidator } from '@/features/category/category.validator';
 import CategoryContentRepository from '@/features/category/category-content.repository';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
-import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import {
+	assertValidStatusTransition,
+	cleanEntityCache,
+} from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class CategoryService {
@@ -134,7 +137,7 @@ export class CategoryService {
 			}
 		}
 
-		return dataSource.transaction(async (manager) => {
+		const updatedEntry = await dataSource.transaction(async (manager) => {
 			if (entry.parent && 'parent_id' in data) {
 				let flagUpdate = false;
 
@@ -184,6 +187,13 @@ export class CategoryService {
 
 			return entry;
 		});
+
+		// One clean for the whole operation, after commit — the content rows written above
+		// have no subscriber invalidating the category's keys, and a contents-only update
+		// never saves the category row either. See `cleanEntityCache`
+		cleanEntityCache(CategoryEntity, updatedEntry.id);
+
+		return updatedEntry;
 	}
 
 	public async updateStatus(
