@@ -1,4 +1,3 @@
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
@@ -17,6 +16,7 @@ import { type UserStatus, UserStatusEnum } from '@/features/user/user.entity';
 import { type UserService, userService } from '@/features/user/user.service';
 import { runInBackground } from '@/helpers/background.helper';
 import { createCurrentDate, createFutureDate } from '@/helpers/date.helper';
+import { comparePassword } from '@/helpers/security.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export type ConfirmationTokenPayload = {
@@ -39,7 +39,7 @@ export class AccountService {
 		password: string,
 		hashedPassword: string,
 	): Promise<boolean> {
-		return await bcrypt.compare(password, hashedPassword);
+		return comparePassword(password, hashedPassword);
 	}
 
 	/**

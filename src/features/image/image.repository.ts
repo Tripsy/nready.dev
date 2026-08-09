@@ -14,7 +14,7 @@ export class ImageQuery extends RepositoryAbstract<ImageEntity> {
 			if (!Number.isNaN(Number(term)) && term.trim() !== '') {
 				this.filterBy('image.id', Number(term));
 			} else {
-				if (term.length > Configuration.get('filter.termMinLength')) {
+				if (term.length >= Configuration.get('filter.termMinLength')) {
 					this.filterAny([
 						{
 							column: 'image.name',

@@ -8,14 +8,24 @@
 		"pr": ""
 	},
 	"hooks": {
+		"SessionStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "awk '/^# .*TODO/{f=1;next} f&&/^# /{exit} f' \"$CLAUDE_PROJECT_DIR/README.md\" 2>/dev/null | jq -Rs '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:(\"README TODO list — present these to the user as a numbered list at the start of your first reply, then address their request:\\n\" + .)}}'",
+						"statusMessage": "Reading README TODO"
+					}
+				]
+			}
+		],
 		"PreToolUse": [
 			{
 				"matcher": "Bash",
 				"hooks": [
 					{
 						"type": "command",
-						"if": "Bash(git commit:*)",
-						"command": "b=$(git rev-parse --abbrev-ref HEAD 2>/dev/null); if [ \"$b\" = \"main\" ]; then printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Refusing to commit on main: GitHub rejects a direct push, so the commit would have to be moved off. Run: git switch -c <type>/<short-name>\"}}'; fi",
+						"command": "c=$(jq -r '.tool_input.command // \"\"'); printf '%s' \"$c\" | grep -Eq '(^|[;&|(]|[[:space:]])git[[:space:]]+([^;&|]*[[:space:]]+)?commit([[:space:]]|$)' || exit 0; d=$(printf '%s' \"$c\" | sed -n 's/.*git[[:space:]]\\{1,\\}-C[[:space:]]\\{1,\\}\\([^[:space:]]\\{1,\\}\\).*/\\1/p'); b=$(git -C \"${d:-.}\" rev-parse --abbrev-ref HEAD 2>/dev/null); [ \"$b\" = \"main\" ] || exit 0; printf '%s' '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Refusing to commit on main: GitHub rejects a direct push, so the commit would have to be moved off. Run: git switch -c <type>/<short-name>\"}}'",
 						"statusMessage": "Checking branch"
 					}
 				]

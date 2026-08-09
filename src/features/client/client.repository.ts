@@ -17,7 +17,7 @@ export class ClientQuery extends RepositoryAbstract<ClientEntity> {
 			if (!Number.isNaN(Number(term)) && term.trim() !== '') {
 				this.filterBy('id', Number(term));
 			} else {
-				if (term.length > Configuration.get('filter.termMinLength')) {
+				if (term.length >= Configuration.get('filter.termMinLength')) {
 					const companyFilters = [
 						{
 							column: 'company_name',

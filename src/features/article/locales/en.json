@@ -1,0 +1,47 @@
+{
+	"validation": {
+		"invalid_title": "Invalid title",
+		"invalid_slug": "Invalid slug",
+		"invalid_brief": "Invalid brief",
+		"invalid_content": "Invalid content",
+		"invalid_content_blocks": "Invalid content blocks",
+		"invalid_author": "Invalid author details",
+		"invalid_author_id": "Invalid author",
+		"invalid_layout": "Invalid layout",
+		"invalid_featured_status": "Invalid featured status",
+		"invalid_featured_order": "Invalid featured order",
+		"invalid_visibility": "Invalid visibility",
+		"invalid_visibility_rule": "Invalid visibility rule",
+		"invalid_source": "Invalid source details",
+		"invalid_source_mode": "Invalid source mode",
+		"invalid_categories": "Invalid categories",
+		"invalid_tags": "Invalid tags",
+		"invalid_publish_window": "The archive date must be after the publish date"
+	},
+	"error": {
+		"not_found": "Article not found",
+		"slug_already_exists": "Another article already uses this slug for the same language",
+		"access_restricted": "This article is not available",
+		"access_requires_auth": "You must be signed in to read this article",
+		"access_requires_subscription": "An active subscription is required to read this article",
+		"access_country_unknown": "This article is not available from your location",
+		"access_country_denied": "This article is not available from your location",
+		"access_password_required": "This article requires a password",
+		"access_password_invalid": "The password is not correct"
+	},
+	"success": {
+		"create": "Article created successfully",
+		"update": "Article updated successfully",
+		"delete": "Article deleted successfully",
+		"restore": "Article restored successfully",
+		"status_update": "Article status updated successfully"
+	},
+	"history": {
+		"created": "Article #{{entity_id}} created by user #{{auth_id}}",
+		"updated": "Article #{{entity_id}} updated by user #{{auth_id}}",
+		"deleted": "Article(s) {{entity_ids}} marked as deleted by user #{{auth_id}}",
+		"removed": "Article(s) {{entity_ids}} removed by user #{{auth_id}}",
+		"restored": "Article(s) {{entity_ids}} restored by user #{{auth_id}}",
+		"status": "Article #{{entity_id}} updated from {{oldStatus}} to {{newStatus}} by user #{{auth_id}}"
+	}
+}

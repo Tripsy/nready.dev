@@ -77,7 +77,8 @@ Only add methods to a feature's own `<feature>.policy.ts` for checks that don't 
 
 ## 5. Passwords
 
-- Hash with `encryptPassword()` (`src/helpers/security.helper.ts`, `bcrypt.hash(password, 10)`); compare with `AccountService.checkPassword()` (`bcrypt.compare`). Never hash/compare passwords anywhere else.
+- Both bcrypt calls live in `src/helpers/security.helper.ts`: hash with `encryptPassword()` (`bcrypt.hash(password, 10)`), compare with `comparePassword()` (`bcrypt.compare`). Never call bcrypt anywhere else.
+- `AccountService.checkPassword()` delegates to `comparePassword()` and stays the entry point for **account** credentials — account flows should keep calling it. Reach for the helper directly only for a hashed secret that is not a user password, such as an article's shared access password (`ArticleAccessPolicy`); that is why the comparison is a helper rather than a method on the account service.
 - Never return or log a raw password. The response envelope already redacts `password`/`password_confirm`/`password_new`/`password_current` from the echoed request body (`api.md` §2) — don't add a second redaction layer, but also don't bypass it by putting password data somewhere else in the response (e.g. `meta`).
 - `accountService.updatePassword(...)` is expected to also invalidate existing sessions where relevant (see `passwordRecoverChange`/`passwordUpdate` in `account.controller.ts`, which issue a fresh token after a password change) — a new password-changing flow should follow the same pattern rather than leaving old tokens valid.
 

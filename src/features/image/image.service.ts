@@ -10,7 +10,10 @@ import ImageEntity, {
 import { getImageRepository } from '@/features/image/image.repository';
 import type { ImageValidator } from '@/features/image/image.validator';
 import ImageContentRepository from '@/features/image/image-content.repository';
-import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import {
+	assertValidStatusTransition,
+	cleanEntityCache,
+} from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class ImageService {
@@ -67,6 +70,11 @@ export class ImageService {
 				entry.id,
 			);
 		});
+
+		// One clean for the whole operation, after commit — the content rows written above
+		// have no subscriber invalidating the image's keys, and the image row itself was not
+		// touched, so nothing else would. See `cleanEntityCache`
+		cleanEntityCache(ImageEntity, entry.id);
 
 		return entry;
 	}

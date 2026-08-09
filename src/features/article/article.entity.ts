@@ -8,6 +8,7 @@ import {
 	OneToOne,
 } from 'typeorm';
 import type ArticleCategoryEntity from '@/features/article/article-category.entity';
+import type ArticleContentEntity from '@/features/article/article-content.entity';
 import type ArticleTagEntity from '@/features/article/article-tag.entity';
 import type ArticleVisibilityRuleEntity from '@/features/article/article-visibility-rule.entity';
 import type UserEntity from '@/features/user/user.entity';
@@ -209,6 +210,12 @@ export default class ArticleEntity extends EntityAbstract {
 	})
 	@JoinColumn({ name: 'author_id' })
 	author?: UserEntity | null;
+
+	@OneToMany(
+		'ArticleContentEntity',
+		(content: ArticleContentEntity) => content.article,
+	)
+	contents?: ArticleContentEntity[];
 
 	// Only present while `visibility` is `restricted`
 	@OneToOne(

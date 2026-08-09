@@ -585,8 +585,28 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 		return this;
 	}
 
+	/**
+	 * Turns arbitrary user input into a safe `to_tsquery` argument.
+	 *
+	 * Splitting on whitespace alone is not enough: `to_tsquery` has a grammar, and the
+	 * operators in it (`& | ! ( ) : <->` and a trailing backslash) are exactly the characters a
+	 * search box collects by accident. `to_tsquery('simple', 'foo(bar:*')` does not return
+	 * nothing, it raises a syntax error — which surfaces as a 500 for anyone typing an opening
+	 * bracket. Splitting on "not a letter or digit" removes the whole class at once, in any
+	 * alphabet, rather than escaping a list that has to stay in sync with Postgres.
+	 *
+	 * Returns an empty string when nothing survives (`"+++"`, `"()"`). **Callers must skip the
+	 * filter in that case** — `to_tsquery('simple', ':*')` is itself a syntax error.
+	 *
+	 * @param {string} term - Raw search input
+	 * @returns {string} - `&`-joined tokens, or '' when the input carried no searchable text
+	 */
 	prepareTsTerm(term: string): string {
-		return term.toLowerCase().trim().split(/\s+/).join(' & ');
+		return term
+			.toLowerCase()
+			.split(/[^\p{L}\p{N}]+/u)
+			.filter((token) => token !== '')
+			.join(' & ');
 	}
 
 	static isUniqueViolation(e: unknown): boolean {

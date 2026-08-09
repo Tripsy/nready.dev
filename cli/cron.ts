@@ -5,12 +5,12 @@
 //  the data source dependencies
 
 import { Command } from 'commander';
+import archiveArticle from '@/features/article/cron-jobs/archive-article.cron';
+import publicRestrictedArticle from '@/features/article/cron-jobs/public-restricted-article.cron';
+import publishScheduledArticle from '@/features/article/cron-jobs/publish-scheduled-article.cron';
 import cronTimeCheck from '@/shared/cron-jobs/cron-time-check.cron';
 import dataSource from '../src/config/data-source.config';
-import {
-	getCoreCronJobsPaths,
-	getFeatureCronJobsPaths,
-} from '../src/providers/cron.provider';
+import { getCronJobsPaths } from '../src/providers/cron.provider';
 
 type CronJob = () => Promise<unknown>;
 
@@ -18,6 +18,9 @@ const program = new Command();
 
 const cronJobs: Record<string, CronJob> = {
 	'cron-time-check': cronTimeCheck,
+	'archive-article': archiveArticle,
+	'public-restricted-article': publicRestrictedArticle,
+	'publish-scheduled-article': publishScheduledArticle,
 };
 
 program
@@ -52,12 +55,8 @@ program
 		if (options.system) {
 			console.debug('System cron jobs:');
 
-			const featureCronJobPaths = getFeatureCronJobsPaths();
-			const coreCronJobPaths = getCoreCronJobsPaths();
-
-			const cronJobsPaths = [...featureCronJobPaths, ...coreCronJobPaths];
-
-			cronJobsPaths.forEach((path) => {
+			// Shared + per-feature paths, the same list the scheduler itself registers
+			getCronJobsPaths().forEach((path) => {
 				console.debug(`  - ${path}`);
 			});
 

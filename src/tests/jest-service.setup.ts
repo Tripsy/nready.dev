@@ -14,6 +14,7 @@ export function createMockQuery() {
 		filterById: jest.fn().mockReturnThis(),
 		filterByRange: jest.fn().mockReturnThis(),
 		filterByTerm: jest.fn().mockReturnThis(),
+		filterPublished: jest.fn().mockReturnThis(),
 		filterByStatus: jest.fn().mockReturnThis(),
 		filterByEmail: jest.fn().mockReturnThis(),
 		filterByTemplate: jest.fn().mockReturnThis(),
