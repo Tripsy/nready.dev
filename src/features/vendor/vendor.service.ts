@@ -90,6 +90,7 @@ export class VendorService {
 			.select([
 				'vendor.id',
 				'vendor.name',
+				'vendor.type',
 				'vendor.status',
 				'vendor.created_at',
 				'vendor.updated_at',
@@ -109,12 +110,14 @@ export class VendorService {
 			.select([
 				'vendor.id',
 				'vendor.name',
+				'vendor.type',
 				'vendor.status',
 				'vendor.created_at',
 				'vendor.updated_at',
 				'vendor.deleted_at',
 			])
 			.filterById(data.filter.id)
+			.filterBy('type', data.filter.type)
 			.filterBy('status', data.filter.status)
 			.filterByTerm(data.filter.term)
 			.withDeleted(withDeleted && data.filter.is_deleted)

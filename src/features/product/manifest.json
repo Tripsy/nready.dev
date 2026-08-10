@@ -4,11 +4,13 @@
 	"relativePath": "/product",
 	"entities": [
 		"product",
-		"place-attribute",
+		"product-attribute",
 		"product-category",
 		"product-content",
+		"product-discount",
+		"product-price",
 		"product-tag"
 	],
-	"depends_on": ["brand", "category", "term"],
+	"depends_on": ["brand", "category", "discount", "term", "vendor@^2.0.0"],
 	"depends_off": ["order"]
 }

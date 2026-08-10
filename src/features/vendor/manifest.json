@@ -1,8 +1,8 @@
 {
 	"name": "vendor",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"relativePath": "/vendor",
 	"entities": ["vendor"],
 	"depends_on": [],
-	"depends_off": []
+	"depends_off": ["cash-flow", "product@^1.0.0"]
 }

@@ -27,12 +27,6 @@ export default class ProductTagEntity extends EntityAbstract {
 	@Index('IDX_product_tag_tag_id')
 	tag_id!: number;
 
-	@Column('jsonb', {
-		nullable: true,
-		comment: 'Reserved column for future use',
-	})
-	details!: Record<string, string | number | boolean> | null;
-
 	// RELATIONS
 	@ManyToOne(() => ProductEntity, {
 		onDelete: 'CASCADE',

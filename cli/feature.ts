@@ -6,15 +6,49 @@ import * as readline from 'node:readline';
 import { display } from './helpers/console-display';
 import { logToFile } from './helpers/console-log';
 import { ConsoleRollback } from './helpers/console-rollback';
+import {
+	compareVersions,
+	type Dependency,
+	formatDependency,
+	parseDependency,
+	parseVersion,
+	satisfiesRange,
+} from './helpers/version';
 
 interface Manifest {
 	name: string;
 	version: string;
 	relativePath: string;
 	entities: string[];
+	/**
+	 * Features this one needs, as `name` (any version) or `name@range` — `vendor@^2.0.0`.
+	 * A range that the installed version does not satisfy blocks install and upgrade.
+	 */
 	depends_on: string[];
+	/**
+	 * Features that need this one, same grammar, plus the literal `core` marker that makes the
+	 * feature unremovable. A declared entry only blocks removal while the installed version
+	 * satisfies its range.
+	 *
+	 * Kept as a declaration even though installed dependents are also detected by scanning: the
+	 * scan is authoritative for what is on disk right now, this records intent for what is not.
+	 */
 	depends_off: string[];
 }
+
+/** An installed feature that names another in its `depends_on`. */
+type Dependent = {
+	feature: string;
+	range: string | null;
+};
+
+/** A `depends_on` / `depends_off` entry resolved against what is actually installed. */
+type DependencyStatus = Dependency & {
+	installedVersion: string | null;
+	satisfied: boolean;
+};
+
+const CORE_MARKER = 'core';
 
 type Mode = 'install' | 'remove' | 'upgrade';
 
@@ -172,11 +206,165 @@ class FeatureManager {
 
 		try {
 			const content = await fs.readFile(filePath, 'utf-8');
+			const manifest: Manifest = JSON.parse(content);
 
-			return JSON.parse(content);
+			// Fail here rather than at the first comparison: every version check downstream
+			// assumes a parseable version, and a manifest is cheap to fix before anything is copied
+			parseVersion(manifest.version);
+
+			return manifest;
 		} catch (error) {
-			throw new Error(`Invalid manifest.json: ${error}`);
+			throw new Error(`Invalid manifest.json (${filePath}): ${error}`);
 		}
+	}
+
+	/** Returns `null` when the feature is not installed, rather than failing like `parseManifest`. */
+	private async readInstalledManifest(
+		feature: string,
+	): Promise<Manifest | null> {
+		const manifestPath = path.join(
+			this.baseFeaturePath,
+			feature,
+			'manifest.json',
+		);
+
+		if (!(await this.pathExists(manifestPath))) {
+			return null;
+		}
+
+		return this.parseManifest(manifestPath);
+	}
+
+	/**
+	 * Resolves manifest entries against the installed tree. An entry is satisfied when the feature
+	 * is installed *and* its version falls inside the declared range.
+	 */
+	private async resolveDependencies(
+		entries: string[],
+	): Promise<DependencyStatus[]> {
+		const statuses: DependencyStatus[] = [];
+
+		for (const entry of entries) {
+			const dependency = parseDependency(entry);
+			const manifest = await this.readInstalledManifest(dependency.name);
+
+			statuses.push({
+				...dependency,
+				installedVersion: manifest?.version ?? null,
+				satisfied:
+					manifest !== null &&
+					satisfiesRange(manifest.version, dependency.range),
+			});
+		}
+
+		return statuses;
+	}
+
+	/**
+	 * Scans every installed feature for a `depends_on` entry naming this one.
+	 *
+	 * Reverse dependencies are read off disk rather than off this feature's own `depends_off`,
+	 * because that field is hand-maintained and drifts — `vendor` listed none while `cash-flow`
+	 * depended on it, so removing `vendor` would have been allowed.
+	 */
+	private async getInstalledDependents(): Promise<Dependent[]> {
+		const dependents: Dependent[] = [];
+		const entries = await fs.readdir(this.baseFeaturePath, {
+			withFileTypes: true,
+		});
+
+		for (const entry of entries) {
+			if (!entry.isDirectory() || entry.name === this.feature) {
+				continue;
+			}
+
+			const manifest = await this.readInstalledManifest(entry.name);
+
+			if (!manifest) {
+				continue;
+			}
+
+			for (const dependency of manifest.depends_on.map(parseDependency)) {
+				if (dependency.name === this.feature) {
+					dependents.push({
+						feature: entry.name,
+						range: dependency.range,
+					});
+				}
+			}
+		}
+
+		return dependents;
+	}
+
+	/**
+	 * Blocks when a dependency is missing, or installed at a version outside the declared range.
+	 */
+	private async assertDependenciesMet(
+		manifest: Manifest,
+		action: string,
+	): Promise<void> {
+		const statuses = await this.resolveDependencies(manifest.depends_on);
+		const unsatisfied = statuses.filter((status) => !status.satisfied);
+
+		if (unsatisfied.length === 0) {
+			return;
+		}
+
+		display
+			.blank()
+			.warning(
+				`The selected feature (e.g.: ${this.feature}) cannot be ${action}`,
+			)
+			.indentMore(4);
+
+		unsatisfied.forEach((status) => {
+			display.bullet(
+				status.installedVersion === null
+					? `${formatDependency(status)} is required but not installed`
+					: `${formatDependency(status)} is required but v${status.installedVersion} is installed`,
+			);
+		});
+
+		display.indentReset();
+
+		display.tip('Start by installing or upgrading them.');
+
+		throw new Error();
+	}
+
+	/**
+	 * The mirror check: whether the version about to land still satisfies everything already
+	 * installed on top of it. Without it an upgrade silently breaks its own dependents.
+	 */
+	private async assertDependentsAccept(version: string): Promise<void> {
+		const dependents = await this.getInstalledDependents();
+		const rejecting = dependents.filter(
+			(dependent) => !satisfiesRange(version, dependent.range),
+		);
+
+		if (rejecting.length === 0) {
+			return;
+		}
+
+		display
+			.blank()
+			.error(
+				`Feature '${this.feature}' v${version} is not accepted by the installed features`,
+			)
+			.indentMore(4);
+
+		rejecting.forEach((dependent) => {
+			display.bullet(
+				`${dependent.feature} requires ${this.feature}@${dependent.range}`,
+			);
+		});
+
+		display.indentReset();
+
+		display.tip('Upgrade them first, or relax their version range.');
+
+		throw new Error();
 	}
 
 	private async dropDatabaseTables(tables: string[]) {
@@ -192,34 +380,6 @@ class FeatureManager {
 		});
 
 		display.indentReset();
-	}
-
-	private async getExistingFeatures(features: string[]): Promise<string[]> {
-		const existingFeatures: string[] = [];
-
-		for (const f of features) {
-			const depPath = path.join(this.baseFeaturePath, f);
-
-			if (await this.pathExists(depPath)) {
-				existingFeatures.push(f);
-			}
-		}
-
-		return existingFeatures;
-	}
-
-	private async getMissingFeatures(features: string[]): Promise<string[]> {
-		const missingFeatures: string[] = [];
-
-		for (const f of features) {
-			const depPath = path.join(this.baseFeaturePath, f);
-
-			if (!(await this.pathExists(depPath))) {
-				missingFeatures.push(f);
-			}
-		}
-
-		return missingFeatures;
 	}
 
 	private async copyDirectory(
@@ -243,18 +403,6 @@ class FeatureManager {
 				await fs.copyFile(srcPath, destPath);
 			}
 		}
-	}
-
-	private compareVersions(a: string, b: string): number {
-		const pa = a.split('.').map(Number);
-		const pb = b.split('.').map(Number);
-
-		for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-			const diff = (pa[i] || 0) - (pb[i] || 0);
-			if (diff !== 0) return diff;
-		}
-
-		return 0;
 	}
 
 	// async executeMigrationGenerate() {
@@ -364,7 +512,7 @@ class FeatureManager {
 
 		const manifest = await this.parseManifest(manifestPath);
 
-		if (manifest.depends_off.includes('core')) {
+		if (manifest.depends_off.includes(CORE_MARKER)) {
 			display
 				.blank()
 				.error(`Feature '${this.feature}' cannot be removed`)
@@ -373,19 +521,36 @@ class FeatureManager {
 			throw new Error();
 		}
 
-		// Check if other features depend on this
-		const existingDependencies = await this.getExistingFeatures(
-			manifest.depends_off,
+		// Declared reverse dependencies, minus the `core` marker handled above. A declaration only
+		// blocks while the installed version is inside its range — `order@^1.0.0` says nothing
+		// about an installed order v2
+		const declared = await this.resolveDependencies(
+			manifest.depends_off.filter((entry) => entry !== CORE_MARKER),
 		);
 
-		if (existingDependencies.length > 0) {
+		const blocking = [
+			...new Set([
+				...declared
+					.filter(
+						(status) =>
+							status.installedVersion !== null &&
+							status.satisfied,
+					)
+					.map((status) => status.name),
+				...(await this.getInstalledDependents()).map(
+					(dependent) => dependent.feature,
+				),
+			]),
+		];
+
+		if (blocking.length > 0) {
 			display
 				.blank()
 				.error(
 					`The selected feature (e.g.: ${this.feature}) cannot be removed`,
 				)
 				.text(
-					`The following features depend on it: ${existingDependencies.join(', ')}; Start by removing them.`,
+					`The following features depend on it: ${blocking.join(', ')}; Start by removing them.`,
 				);
 
 			throw new Error();
@@ -464,27 +629,16 @@ class FeatureManager {
 			throw new Error();
 		}
 
-		// Check if all dependencies exist
-		const missingDependencies = await this.getMissingFeatures(
-			manifest.depends_on,
-		);
+		// Check that every dependency is installed, at a version inside the declared range
+		await this.assertDependenciesMet(manifest, 'installed');
 
-		if (missingDependencies.length > 0) {
-			display
-				.blank()
-				.warning(
-					`The selected feature (e.g.: ${this.feature}) cannot be installed`,
-				)
-				.text(
-					`The following features are needed by this feature: ${missingDependencies.join(', ')}`,
-				)
-				.tip('Start by installing them.');
-
-			throw new Error();
-		}
+		// ...and that whatever is already installed accepts the version landing here
+		await this.assertDependentsAccept(manifest.version);
 
 		// Confirm installation
-		await this.handleConfirmation(`Ready to install "${this.feature}"?`);
+		await this.handleConfirmation(
+			`Ready to install "${this.feature}" v${manifest.version}?`,
+		);
 
 		display.blank();
 
@@ -684,30 +838,15 @@ class FeatureManager {
 			throw new Error();
 		}
 
-		// Check if all dependencies exist
-		const missingDependencies = await this.getMissingFeatures(
-			sourceManifest.depends_on,
-		);
-
-		if (missingDependencies.length > 0) {
-			display
-				.blank()
-				.warning(
-					`The selected feature (e.g.: ${this.feature}) cannot be upgraded`,
-				)
-				.text(
-					`The following features are needed by this feature: ${missingDependencies.join(', ')}`,
-				)
-				.tip('Start by installing them.');
-
-			throw new Error();
-		}
+		// Check that every dependency is installed, at a version inside the range the *incoming*
+		// package declares — the upgrade may well have raised it
+		await this.assertDependenciesMet(sourceManifest, 'upgraded');
 
 		const targetManifest = await this.parseManifest(
 			path.join(featurePath, 'manifest.json'),
 		);
 
-		const versionStatus = this.compareVersions(
+		const versionStatus = compareVersions(
 			targetManifest.version,
 			sourceManifest.version,
 		);
@@ -716,14 +855,20 @@ class FeatureManager {
 			display
 				.blank()
 				.warning(
-					`The selected feature (e.g.: ${this.feature}) version is already ${versionStatus === 0 ? 'up to date' : 'newer'}`,
+					`The selected feature (e.g.: ${this.feature}) version is already ${versionStatus === 0 ? 'up to date' : 'newer'} (installed v${targetManifest.version}, package v${sourceManifest.version})`,
 				);
 
 			throw new Error();
 		}
 
+		// A major bump can drop what a dependent still calls, so the features installed on top of
+		// this one get a say before anything is overwritten
+		await this.assertDependentsAccept(sourceManifest.version);
+
 		// Confirm installation
-		await this.handleConfirmation(`Ready to upgrade "${this.feature}"?`);
+		await this.handleConfirmation(
+			`Ready to upgrade "${this.feature}" from v${targetManifest.version} to v${sourceManifest.version}?`,
+		);
 
 		display.blank();
 

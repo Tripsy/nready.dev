@@ -4,9 +4,6 @@
 		"invalid_code": "Invalid code",
 		"invalid_parent_id": "Invalid parent ID",
 		"required_parent_id": "Parent ID required for region & city types",
-		"address_country_invalid": "Invalid address country",
-		"address_region_invalid": "Invalid address region",
-		"address_city_invalid": "Invalid address city",
 		"country_no_parent": "Country cannot have a parent",
 		"invalid_name": "Invalid place name",
 		"invalid_type_label": "Invalid type label"

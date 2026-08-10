@@ -227,6 +227,21 @@ dependency ordering, blocks removal of `core` features, backs up on upgrade, sup
 **prompts you to run migrations manually** for entity-bearing features. Hardcodes
 `basePath = /var/www/html`.
 
+**Dependencies are version-aware.** A `depends_on` / `depends_off` entry is either a bare name (any
+version) or `name@range` — `vendor@^2.0.0`, `order@>=1.2.0`. Ranges are matched by
+`cli/helpers/version.ts`, a small subset of semver: one constraint per entry, operators
+`^ ~ >= <= > < =` (or none, meaning exact) over `major.minor.patch`, plus `*`. No pre-release tags,
+no unions — bump `version` on any change a dependent could notice, majors for breaking ones.
+
+Three checks run per mode:
+
+- **install / upgrade** — every `depends_on` entry must be installed *and* inside its range.
+- **install / upgrade** — every already-installed feature that names this one must accept the
+  incoming version, so an upgrade cannot silently break what sits on top of it.
+- **remove** — blocked by any installed dependent. Reverse dependencies are found by scanning every
+  installed manifest's `depends_on`, not by trusting `depends_off`, which is hand-maintained and
+  drifts; `depends_off` still declares intent and still carries the `core` marker.
+
 ### Configuration
 
 `src/config/settings.config.ts` centralizes all settings behind `Configuration.get('dot.path')`,

@@ -354,8 +354,10 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - product
         - product-attribute
         - product-category
-        - product-tag
         - product-content
+        - product-discount
+        - product-price
+        - product-tag
     - subscription
         - subscription-evidence
 
@@ -401,6 +403,16 @@ $ pnpx tsx cli/cron.ts run cron-time-check
    }   
 5. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
 6. cron hanging / delaying / semaphore 
+7. Stock handling for `product`
+   - the stock columns (`stock_qty`, `stock_status`, `stock_updated_at`) were dropped from
+     `product`: they only ever applied to `type = physical`, yet were `NOT NULL` on digital and
+     service rows too, and they assumed a single storage location
+   - the replacement is a `product_stock` entity, one row per product (`qty`, `qty_reserved`,
+     `low_stock_threshold`, `status`, `allow_backorder`, `restock_at`), written only for physical
+     products; `updated_at` from `EntityAbstract` replaces `stock_updated_at`
+   - multi-warehouse is the open question — it means `warehouse_id` in the unique key, and there is
+     no warehouse/location feature yet (`place` is country/region/city, not storage)
+   - deferred on purpose: `digital` and `service` products come first, and neither needs stock
 
 # 🔗 Dependencies
     

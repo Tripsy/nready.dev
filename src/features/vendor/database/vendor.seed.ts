@@ -8,27 +8,33 @@ import {
 import { runSeedFile } from '@/database/seed/seed.runner';
 import VendorEntity, {
 	VendorStatusEnum,
+	type VendorType,
+	VendorTypeEnum,
 } from '@/features/vendor/vendor.entity';
 
 const TARGET = 15;
 
-/** Service categories a haulier actually buys from, paired into a readable trade name. */
-const VENDOR_TRADES = [
-	'Fuel',
-	'Tyre',
-	'Service',
-	'Parts',
-	'Wash',
-	'Insurance',
-	'Toll',
-	'Logistics',
-	'Freight',
-	'Customs',
-	'Fleet',
-	'Telematics',
-	'Trailer',
-	'Cargo',
-	'Roadside',
+/**
+ * Trades a haulier actually buys from, paired into a readable trade name. The trade carries the
+ * vendor type with it — what is bought is what decides it, and hard-coding the pair keeps the row
+ * a pure function of the index, which `topUp` requires.
+ */
+const VENDOR_TRADES: ReadonlyArray<readonly [string, VendorType]> = [
+	['Fuel', VendorTypeEnum.SUPPLIER],
+	['Tyre', VendorTypeEnum.SUPPLIER],
+	['Service', VendorTypeEnum.PROVIDER],
+	['Parts', VendorTypeEnum.SUPPLIER],
+	['Wash', VendorTypeEnum.PROVIDER],
+	['Insurance', VendorTypeEnum.PROVIDER],
+	['Toll', VendorTypeEnum.PROVIDER],
+	['Logistics', VendorTypeEnum.PROVIDER],
+	['Freight', VendorTypeEnum.PROVIDER],
+	['Customs', VendorTypeEnum.PROVIDER],
+	['Fleet', VendorTypeEnum.PROVIDER],
+	['Telematics', VendorTypeEnum.PROVIDER],
+	['Trailer', VendorTypeEnum.SUPPLIER],
+	['Cargo', VendorTypeEnum.SUPPLIER],
+	['Roadside', VendorTypeEnum.PROVIDER],
 ] as const;
 
 const VENDOR_SUFFIXES = ['SRL', 'SA', 'Group', 'Partners', 'Services'] as const;
@@ -42,16 +48,22 @@ export const vendorSeed: SeedDefinition = {
 			manager,
 			entityClass: VendorEntity,
 			keyColumn: 'name',
-			buildRow: (index) => ({
-				name: `${VENDOR_TRADES[index % VENDOR_TRADES.length]} ${randomPick(random, VENDOR_SUFFIXES)} ${index + 1}`,
-				status: randomPick(random, [
-					VendorStatusEnum.ACTIVE,
-					VendorStatusEnum.ACTIVE,
-					VendorStatusEnum.ACTIVE,
-					VendorStatusEnum.INACTIVE,
-					VendorStatusEnum.PENDING,
-				]),
-			}),
+			buildRow: (index) => {
+				const [trade, type] =
+					VENDOR_TRADES[index % VENDOR_TRADES.length];
+
+				return {
+					name: `${trade} ${randomPick(random, VENDOR_SUFFIXES)} ${index + 1}`,
+					type,
+					status: randomPick(random, [
+						VendorStatusEnum.ACTIVE,
+						VendorStatusEnum.ACTIVE,
+						VendorStatusEnum.ACTIVE,
+						VendorStatusEnum.INACTIVE,
+						VendorStatusEnum.PENDING,
+					]),
+				};
+			},
 		}),
 };
 
