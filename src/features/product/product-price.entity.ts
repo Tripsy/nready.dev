@@ -1,18 +1,22 @@
 import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import type ProductEntity from '@/features/product/product.entity';
+import type ProductVariantEntity from '@/features/product/product-variant.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 const ENTITY_TABLE_NAME = 'product_price';
 
+/**
+ * Keyed on the variant, not the product: two sizes of one dish are two prices, and a product with
+ * nothing to vary still reaches its price through its single default variant. One place to look.
+ */
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
 	comment:
-		'Per-currency price set for a product; every value excludes VAT, matching the contract discounts are applied under',
+		'Per-currency price set for a product variant; every value excludes VAT, matching the contract discounts are applied under',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
-@Index('IDX_product_price_unique', ['product_id', 'currency'], {
+@Index('IDX_product_price_unique', ['variant_id', 'currency'], {
 	unique: true,
 	where: 'deleted_at IS NULL',
 })
@@ -25,7 +29,7 @@ export default class ProductPriceEntity extends EntityAbstract {
 	static readonly HAS_CACHE: boolean = true;
 
 	@Column('int', { nullable: false })
-	product_id!: number;
+	variant_id!: number;
 
 	@Column('char', {
 		length: 3,
@@ -72,9 +76,9 @@ export default class ProductPriceEntity extends EntityAbstract {
 	min_price!: number | null;
 
 	// RELATIONS
-	@ManyToOne('ProductEntity', {
+	@ManyToOne('ProductVariantEntity', {
 		onDelete: 'CASCADE',
 	})
-	@JoinColumn({ name: 'product_id' })
-	product!: ProductEntity;
+	@JoinColumn({ name: 'variant_id' })
+	variant!: ProductVariantEntity;
 }

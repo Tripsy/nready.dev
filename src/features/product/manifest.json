@@ -5,11 +5,20 @@
 	"entities": [
 		"product",
 		"product-attribute",
+		"product-availability",
+		"product-bundle-group",
+		"product-bundle-item",
+		"product-bundle-item-price",
 		"product-category",
 		"product-content",
 		"product-discount",
+		"product-option",
+		"product-option-group",
+		"product-option-price",
 		"product-price",
-		"product-tag"
+		"product-tag",
+		"product-variant",
+		"product-variant-attribute"
 	],
 	"depends_on": ["brand", "category", "discount", "term", "vendor@^2.0.0"],
 	"depends_off": ["order"]

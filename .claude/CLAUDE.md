@@ -47,6 +47,7 @@ context yet. Read the relevant one *before* proposing an approach in that area, 
 | `auth.md` | Token model, `res.locals.auth`, policy layer, passwords, rate limiting, social login | `account`/`user-permission` features, `*.policy.ts`, auth middleware |
 | `database.md` | Entities, repository/query layer, transactions, migrations, seeds | `*.entity.ts`, `*.repository.ts`, `*.service.ts`, `*.subscriber.ts`, migrations |
 | `error-handling.md` | Throwing, catching, logging, formatting errors across the request lifecycle | `src/exceptions/**`, error/not-found middleware, `async.handler.ts` |
+| `product.md` | The product / variant / option split, availability windows, order-line arithmetic | `src/features/product/**`, `order-product.entity.ts` |
 | `validation.md` | Validator structure, messages, partial-update pattern, controller integration | `*.validator.ts`, feature/shared `locales/*.json` |
 | `testing.md` | Test layout, reusable builders, mocking conventions | `src/tests/**`, `features/**/tests/*.test.ts`, `*.mock.ts` |
 | `typescript.md` | TS conventions, linting rules, code organization | every `.ts` |

@@ -8,10 +8,14 @@ import {
 } from 'typeorm';
 import type BrandEntity from '@/features/brand/brand.entity';
 import type ProductAttributeEntity from '@/features/product/product-attribute.entity';
+import type ProductAvailabilityEntity from '@/features/product/product-availability.entity';
+import type ProductBundleGroupEntity from '@/features/product/product-bundle-group.entity';
+import type ProductBundleItemEntity from '@/features/product/product-bundle-item.entity';
 import type ProductCategoryEntity from '@/features/product/product-category.entity';
 import type ProductDiscountEntity from '@/features/product/product-discount.entity';
-import type ProductPriceEntity from '@/features/product/product-price.entity';
+import type ProductOptionGroupEntity from '@/features/product/product-option-group.entity';
 import type ProductTagEntity from '@/features/product/product-tag.entity';
+import type ProductVariantEntity from '@/features/product/product-variant.entity';
 import type VendorEntity from '@/features/vendor/vendor.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
@@ -67,6 +71,24 @@ export type ProductType =
 	(typeof ProductTypeEnum)[keyof typeof ProductTypeEnum];
 
 /**
+ * Whether the product is sold on its own or assembled from other products.
+ *
+ * Separate from `type` on purpose — that describes how a product is fulfilled (physical, digital,
+ * service) and stays orthogonal: a bundle of physical goods is both `physical` and `bundle`.
+ *
+ * A `bundle` holds no stock and its own `vat_category` is unused: the components carry both, and
+ * the order line explodes into one child per component so each is taxed at its own rate. See
+ * `.claude/rules/product.md`.
+ */
+export const ProductCompositionEnum = {
+	SIMPLE: 'simple',
+	BUNDLE: 'bundle',
+} as const;
+
+export type ProductComposition =
+	(typeof ProductCompositionEnum)[keyof typeof ProductCompositionEnum];
+
+/**
  * The unit `price` in `product-price` is quoted per, and the unit a quantity is expressed in.
  */
 export const ProductUnitEnum = {
@@ -109,33 +131,35 @@ const ENTITY_TABLE_NAME = 'product';
 		'Stores core product information; textual content is saved in a product-content.entity, prices in a product-price.entity',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
-// Both availability windows are cron scans over a handful of due rows; the partial predicate keeps
-// the index to the rows that actually carry a deadline. `discontinued_at` gets none — it is set by
-// hand and the service moves `sale_status` in the same write, so nothing ever scans for it
-@Index('IDX_product_available_from', ['available_from'], {
-	where: 'available_from IS NOT NULL AND deleted_at IS NULL',
-})
-@Index('IDX_product_available_until', ['available_until'], {
-	where: 'available_until IS NOT NULL AND deleted_at IS NULL',
-})
+// The cron that recomputes `sale_status` asks two questions — "coming_soon rows whose
+// available_from is due" and "available rows whose available_until has passed" — so both indexes
+// lead on the equality column and carry the timestamp as the range. The partial predicate keeps
+// them to the rows that actually hold a deadline, which is a small slice of the catalog.
+// `discontinued_at` gets none: it is set by hand and the service moves `sale_status` in the same
+// write, so nothing ever scans for it
+@Index(
+	'IDX_product_sale_status_available_from',
+	['sale_status', 'available_from'],
+	{
+		where: 'available_from IS NOT NULL AND deleted_at IS NULL',
+	},
+)
+@Index(
+	'IDX_product_sale_status_available_until',
+	['sale_status', 'available_until'],
+	{
+		where: 'available_until IS NOT NULL AND deleted_at IS NULL',
+	},
+)
 export default class ProductEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
 
+	// The style code, one level above what is actually sold — the purchasable code and the barcode
+	// live on `product_variant`, since two sizes of the same dish are two sellable things
 	@Column('varchar', { nullable: false })
 	@Index('IDX_product_sku', { unique: true, where: 'deleted_at IS NULL' })
 	sku!: string;
-
-	@Column('varchar', {
-		nullable: true,
-		comment:
-			'External identifier (EAN / UPC / GTIN); `sku` is the internal one',
-	})
-	@Index('IDX_product_barcode', {
-		unique: true,
-		where: 'barcode IS NOT NULL AND deleted_at IS NULL',
-	})
-	barcode!: string | null;
 
 	@Column({
 		type: 'enum',
@@ -152,6 +176,8 @@ export default class ProductEntity extends EntityAbstract {
 		default: ProductSaleStatusEnum.AVAILABLE,
 		nullable: false,
 	})
+	// Kept alongside the two composites above: those are partial, so the planner cannot use them
+	// for a plain "what is sellable" filter that says nothing about the availability window
 	@Index('IDX_product_sale_status')
 	sale_status!: ProductSaleStatus;
 
@@ -161,7 +187,17 @@ export default class ProductEntity extends EntityAbstract {
 		default: ProductTypeEnum.PHYSICAL,
 		nullable: false,
 	})
+	@Index('IDX_product_type')
 	type!: ProductType;
+
+	@Column({
+		type: 'enum',
+		enum: ProductCompositionEnum,
+		default: ProductCompositionEnum.SIMPLE,
+		nullable: false,
+	})
+	@Index('IDX_product_composition')
+	composition!: ProductComposition;
 
 	@Column({
 		type: 'enum',
@@ -207,20 +243,25 @@ export default class ProductEntity extends EntityAbstract {
 	})
 	details!: Record<string, string | number | boolean> | null;
 
-	@Column('int', { nullable: false })
+	// Nullable: plenty of catalogs sell unbranded items — a restaurant dish has no manufacturer,
+	// and inventing a placeholder brand row to satisfy the key is worse than an absent one
+	@Column('int', { nullable: true })
 	@Index('IDX_product_brand_id')
-	brand_id!: number;
+	brand_id!: number | null;
 
 	@Column('int', { nullable: true })
 	@Index('IDX_product_vendor_id')
 	vendor_id!: number | null;
 
 	// RELATIONS
+	// RESTRICT even though the column is nullable: an absent brand is a legitimate state, silently
+	// losing the one that was set is not
 	@ManyToOne('BrandEntity', {
 		onDelete: 'RESTRICT',
+		nullable: true,
 	})
 	@JoinColumn({ name: 'brand_id' })
-	brand?: BrandEntity;
+	brand?: BrandEntity | null;
 
 	@ManyToOne('VendorEntity', {
 		onDelete: 'SET NULL',
@@ -229,11 +270,39 @@ export default class ProductEntity extends EntityAbstract {
 	@JoinColumn({ name: 'vendor_id' })
 	vendor?: VendorEntity | null;
 
+	// Prices hang off the variant, not the product — a product is priced only through them
 	@OneToMany(
-		'ProductPriceEntity',
-		(price: ProductPriceEntity) => price.product,
+		'ProductVariantEntity',
+		(variant: ProductVariantEntity) => variant.product,
 	)
-	prices?: ProductPriceEntity[];
+	variants?: ProductVariantEntity[];
+
+	@OneToMany(
+		'ProductOptionGroupEntity',
+		(optionGroup: ProductOptionGroupEntity) => optionGroup.product,
+	)
+	option_groups?: ProductOptionGroupEntity[];
+
+	@OneToMany(
+		'ProductAvailabilityEntity',
+		(availability: ProductAvailabilityEntity) => availability.product,
+	)
+	availabilities?: ProductAvailabilityEntity[];
+
+	// Populated only while `composition` is `bundle`
+	@OneToMany(
+		'ProductBundleGroupEntity',
+		(bundleGroup: ProductBundleGroupEntity) => bundleGroup.product,
+	)
+	bundle_groups?: ProductBundleGroupEntity[];
+
+	// Every component of this bundle, whether or not it sits in a group — `product_bundle_item`
+	// links to the bundle directly so an always-included component needs no group
+	@OneToMany(
+		'ProductBundleItemEntity',
+		(bundleItem: ProductBundleItemEntity) => bundleItem.product,
+	)
+	bundle_items?: ProductBundleItemEntity[];
 
 	@OneToMany(
 		'ProductDiscountEntity',

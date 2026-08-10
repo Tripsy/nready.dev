@@ -353,11 +353,20 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         - order-shipping-product
     - product
         - product-attribute
+        - product-availability
+        - product-bundle-group
+        - product-bundle-item
+        - product-bundle-item-price
         - product-category
         - product-content
         - product-discount
+        - product-option
+        - product-option-group
+        - product-option-price
         - product-price
         - product-tag
+        - product-variant
+        - product-variant-attribute
     - subscription
         - subscription-evidence
 
@@ -407,12 +416,24 @@ $ pnpx tsx cli/cron.ts run cron-time-check
    - the stock columns (`stock_qty`, `stock_status`, `stock_updated_at`) were dropped from
      `product`: they only ever applied to `type = physical`, yet were `NOT NULL` on digital and
      service rows too, and they assumed a single storage location
-   - the replacement is a `product_stock` entity, one row per product (`qty`, `qty_reserved`,
-     `low_stock_threshold`, `status`, `allow_backorder`, `restock_at`), written only for physical
-     products; `updated_at` from `EntityAbstract` replaces `stock_updated_at`
+   - the replacement is a `product_stock` entity (`qty`, `qty_reserved`, `low_stock_threshold`,
+     `status`, `allow_backorder`, `restock_at`), written only for physical products; `updated_at`
+     from `EntityAbstract` replaces `stock_updated_at`
+   - **it keys on `variant_id`, not `product_id`** — the variant is the purchasable unit, so it is
+     the thing that runs out. Same move `product_price` made
    - multi-warehouse is the open question — it means `warehouse_id` in the unique key, and there is
      no warehouse/location feature yet (`place` is country/region/city, not storage)
    - deferred on purpose: `digital` and `service` products come first, and neither needs stock
+8. Named menus for `product_availability`
+   - the recurring windows say *when* a product can be ordered, but nothing groups them into a
+     named "lunch menu" / "brunch" a customer can be shown, and two products sharing one schedule
+     repeat it row for row
+   - would be a `menu` entity holding the schedule once, with products linked to it; the current
+     per-product windows stay as the override
+9. Recipes / bill of materials
+   - a prepared item consumes ingredients, so depleting stock means modelling what a product is
+     made of — a self-referencing `product_component` (parent product, component variant, quantity)
+   - only worth building alongside `product_stock`, and only for kitchens or assembly, not resale
 
 # 🔗 Dependencies
     
