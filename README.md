@@ -341,11 +341,8 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 1. Go on FE → carrier, discount,
 2. Go on FE → term
 3. Go on FE → category
-4. Prepared entities:
-    - article
-        - article-category
-        - article-content
-        - article-tag  
+4. Go on FE → article
+5. Prepared entities:
     - grn
         - grn-item
         - warehouse-movement
