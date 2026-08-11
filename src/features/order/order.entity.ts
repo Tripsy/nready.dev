@@ -37,6 +37,12 @@ const ENTITY_TABLE_NAME = 'order';
 	comment: 'Stores order information',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
+// Series plus sequential number, matching `invoice` and `grn` — one numbering scheme across every
+// document the business issues
+@Index('IDX_order_ref', ['ref_code', 'ref_number'], {
+	unique: true,
+	where: 'deleted_at IS NULL',
+})
 export default class OrderEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
@@ -45,12 +51,18 @@ export default class OrderEntity extends EntityAbstract {
 	@Index('IDX_order_client_id')
 	client_id!: number;
 
-	@Column('varchar', { nullable: false })
-	@Index('IDX_order_ref_number', {
-		unique: true,
-		where: 'deleted_at IS NULL',
+	@Column('varchar', {
+		length: 3,
+		nullable: false,
+		comment: 'Document series, e.g. ORD',
 	})
-	ref_number!: string;
+	ref_code!: string;
+
+	@Column('int', {
+		nullable: false,
+		comment: 'Sequential number within the series',
+	})
+	ref_number!: number;
 
 	@Column({
 		type: 'enum',

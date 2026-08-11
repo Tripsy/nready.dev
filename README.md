@@ -346,6 +346,9 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         - article-category
         - article-content
         - article-tag  
+    - grn
+        - grn-item
+        - warehouse-movement
     - invoice
     - order
         - order-product
@@ -369,6 +372,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         - product-variant-attribute
     - subscription
         - subscription-evidence
+    - warehouse
 
 # 📌 TODO - EXTRA
 
@@ -380,15 +384,15 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 2. For template section
    - would be a nice idea to keep track of the last changes (maybe add a new column - prev version id and a button to restore to that version)
    - view presentation could be enhanced
-4. Extend `article` 
+3. Extend `article` 
      - parsing capabilities
      - `article_source` - list of available sources from where articles were parsed; `article`
        already carries `source_mode` (`input` / `parsed`) and a `source` jsonb holding the
        display side (`label`, `url`, `disclaimer`, `about`), so this only needs the table plus a
        nullable `source_id` FK on `article`. The jsonb then stays as the per-article override for
        one-off sources that don't deserve a row.
-3. API documentation (`done` for discounts)
-4. create CLI script which should generate something like:
+4. API documentation (`done` for discounts)
+5. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
    Host: nready.dev:3000
    Content-Type: application/json
@@ -410,30 +414,83 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         "end_at": "2025-12-28",
         "notes": "Lorem ipsum ..."
    }   
-5. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-6. cron hanging / delaying / semaphore 
-7. Stock handling for `product`
-   - the stock columns (`stock_qty`, `stock_status`, `stock_updated_at`) were dropped from
-     `product`: they only ever applied to `type = physical`, yet were `NOT NULL` on digital and
-     service rows too, and they assumed a single storage location
-   - the replacement is a `product_stock` entity (`qty`, `qty_reserved`, `low_stock_threshold`,
-     `status`, `allow_backorder`, `restock_at`), written only for physical products; `updated_at`
-     from `EntityAbstract` replaces `stock_updated_at`
-   - **it keys on `variant_id`, not `product_id`** — the variant is the purchasable unit, so it is
-     the thing that runs out. Same move `product_price` made
-   - multi-warehouse is the open question — it means `warehouse_id` in the unique key, and there is
-     no warehouse/location feature yet (`place` is country/region/city, not storage)
-   - deferred on purpose: `digital` and `service` products come first, and neither needs stock
-8. Named menus for `product_availability`
+6. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+7. cron hanging / delaying / semaphore 
+8. Stock handling — entities exist (`warehouse`, `grn`), the behaviour does not
+   The tables are in place and documented on themselves; what is missing is every rule that makes
+   them mean anything, since none of it can live in a constraint:
+   - **Confirming a GRN** writes `warehouse_movement` rows, sets `qty_remaining = qty` on each lot,
+     stamps `confirmed_at`, and recomputes `product_variant.cost_price` as a weighted moving
+     average in base currency:
+     `(qty_on_hand × cost_price + received_qty × unit_cost_base) / (qty_on_hand + received_qty)`.
+     Inbound only — sales, write-offs and supplier returns must not move what the goods cost
+   - **Cancelling a confirmed GRN** posts reversing movements and reduces `qty_remaining`; it never
+     deletes. It must refuse when the lot has already been partly consumed
+   - **FIFO allocation on shipment.** Oldest open lot first, splitting across lots as needed, one
+     movement per lot, `source_type = order_shipping_product`. Fires on the `order_shipping` status
+     transition, not on order confirmation — a lot cannot be picked before the warehouse is known.
+     **Pick order is `(grn.received_at, grn_item.id)`** — two deliveries the same day tie on the
+     timestamp, and an unordered pick reports a different cost of goods on replay
+   - **The weighted average is global, not per warehouse.** `cost_price` lives on
+     `product_variant`, so `qty_on_hand` in the formula is the total across every warehouse.
+     Averaging against one warehouse's quantity while storing the result globally produces a
+     number that looks right and is not. Per-warehouse costing would mean moving `cost_price` onto
+     a per-warehouse row, which is a different design
+   - **`order_shipping.warehouse_id` is `NOT NULL`** — everything shipped leaves from somewhere,
+     and a kitchen is a warehouse for this purpose. `warehouse.is_default` covers the single-site
+     case; `order-shipping` therefore `depends_on` `warehouse`
+   - **Reconciliation cron** comparing `SUM(warehouse_movement.qty)` per lot against
+     `grn_item.qty_remaining`, reporting drift rather than silently correcting it
+   - **`track_stock` is not enforced.** Nothing stops a GRN line naming an untracked variant, or a
+     shipment of a tracked one skipping allocation
+   - **A repository that refuses to delete.** `warehouse_movement` extends
+     `AppendOnlyEntityAbstract`, so there is no `deleted_at` to soft-delete into — but
+     `RepositoryAbstract.delete` would still issue a hard delete. Its repository should override
+     `delete`/`restore` to throw
+   - **Cost never touches the selling price automatically.** A shelf price that moves because a
+     supplier invoice arrived is impossible to explain to a customer who saw a different number
+     yesterday. The GRN should instead flag when margin against `min_price` falls through a
+     threshold
+   - a demo seed for both features; `warehouse` needs its default row seeded — after `place` and
+     `address`, since `warehouse.address_id` is `NOT NULL` — and `vendor` needs the "unknown"
+     sentinel that day-one stock is received against
+   - dropped from scope for now: reservations (only matter once there is a fulfilment gap), serial
+     numbers, stocktake documents, landing costs, and the payable a
+     confirmed GRN should raise in `cash-flow`
+9. Named menus for `product_availability`
    - the recurring windows say *when* a product can be ordered, but nothing groups them into a
      named "lunch menu" / "brunch" a customer can be shown, and two products sharing one schedule
      repeat it row for row
    - would be a `menu` entity holding the schedule once, with products linked to it; the current
      per-product windows stay as the override
-9. Recipes / bill of materials
-   - a prepared item consumes ingredients, so depleting stock means modelling what a product is
-     made of — a self-referencing `product_component` (parent product, component variant, quantity)
-   - only worth building alongside `product_stock`, and only for kitchens or assembly, not resale
+10. Document numbering — a `document_series` entity
+    - `invoice`, `order` and `grn` each carry `ref_code` (series) + `ref_number` (sequential), with a
+      unique index on the pair, and each will end up growing its own copy of the same allocation
+      logic. `subscription` is a fourth shape — one `ref_code` varchar holding the whole reference
+      (`S12345`), no separate number
+    - the entity would own the series definition and the counter: `document_type`
+      (`invoice | order | grn | …`), `code`, `year`, `next_number`, `padding`, `status`, and a unique
+      key on (`document_type`, `code`, `year`)
+    - **allocation has to be atomic.** `MAX(ref_number) + 1` races: two concurrent requests read the
+      same maximum and one loses to the unique index, surfacing as a 500 rather than a retry. It
+      needs `SELECT … FOR UPDATE` on the series row inside the same transaction as the insert, or a
+      Postgres sequence per series
+    - **gaps matter for fiscal documents.** A Postgres sequence is the easy answer but leaks numbers
+      on rollback, and an invoice series with holes in it is a problem in a tax audit. That argues
+      for the locked-counter approach for `invoice`, even if `order` and `grn` could tolerate gaps
+    - **yearly reset** is the common requirement (`INV-2026-0001`) and there is nowhere to put the
+      year today, which is why it belongs in the key rather than being derived from `issued_at`
+    - also lets the series be configured rather than hardcoded — prefix, starting number, padding —
+      and gives drafts somewhere to reserve a number from without consuming it
+    - small fix to fold in while doing this: `IDX_invoice_ref` is declared as
+      (`ref_number`, `ref_code`) while `grn` and `order` use (`ref_code`, `ref_number`). Same
+      uniqueness, opposite leftmost prefix, so invoice cannot use it to list a series
+11. Recipes / bill of materials
+12. a prepared item consumes ingredients, so depleting stock means modelling what a product is
+    made of — a self-referencing `product_component` (parent product, component variant, quantity)
+13. only worth building alongside the `stock` feature, and only for kitchens or assembly, not
+    resale. Ingredients would be variants with `track_stock = true` that the dish consumes; the
+    dish itself stays untracked
 
 # 🔗 Dependencies
     

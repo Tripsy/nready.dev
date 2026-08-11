@@ -18,6 +18,8 @@ import {
 interface Manifest {
 	name: string;
 	version: string;
+	/** Part of the framework rather than the catalog; `remove` refuses to touch it. */
+	is_core?: boolean;
 	relativePath: string;
 	entities: string[];
 	/**
@@ -26,14 +28,13 @@ interface Manifest {
 	 */
 	depends_on: string[];
 	/**
-	 * Features that need this one, same grammar, plus the literal `core` marker that makes the
-	 * feature unremovable. A declared entry only blocks removal while the installed version
-	 * satisfies its range.
+	 * The reverse: features that need this one, same grammar. A declared entry only blocks removal
+	 * while the installed version satisfies its range.
 	 *
 	 * Kept as a declaration even though installed dependents are also detected by scanning: the
 	 * scan is authoritative for what is on disk right now, this records intent for what is not.
 	 */
-	depends_off: string[];
+	required_by: string[];
 }
 
 /** An installed feature that names another in its `depends_on`. */
@@ -42,13 +43,11 @@ type Dependent = {
 	range: string | null;
 };
 
-/** A `depends_on` / `depends_off` entry resolved against what is actually installed. */
+/** A `depends_on` / `required_by` entry resolved against what is actually installed. */
 type DependencyStatus = Dependency & {
 	installedVersion: string | null;
 	satisfied: boolean;
 };
-
-const CORE_MARKER = 'core';
 
 type Mode = 'install' | 'remove' | 'upgrade';
 
@@ -263,7 +262,7 @@ class FeatureManager {
 	/**
 	 * Scans every installed feature for a `depends_on` entry naming this one.
 	 *
-	 * Reverse dependencies are read off disk rather than off this feature's own `depends_off`,
+	 * Reverse dependencies are read off disk rather than off this feature's own `required_by`,
 	 * because that field is hand-maintained and drifts — `vendor` listed none while `cash-flow`
 	 * depended on it, so removing `vendor` would have been allowed.
 	 */
@@ -512,7 +511,7 @@ class FeatureManager {
 
 		const manifest = await this.parseManifest(manifestPath);
 
-		if (manifest.depends_off.includes(CORE_MARKER)) {
+		if (manifest.is_core === true) {
 			display
 				.blank()
 				.error(`Feature '${this.feature}' cannot be removed`)
@@ -521,12 +520,9 @@ class FeatureManager {
 			throw new Error();
 		}
 
-		// Declared reverse dependencies, minus the `core` marker handled above. A declaration only
-		// blocks while the installed version is inside its range — `order@^1.0.0` says nothing
-		// about an installed order v2
-		const declared = await this.resolveDependencies(
-			manifest.depends_off.filter((entry) => entry !== CORE_MARKER),
-		);
+		// Declared reverse dependencies. A declaration only blocks while the installed version is
+		// inside its range — `order@^1.0.0` says nothing about an installed order v2
+		const declared = await this.resolveDependencies(manifest.required_by);
 
 		const blocking = [
 			...new Set([

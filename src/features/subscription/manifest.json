@@ -3,6 +3,6 @@
 	"version": "1.0.0",
 	"relativePath": "/subscription",
 	"entities": ["subscription", "subscription-evidence"],
-	"depends_on": ["user", "order"],
-	"depends_off": []
+	"depends_on": ["user", "order", "invoice"],
+	"required_by": ["article"]
 }

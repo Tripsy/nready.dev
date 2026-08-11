@@ -1,4 +1,5 @@
 import {
+	Check,
 	Column,
 	Entity,
 	Index,
@@ -34,6 +35,13 @@ const ENTITY_TABLE_NAME = 'product_variant';
 		'The purchasable unit of a product; prices and order lines reference this, not the product',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
+// Redundant on its own — `id` is already unique — but it is the target a composite foreign key
+// needs. `order_product` points at (variant_id, product_id) together, which is what stops a line
+// naming a variant that belongs to a different product
+@Index('IDX_product_variant_id_product_id', ['id', 'product_id'], {
+	unique: true,
+})
+@Check(`(cost_price IS NULL OR cost_price >= 0)`)
 // Reads are almost always "every variant of this product, in display order"
 @Index('IDX_product_variant_product_id', ['product_id', 'position'])
 // At most one default per product. Partial rather than a check constraint, because the rule is
@@ -85,6 +93,58 @@ export default class ProductVariantEntity extends EntityAbstract {
 		comment: 'The variant offered when the customer has not chosen one',
 	})
 	is_default!: boolean;
+
+	/**
+	 * Whether this variant's quantity is tracked at all. False for a restaurant dish, true for a
+	 * shirt on a shelf.
+	 *
+	 * Cannot be derived from `product.type`: a dish and a print-on-demand shirt are both
+	 * `physical`, and neither is stocked. Inert unless the `grn` feature is installed — nothing
+	 * here references it, it only gates whether that feature's machinery fires.
+	 */
+	@Column('boolean', {
+		nullable: false,
+		default: false,
+		comment: 'Whether goods receipts and stock movements apply to it',
+	})
+	track_stock!: boolean;
+
+	@Column('int', {
+		nullable: true,
+		comment: 'Quantity at or below which the variant counts as low stock',
+	})
+	low_stock_threshold!: number | null;
+
+	@Column('boolean', {
+		nullable: false,
+		default: false,
+		comment: 'Whether it can still be ordered with nothing on hand',
+	})
+	allow_backorder!: boolean;
+
+	/**
+	 * What the goods cost, in the application's base currency (`app.currency`) — no currency
+	 * column, because there is only ever one. Prices are quoted per market and belong in
+	 * `product_price`; cost is an accounting figure and the books are kept in one currency.
+	 *
+	 * A purchase in another currency is converted once, at the exchange rate of the receiving day,
+	 * and frozen here — never converted again at read time, where a moving rate would make last
+	 * month's margin change. Margin is settled in base currency on both sides:
+	 * `order_product.exchange_rate` brings the sale back to meet this.
+	 *
+	 * Once goods receipts exist this becomes a weighted moving average, recomputed on each
+	 * confirmed receipt as
+	 * `(qty_on_hand × cost_price + received_qty × unit_cost_base) / (qty_on_hand + received_qty)`.
+	 * Inbound only — selling stock must not move what it cost. See the README TODO.
+	 */
+	@Column('decimal', {
+		precision: 12,
+		scale: 2,
+		nullable: true,
+		comment:
+			'Weighted average acquisition cost in the base currency; drives margin reporting',
+	})
+	cost_price!: number | null;
 
 	// RELATIONS
 	@ManyToOne('ProductEntity', {

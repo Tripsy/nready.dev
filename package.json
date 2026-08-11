@@ -23,6 +23,7 @@
 		"typecheck": "tsc --noEmit",
 		"biome": "NODE_OPTIONS=--no-deprecation biome check --write",
 		"messages:check": "tsx cli/check-message-keys.ts",
+		"manifests:check": "tsx cli/check-manifests.ts",
 		"migration:generate": "tsx ./node_modules/typeorm/cli.js migration:generate -d ./src/config/data-source.config.ts",
 		"migration:run": "tsx ./node_modules/typeorm/cli.js migration:run -d ./src/config/data-source.config.ts",
 		"migration:revert": "tsx ./node_modules/typeorm/cli.js migration:revert -d ./src/config/data-source.config.ts",

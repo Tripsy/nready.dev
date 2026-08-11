@@ -4,5 +4,5 @@
 	"relativePath": "/place",
 	"entities": ["place", "place-content"],
 	"depends_on": [],
-	"depends_off": ["client"]
+	"required_by": ["address"]
 }

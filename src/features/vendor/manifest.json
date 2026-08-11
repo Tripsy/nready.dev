@@ -4,5 +4,5 @@
 	"relativePath": "/vendor",
 	"entities": ["vendor"],
 	"depends_on": [],
-	"depends_off": ["cash-flow", "product@^1.0.0"]
+	"required_by": ["cash-flow", "product@^1.0.0", "grn"]
 }

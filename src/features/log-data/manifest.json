@@ -1,8 +1,9 @@
 {
 	"name": "log-data",
 	"version": "1.0.0",
+	"is_core": true,
 	"relativePath": "/log-data",
 	"entities": ["log-data"],
 	"depends_on": [],
-	"depends_off": ["core"]
+	"required_by": []
 }

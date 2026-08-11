@@ -4,5 +4,5 @@
 	"relativePath": "/client",
 	"entities": ["client"],
 	"depends_on": [],
-	"depends_off": ["order"]
+	"required_by": ["order", "invoice", "cash-flow"]
 }

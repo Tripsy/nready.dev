@@ -8,6 +8,11 @@ const ENTITY_TABLE_NAME = 'product_price';
 /**
  * Keyed on the variant, not the product: two sizes of one dish are two prices, and a product with
  * nothing to vary still reaches its price through its single default variant. One place to look.
+ *
+ * **Sales side only.** Every figure here is what a customer is quoted in one market, set rather
+ * than converted. What the goods cost is a single base-currency number on
+ * `product_variant.cost_price`, because the books are kept in one currency and margin is settled
+ * there — `order_product.exchange_rate` brings the sale back to base to meet it.
  */
 @Entity({
 	name: ENTITY_TABLE_NAME,
@@ -22,7 +27,6 @@ const ENTITY_TABLE_NAME = 'product_price';
 })
 @Check(`(price > 0)`)
 @Check(`(rrp IS NULL OR rrp > 0)`)
-@Check(`(cost_price IS NULL OR cost_price >= 0)`)
 @Check(`(min_price IS NULL OR min_price <= price)`)
 export default class ProductPriceEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
@@ -55,18 +59,9 @@ export default class ProductPriceEntity extends EntityAbstract {
 	})
 	rrp!: number | null;
 
-	@Column('decimal', {
-		precision: 12,
-		scale: 2,
-		nullable: true,
-		comment:
-			'Acquisition price paid to the vendor; drives margin reporting',
-	})
-	cost_price!: number | null;
-
 	// The discount engine stacks percentages and amounts, so without a floor a coupon on top of a
-	// campaign can price below cost. Kept separate from `cost_price`: the floor is a commercial
-	// decision, the cost is an accounting fact
+	// campaign can price below cost. A commercial decision set per market, not a computed one —
+	// the cost it protects lives in base currency on `product_variant.cost_price`
 	@Column('decimal', {
 		precision: 12,
 		scale: 2,

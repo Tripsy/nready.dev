@@ -4,5 +4,5 @@
 	"relativePath": "/category",
 	"entities": ["category", "category-content"],
 	"depends_on": ["image"],
-	"depends_off": ["article", "product"]
+	"required_by": ["article", "product"]
 }

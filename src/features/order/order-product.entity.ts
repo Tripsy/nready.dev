@@ -1,4 +1,5 @@
 import {
+	Check,
 	Column,
 	Entity,
 	Index,
@@ -8,7 +9,6 @@ import {
 } from 'typeorm';
 import type { DiscountSnapshot } from '@/features/discount/discount.entity';
 import type OrderEntity from '@/features/order/order.entity';
-import type ProductEntity from '@/features/product/product.entity';
 import type { ProductOptionSnapshot } from '@/features/product/product-option.entity';
 import type ProductVariantEntity from '@/features/product/product-variant.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
@@ -22,6 +22,11 @@ const ENTITY_TABLE_NAME = 'order_product';
 	comment: 'Stores ordered products (order line items)',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
+@Check(`(quantity > 0)`)
+// Zero is legal: a bundle header line carries no money of its own, the component lines it explodes
+// into carry all of it
+@Check(`(price >= 0)`)
+@Check(`(vat_rate >= 0)`)
 export default class OrderProductEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
@@ -49,8 +54,15 @@ export default class OrderProductEntity extends EntityAbstract {
 	})
 	parent_id!: number | null;
 
-	// What was bought. `product_id` is kept alongside it, denormalized: every revenue report groups
-	// by product, and a line that outlives its variant still has to say what it was
+	/**
+	 * What was bought. `product_id` is kept alongside it, denormalized, because every revenue
+	 * report groups by product and would otherwise join through the variant to get there.
+	 *
+	 * The two cannot drift: the `variant` relation below is a **composite** foreign key over both
+	 * columns at once, pointing at `product_variant (id, product_id)`. A line naming a variant that
+	 * belongs to a different product is rejected by the database rather than by a service check
+	 * somebody has to remember to write.
+	 */
 	@Column('int', { nullable: false })
 	@Index('IDX_order_product_variant_id')
 	variant_id!: number;
@@ -127,15 +139,15 @@ export default class OrderProductEntity extends EntityAbstract {
 	)
 	children?: OrderProductEntity[];
 
+	// Composite: both columns are the key, so the pair has to exist together on one variant row.
+	// It also carries the RESTRICT that keeps a sold variant — and through it its product, since
+	// deleting a product cascades to its variants — from being deleted out from under an order
 	@ManyToOne('ProductVariantEntity', {
 		onDelete: 'RESTRICT',
 	})
-	@JoinColumn({ name: 'variant_id' })
+	@JoinColumn([
+		{ name: 'variant_id', referencedColumnName: 'id' },
+		{ name: 'product_id', referencedColumnName: 'product_id' },
+	])
 	variant!: ProductVariantEntity;
-
-	@ManyToOne('ProductEntity', {
-		onDelete: 'RESTRICT',
-	})
-	@JoinColumn({ name: 'product_id' })
-	product!: ProductEntity;
 }

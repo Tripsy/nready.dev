@@ -2,6 +2,7 @@
 paths:
   - "src/features/product/**"
   - "src/features/order/order-product.entity.ts"
+  - "src/features/order-shipping/**"
 ---
 
 # Product Model Protocol
@@ -44,8 +45,18 @@ something that is not a product.
   is the normal case, not a special one. The service layer creates the default variant alongside the
   product. The alternative — prices on both the product and the variant — means two places to look
   and a precedence rule to remember.
-- `product_price` is keyed on `variant_id`, never on `product_id`. Same for `product_stock` when it
-  lands (see §9).
+- `product_price` is keyed on `variant_id`, never on `product_id`. So is stock: `grn_item` and
+  `warehouse_movement` both point at the variant, because the variant is the thing that runs out.
+- **Price is per market, cost is not.** `product_price` holds `price`, `rrp` and `min_price` per
+  currency, since those are quoted rather than converted. `product_variant.cost_price` is a single
+  base-currency figure — the books are kept in one currency, a foreign purchase is converted once
+  at the receiving day's rate and frozen, and margin settles in base on both sides via
+  `order_product.exchange_rate`. Converting cost at read time would make last month's margin move
+  with today's rate.
+- **`track_stock` decides whether stock applies at all**, per variant. False for a restaurant dish,
+  true for a shirt on a shelf. It cannot be derived from `product.type` — a dish and a
+  print-on-demand shirt are both `physical` and neither is stocked. `low_stock_threshold` and
+  `allow_backorder` sit beside it.
 - `product.sku` is the style code; `product_variant.sku` is what is actually sold. `barcode` sits on
   the variant, because a barcode identifies one sellable unit — two sizes carry two different EANs.
 - What distinguishes the siblings lives in `product_variant_attribute`, so the axes are whatever the
@@ -189,7 +200,7 @@ on its own. The behaviour at checkout diverges completely.
 
 `product_bundle_item.group_id` is **nullable**:
 
-- **`NULL`** — always included, never presented as a question. Modelling it as a group of one would
+- **`NULL`** — always included, never presented as a question. Modeling it as a group of one would
   force a term label for a prompt nobody is shown.
 - **set** — one candidate within that group's choice.
 
@@ -247,7 +258,10 @@ largest share so the parts sum to the charged total exactly.
 - **Multi-buy** ("3 for 2", "6-pack") is a promotion, not a composition — use `discount`.
 - **Nested bundles** are forbidden. A bundle item pointing at another bundle's variant creates a
   cycle no constraint can detect; the service must reject it.
-- **Bundle-level stock** does not exist. Availability is the `min` over the components.
+- **Bundle-level stock** does not exist. Availability is the `min` over the components, and a
+  bundle's own variants carry `track_stock = false`. That flag is also what keeps the bundle header
+  out of shipment allocation (§10, invariant 9) — nothing was ever received against the bundle's
+  variant, so there are no lots to pick from.
 - **`vat_category` on a bundle product** is unused — the components carry their own.
 
 ## 9. Availability — two different questions
@@ -283,15 +297,52 @@ These need the service layer. None of them can be pushed into a constraint.
    grouped one agrees.
 6. **No nested bundles**, and **no bundle without components** once `composition = bundle`.
 7. **Bundle apportionment reconciles to the charged total**, remainder to the largest share (§8.3).
+8. **Shipment allocation must not exceed what was ordered.** The sum of
+   `order_shipping_product.quantity` across every shipment of one `order_product` has to stay
+   within that line's `quantity`. Nothing stops shipping 15 of an ordered 14 — and with stock
+   tracking on, the surplus consumes real lots.
+9. **A bundle is shipped by its children, never its header.** `order_shipping_product` points at
+   `order_product`, and for a bundle the header line carries no variant worth picking — the
+   component lines hold the real, stockable variants. Allocating the header would leave the stock
+   movement with nothing to consume.
 
-## 11. Deferred, with the decision already made
+`order_product.variant_id` and `product_id` used to belong on this list. They no longer do: the
+`variant` relation is a composite foreign key over both columns against
+`product_variant (id, product_id)`, so the database rejects the mismatch. Worth copying for
+`product_bundle_item` if (5) ever bites.
 
-- **`product_stock`** keys on `variant_id`, not `product_id` — the variant is the purchasable unit,
-  so it is the thing that runs out. Physical products only. See the README TODO.
+## 11. Stock lives elsewhere
+
+`warehouse` and `grn` are their own features and own every stock table — `warehouse`, `grn`,
+`grn_item`, `warehouse_movement`. Nothing about quantity belongs in `product`; the catalog's only
+part in it is `product_variant.track_stock` (§2).
+
+The entities exist; none of the behaviour does. FIFO allocation, the weighted-average cost
+recompute on receipt, cancellation reversals and reconciliation are all still unwritten, and the
+full design is in the README TODO. Two things settled here because they touch the catalog:
+
+- **Stock leaves on shipment, not on order confirmation.** `order_shipping` carries the
+  `warehouse_id`, so one order can ship from two warehouses, and a lot cannot be picked before the
+  warehouse holding it is known. The movement's source is an `order_shipping_product`;
+  `order_product` carries no lot reference at all, because one line routinely spans several lots.
+- **A damaged return must not go back into its lot.** A customer return normally re-enters the lot
+  it was picked from, at the cost it left with — the movement records its source, so the lot is
+  known. Damaged goods are the exception: returning them to stock means they get picked and sold
+  again. They belong in a write-off, or in a quarantine location. Nothing detects this
+  automatically; the return has to ask.
+
+## 12. Deferred, with the decision already made
+
 - **Named menus** — `product_availability` says *when*, but nothing groups windows into a
   customer-facing "lunch menu", and two products sharing a schedule repeat it row for row.
+- **Order-level currency and totals.** `order_product` and `order_shipping` each carry their own
+  `currency` and `exchange_rate`, and nothing asserts they agree — an order with a RON line and a
+  EUR line is representable today. `invoice` has `base_currency`; `order` has nothing equivalent.
+  A stored order total is worth considering at the same time, since the bundle work made a line
+  total non-trivial (`price`, plus option deltas, plus children) and every listing recomputes it.
 - **Recipes / bill of materials** — a prepared item consumes ingredients, so depleting stock needs a
-  `product_component` layer. Only worth building alongside `product_stock`.
+  `product_component` layer. Ingredients would be variants with `track_stock = true` that the dish
+  consumes; the dish itself stays untracked. Only worth building once the `grn` behaviour exists.
 - **Full-text search** — `ProductQuery.filterByTerm` will ILIKE across `product_content.label` and
   `description`, which no btree can serve. The GIN expression index belongs in a hand-written
   migration and **must not** be added to the entity; see `1786240000000-search-indexes.ts`.

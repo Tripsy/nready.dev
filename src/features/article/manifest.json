@@ -9,6 +9,6 @@
 		"article_tag",
 		"article_visibility_rule"
 	],
-	"depends_on": ["category", "term"],
-	"depends_off": []
+	"depends_on": ["category", "term", "user", "subscription"],
+	"required_by": []
 }

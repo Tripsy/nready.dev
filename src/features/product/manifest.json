@@ -21,5 +21,5 @@
 		"product-variant-attribute"
 	],
 	"depends_on": ["brand", "category", "discount", "term", "vendor@^2.0.0"],
-	"depends_off": ["order"]
+	"required_by": ["order", "grn"]
 }
