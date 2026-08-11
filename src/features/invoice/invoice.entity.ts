@@ -87,7 +87,7 @@ const ENTITY_TABLE_NAME = 'invoice';
 	comment: 'Stores invoices generated from orders',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
-@Index('IDX_invoice_ref', ['ref_number', 'ref_code'], {
+@Index('IDX_invoice_ref', ['ref_code', 'ref_number'], {
 	unique: true,
 	where: 'deleted_at IS NULL',
 })
@@ -100,9 +100,9 @@ export default class InvoiceEntity extends EntityAbstract {
 	order_id!: number;
 
 	@Column('varchar', {
-		length: 3,
+		length: 10,
 		nullable: false,
-		comment: 'Invoice series/code, e.g., ABC',
+		comment: 'Series code allocated from document_series, e.g. INV',
 	})
 	ref_code!: string;
 

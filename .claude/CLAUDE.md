@@ -201,8 +201,9 @@ additional features are expected over time.
 
 - **core:** account, cron-history, log-data, log-history, mail-queue, permission, template, user,
   user-permission
-- **additional:** address, article, brand, carrier, cash-flow, category, client, discount, grn,
-  image, invoice, order, order-shipping, place, product, subscription, term, vendor, warehouse
+- **additional:** address, article, brand, carrier, cash-flow, category, client, discount,
+  document-series, grn, image, invoice, order, order-shipping, place, product, subscription, term,
+  vendor, warehouse
 
 ### Convention-based auto-discovery
 
@@ -346,6 +347,11 @@ default.
   action whose route declares `:params` must merge them — `{ ...req.query, id: req.params.id }` — or
   the schema gets `undefined` and the endpoint rejects every request with `invalid_id`. This has
   shipped twice.
+- **Never derive a document reference from `MAX(ref_number) + 1`.** `ref_code` / `ref_number` on
+  `invoice`, `order` and `grn` — and `subscription.ref_code` — come from
+  `documentSeriesService.allocate(manager, { document_type, at? })`, called with the caller's
+  `EntityManager` so the counter moves and rolls back with the document itself. One series per
+  document type; `at` picks the year's counter for a back-dated document.
 - Soft deletes are pervasive (`deleted_at`); policies gate visibility of deleted records via
   `allowDeleted`.
 - Status changes go through `assertValidStatusTransition(STATUS_TRANSITIONS, current, next)` —

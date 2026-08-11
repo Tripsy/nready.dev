@@ -1,8 +1,14 @@
 {
 	"name": "invoice",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"relativePath": "/invoice",
 	"entities": ["invoice"],
-	"depends_on": ["client", "order", "discount", "cash-flow"],
+	"depends_on": [
+		"client",
+		"order",
+		"discount",
+		"cash-flow",
+		"document-series"
+	],
 	"required_by": ["subscription"]
 }

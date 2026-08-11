@@ -6,6 +6,7 @@ import { brandSeed } from '@/features/brand/database/brand.seed';
 import { cashFlowSeed } from '@/features/cash-flow/database/cash-flow.seed';
 import { categorySeed } from '@/features/category/database/category.seed';
 import { clientSeed } from '@/features/client/database/client.seed';
+import { documentSeriesSeed } from '@/features/document-series/database/document-series.seed';
 import { placeSeed } from '@/features/place/database/place.seed';
 import { termSeed } from '@/features/term/database/term.seed';
 import { userSeed } from '@/features/user/database/user.seed';
@@ -21,6 +22,8 @@ import { vendorSeed } from '@/features/vendor/database/vendor.seed';
  * would make `pnpm run seed` require an environment to be configured.
  */
 const seeds: readonly SeedDefinition[] = [
+	// No parents; the documents that draw from it are seeded later
+	documentSeriesSeed,
 	placeSeed,
 	addressSeed,
 	brandSeed,

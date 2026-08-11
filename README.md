@@ -463,34 +463,18 @@ $ pnpx tsx cli/cron.ts run cron-time-check
      repeat it row for row
    - would be a `menu` entity holding the schedule once, with products linked to it; the current
      per-product windows stay as the override
-10. Document numbering — a `document_series` entity
-    - `invoice`, `order` and `grn` each carry `ref_code` (series) + `ref_number` (sequential), with a
-      unique index on the pair, and each will end up growing its own copy of the same allocation
-      logic. `subscription` is a fourth shape — one `ref_code` varchar holding the whole reference
-      (`S12345`), no separate number
-    - the entity would own the series definition and the counter: `document_type`
-      (`invoice | order | grn | …`), `code`, `year`, `next_number`, `padding`, `status`, and a unique
-      key on (`document_type`, `code`, `year`)
-    - **allocation has to be atomic.** `MAX(ref_number) + 1` races: two concurrent requests read the
-      same maximum and one loses to the unique index, surfacing as a 500 rather than a retry. It
-      needs `SELECT … FOR UPDATE` on the series row inside the same transaction as the insert, or a
-      Postgres sequence per series
-    - **gaps matter for fiscal documents.** A Postgres sequence is the easy answer but leaks numbers
-      on rollback, and an invoice series with holes in it is a problem in a tax audit. That argues
-      for the locked-counter approach for `invoice`, even if `order` and `grn` could tolerate gaps
-    - **yearly reset** is the common requirement (`INV-2026-0001`) and there is nowhere to put the
-      year today, which is why it belongs in the key rather than being derived from `issued_at`
-    - also lets the series be configured rather than hardcoded — prefix, starting number, padding —
-      and gives drafts somewhere to reserve a number from without consuming it
-    - small fix to fold in while doing this: `IDX_invoice_ref` is declared as
-      (`ref_number`, `ref_code`) while `grn` and `order` use (`ref_code`, `ref_number`). Same
-      uniqueness, opposite leftmost prefix, so invoice cannot use it to list a series
-11. Recipes / bill of materials
-12. a prepared item consumes ingredients, so depleting stock means modelling what a product is
-    made of — a self-referencing `product_component` (parent product, component variant, quantity)
-13. only worth building alongside the `stock` feature, and only for kitchens or assembly, not
-    resale. Ingredients would be variants with `track_stock = true` that the dish consumes; the
-    dish itself stays untracked
+10. Document numbering — leftovers from the `document-series` feature
+    - the entity, the atomic allocation and the CRUD surface are in place; what is not:
+    - **nothing calls `documentSeriesService.allocate` yet.** `invoice`, `order`, `grn` and
+      `subscription` are still entity-only, so the wiring happens when their services are written —
+      inside the same transaction as the document insert, which is what keeps the series gapless
+    - drafts still have nowhere to reserve a number from without consuming it. That needs a
+      reservation row (series, number, expires_at) the draft can hold and either claim or release,
+      not another counter
+    - the number handed out never comes back. A canceled document leaves its number spent; a
+      credit-note-style reuse would need an explicit release path
+    - one series per document type, by design. Two concurrent invoice series (per company, per
+      branch) would mean re-keying the table and giving `allocate` something to choose with
 
 # 🔗 Dependencies
     

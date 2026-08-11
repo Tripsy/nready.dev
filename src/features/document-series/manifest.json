@@ -1,0 +1,8 @@
+{
+	"name": "document-series",
+	"version": "1.0.0",
+	"relativePath": "/document-series",
+	"entities": ["document-series"],
+	"depends_on": [],
+	"required_by": ["invoice", "order", "grn", "subscription"]
+}

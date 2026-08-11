@@ -79,7 +79,8 @@ export class AccountOAuthService {
 	): Promise<AccountIdentityEntity | null> {
 		return this.accountIdentityRepository
 			.createQuery()
-			.filterByProviderSubject(provider, provider_user_id)
+			.filterBy('provider', provider)
+			.filterBy('provider_user_id', provider_user_id)
 			.first();
 	}
 

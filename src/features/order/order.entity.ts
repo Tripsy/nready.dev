@@ -52,9 +52,9 @@ export default class OrderEntity extends EntityAbstract {
 	client_id!: number;
 
 	@Column('varchar', {
-		length: 3,
+		length: 10,
 		nullable: false,
-		comment: 'Document series, e.g. ORD',
+		comment: 'Series code allocated from document_series, e.g. ORD',
 	})
 	ref_code!: string;
 

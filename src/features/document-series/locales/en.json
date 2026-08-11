@@ -1,0 +1,25 @@
+{
+	"validation": {
+		"invalid_document_type": "Invalid document type",
+		"invalid_code": "Invalid series code",
+		"invalid_year": "Invalid year (eg: 0 for a series that never resets)",
+		"invalid_start_number": "Invalid start number",
+		"invalid_padding": "Invalid padding",
+		"invalid_format": "Invalid format; the template must contain {number}"
+	},
+	"error": {
+		"not_found": "Document series not found",
+		"not_configured": "No document series is configured for {{document_type}}",
+		"not_allocatable": "Document series for {{document_type}} is no longer available"
+	},
+	"success": {
+		"create": "Document series created successfully",
+		"update": "Document series updated successfully",
+		"delete": "Document series deleted successfully"
+	},
+	"history": {
+		"created": "Document series #{{entity_id}} created by user #{{auth_id}}",
+		"updated": "Document series #{{entity_id}} updated by user #{{auth_id}}",
+		"removed": "Document series {{entity_ids}} removed by user #{{auth_id}}"
+	}
+}

@@ -73,9 +73,9 @@ export default class GrnEntity extends EntityAbstract {
 	static readonly HAS_CACHE: boolean = true;
 
 	@Column('varchar', {
-		length: 3,
+		length: 10,
 		nullable: false,
-		comment: 'Document series, e.g. NIR',
+		comment: 'Series code allocated from document_series, e.g. NIR',
 	})
 	ref_code!: string;
 
