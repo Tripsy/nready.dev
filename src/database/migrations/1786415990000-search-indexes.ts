@@ -16,8 +16,8 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  * `'simple'` rather than `'english'`: no stemming and no stop-word list, so place names and
  * titles match as written. A stemmed configuration would fold "Reading" into "read".
  */
-export class SearchIndexes1786240000000 implements MigrationInterface {
-	name = 'SearchIndexes1786240000000';
+export class SearchIndexes1786415990000 implements MigrationInterface {
+	name = 'SearchIndexes1786415990000';
 
 	public async up(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.query(

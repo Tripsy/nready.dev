@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
-import { VendorStatusEnum } from '@/features/vendor/vendor.entity';
+import {
+	VendorStatusEnum,
+	VendorTypeEnum,
+} from '@/features/vendor/vendor.entity';
 import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
@@ -8,18 +11,26 @@ import {
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
 
-export const paramsUpdateList: string[] = ['name'];
+export const paramsUpdateList: string[] = ['name', 'type'];
 
 export const OrderByEnum = {
 	ID: 'id',
-	MODEL: 'model',
+	NAME: 'name',
 } as const;
 
-const validatorMessages = [...sharedValidatorMessages, 'invalid_name'] as const;
+const validatorMessages = [
+	...sharedValidatorMessages,
+	'invalid_name',
+	'invalid_type',
+] as const;
 
 export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 	readonly create = z.object({
 		name: this.validateString(this.getMessage('invalid_name')),
+		type: this.validateEnum(
+			VendorTypeEnum,
+			this.getMessage('invalid_type'),
+		),
 	});
 
 	readonly read = z.object({
@@ -32,6 +43,11 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 			name: this.validateString(this.getMessage('invalid_name'), {
 				required: false,
 			}),
+			type: this.validateEnum(
+				VendorTypeEnum,
+				this.getMessage('invalid_type'),
+				{ required: false },
+			),
 		})
 		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {
@@ -66,6 +82,11 @@ export class VendorValidator extends BaseValidator<typeof validatorMessages> {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength'),
 			}),
+			type: this.validateEnum(
+				VendorTypeEnum,
+				this.getMessage('invalid_type'),
+				{ required: false },
+			),
 			status: this.validateEnum(
 				VendorStatusEnum,
 				this.getMessage('invalid_status'),

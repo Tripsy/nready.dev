@@ -4,5 +4,5 @@
 	"relativePath": "/image",
 	"entities": ["image", "image-content"],
 	"depends_on": [],
-	"depends_off": []
+	"required_by": ["brand", "category"]
 }

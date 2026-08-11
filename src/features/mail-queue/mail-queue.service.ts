@@ -35,7 +35,7 @@ export class MailQueueService {
 			'updated_at',
 		];
 
-		return this.repository
+		const query = this.repository
 			.createQuery()
 			.select(querySelect)
 			.join('mail_queue.template', 'template', 'LEFT')
@@ -45,8 +45,17 @@ export class MailQueueService {
 				data.filter.sent_date_start,
 				data.filter.sent_date_end,
 			)
-			.filterBy('status', data.filter.status)
-			.filterByTemplate(data.filter.template)
+			.filterBy('status', data.filter.status);
+
+		// The filter accepts either side of the joined template: an id picks one exactly, a
+		// string searches the label
+		if (typeof data.filter.template === 'number') {
+			query.filterBy('template.id', data.filter.template);
+		} else {
+			query.filterBy('template.label', data.filter.template, 'LIKE');
+		}
+
+		return query
 			.filterBy('content::text', data.filter.content, 'ILIKE')
 			.filterBy('to::text', data.filter.to, 'ILIKE')
 			.orderBy(data.order_by, data.direction)

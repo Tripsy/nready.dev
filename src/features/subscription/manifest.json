@@ -1,8 +1,8 @@
 {
 	"name": "subscription",
-	"version": "1.0.0",
-	"relativePath": "/product",
+	"version": "1.1.0",
+	"relativePath": "/subscription",
 	"entities": ["subscription", "subscription-evidence"],
-	"depends_on": ["user", "order"],
-	"depends_off": []
+	"depends_on": ["user", "order", "invoice", "document-series"],
+	"required_by": ["article"]
 }

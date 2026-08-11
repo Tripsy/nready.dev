@@ -1,8 +1,15 @@
 {
 	"name": "user",
 	"version": "1.0.0",
+	"is_core": true,
 	"relativePath": "/user",
 	"entities": ["user"],
 	"depends_on": [],
-	"depends_off": ["core", "account", "subscription"]
+	"required_by": [
+		"account",
+		"subscription",
+		"user-permission",
+		"article",
+		"log-history"
+	]
 }

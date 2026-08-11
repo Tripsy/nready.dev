@@ -2,6 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type CarrierEntity from '@/features/carrier/carrier.entity';
 import type { DiscountSnapshot } from '@/features/discount/discount.entity';
 import type OrderEntity from '@/features/order/order.entity';
+import type WarehouseEntity from '@/features/warehouse/warehouse.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
@@ -52,6 +53,22 @@ export default class OrderShippingEntity extends EntityAbstract {
 	@Column('int', { nullable: true })
 	@Index('IDX_order_shipping_carrier_id')
 	carrier_id!: number | null;
+
+	/**
+	 * Where the goods are picked from — the origin, as opposed to the address snapshot below, which
+	 * is the destination.
+	 *
+	 * Set per shipment rather than per order, so one order can ship from two warehouses. It is also
+	 * what makes FIFO possible: a lot cannot be chosen before the warehouse holding it is known,
+	 * which is why stock leaves on the shipping transition rather than on order confirmation.
+	 *
+	 * Required, because everything physically shipped leaves from somewhere — a restaurant's
+	 * kitchen is a warehouse in every sense this column cares about. `warehouse.is_default` covers
+	 * the single-site case so nothing has to be chosen by hand.
+	 */
+	@Column('int', { nullable: false })
+	@Index('IDX_order_shipping_warehouse_id')
+	warehouse_id!: number;
 
 	@Column('varchar', { nullable: true })
 	@Index('IDX_order_shipping_tracking_number', {
@@ -146,4 +163,12 @@ export default class OrderShippingEntity extends EntityAbstract {
 	})
 	@JoinColumn({ name: 'carrier_id' })
 	carrier?: CarrierEntity | null;
+
+	// RESTRICT: the shipment is the record of where goods physically left from, and losing that
+	// would orphan the stock movements it caused
+	@ManyToOne('WarehouseEntity', {
+		onDelete: 'RESTRICT',
+	})
+	@JoinColumn({ name: 'warehouse_id' })
+	warehouse!: WarehouseEntity;
 }

@@ -1,8 +1,9 @@
 {
 	"name": "log-history",
 	"version": "1.0.0",
+	"is_core": true,
 	"relativePath": "/log-history",
 	"entities": ["log-history"],
-	"depends_on": [],
-	"depends_off": ["core"]
+	"depends_on": ["user"],
+	"required_by": []
 }

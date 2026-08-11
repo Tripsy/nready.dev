@@ -1,4 +1,4 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type OrderProductEntity from '@/features/order/order-product.entity';
 import type OrderShippingEntity from '@/features/order-shipping/order-shipping.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
@@ -20,6 +20,7 @@ const ENTITY_TABLE_NAME = 'order_shipping_product';
 		where: 'deleted_at IS NULL',
 	},
 )
+@Check(`(quantity > 0)`)
 export default class OrderShippingProductEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;

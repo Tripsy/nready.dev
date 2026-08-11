@@ -577,6 +577,25 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 		return this;
 	}
 
+	/**
+	 * Boolean columns stay out of `filterBy`, whose scalar overload is `string | number`: widening
+	 * it would also let a flag reach the `LIKE` branches, where it means nothing. The value is
+	 * bound as a parameter here, exactly as `filterBy` does.
+	 */
+	filterByBoolean(column: string, value?: boolean | null): this {
+		if (value === undefined || value === null) {
+			return this;
+		}
+
+		const columnKey = this.safeColumnKey(column);
+
+		this.query.andWhere(`${this.prepareColumn(column)} = :${columnKey}`, {
+			[columnKey]: value,
+		});
+
+		return this;
+	}
+
 	filterByStatus(status?: string | null) {
 		if (status) {
 			this.filterBy('status', status);

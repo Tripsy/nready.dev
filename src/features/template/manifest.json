@@ -1,8 +1,9 @@
 {
 	"name": "template",
 	"version": "1.0.0",
+	"is_core": true,
 	"relativePath": "/template",
 	"entities": ["template"],
 	"depends_on": [],
-	"depends_off": ["core", "mail-queue"]
+	"required_by": ["mail-queue"]
 }

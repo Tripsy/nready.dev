@@ -12,6 +12,18 @@ export const VendorStatusEnum = {
 export type VendorStatus =
 	(typeof VendorStatusEnum)[keyof typeof VendorStatusEnum];
 
+/**
+ * What the vendor sells, which is also what it is billed for. A fleet operator's fuel seller and
+ * a catalog's goods distributor are both `supplier`; insurance, tolls and telematics are
+ * `provider`. Deliberately about the nature of the supply, not about the industry.
+ */
+export const VendorTypeEnum = {
+	SUPPLIER: 'supplier', // Goods
+	PROVIDER: 'provider', // Services
+} as const;
+
+export type VendorType = (typeof VendorTypeEnum)[keyof typeof VendorTypeEnum];
+
 // Allowed status transition configuration
 export const STATUS_TRANSITIONS: StatusTransitions<VendorStatus> = {
 	[VendorStatusEnum.ACTIVE]: [VendorStatusEnum.INACTIVE],
@@ -37,6 +49,15 @@ export default class VendorEntity extends EntityAbstract {
 	@Column('varchar', { nullable: false })
 	@Index('IDX_vendor_name')
 	name!: string;
+
+	@Column({
+		type: 'enum',
+		enum: VendorTypeEnum,
+		default: VendorTypeEnum.SUPPLIER,
+		nullable: false,
+	})
+	@Index('IDX_vendor_type')
+	type!: VendorType;
 
 	@Column({
 		type: 'enum',

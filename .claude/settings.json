@@ -13,7 +13,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "awk '/^# .*TODO/{f=1;next} f&&/^# /{exit} f' \"$CLAUDE_PROJECT_DIR/README.md\" 2>/dev/null | jq -Rs '{hookSpecificOutput:{hookEventName:\"SessionStart\",additionalContext:(\"README TODO list — present these to the user as a numbered list at the start of your first reply, then address their request:\\n\" + .)}}'",
+						"command": "awk '/^# .*TODO/{f=1;next} f&&/^# /{exit} f' \"$CLAUDE_PROJECT_DIR/README.md\" 2>/dev/null | jq -Rs '{suppressOutput:true,systemMessage:(\"README TODO\\n\" + .)}'",
 						"statusMessage": "Reading README TODO"
 					}
 				]

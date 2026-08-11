@@ -1,8 +1,9 @@
 {
 	"name": "user-permission",
 	"version": "1.0.0",
+	"is_core": true,
 	"relativePath": "/user-permission",
 	"entities": ["user-permission"],
 	"depends_on": ["user", "permission"],
-	"depends_off": []
+	"required_by": []
 }

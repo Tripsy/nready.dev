@@ -24,11 +24,13 @@ export default class ProductAttributeEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
 
+	// No index of its own: it is the leftmost column of `IDX_product_attribute_unique`, which every
+	// read reaches through, and the sibling link tables (product_tag, product_category) do the same
 	@Column('int', { nullable: false })
-	@Index('IDX_product_attribute_product_id')
 	product_id!: number;
 
-	// Both indexed for the RESTRICT check `term` runs on every delete
+	// Both indexed for the cascade `term` triggers on delete — Postgres looks the children up by
+	// each key separately, and neither is a prefix of the unique index
 	@Column('int', { nullable: false })
 	@Index('IDX_product_attribute_attribute_label_id')
 	attribute_label_id!: number;

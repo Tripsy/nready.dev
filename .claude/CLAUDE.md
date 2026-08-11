@@ -47,6 +47,7 @@ context yet. Read the relevant one *before* proposing an approach in that area, 
 | `auth.md` | Token model, `res.locals.auth`, policy layer, passwords, rate limiting, social login | `account`/`user-permission` features, `*.policy.ts`, auth middleware |
 | `database.md` | Entities, repository/query layer, transactions, migrations, seeds | `*.entity.ts`, `*.repository.ts`, `*.service.ts`, `*.subscriber.ts`, migrations |
 | `error-handling.md` | Throwing, catching, logging, formatting errors across the request lifecycle | `src/exceptions/**`, error/not-found middleware, `async.handler.ts` |
+| `product.md` | The product / variant / option / bundle split, availability windows, order-line arithmetic | `src/features/product/**`, `order-product.entity.ts`, `order-shipping/**` |
 | `validation.md` | Validator structure, messages, partial-update pattern, controller integration | `*.validator.ts`, feature/shared `locales/*.json` |
 | `testing.md` | Test layout, reusable builders, mocking conventions | `src/tests/**`, `features/**/tests/*.test.ts`, `*.mock.ts` |
 | `typescript.md` | TS conventions, linting rules, code organization | every `.ts` |
@@ -109,6 +110,8 @@ pnpm run start              # run the build from dist/ (APP_ENV=production)
 pnpm run typecheck          # tsc --noEmit
 pnpm run biome              # biome check --write (lint + format + imports + import cycles)
 pnpm run messages:check     # fail on any lang() key with no locale entry
+pnpm run manifests:check    # fail on a broken feature manifest graph (missing/unsatisfiable
+                            # depends_on, dependency cycles, stale required_by)
 pnpm run test               # Jest + Supertest (see rules/testing.md §2.1 — bail:3 truncates)
 
 pnpm run migration:generate ./src/database/migrations/<name>
@@ -198,8 +201,9 @@ additional features are expected over time.
 
 - **core:** account, cron-history, log-data, log-history, mail-queue, permission, template, user,
   user-permission
-- **additional:** address, article, brand, carrier, cash-flow, category, client, discount, image,
-  invoice, order, order-shipping, place, product, subscription, term, vendor
+- **additional:** address, article, brand, carrier, cash-flow, category, client, discount,
+  document-series, grn, image, invoice, order, order-shipping, place, product, subscription, term,
+  vendor, warehouse
 
 ### Convention-based auto-discovery
 
@@ -221,11 +225,45 @@ production), so discovery works against built output too.
 ### Feature installer (`cli/feature.ts`)
 
 Features can be packaged in `packages/` and installed into `src/features/` via
-`tsx cli/feature.ts <feature> install|remove|upgrade`. Each package carries a `manifest.json`
-(`name`, `version`, `relativePath`, `entities`, `depends_on`, `depends_off`). The CLI enforces
-dependency ordering, blocks removal of `core` features, backs up on upgrade, supports rollback, and
-**prompts you to run migrations manually** for entity-bearing features. Hardcodes
-`basePath = /var/www/html`.
+`tsx cli/feature.ts <feature> install|remove|upgrade`. The CLI enforces dependency ordering, blocks
+removal of core features, backs up on upgrade, supports rollback, and **prompts you to run
+migrations manually** for entity-bearing features. Hardcodes `basePath = /var/www/html`.
+
+Each package carries a `manifest.json`:
+
+```json
+{
+  "name": "product",
+  "version": "1.0.0",
+  "is_core": true,
+  "relativePath": "/product",
+  "entities": ["product", "product-variant"],
+  "depends_on": ["brand", "vendor@^2.0.0"],
+  "required_by": ["order", "grn"]
+}
+```
+
+**The two dependency fields point in opposite directions.** `depends_on` is what this feature needs;
+`required_by` is what needs *it*, and exists so `remove` can refuse to delete something still in use.
+`is_core` is a separate boolean (omitted when false), not a magic entry inside a list.
+
+**Both are version-aware.** An entry is either a bare name (any version) or `name@range` —
+`vendor@^2.0.0`, `order@>=1.2.0`. Ranges are matched by `cli/helpers/version.ts`, a small subset of
+semver: one constraint per entry, operators `^ ~ >= <= > < =` (or none, meaning exact) over
+`major.minor.patch`, plus `*`. No pre-release tags, no unions — bump `version` on any change a
+dependent could notice, majors for breaking ones.
+
+Three checks run per mode:
+
+- **install / upgrade** — every `depends_on` entry must be installed *and* inside its range.
+- **install / upgrade** — every already-installed feature that names this one must accept the
+  incoming version, so an upgrade cannot silently break what sits on top of it.
+- **remove** — refused outright when `is_core`, otherwise blocked by any installed dependent.
+  Reverse dependencies are found by scanning every installed manifest's `depends_on`, not by
+  trusting `required_by`, which is hand-maintained and drifts; `required_by` still declares intent.
+
+`pnpm run manifests:check` validates the whole graph — unresolvable or unsatisfiable `depends_on`,
+dependency cycles, and `required_by` entries that have fallen out of step.
 
 ### Configuration
 
@@ -309,6 +347,11 @@ default.
   action whose route declares `:params` must merge them — `{ ...req.query, id: req.params.id }` — or
   the schema gets `undefined` and the endpoint rejects every request with `invalid_id`. This has
   shipped twice.
+- **Never derive a document reference from `MAX(ref_number) + 1`.** `ref_code` / `ref_number` on
+  `invoice`, `order` and `grn` — and `subscription.ref_code` — come from
+  `documentSeriesService.allocate(manager, document_type)`, called with the caller's
+  `EntityManager` so the counter moves and rolls back with the document itself. One series per
+  document type, counting continuously — there is no yearly reset.
 - Soft deletes are pervasive (`deleted_at`); policies gate visibility of deleted records via
   `allowDeleted`.
 - Status changes go through `assertValidStatusTransition(STATUS_TRANSITIONS, current, next)` —

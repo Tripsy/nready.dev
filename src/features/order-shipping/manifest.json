@@ -3,6 +3,6 @@
 	"version": "1.0.0",
 	"relativePath": "/order-shipping",
 	"entities": ["order-shipping", "order-shipping-product"],
-	"depends_on": ["carrier", "order", "discount"],
-	"depends_off": []
+	"depends_on": ["carrier", "order", "discount", "warehouse"],
+	"required_by": []
 }

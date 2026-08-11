@@ -1,6 +1,7 @@
 {
 	"validation": {
-		"invalid_name": "Invalid name"
+		"invalid_name": "Invalid name",
+		"invalid_type": "Invalid type"
 	},
 	"error": {
 		"not_found": "Vendor not found"
