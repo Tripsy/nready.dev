@@ -1,10 +1,7 @@
 import { expect, jest } from '@jest/globals';
 import type { EntityManager } from 'typeorm';
 import type DocumentSeriesEntity from '@/features/document-series/document-series.entity';
-import {
-	DocumentTypeEnum,
-	YEAR_CONTINUOUS,
-} from '@/features/document-series/document-series.entity';
+import { DocumentTypeEnum } from '@/features/document-series/document-series.entity';
 import { getDocumentSeriesEntityMock } from '@/features/document-series/document-series.mock';
 import type { DocumentSeriesQuery } from '@/features/document-series/document-series.repository';
 import {
@@ -71,10 +68,10 @@ describe('DocumentSeriesService', () => {
 
 		managerQuery.first.mockResolvedValue(series);
 
-		const result = await service.allocate(manager, {
-			document_type: DocumentTypeEnum.INVOICE,
-			at: new Date(series.year, 5, 1),
-		});
+		const result = await service.allocate(
+			manager,
+			DocumentTypeEnum.INVOICE,
+		);
 
 		expect(manager.query).toHaveBeenCalledWith(
 			expect.stringContaining('UPDATE "document_series"'),
@@ -82,9 +79,8 @@ describe('DocumentSeriesService', () => {
 		);
 		expect(result).toEqual({
 			code: 'INV',
-			year: series.year,
 			number: 42,
-			reference: `INV-${series.year}-0042`,
+			reference: 'INV-000042',
 		});
 	});
 
@@ -94,93 +90,35 @@ describe('DocumentSeriesService', () => {
 		managerQuery.first.mockResolvedValue(null);
 
 		await expect(
-			service.allocate(manager, {
-				document_type: DocumentTypeEnum.ORDER,
-			}),
+			service.allocate(manager, DocumentTypeEnum.ORDER),
 		).rejects.toThrow();
 
 		expect(manager.query).not.toHaveBeenCalled();
 	});
 
-	it('should open the new year and restart the counter on rollover', async () => {
-		const series = getDocumentSeriesEntityMock();
-		const { manager, entityRepository } = createManagerMock();
-
-		// The series lookup finds last year's row, the year lookup then finds nothing
-		managerQuery.first
-			.mockResolvedValueOnce(series)
-			.mockResolvedValueOnce(null);
-
-		await service.allocate(manager, {
-			document_type: DocumentTypeEnum.INVOICE,
-			at: new Date(series.year + 1, 0, 1),
-		});
-
-		expect(entityRepository.save).toHaveBeenCalledWith(
-			expect.objectContaining({
-				year: series.year + 1,
-				next_number: series.start_number,
-			}),
-		);
-	});
-
-	it('should reuse a continuous series without opening a year', async () => {
-		const series = {
-			...getDocumentSeriesEntityMock(),
-			year: YEAR_CONTINUOUS,
-			padding: 6,
-			format: '{code}-{number}',
-		};
-		const { manager, entityRepository } = createManagerMock();
-
-		managerQuery.first.mockResolvedValue(series);
-
-		const result = await service.allocate(manager, {
-			document_type: DocumentTypeEnum.ORDER,
-		});
-
-		expect(entityRepository.save).not.toHaveBeenCalled();
-		expect(result.reference).toBe('INV-000042');
-	});
-
 	describe('formatReference', () => {
-		it('should pad the number and drop the year of a continuous series', () => {
+		it('should pad the number to the series width', () => {
 			expect(
 				formatReference(
-					{
-						code: 'S',
-						year: YEAR_CONTINUOUS,
-						padding: 5,
-						format: '{code}{number}',
-					},
+					{ code: 'INV', padding: 6, format: '{code}-{number}' },
+					42,
+				),
+			).toBe('INV-000042');
+		});
+
+		it('should render a format with no separator', () => {
+			expect(
+				formatReference(
+					{ code: 'S', padding: 5, format: '{code}{number}' },
 					12345,
 				),
 			).toBe('S12345');
 		});
 
-		it('should render a yearly series', () => {
-			expect(
-				formatReference(
-					{
-						code: 'INV',
-						year: 2026,
-						padding: 4,
-						format: '{code}-{year}-{number}',
-					},
-					7,
-				),
-			).toBe('INV-2026-0007');
-		});
-
 		it('should leave a number wider than the padding untouched', () => {
 			expect(
 				formatReference(
-					{
-						code: 'NIR',
-						year: YEAR_CONTINUOUS,
-						padding: 2,
-						format: '{code}-{number}',
-					},
+					{ code: 'NIR', padding: 2, format: '{code}-{number}' },
 					12345,
 				),
 			).toBe('NIR-12345');

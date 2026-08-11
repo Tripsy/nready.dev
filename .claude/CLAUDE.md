@@ -349,9 +349,9 @@ default.
   shipped twice.
 - **Never derive a document reference from `MAX(ref_number) + 1`.** `ref_code` / `ref_number` on
   `invoice`, `order` and `grn` — and `subscription.ref_code` — come from
-  `documentSeriesService.allocate(manager, { document_type, at? })`, called with the caller's
+  `documentSeriesService.allocate(manager, document_type)`, called with the caller's
   `EntityManager` so the counter moves and rolls back with the document itself. One series per
-  document type; `at` picks the year's counter for a back-dated document.
+  document type, counting continuously — there is no yearly reset.
 - Soft deletes are pervasive (`deleted_at`); policies gate visibility of deleted records via
   `allowDeleted`.
 - Status changes go through `assertValidStatusTransition(STATUS_TRANSITIONS, current, next)` —

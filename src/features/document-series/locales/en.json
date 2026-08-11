@@ -2,7 +2,6 @@
 	"validation": {
 		"invalid_document_type": "Invalid document type",
 		"invalid_code": "Invalid series code",
-		"invalid_year": "Invalid year (eg: 0 for a series that never resets)",
 		"invalid_start_number": "Invalid start number",
 		"invalid_padding": "Invalid padding",
 		"invalid_format": "Invalid format; the template must contain {number}"

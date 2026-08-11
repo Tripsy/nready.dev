@@ -1,9 +1,6 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
-import {
-	DocumentTypeEnum,
-	YEAR_CONTINUOUS,
-} from '@/features/document-series/document-series.entity';
+import { DocumentTypeEnum } from '@/features/document-series/document-series.entity';
 import { hasAtLeastOneValue } from '@/helpers/objects.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
@@ -12,10 +9,10 @@ import {
 } from '@/shared/abstracts/validator.abstract';
 
 /**
- * `document_type`, `year` and `next_number` are absent on purpose. The first two are the key the
- * counter is stored under — editing them would move already-issued numbers to a different series
- * — and the counter itself only ever moves through an allocation. A series that has to start from
- * a legacy number is created with `start_number` set.
+ * `document_type` and `next_number` are absent on purpose. The first is the key the counter is
+ * stored under — editing it would move already-issued numbers to a different series — and the
+ * counter itself only ever moves through an allocation. A series that has to start from a legacy
+ * number is created with `start_number` set.
  */
 export const paramsUpdateList: string[] = [
 	'code',
@@ -28,14 +25,12 @@ export const paramsUpdateList: string[] = [
 export const OrderByEnum = {
 	ID: 'id',
 	CODE: 'code',
-	YEAR: 'year',
 } as const;
 
 const validatorMessages = [
 	...sharedValidatorMessages,
 	'invalid_document_type',
 	'invalid_code',
-	'invalid_year',
 	'invalid_start_number',
 	'invalid_padding',
 	'invalid_format',
@@ -43,8 +38,6 @@ const validatorMessages = [
 
 const CODE_MAX_CHARS = 10;
 const PADDING_MAX = 12;
-const YEAR_MIN = 2000;
-const YEAR_MAX = 2100;
 
 export class DocumentSeriesValidator extends BaseValidator<
 	typeof validatorMessages
@@ -67,21 +60,6 @@ export class DocumentSeriesValidator extends BaseValidator<
 		return required ? schema.default('{code}-{number}') : schema;
 	}
 
-	private validateYear(required: boolean) {
-		const schema = this.validateNumber(this.getMessage('invalid_year'), {
-			required: false,
-			onlyPositive: false,
-		}).refine(
-			(value) =>
-				value === undefined ||
-				value === YEAR_CONTINUOUS ||
-				(value >= YEAR_MIN && value <= YEAR_MAX),
-			{ message: this.getMessage('invalid_year') },
-		);
-
-		return required ? schema.default(YEAR_CONTINUOUS) : schema;
-	}
-
 	readonly create = z.object({
 		document_type: this.validateEnum(
 			DocumentTypeEnum,
@@ -90,7 +68,6 @@ export class DocumentSeriesValidator extends BaseValidator<
 		code: this.validateString(this.getMessage('invalid_code'), {
 			maxChars: CODE_MAX_CHARS,
 		}),
-		year: this.validateYear(true),
 		start_number: this.validateNumber(
 			this.getMessage('invalid_start_number'),
 			{ required: false },
@@ -173,7 +150,6 @@ export class DocumentSeriesValidator extends BaseValidator<
 				this.getMessage('invalid_document_type'),
 				{ required: false },
 			),
-			year: this.validateYear(false),
 		},
 	});
 }

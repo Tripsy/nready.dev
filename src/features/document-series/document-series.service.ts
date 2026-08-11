@@ -1,10 +1,8 @@
 import type { DeepPartial, EntityManager } from 'typeorm';
 import { lang } from '@/config/message.setup';
 import { BadRequestError } from '@/exceptions';
+import type DocumentSeriesEntity from '@/features/document-series/document-series.entity';
 import type { DocumentType } from '@/features/document-series/document-series.entity';
-import DocumentSeriesEntity, {
-	YEAR_CONTINUOUS,
-} from '@/features/document-series/document-series.entity';
 import {
 	createDocumentSeriesQuery,
 	getDocumentSeriesRepository,
@@ -16,22 +14,12 @@ import {
 import { pickValuesFromObject } from '@/helpers/objects.helper';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
-export type AllocateParams = {
-	document_type: DocumentType;
-	/** Document date, for a back-dated document that belongs to an earlier year's series */
-	at?: Date;
-};
-
 export type AllocatedReference = {
 	code: string;
-	year: number;
 	number: number;
-	/** `format` rendered with the allocated number, e.g. `INV-2026-0001` */
+	/** `format` rendered with the allocated number, e.g. `INV-000142` */
 	reference: string;
 };
-
-/** Postgres unique violation — two transactions rolling the same series into a new year */
-const UNIQUE_VIOLATION = '23505';
 
 export class DocumentSeriesService {
 	constructor(
@@ -48,10 +36,10 @@ export class DocumentSeriesService {
 	 *
 	 * ```ts
 	 * await dataSource.transaction(async (manager) => {
-	 *   const ref = await documentSeriesService.allocate(manager, {
-	 *     document_type: DocumentTypeEnum.INVOICE,
-	 *     at: data.issued_at,
-	 *   });
+	 *   const ref = await documentSeriesService.allocate(
+	 *     manager,
+	 *     DocumentTypeEnum.INVOICE,
+	 *   );
 	 *
 	 *   return manager.getRepository(InvoiceEntity).save({
 	 *     ...entry,
@@ -63,9 +51,9 @@ export class DocumentSeriesService {
 	 */
 	public async allocate(
 		manager: EntityManager,
-		params: AllocateParams,
+		documentType: DocumentType,
 	): Promise<AllocatedReference> {
-		const series = await this.resolveSeries(manager, params);
+		const series = await this.findSeries(manager, documentType);
 
 		// A single statement rather than SELECT … FOR UPDATE + UPDATE: it takes the same row
 		// lock, cannot read a value it then fails to claim, and stays one round trip.
@@ -94,59 +82,17 @@ export class DocumentSeriesService {
 
 		return {
 			code: series.code,
-			year: series.year,
 			number,
 			reference: formatReference(series, number),
 		};
 	}
 
-	/**
-	 * The series row the allocation belongs to, creating the next year's row when a yearly series
-	 * has rolled over. Only `year > 0` resets; a continuous series is used as it stands.
-	 */
-	private async resolveSeries(
-		manager: EntityManager,
-		params: AllocateParams,
-	): Promise<DocumentSeriesEntity> {
-		const latest = await this.findLatestSeries(
-			manager,
-			params.document_type,
-		);
-
-		if (latest.year === YEAR_CONTINUOUS) {
-			return latest;
-		}
-
-		const targetYear = (params.at ?? new Date()).getFullYear();
-
-		if (latest.year === targetYear) {
-			return latest;
-		}
-
-		const existing = await createDocumentSeriesQuery(manager)
-			.filterBy('document_type', params.document_type)
-			.filterBy('year', targetYear)
-			.first();
-
-		if (existing) {
-			return existing;
-		}
-
-		return this.openYear(manager, latest, targetYear);
-	}
-
-	/**
-	 * The newest row of the document type's series, which doubles as the template a new year is
-	 * cloned from. Ordered by year so a series that has run for several years resolves to the
-	 * current definition rather than the one it started with.
-	 */
-	private async findLatestSeries(
+	private async findSeries(
 		manager: EntityManager,
 		documentType: DocumentType,
 	): Promise<DocumentSeriesEntity> {
 		const series = await createDocumentSeriesQuery(manager)
 			.filterBy('document_type', documentType)
-			.orderBy('year', 'DESC')
 			.first();
 
 		if (!series) {
@@ -161,45 +107,6 @@ export class DocumentSeriesService {
 	}
 
 	/**
-	 * Clone a series into a new year, carrying its configuration over and restarting the counter.
-	 * Two documents issued at the same moment on 1 January race here; the unique key decides and
-	 * the loser reads the winner's row.
-	 */
-	private async openYear(
-		manager: EntityManager,
-		template: DocumentSeriesEntity,
-		year: number,
-	): Promise<DocumentSeriesEntity> {
-		try {
-			return await manager.getRepository(DocumentSeriesEntity).save({
-				document_type: template.document_type,
-				code: template.code,
-				year,
-				start_number: template.start_number,
-				next_number: template.start_number,
-				padding: template.padding,
-				format: template.format,
-				notes: template.notes,
-			});
-		} catch (error) {
-			if (
-				!(
-					error instanceof Error &&
-					(error as { driverError?: { code?: string } }).driverError
-						?.code === UNIQUE_VIOLATION
-				)
-			) {
-				throw error;
-			}
-
-			return createDocumentSeriesQuery(manager)
-				.filterBy('document_type', template.document_type)
-				.filterBy('year', year)
-				.firstOrFail();
-		}
-	}
-
-	/**
 	 * @description Used in `create` method from controller;
 	 */
 	public async create(
@@ -208,7 +115,6 @@ export class DocumentSeriesService {
 		return this.repository.save({
 			document_type: data.document_type,
 			code: data.code,
-			year: data.year,
 			start_number: data.start_number,
 			// A brand-new series has issued nothing, so the next number is the first one
 			next_number: data.start_number,
@@ -241,8 +147,8 @@ export class DocumentSeriesService {
 
 	/**
 	 * Hard delete: the table has no `deleted_at`, and a series that has issued numbers should be
-	 * left in place rather than removed — its `(document_type, year)` key is what the next
-	 * allocation continues from.
+	 * left in place rather than removed — its counter is what the next allocation continues
+	 * from.
 	 */
 	public async delete(id: number) {
 		await this.repository.createQuery().filterById(id).delete(false);
@@ -271,7 +177,6 @@ export class DocumentSeriesService {
 			.select(SELECT_COLUMNS)
 			.filterById(data.filter.id)
 			.filterBy('document_type', data.filter.document_type)
-			.filterBy('year', data.filter.year)
 			.filterByTerm(data.filter.term)
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit)
@@ -283,7 +188,6 @@ const SELECT_COLUMNS = [
 	'document_series.id',
 	'document_series.document_type',
 	'document_series.code',
-	'document_series.year',
 	'document_series.start_number',
 	'document_series.next_number',
 	'document_series.padding',
@@ -298,15 +202,11 @@ const SELECT_COLUMNS = [
  * the display reference without allocating anything.
  */
 export function formatReference(
-	series: Pick<DocumentSeriesEntity, 'code' | 'year' | 'padding' | 'format'>,
+	series: Pick<DocumentSeriesEntity, 'code' | 'padding' | 'format'>,
 	number: number,
 ): string {
 	return series.format
 		.replace('{code}', series.code)
-		.replace(
-			'{year}',
-			series.year === YEAR_CONTINUOUS ? '' : String(series.year),
-		)
 		.replace('{number}', String(number).padStart(series.padding, '0'));
 }
 

@@ -14,11 +14,10 @@ export function getDocumentSeriesEntityMock(): DocumentSeriesEntity {
 		id: 1,
 		document_type: DocumentTypeEnum.INVOICE,
 		code: 'INV',
-		year: 2026,
 		start_number: 1,
 		next_number: 42,
-		padding: 4,
-		format: '{code}-{year}-{number}',
+		padding: 6,
+		format: '{code}-{number}',
 		notes: null,
 		created_at: createPastDate(86400),
 		updated_at: createPastDate(43200),
@@ -29,17 +28,16 @@ export const documentSeriesInputPayloads = {
 	create: {
 		document_type: DocumentTypeEnum.INVOICE,
 		code: 'INV',
-		year: 2026,
 		start_number: 1,
-		padding: 4,
-		format: '{code}-{year}-{number}',
+		padding: 6,
+		format: '{code}-{number}',
 		notes: 'Fiscal invoice series',
 	},
 	update: {
 		id: 1,
 		code: 'INV',
 		padding: 5,
-		format: '{code}-{year}-{number}',
+		format: '{code}-{number}',
 		notes: 'Fiscal invoice series',
 	},
 	find: {
@@ -50,7 +48,6 @@ export const documentSeriesInputPayloads = {
 		filter: {
 			term: 'INV',
 			document_type: DocumentTypeEnum.INVOICE,
-			year: 2026,
 		},
 	},
 };

@@ -8,50 +8,38 @@ import { runSeedFile } from '@/database/seed/seed.runner';
 import DocumentSeriesEntity, {
 	type DocumentType,
 	DocumentTypeEnum,
-	YEAR_CONTINUOUS,
 } from '@/features/document-series/document-series.entity';
 
 type SeriesRow = {
 	document_type: DocumentType;
 	code: string;
-	year: number;
 	padding: number;
 	format: string;
 };
 
-const currentYear = new Date().getFullYear();
-
-/**
- * One series per document type, which is what an allocation resolves on. The two shapes are both
- * represented on purpose: fiscal documents reset every year and read `INV-2026-0001`, while
- * orders and subscriptions run continuously.
- */
+/** One series per document type, which is what an allocation resolves on */
 const SERIES: readonly SeriesRow[] = [
 	{
 		document_type: DocumentTypeEnum.INVOICE,
 		code: 'INV',
-		year: currentYear,
-		padding: 4,
-		format: '{code}-{year}-{number}',
+		padding: 6,
+		format: '{code}-{number}',
 	},
 	{
 		document_type: DocumentTypeEnum.ORDER,
 		code: 'ORD',
-		year: YEAR_CONTINUOUS,
 		padding: 6,
 		format: '{code}-{number}',
 	},
 	{
 		document_type: DocumentTypeEnum.GRN,
 		code: 'NIR',
-		year: currentYear,
-		padding: 4,
-		format: '{code}-{year}-{number}',
+		padding: 6,
+		format: '{code}-{number}',
 	},
 	{
 		document_type: DocumentTypeEnum.SUBSCRIPTION,
 		code: 'S',
-		year: YEAR_CONTINUOUS,
 		padding: 5,
 		format: '{code}{number}',
 	},
