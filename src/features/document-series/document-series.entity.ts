@@ -22,13 +22,14 @@ export const DocumentTypeEnum = {
 export type DocumentType =
 	(typeof DocumentTypeEnum)[keyof typeof DocumentTypeEnum];
 
-/** Placeholders understood by `format`; `{number}` arrives already padded */
-export const REFERENCE_PLACEHOLDERS = ['{code}', '{number}'] as const;
-
 const ENTITY_TABLE_NAME = 'document_series';
 
 /**
  * Numbering series and their counters.
+ *
+ * A series stores only what has to be allocated — the code and the running number. How the two
+ * are rendered into a reference is a presentation choice and belongs to whatever displays it,
+ * so there is no template or padding column here.
  *
  * A series runs continuously — there is no yearly reset. Restarting the counter would need the
  * year on the document too: references are keyed on (`ref_code`, `ref_number`), so the first
@@ -49,7 +50,6 @@ const ENTITY_TABLE_NAME = 'document_series';
 	unique: true,
 })
 @Check(`("start_number" > 0 AND "next_number" > 0)`)
-@Check(`("padding" BETWEEN 0 AND 12)`)
 export default class DocumentSeriesEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
@@ -90,20 +90,6 @@ export default class DocumentSeriesEntity {
 		comment: 'Number handed out by the next allocation',
 	})
 	next_number!: number;
-
-	@Column('smallint', {
-		nullable: false,
-		default: 0,
-		comment: 'Zero-padding width applied to {number}; 0 = no padding',
-	})
-	padding!: number;
-
-	@Column('varchar', {
-		nullable: false,
-		default: '{code}-{number}',
-		comment: 'Reference template, placeholders {code} {number}',
-	})
-	format!: string;
 
 	// OTHER
 	@Column('text', { nullable: true })

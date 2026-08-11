@@ -1,6 +1,6 @@
 import type { DeepPartial, EntityManager } from 'typeorm';
 import { lang } from '@/config/message.setup';
-import { BadRequestError } from '@/exceptions';
+import { BadRequestError, CustomError } from '@/exceptions';
 import type DocumentSeriesEntity from '@/features/document-series/document-series.entity';
 import type { DocumentType } from '@/features/document-series/document-series.entity';
 import {
@@ -12,13 +12,16 @@ import {
 	paramsUpdateList,
 } from '@/features/document-series/document-series.validator';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
+import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
+/**
+ * What a series hands out. Rendering the two into a reference a person reads (`INV-000142`)
+ * is left to the display layer — the series holds no template to render it with.
+ */
 export type AllocatedReference = {
 	code: string;
 	number: number;
-	/** `format` rendered with the allocated number, e.g. `INV-000142` */
-	reference: string;
 };
 
 export class DocumentSeriesService {
@@ -83,7 +86,6 @@ export class DocumentSeriesService {
 		return {
 			code: series.code,
 			number,
-			reference: formatReference(series, number),
 		};
 	}
 
@@ -108,20 +110,49 @@ export class DocumentSeriesService {
 
 	/**
 	 * @description Used in `create` method from controller;
+	 *
+	 * One series per document type, enforced by a unique index. The lookup is what produces a
+	 * message the caller can act on; the catch below covers the insert that loses a race with
+	 * a concurrent one, where the index is the only thing left to stop it. Without either, a
+	 * duplicate surfaces as a driver error — a 500 whose message the error handler masks.
 	 */
 	public async create(
 		data: ValidatorOutput<DocumentSeriesValidator, 'create'>,
 	): Promise<DocumentSeriesEntity> {
-		return this.repository.save({
-			document_type: data.document_type,
-			code: data.code,
-			start_number: data.start_number,
-			// A brand-new series has issued nothing, so the next number is the first one
-			next_number: data.start_number,
-			padding: data.padding,
-			format: data.format,
-			notes: data.notes ?? null,
-		});
+		const existing = await this.repository
+			.createQuery()
+			.filterBy('document_type', data.document_type)
+			.first();
+
+		if (existing) {
+			throw this.alreadyExistsError(data.document_type);
+		}
+
+		try {
+			return await this.repository.save({
+				document_type: data.document_type,
+				code: data.code,
+				start_number: data.start_number,
+				// A brand-new series has issued nothing, so the next number is the first one
+				next_number: data.start_number,
+				notes: data.notes ?? null,
+			});
+		} catch (error) {
+			if (RepositoryAbstract.isUniqueViolation(error)) {
+				throw this.alreadyExistsError(data.document_type);
+			}
+
+			throw error;
+		}
+	}
+
+	private alreadyExistsError(documentType: DocumentType): CustomError {
+		return new CustomError(
+			409,
+			lang('document-series.error.already_exists', {
+				document_type: documentType,
+			}),
+		);
 	}
 
 	/**
@@ -190,25 +221,10 @@ const SELECT_COLUMNS = [
 	'document_series.code',
 	'document_series.start_number',
 	'document_series.next_number',
-	'document_series.padding',
-	'document_series.format',
 	'document_series.notes',
 	'document_series.created_at',
 	'document_series.updated_at',
 ];
-
-/**
- * Render a series' template. Exported so a caller holding `ref_code` / `ref_number` can rebuild
- * the display reference without allocating anything.
- */
-export function formatReference(
-	series: Pick<DocumentSeriesEntity, 'code' | 'padding' | 'format'>,
-	number: number,
-): string {
-	return series.format
-		.replace('{code}', series.code)
-		.replace('{number}', String(number).padStart(series.padding, '0'));
-}
 
 export const documentSeriesService = new DocumentSeriesService(
 	getDocumentSeriesRepository(),

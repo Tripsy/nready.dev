@@ -14,13 +14,7 @@ import {
  * counter itself only ever moves through an allocation. A series that has to start from a legacy
  * number is created with `start_number` set.
  */
-export const paramsUpdateList: string[] = [
-	'code',
-	'start_number',
-	'padding',
-	'format',
-	'notes',
-];
+export const paramsUpdateList: string[] = ['code', 'start_number', 'notes'];
 
 export const OrderByEnum = {
 	ID: 'id',
@@ -32,34 +26,13 @@ const validatorMessages = [
 	'invalid_document_type',
 	'invalid_code',
 	'invalid_start_number',
-	'invalid_padding',
-	'invalid_format',
 ] as const;
 
 const CODE_MAX_CHARS = 10;
-const PADDING_MAX = 12;
 
 export class DocumentSeriesValidator extends BaseValidator<
 	typeof validatorMessages
 > {
-	/**
-	 * A template with no `{number}` would hand the same reference to every document, which the
-	 * unique index on the document itself would only catch on the second insert.
-	 */
-	private validateFormat(required: boolean) {
-		const schema = this.validateString(this.getMessage('invalid_format'), {
-			required: false,
-			maxChars: 50,
-		}).refine(
-			(value) => value === undefined || value.includes('{number}'),
-			{
-				message: this.getMessage('invalid_format'),
-			},
-		);
-
-		return required ? schema.default('{code}-{number}') : schema;
-	}
-
 	readonly create = z.object({
 		document_type: this.validateEnum(
 			DocumentTypeEnum,
@@ -72,17 +45,6 @@ export class DocumentSeriesValidator extends BaseValidator<
 			this.getMessage('invalid_start_number'),
 			{ required: false },
 		).default(1),
-		padding: this.validateNumber(this.getMessage('invalid_padding'), {
-			required: false,
-			onlyPositive: false,
-		})
-			.refine(
-				(value) =>
-					value === undefined || (value >= 0 && value <= PADDING_MAX),
-				{ message: this.getMessage('invalid_padding') },
-			)
-			.default(0),
-		format: this.validateFormat(true),
 		notes: this.validateString(this.getMessage('invalid_notes'), {
 			required: false,
 		}),
@@ -103,15 +65,6 @@ export class DocumentSeriesValidator extends BaseValidator<
 				this.getMessage('invalid_start_number'),
 				{ required: false },
 			),
-			padding: this.validateNumber(this.getMessage('invalid_padding'), {
-				required: false,
-				onlyPositive: false,
-			}).refine(
-				(value) =>
-					value === undefined || (value >= 0 && value <= PADDING_MAX),
-				{ message: this.getMessage('invalid_padding') },
-			),
-			format: this.validateFormat(false),
 			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),

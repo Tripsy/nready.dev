@@ -1,8 +1,11 @@
 import { expect, jest } from '@jest/globals';
-import type { EntityManager } from 'typeorm';
+import { type EntityManager, QueryFailedError } from 'typeorm';
 import type DocumentSeriesEntity from '@/features/document-series/document-series.entity';
 import { DocumentTypeEnum } from '@/features/document-series/document-series.entity';
-import { getDocumentSeriesEntityMock } from '@/features/document-series/document-series.mock';
+import {
+	documentSeriesOutputPayloads,
+	getDocumentSeriesEntityMock,
+} from '@/features/document-series/document-series.mock';
 import type { DocumentSeriesQuery } from '@/features/document-series/document-series.repository';
 import {
 	createMockQuery,
@@ -33,7 +36,7 @@ jest.unstable_mockModule(
 	}),
 );
 
-const { DocumentSeriesService, formatReference } = await import(
+const { DocumentSeriesService } = await import(
 	'@/features/document-series/document-series.service'
 );
 
@@ -80,7 +83,6 @@ describe('DocumentSeriesService', () => {
 		expect(result).toEqual({
 			code: 'INV',
 			number: 42,
-			reference: 'INV-000042',
 		});
 	});
 
@@ -96,32 +98,66 @@ describe('DocumentSeriesService', () => {
 		expect(manager.query).not.toHaveBeenCalled();
 	});
 
-	describe('formatReference', () => {
-		it('should pad the number to the series width', () => {
-			expect(
-				formatReference(
-					{ code: 'INV', padding: 6, format: '{code}-{number}' },
-					42,
-				),
-			).toBe('INV-000042');
+	describe('create', () => {
+		it('should save a series when the document type is free', async () => {
+			const entry = getDocumentSeriesEntityMock();
+
+			mockDocumentSeries.query.first.mockResolvedValue(null);
+			mockDocumentSeries.repository.save.mockResolvedValue(entry);
+
+			const result = await service.create(
+				documentSeriesOutputPayloads.create,
+			);
+
+			expect(mockDocumentSeries.repository.save).toHaveBeenCalledWith(
+				expect.objectContaining({
+					document_type: DocumentTypeEnum.INVOICE,
+					// A brand-new series has issued nothing
+					next_number:
+						documentSeriesOutputPayloads.create.start_number,
+				}),
+			);
+			expect(result).toBe(entry);
 		});
 
-		it('should render a format with no separator', () => {
-			expect(
-				formatReference(
-					{ code: 'S', padding: 5, format: '{code}{number}' },
-					12345,
-				),
-			).toBe('S12345');
+		it('should reject a second series for the same document type', async () => {
+			mockDocumentSeries.query.first.mockResolvedValue(
+				getDocumentSeriesEntityMock(),
+			);
+
+			await expect(
+				service.create(documentSeriesOutputPayloads.create),
+			).rejects.toThrow('document-series.error.already_exists');
+
+			expect(mockDocumentSeries.repository.save).not.toHaveBeenCalled();
 		});
 
-		it('should leave a number wider than the padding untouched', () => {
-			expect(
-				formatReference(
-					{ code: 'NIR', padding: 2, format: '{code}-{number}' },
-					12345,
-				),
-			).toBe('NIR-12345');
+		// The lookup above cannot see an insert still in flight, so the unique index is what
+		// stops the loser of that race — as a driver error the handler would mask as a 500.
+		it('should turn a unique violation into a conflict', async () => {
+			mockDocumentSeries.query.first.mockResolvedValue(null);
+			mockDocumentSeries.repository.save.mockRejectedValue(
+				new QueryFailedError('insert', [], {
+					code: '23505',
+				} as unknown as Error),
+			);
+
+			await expect(
+				service.create(documentSeriesOutputPayloads.create),
+			).rejects.toThrow('document-series.error.already_exists');
+		});
+
+		it('should let an unrelated database error through', async () => {
+			const failure = new QueryFailedError('insert', [], {
+				code: '23502',
+			} as unknown as Error);
+
+			mockDocumentSeries.query.first.mockResolvedValue(null);
+			mockDocumentSeries.repository.save.mockRejectedValue(failure);
+
+			await expect(
+				service.create(documentSeriesOutputPayloads.create),
+			).rejects.toBe(failure);
 		});
 	});
 });

@@ -2,12 +2,11 @@
 	"validation": {
 		"invalid_document_type": "Invalid document type",
 		"invalid_code": "Invalid series code",
-		"invalid_start_number": "Invalid start number",
-		"invalid_padding": "Invalid padding",
-		"invalid_format": "Invalid format; the template must contain {number}"
+		"invalid_start_number": "Invalid start number"
 	},
 	"error": {
 		"not_found": "Document series not found",
+		"already_exists": "A document series already exists for {{document_type}}",
 		"not_configured": "No document series is configured for {{document_type}}",
 		"not_allocatable": "Document series for {{document_type}} is no longer available"
 	},

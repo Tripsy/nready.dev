@@ -475,10 +475,6 @@ $ pnpx tsx cli/cron.ts run cron-time-check
       credit-note-style reuse would need an explicit release path
     - one series per document type, by design. Two concurrent invoice series (per company, per
       branch) would mean re-keying the table and giving `allocate` something to choose with
-    - **no yearly reset.** A series counts continuously (`INV-000142`). Per-year numbering
-      (`INV-2026-0001`) would need a `ref_year` on `invoice`, `order` and `grn` joining their
-      (`ref_code`, `ref_number`) unique index — without it the first document of a new year
-      collides with the first of the old one
 
 # 🔗 Dependencies
     

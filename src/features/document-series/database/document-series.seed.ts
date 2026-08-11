@@ -13,8 +13,6 @@ import DocumentSeriesEntity, {
 type SeriesRow = {
 	document_type: DocumentType;
 	code: string;
-	padding: number;
-	format: string;
 };
 
 /** One series per document type, which is what an allocation resolves on */
@@ -22,26 +20,18 @@ const SERIES: readonly SeriesRow[] = [
 	{
 		document_type: DocumentTypeEnum.INVOICE,
 		code: 'INV',
-		padding: 6,
-		format: '{code}-{number}',
 	},
 	{
 		document_type: DocumentTypeEnum.ORDER,
 		code: 'ORD',
-		padding: 6,
-		format: '{code}-{number}',
 	},
 	{
 		document_type: DocumentTypeEnum.GRN,
 		code: 'NIR',
-		padding: 6,
-		format: '{code}-{number}',
 	},
 	{
 		document_type: DocumentTypeEnum.SUBSCRIPTION,
 		code: 'S',
-		padding: 5,
-		format: '{code}{number}',
 	},
 ];
 
