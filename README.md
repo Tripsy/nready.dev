@@ -141,6 +141,9 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 # 🛠 Setup
 
 ### 1. Add `hosts` record
+
+sudo nano /private/etc/hosts
+
 For configuration refer to this guide:  
 [How to Edit the Host File on macOS](https://phoenixnap.com/kb/mac-hosts-file)
 
@@ -157,7 +160,7 @@ docker compose up
 Once the container is running, connect to it with:
 
 ```
-docker exec -it nready.dev /bin/bash
+docker exec -it nready-api.test /bin/bash
 ```
 
 ### 4. Install dependencies inside the container
@@ -391,7 +394,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 4. API documentation (`done` for discounts)
 5. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
-   Host: nready.dev:3000
+   Host: nready-api.test:3000
    Content-Type: application/json
    Authorization: Bearer ****
    Content-Length: 344

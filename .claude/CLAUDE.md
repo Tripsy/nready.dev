@@ -89,15 +89,21 @@ context yet. Read the relevant one *before* proposing an approach in that area, 
 
 ## Development Environment
 
-Development runs **inside a Docker container** (`nready`, `$DOCKER_CONTAINER`), where the project is
-mounted at `/var/www/html`. Several scripts and CLI entry points hardcode that path — run migration,
-seed and CLI commands from inside the container. Package manager is **pnpm** (single-package
+Development runs **inside a Docker container** (`nready-api.test`, `$DOCKER_CONTAINER`), where the
+project is mounted at `/var/www/html`. Several scripts and CLI entry points hardcode that path — run
+migration, seed and CLI commands from inside the container. Package manager is **pnpm** (single-package
 workspace defined in `pnpm-workspace.yaml`).
 
 ```bash
 docker compose up                     # start container (requires external `development` network)
 docker exec -it $DOCKER_CONTAINER /bin/bash
 ```
+
+**Both dev servers (this API and `../nready-ui`) are driven by `/dev-stack`** —
+`.claude/scripts/dev-stack.sh start|stop|down|restart|status|logs|doctor [api|ui|all]`. It brings
+the containers up, launches `pnpm run dev` detached in each, waits on the health endpoints and
+writes `<project>/logs/dev.log` (gitignored, readable from the host). Use it instead of
+`docker exec -it … pnpm run dev`, which blocks the session and leaves no log to diagnose from.
 
 ## Commands
 
@@ -380,20 +386,23 @@ driver-session, stats) but shares `src/shared/**`, `src/config/**`, `src/middlew
 say so and offer to port it; when reviewing a fix that originated there, check it applies before
 copying it over.
 
-`../nready-ui` is this project's frontend. **It does not exist yet** — it will be a Next.js app
-modelled on `../star-ui`, which pairs with `star-api` the same way. Until it lands, treat every
-mention of it as forward-looking: don't try to read it, and don't assume a call site there.
+`../nready-ui` (available via `permissions.additionalDirectories`) is this project's frontend — a
+Next.js 16 app.
 
 The two connect purely over HTTP, so the API contract is the whole coupling:
 
 - When `src/features/**/*.controller.ts` or `src/features/**/*.routes.ts` changes, state which
-  `nready-ui` service (`src/services/*.service.ts`) needs the matching update. Once the repo exists,
-  make the change there too.
+  `nready-ui` service (`src/services/*.service.ts`) needs the matching update, and make the change
+  there too.
+- Enums are mirrored by hand on both sides. `nready-ui`'s `src/models/permission.model.ts`
+  (`PermissionEntityType`), `log-history.model.ts` (`LogHistoryEntities`, backend *table* names) and
+  the per-entity model enums track this project's entities — when an entity, status, role or
+  category enum changes here, say so and update the matching model there.
 - Response shape is the envelope above; dates are ISO 8601 strings; protected routes need
   `Authorization: Bearer {accessToken}`.
 - Frontend conventions live in that repo's own `.claude/rules/` (`forms.md`, `data-fetching.md`,
   `state.md`, `typescript.md`) — consult those rather than inferring frontend rules from this
-  project. `star-ui` carries the same set today and is the closest reference.
+  project.
 
 ## Project Structure
 
@@ -461,7 +470,7 @@ The two connect purely over HTTP, so the API contract is the whole coupling:
 - Skip tests after applying changes. Run tests only on demand or before git push commands. When
   running tests, scope them to the changed files in the current diff rather than the full suite,
   unless a full run is requested.
-- Do not run biome after applying changes. Run it only on demand or before git push commands.
+- Do not run biome after applying changes. Run it only on demand or before git commit commands.
 - **Never commit onto `main`.** GitHub refuses a direct push to it, so a commit made there has to be
   moved off before it can go anywhere. If the current branch is `main` when a commit is requested,
   create the branch first (`git switch -c <type>/<short-name>`) and commit on that. The same applies
