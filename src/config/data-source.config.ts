@@ -14,7 +14,7 @@ const dataSource = new DataSource({
 	port: parseInt(process.env.DB_PORT || `${defaultPort}`, 10),
 	username: process.env.DB_USER || 'root',
 	password: process.env.DB_PASSWORD || '',
-	database: process.env.DB_NAME || 'sample-node-api',
+	database: process.env.DB_NAME || 'nready-app',
 	synchronize: false,
 	logging: false,
 	migrationsTableName:

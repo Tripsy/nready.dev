@@ -74,7 +74,7 @@ const config = {
 	// kernel SIGKILLs workers. A killed worker makes jest report "Test suite failed to
 	// run" and skip that file's tests entirely, so the run still ends with a summary that
 	// looks plausible while whole suites silently never executed.
-	// 2 workers peaks at ~2.4 GB and is within budget for both this repo and nready.dev,
+	// 2 workers peaks at ~2.4 GB and is within budget,
 	// whose larger suite OOMs at 3+. Costs ~2s here versus 4 workers; not worth the risk.
 	maxWorkers: 2,
 

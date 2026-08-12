@@ -1,6 +1,6 @@
 services:
     node:
-        container_name: nready
+        container_name: nready-api.test
         ports:
             - "3000:3000"
         build:
@@ -8,12 +8,21 @@ services:
             dockerfile: docker/dockerfile
         volumes:
             - .:/var/www/html
+        # DB_HOST/REDIS_HOST point at host.docker.internal — Postgres and Redis run in
+        # their own compose stacks and are reached through their published host ports.
+        # Docker Desktop injects this name on its own, the Linux engine does not, so it
+        # is declared here to keep the container portable across both.
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         # Without a limit a runaway process can consume the entire Docker VM (7.6 GB) and
         # trip the host OOM killer, taking other containers down with it. Capping it
         # contains the blast radius and makes a runaway attributable to this container.
         #
-        # Serving requests takes ~105 MB; `pnpm test` peaks at ~2.4 GB with the capped
-        # worker count in jest.config.js. 4g clears that with room to spare.
+        # Serving requests takes ~105 MB, but `pnpm test` peaks at ~2.4 GB (measured via
+        # `docker stats` across a full run). At the previous 2g the suite sat pinned at
+        # 100% of the cgroup for its whole duration, and jest workers were SIGKILLed —
+        # which silently drops entire test files while still reporting a pass. 4g clears
+        # the measured peak with room to spare.
         mem_limit: 4g
         tty: true
         networks:

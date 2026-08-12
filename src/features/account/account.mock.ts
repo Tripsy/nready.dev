@@ -71,7 +71,7 @@ export const accountInputPayloads = {
 		// The controller merges `provider` from the path before validating.
 		provider: 'google',
 		code: 'provider_authorization_code',
-		redirect_uri: 'http://dashboard.test/auth/callback/google',
+		redirect_uri: 'http://nready-ui.test/auth/callback/google',
 		language: 'en',
 	},
 	oauthUnlink: {

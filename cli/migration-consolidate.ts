@@ -396,7 +396,7 @@ program
 					port: Number.parseInt(process.env.DB_PORT || '5432', 10),
 					user: process.env.DB_USER || 'root',
 					password: process.env.DB_PASSWORD || '',
-					database: process.env.DB_NAME || 'sample-node-api',
+					database: process.env.DB_NAME || 'nready-app',
 				},
 				options,
 			);
