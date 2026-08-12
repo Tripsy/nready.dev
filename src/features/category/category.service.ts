@@ -9,7 +9,10 @@ import CategoryEntity, {
 	STATUS_TRANSITIONS,
 } from '@/features/category/category.entity';
 import { getCategoryRepository } from '@/features/category/category.repository';
-import type { CategoryValidator } from '@/features/category/category.validator';
+import {
+	type CategoryValidator,
+	OrderByEnum,
+} from '@/features/category/category.validator';
 import CategoryContentRepository from '@/features/category/category-content.repository';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
@@ -500,7 +503,17 @@ export class CategoryService {
 		data: ValidatorOutput<CategoryValidator, 'find'>,
 		withDeleted: boolean,
 	) {
-		return this.repository
+		/*
+		 * `orderBy` prefixes a bare column with the root alias, and `label` lives on the
+		 * joined content row — passed through unmapped it builds `category.label`, which
+		 * is not a column and fails at the database.
+		 */
+		const orderBy =
+			data.order_by === OrderByEnum.LABEL
+				? 'content.label'
+				: data.order_by;
+
+		const query = this.repository
 			.createQuery()
 			.join(
 				'category.contents',
@@ -525,6 +538,7 @@ export class CategoryService {
 				'category.id',
 				'category.type',
 				'category.status',
+				'category.sort_order',
 				'category.created_at',
 				'category.deleted_at',
 
@@ -538,9 +552,19 @@ export class CategoryService {
 			])
 			.filterBy('type', data.filter.type)
 			.filterBy('status', data.filter.status)
-			.filterByTerm(data.filter.term)
+			.filterByTerm(data.filter.term);
+
+		// Mirrors the grouping `updateOrder` enforces: same type, same parent — or the
+		// roots, which `filterBy` cannot express because it drops null values.
+		if (data.filter.is_root) {
+			query.getQuery().andWhere('category.parent_id IS NULL');
+		} else {
+			query.filterBy('parent.id', data.filter.parent_id);
+		}
+
+		return query
 			.withDeleted(withDeleted && data.filter.is_deleted)
-			.orderBy(data.order_by, data.direction)
+			.orderBy(orderBy, data.direction)
 			.pagination(data.page, data.limit)
 			.all(true);
 	}

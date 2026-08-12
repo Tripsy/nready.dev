@@ -16,6 +16,7 @@ export const paramsUpdateList: string[] = ['parent_id', 'contents'];
 export const OrderByEnum = {
 	ID: 'id',
 	LABEL: 'label',
+	SORT_ORDER: 'sort_order',
 	CREATED_AT: 'created_at',
 	UPDATED_AT: 'updated_at',
 } as const;
@@ -127,6 +128,20 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength'),
 			}),
+			/*
+			 * `parent_id` and `is_root` together address one sibling group — the same set
+			 * `orderUpdate` reorders, which is why a manual-order listing needs them.
+			 * They are separate params because a null parent cannot survive a query
+			 * string: `preprocessOptional` folds an empty value onto `undefined`, so
+			 * "the roots" is indistinguishable from "any parent" without its own flag.
+			 * `is_root` wins when both are sent.
+			 */
+			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
+				required: false,
+			}),
+			is_root: this.validateBoolean(this.getMessage('invalid_boolean'), {
+				required: false,
+			}).default(false),
 			is_deleted: this.validateBoolean(
 				this.getMessage('invalid_boolean'),
 				{ required: false },
