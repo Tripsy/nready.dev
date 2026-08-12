@@ -1,6 +1,7 @@
 import type { Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { Configuration } from '@/config/settings.config';
+import { NotFoundError } from '@/exceptions/not-found.error';
 import AccountRecoveryEntity from '@/features/account/account-recovery.entity';
 import {
 	type AccountRecoveryQuery,
@@ -61,6 +62,11 @@ export class AccountRecoveryService {
 	 * the same link can still be told it was already used instead of falling through to a
 	 * bare "not authorized". The cron in `clean-account-recovery.cron.ts` prunes it once it
 	 * is 30 days past expiry.
+	 *
+	 * Matching nothing is a normal outcome here, not a failure: a recovery spares the only
+	 * outstanding row via `exceptId`, and a logged-in password change has no rows at all.
+	 * `delete()` reports an empty match as a `NotFoundError` — right for a DELETE endpoint,
+	 * wrong for a cleanup — so it is swallowed. Anything else propagates.
 	 */
 	public async removeAccountRecoveryForUser(
 		user_id: number,
@@ -74,7 +80,13 @@ export class AccountRecoveryService {
 			query.filterBy('id', exceptId, '!=');
 		}
 
-		await query.delete(false, true);
+		try {
+			await query.delete(false, true);
+		} catch (error) {
+			if (!(error instanceof NotFoundError)) {
+				throw error;
+			}
+		}
 	}
 
 	public async countRecoveryAttempts(user_id: number, sinceDate: Date) {
