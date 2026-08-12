@@ -321,6 +321,8 @@ describe('CategoryService', () => {
 
 			const findById = jest.spyOn(serviceCategory, 'findById');
 
+			mockTreeRepository([buildCategory({ id: 1 })]);
+
 			const scopedRepository = {
 				save: jest.fn<
 					(entry: CategoryEntity) => Promise<CategoryEntity>
@@ -342,6 +344,76 @@ describe('CategoryService', () => {
 			expect(entry.parent).toBeNull();
 			expect(entry.sort_order).toBe(0);
 			expect(scopedRepository.save).toHaveBeenCalledWith(entry);
+		});
+
+		/*
+		 * The mirror of the detach: a root has no `parent` to compare against, and the branch
+		 * used to be gated on that relation being present — which made adopting a root a
+		 * silent no-op.
+		 */
+		it('should attach a parent to a category that has none', async () => {
+			const entry = buildCategory({
+				id: 1,
+				sort_order: 30,
+				parent: null,
+			});
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(
+				buildCategory({ id: updateData.parent_id }),
+			);
+
+			mockTreeRepository([buildCategory({ id: 1 })]);
+
+			const scopedRepository = {
+				save: jest.fn<
+					(entry: CategoryEntity) => Promise<CategoryEntity>
+				>(),
+			};
+
+			const { manager } = setupTransactionMock();
+			manager.getRepository.mockReturnValue(scopedRepository);
+
+			jest.spyOn(
+				CategoryContentRepository,
+				'saveContent',
+			).mockResolvedValue(undefined);
+
+			await serviceCategory.updateDataWithContent(entry, updateData);
+
+			expect(entry.parent).toEqual({ id: updateData.parent_id });
+			expect(entry.sort_order).toBe(0);
+			expect(scopedRepository.save).toHaveBeenCalledWith(entry);
+		});
+
+		it('should leave the row alone when parent_id repeats the current parent of a root', async () => {
+			const entry = buildCategory({
+				id: 1,
+				sort_order: 30,
+				parent: null,
+			});
+
+			const scopedRepository = {
+				save: jest.fn<
+					(entry: CategoryEntity) => Promise<CategoryEntity>
+				>(),
+			};
+
+			const { manager } = setupTransactionMock();
+			manager.getRepository.mockReturnValue(scopedRepository);
+
+			jest.spyOn(
+				CategoryContentRepository,
+				'saveContent',
+			).mockResolvedValue(undefined);
+
+			await serviceCategory.updateDataWithContent(entry, {
+				...updateData,
+				parent_id: undefined,
+			});
+
+			// Nothing moved, so the position it was given among its siblings survives.
+			expect(entry.sort_order).toBe(30);
+			expect(scopedRepository.save).not.toHaveBeenCalled();
 		});
 	});
 
@@ -706,6 +778,41 @@ describe('CategoryService', () => {
 		serviceCategory,
 		categoryInputPayloads.find,
 	);
+
+	/**
+	 * The anonymous listing is defined by what a visitor *cannot* ask for: the schema carries
+	 * no status or deleted filter, so the query has to pin both itself.
+	 */
+	describe('findByFilterPublic - published scope', () => {
+		const publicFindData = categoryOutputPayloads.publicFind;
+
+		it('should pin the status to active and never widen to deleted rows', async () => {
+			mockCategory.query.all.mockResolvedValue([[], 0]);
+
+			const result =
+				await serviceCategory.findByFilterPublic(publicFindData);
+
+			expect(mockCategory.query.filterBy).toHaveBeenCalledWith(
+				'status',
+				CategoryStatusEnum.ACTIVE,
+			);
+			expect(mockCategory.query.withDeleted).not.toHaveBeenCalled();
+			expect(result).toEqual([[], 0]);
+		});
+
+		it('should scope to the roots when is_root is set', async () => {
+			mockCategory.query.all.mockResolvedValue([[], 0]);
+
+			await serviceCategory.findByFilterPublic({
+				...publicFindData,
+				filter: { ...publicFindData.filter, is_root: true },
+			});
+
+			expect(mockCategory.queryBuilder.andWhere).toHaveBeenCalledWith(
+				'category.parent_id IS NULL',
+			);
+		});
+	});
 
 	it('should delete by id', async () => {
 		jest.spyOn(serviceCategory, 'findById').mockResolvedValue({

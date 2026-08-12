@@ -89,6 +89,17 @@ export const categoryInputPayloads = {
 			is_deleted: false,
 		},
 	},
+	// No status and no is_deleted: the public schema has neither, and the service pins both.
+	publicFind: {
+		page: 1,
+		limit: 10,
+		order_by: OrderByEnum.SORT_ORDER,
+		direction: OrderDirectionEnum.DESC,
+		filter: {
+			language: 'en',
+			type: CategoryTypeEnum.PRODUCT,
+		},
+	},
 	statusUpdate: {
 		force: false,
 	},
@@ -103,4 +114,7 @@ export const categoryOutputPayloads = {
 	create: categoryValidator.create.parse(categoryInputPayloads.create),
 	update: categoryValidator.update.parse(categoryInputPayloads.update),
 	find: categoryValidator.find.parse(categoryInputPayloads.find),
+	publicFind: categoryValidator.publicFind.parse(
+		categoryInputPayloads.publicFind,
+	),
 };

@@ -88,7 +88,9 @@ class CategoryController extends BaseController {
 			res,
 		);
 
-		const existingEntry = await this.categoryService.findById(
+		// With the parent relation: `updateDataWithContent` decides on it, and an unloaded
+		// relation is indistinguishable from a root.
+		const existingEntry = await this.categoryService.findByIdWithParent(
 			data.id,
 			false,
 		);

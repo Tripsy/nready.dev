@@ -25,6 +25,13 @@ export function createMockQuery() {
 
 		// Methods from RepositoryAbstract
 		filterAny: jest.fn().mockReturnThis(),
+		/*
+		 * The escape hatch to the underlying TypeORM builder, for a condition no `filterBy`
+		 * can express (`parent_id IS NULL`). `createMockRepository` points it at the same
+		 * builder stub it hands to the repository, so a test can assert on `andWhere`;
+		 * standalone callers get an inert one.
+		 */
+		getQuery: jest.fn(),
 
 		// Execute methods
 		save: jest.fn(),
@@ -42,7 +49,8 @@ export function createMockRepository<
 	E extends ObjectLiteral,
 	Q extends RepositoryAbstract<E>,
 >() {
-	const query = createMockQuery() as unknown as jest.Mocked<Q>;
+	const mockQuery = createMockQuery();
+	const query = mockQuery as unknown as jest.Mocked<Q>;
 
 	const createQueryMock = jest.fn(() => {
 		return query;
@@ -52,8 +60,14 @@ export function createMockRepository<
 	// service can chain freely; a test only has to configure the terminal call it needs
 	// (`getMany`/`getOne`), which default to empty results.
 	const queryBuilder = {
-		where: jest.fn(() => queryBuilder),
-		andWhere: jest.fn(() => queryBuilder),
+		// Typed with their real arguments, so a test can assert on the condition that was
+		// built rather than only on the call happening.
+		where: jest.fn(
+			(_condition?: string, _parameters?: object) => queryBuilder,
+		),
+		andWhere: jest.fn(
+			(_condition?: string, _parameters?: object) => queryBuilder,
+		),
 		orderBy: jest.fn(() => queryBuilder),
 		addOrderBy: jest.fn(() => queryBuilder),
 		select: jest.fn(() => queryBuilder),
@@ -61,6 +75,8 @@ export function createMockRepository<
 		getMany: jest.fn(async () => [] as E[]),
 		getOne: jest.fn(async () => null as E | null),
 	};
+
+	mockQuery.getQuery.mockReturnValue(queryBuilder);
 
 	const repository = {
 		createQuery: createQueryMock,

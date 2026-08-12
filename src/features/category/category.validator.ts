@@ -150,6 +150,45 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 	});
 
 	/**
+	 * The anonymous listing. Deliberately narrower than `find`: no `status` and no
+	 * `is_deleted`, because a visitor may only ever address the published tree and the
+	 * service pins both. What remains is how to slice that tree — by type, by sibling group,
+	 * or by search term.
+	 */
+	readonly publicFind = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.SORT_ORDER,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.DESC,
+
+		defaultLimit: Configuration.get('filter.limit'),
+		defaultPage: 1,
+
+		filterSchema: {
+			language: this.validateLanguage(
+				this.getMessage('invalid_language'),
+				{ required: false },
+			),
+			type: this.validateEnum(
+				CategoryTypeEnum,
+				this.getMessage('invalid_type'),
+				{ required: false },
+			).default(CategoryTypeEnum.PRODUCT),
+			// No `term`: `filterByTerm` searches the parent's label too, through a
+			// `parentContent` alias this projection has no reason to join.
+			// Same pair as `find`, for the same reason: an empty `parent_id` cannot express
+			// "the roots" in a query string, so the flag carries it.
+			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
+				required: false,
+			}),
+			is_root: this.validateBoolean(this.getMessage('invalid_boolean'), {
+				required: false,
+			}).default(false),
+		},
+	});
+
+	/**
 	 * `parent_id` scopes the reorder to one sibling group; omitting it targets the roots of
 	 * that type. Positions are the group's ids in the desired order.
 	 */

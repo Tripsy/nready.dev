@@ -258,6 +258,13 @@ type ControllerUpdateWithContentType<E, V extends UpdateValidator> = {
 	policy: PolicyAbstract;
 	service: UpdateWithContentService<E, V>;
 	updateData: ValidatorInput<V, 'update'>;
+	/**
+	 * The controller loads the row before handing it to the service, and the loader differs
+	 * per feature — `category` needs one that joins the `parent` relation. Only the caller
+	 * knows which, so it may replace the default `findById` mock; leaving the real method
+	 * behind reaches the repository, and the data source is not up in these tests.
+	 */
+	mockLoadEntry?: (entityMock: E) => void;
 };
 
 export function testControllerUpdateWithContent<E, V extends UpdateValidator>(
@@ -285,9 +292,13 @@ export function testControllerUpdateWithContent<E, V extends UpdateValidator>(
 		it('should return success', async () => {
 			authorizedSpy(config.policy);
 
-			jest.spyOn(config.service, 'findById').mockResolvedValue(
-				config.entityMock,
-			);
+			if (config.mockLoadEntry) {
+				config.mockLoadEntry(config.entityMock);
+			} else {
+				jest.spyOn(config.service, 'findById').mockResolvedValue(
+					config.entityMock,
+				);
+			}
 
 			jest.spyOn(
 				config.service,
