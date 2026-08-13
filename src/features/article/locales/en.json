@@ -27,7 +27,7 @@
 		"access_country_unknown": "This article is not available from your location",
 		"access_country_denied": "This article is not available from your location",
 		"access_password_required": "This article requires a password",
-		"access_password_invalid": "The password is not correct"
+		"invalid_access_password": "The password is not correct"
 	},
 	"success": {
 		"create": "Article created successfully",

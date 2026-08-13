@@ -55,7 +55,7 @@ export class AccountOAuthService {
 
 		if (!isAllowed) {
 			throw new BadRequestError(
-				lang('account.error.oauth_redirect_uri_invalid'),
+				lang('account.error.invalid_oauth_redirect_uri'),
 			);
 		}
 	}

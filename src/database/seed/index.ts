@@ -3,9 +3,11 @@ import { bootstrapSeeds } from '@/database/seed/seed.runner';
 import { addressSeed } from '@/features/address/database/address.seed';
 import { articleSeed } from '@/features/article/database/article.seed';
 import { brandSeed } from '@/features/brand/database/brand.seed';
+import { carrierSeed } from '@/features/carrier/database/carrier.seed';
 import { cashFlowSeed } from '@/features/cash-flow/database/cash-flow.seed';
 import { categorySeed } from '@/features/category/database/category.seed';
 import { clientSeed } from '@/features/client/database/client.seed';
+import { discountSeed } from '@/features/discount/database/discount.seed';
 import { documentSeriesSeed } from '@/features/document-series/database/document-series.seed';
 import { placeSeed } from '@/features/place/database/place.seed';
 import { termSeed } from '@/features/term/database/term.seed';
@@ -27,12 +29,15 @@ const seeds: readonly SeedDefinition[] = [
 	placeSeed,
 	addressSeed,
 	brandSeed,
+	carrierSeed,
 	categorySeed,
 	clientSeed,
 	vendorSeed,
 	userSeed,
 	cashFlowSeed,
 	termSeed,
+	// Reads category ids
+	discountSeed,
 	// Reads category, term and user ids
 	articleSeed,
 ];

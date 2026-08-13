@@ -512,7 +512,7 @@ describe(`${controller} - emailConfirm`, () => {
 	const link = `${basePath}/email-confirm/some_token_value`;
 	const mockConfirmationTokenPayload = getConfirmationTokenPayloadMock();
 
-	it('should fail - confirmation_token_invalid', async () => {
+	it('should fail - invalid_confirmation_token', async () => {
 		const response = await request(app).post(link).send();
 
 		withDebugResponse(() => {
@@ -520,7 +520,7 @@ describe(`${controller} - emailConfirm`, () => {
 			expect(response.body).toHaveProperty('success', false);
 			expect(response.body).toHaveProperty(
 				'message',
-				'account.error.confirmation_token_invalid',
+				'account.error.invalid_confirmation_token',
 			);
 		}, response);
 	});

@@ -6,7 +6,7 @@ import {
 import { createPastDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 
-const userPermissionValidator = new UserPermissionValidator('user_permission');
+const userPermissionValidator = new UserPermissionValidator('user-permission');
 
 export function getUserPermissionEntityMock(): UserPermissionEntity {
 	return {

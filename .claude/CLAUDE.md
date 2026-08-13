@@ -77,14 +77,18 @@ context yet. Read the relevant one *before* proposing an approach in that area, 
 - The code should follow **best practices** and **design principles** like SOLID, KISS, DRY, and
   strong security standards.
 
-## Decision Documentation
+## Code Comments
 
-- Explain your reasoning for non-obvious decisions in comments
-- **Write comments about the code as it is, never as a diff against what it was.** No "this
-  used to run unconditionally", no "the previous order broke X". State the constraint that
-  still applies ("split before the lowercase, which destroys the case boundary the split
+Comments are wanted — they carry what the code cannot say for itself, and they are the
+reference both a future reader and a future session work from.
+
+- **Describe the code as it is, never as a diff against what it was.** No "this used to run
+  unconditionally", no "the previous order broke X", no "chose X over Y". State the constraint
+  that still applies ("split before the lowercase, which destroys the case boundary the split
   reads") and leave the before/after for the commit message
-- If there are two valid approaches, document why you chose one over the other
+- Not absolute: name a past state when it still constrains the present — a workaround an
+  upstream bug requires, a shape kept for data already written — because a reader has to know
+  it to change the code safely
 - Note any performance implications or trade-offs
 
 ## Development Environment

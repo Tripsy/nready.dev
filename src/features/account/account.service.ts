@@ -201,7 +201,7 @@ export class AccountService {
 			) as ConfirmationTokenPayload;
 		} catch {
 			throw new BadRequestError(
-				lang('account.error.confirmation_token_invalid'),
+				lang('account.error.invalid_confirmation_token'),
 			);
 		}
 	}

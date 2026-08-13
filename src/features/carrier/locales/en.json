@@ -1,8 +1,8 @@
 {
 	"validation": {
 		"invalid_name": "Name is invalid",
-		"website_invalid": "Website URL is invalid",
-		"phone_invalid": "Phone is invalid",
+		"invalid_website": "Website URL is invalid",
+		"invalid_phone": "Phone is invalid",
 		"invalid_email": "Email is invalid"
 	},
 	"error": {

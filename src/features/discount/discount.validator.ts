@@ -42,7 +42,6 @@ const validatorMessages = [
 	'invalid_reason',
 	'invalid_reference',
 	'invalid_type',
-	'invalid_rules',
 	'invalid_value',
 	'invalid_start_at',
 	'invalid_end_at',

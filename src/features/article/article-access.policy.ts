@@ -105,7 +105,7 @@ export class ArticleAccessPolicy {
 				!(await comparePassword(context.password, hashedPassword))
 			) {
 				throw new NotAllowedError(
-					lang('article.error.access_password_invalid'),
+					lang('article.error.invalid_access_password'),
 				);
 			}
 		}
