@@ -1,3 +1,4 @@
+import { discountTargetSeed } from '@/database/seed/discount-target.seed';
 import type { SeedDefinition } from '@/database/seed/seed.helper';
 import { bootstrapSeeds } from '@/database/seed/seed.runner';
 import { addressSeed } from '@/features/address/database/address.seed';
@@ -36,8 +37,9 @@ const seeds: readonly SeedDefinition[] = [
 	userSeed,
 	cashFlowSeed,
 	termSeed,
-	// Reads category ids
 	discountSeed,
+	// Reads discount ids alongside client, category and brand ids
+	discountTargetSeed,
 	// Reads category, term and user ids
 	articleSeed,
 ];

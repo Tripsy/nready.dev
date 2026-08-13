@@ -341,11 +341,21 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Go on FE → carrier, discount,
-2. Go on FE → term
-3. Go on FE → category
-4. Go on FE → article
-5. Prepared entities:
+1. Go on FE → term
+2. Go on FE → article
+3. Revisit `discount` once `product` ships — the feature is complete except where it
+   depends on products existing:
+    - The dashboard target picker covers `client`, `category` and `brand` only. For the
+      `product` and `variant` scopes it renders an explanatory note instead, because there
+      is no product dashboard to search (`form-targets-discount.component.tsx`).
+    - The "pick at least one target" rule applies to every scope except `order`, so until
+      that picker exists a product- or variant-scoped discount cannot be saved from the
+      form at all. The API accepts both.
+    - `discount-target.seed.ts` skips the two scopes for the same reason, so nothing
+      exercises them against real rows.
+    - `DiscountLineContext` already carries `variantId`/`productId` and the resolver
+      matches them; only the ways of *creating* those links are missing.
+4. Prepared entities:
     - grn
         - grn-item
         - warehouse-movement
@@ -362,7 +372,6 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         - product-bundle-item-price
         - product-category
         - product-content
-        - product-discount
         - product-option
         - product-option-group
         - product-option-price

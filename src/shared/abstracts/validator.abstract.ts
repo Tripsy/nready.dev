@@ -722,8 +722,15 @@ export abstract class BaseValidator<
 				'Date must include time (e.g., 2024-01-15 14:30 or 2024-01-15T14:30:00)';
 		}
 
-		if (options.maxPastSeconds) {
-			defaultMessages.invalid_past_date = `Date cannot be more than ${options.maxPastSeconds} seconds in the past`;
+		// `!== undefined`, not a truthiness check: `maxPastSeconds: 0` means "not before now",
+		// which the refine below enforces, so it needs a message like any other bound. A
+		// truthiness check leaves the message undefined and the rejection reaches the client
+		// with nothing to display.
+		if (options.maxPastSeconds !== undefined) {
+			defaultMessages.invalid_past_date =
+				options.maxPastSeconds === 0
+					? 'Date cannot be in the past'
+					: `Date cannot be more than ${options.maxPastSeconds} seconds in the past`;
 		}
 
 		if (options.maxFutureSeconds) {

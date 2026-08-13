@@ -25,9 +25,8 @@ export function getDiscountEntityMock(): DiscountEntity {
 		reason: DiscountReasonEnum.BIRTHDAY_DISCOUNT,
 		reference: 'BF-2025',
 		type: DiscountTypeEnum.AMOUNT,
-		rules: {
+		conditions: {
 			min_order_value: 101,
-			eligible_categories: [1, 2, 5],
 			applicable_countries: ['RO'],
 		},
 		value: 25,
@@ -47,9 +46,8 @@ export const discountInputPayloads = {
 		reason: DiscountReasonEnum.BIRTHDAY_DISCOUNT,
 		reference: 'BF-2025',
 		type: DiscountTypeEnum.AMOUNT,
-		rules: {
+		conditions: {
 			min_order_value: 101,
-			eligible_categories: [1, 2, 5],
 			applicable_countries: ['RO'],
 		},
 		value: 25,
@@ -65,9 +63,8 @@ export const discountInputPayloads = {
 		reference: 'BF-2025',
 		type: DiscountTypeEnum.AMOUNT,
 		value: 25,
-		rules: {
+		conditions: {
 			min_order_value: 101,
-			eligible_categories: [1, 2, 5],
 			applicable_countries: ['RO'],
 		},
 		start_at: formatDate(createFutureDate(14400)) as string,

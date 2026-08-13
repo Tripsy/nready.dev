@@ -11,7 +11,6 @@
 		"product-bundle-item-price",
 		"product-category",
 		"product-content",
-		"product-discount",
 		"product-option",
 		"product-option-group",
 		"product-option-price",
@@ -20,6 +19,6 @@
 		"product-variant",
 		"product-variant-attribute"
 	],
-	"depends_on": ["brand", "category", "discount", "term", "vendor@^2.0.0"],
+	"depends_on": ["brand", "category", "term", "vendor@^2.0.0"],
 	"required_by": ["order", "grn"]
 }

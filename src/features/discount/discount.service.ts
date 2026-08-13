@@ -23,7 +23,7 @@ export class DiscountService {
 			reason: data.reason,
 			reference: data.reference ?? null,
 			type: data.type,
-			rules: data.rules,
+			conditions: data.conditions,
 			value: data.value,
 			start_at: data.start_at ?? null,
 			end_at: data.end_at ?? null,

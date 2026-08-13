@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import {
+	type DiscountConditions,
 	DiscountReasonEnum,
-	type DiscountRules,
 	DiscountScopeEnum,
 	DiscountTypeEnum,
 } from '@/features/discount/discount.entity';
@@ -19,7 +19,7 @@ export const paramsUpdateList: string[] = [
 	'reason',
 	'reference',
 	'type',
-	'rules',
+	'conditions',
 	'value',
 	'start_at',
 	'end_at',
@@ -45,19 +45,41 @@ const validatorMessages = [
 	'invalid_value',
 	'invalid_start_at',
 	'invalid_end_at',
+	'start_at_in_the_past',
+	'end_at_in_the_past',
 	'end_at_must_be_after_start_at',
 	'percent_must_be_between_0_and_100',
 ] as const;
 
 export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
-	rulesSchema: z.ZodType<DiscountRules> = z.record(
-		z.string(), // Keys are strings
-		z.union([
-			z.number(), // Single number
-			z.array(z.number()), // Array of number
-			z.array(z.string()), // Array of string
-		]),
-	);
+	/**
+	 * One schema per condition, rather than a `z.record` over open string keys.
+	 *
+	 * The keys are a closed set, so an unrecognized one is a mistake worth reporting at the
+	 * boundary: the evaluator fails closed, and a discount carrying a typo'd condition would
+	 * otherwise be stored happily and then never apply, with nothing to point at. `.strict()`
+	 * turns that into a 422 at the moment it is written.
+	 */
+	conditionsSchema: z.ZodType<DiscountConditions> = z
+		.object({
+			hour_range: z
+				.tuple([
+					z.number().int().min(0).max(23),
+					z.number().int().min(0).max(23),
+				])
+				.optional(),
+			day_range: z
+				.tuple([
+					z.number().int().min(1).max(7),
+					z.number().int().min(1).max(7),
+				])
+				.optional(),
+			min_order_value: z.number().nonnegative().optional(),
+			applicable_countries: z
+				.array(z.string().length(2).toUpperCase())
+				.optional(),
+		})
+		.strict();
 
 	readonly create = z
 		.object({
@@ -77,20 +99,34 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 				DiscountTypeEnum,
 				this.getMessage('invalid_type'),
 			),
-			rules: this.rulesSchema.optional(),
+			conditions: this.conditionsSchema.optional(),
 			value: this.validateNumber(this.getMessage('invalid_number'), {
 				required: true,
 				onlyPositive: true,
 				allowDecimals: 2,
 			}),
-			start_at: this.validateDate(this.getMessage('invalid_start_at'), {
-				required: false,
-				maxPastSeconds: 0,
-			}),
-			end_at: this.validateDate(this.getMessage('invalid_end_at'), {
-				required: false,
-				maxPastSeconds: 0,
-			}),
+			/*
+			 * A new discount cannot be dated into the past. Messages are passed per key, not
+			 * as one string: `buildMessage` maps a bare string onto `invalid`, which
+			 * `validateDate` never reads, so the locale text would be silently dropped in
+			 * favor of the built-in English defaults.
+			 */
+			start_at: this.validateDate(
+				{
+					invalid_date: this.getMessage('invalid_start_at'),
+					invalid_date_format: this.getMessage('invalid_start_at'),
+					invalid_past_date: this.getMessage('start_at_in_the_past'),
+				},
+				{ required: false, maxPastSeconds: 0 },
+			),
+			end_at: this.validateDate(
+				{
+					invalid_date: this.getMessage('invalid_end_at'),
+					invalid_date_format: this.getMessage('invalid_end_at'),
+					invalid_past_date: this.getMessage('end_at_in_the_past'),
+				},
+				{ required: false, maxPastSeconds: 0 },
+			),
 			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),
@@ -119,6 +155,13 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 				});
 			}
 		});
+
+	/** A list of owner ids for one target scope; duplicates are the caller's problem, not an error. */
+	private validateIdList() {
+		return z.array(
+			this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		);
+	}
 
 	readonly read = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
@@ -149,20 +192,32 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_type'),
 				{ required: false },
 			),
-			rules: this.rulesSchema.optional(),
+			conditions: this.conditionsSchema.optional(),
 			value: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 				onlyPositive: true,
 				allowDecimals: 2,
 			}),
-			start_at: this.validateDate(this.getMessage('invalid_start_at'), {
-				required: false,
-				maxPastSeconds: 0,
-			}),
-			end_at: this.validateDate(this.getMessage('invalid_end_at'), {
-				required: false,
-				maxPastSeconds: 0,
-			}),
+			/*
+			 * No `maxPastSeconds` here, unlike `create`. An update carries the whole entity,
+			 * so once a discount has started, re-sending its own stored `start_at` would fail
+			 * the past-date bound and the record would become permanently uneditable — the
+			 * label, value or notes could never be corrected again.
+			 */
+			start_at: this.validateDate(
+				{
+					invalid_date: this.getMessage('invalid_start_at'),
+					invalid_date_format: this.getMessage('invalid_start_at'),
+				},
+				{ required: false },
+			),
+			end_at: this.validateDate(
+				{
+					invalid_date: this.getMessage('invalid_end_at'),
+					invalid_date_format: this.getMessage('invalid_end_at'),
+				},
+				{ required: false },
+			),
 			notes: this.validateString(this.getMessage('invalid_notes'), {
 				required: false,
 			}),
@@ -197,6 +252,20 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 				});
 			}
 		});
+
+	/**
+	 * Reconcile payload for `PUT /discounts/:id/targets`. Every scope is optional and a scope
+	 * that is absent is left untouched, so a caller editing one scope cannot clear the others
+	 * by omission — an empty array is the way to say "no targets here".
+	 */
+	readonly targets = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		client: this.validateIdList().optional(),
+		variant: this.validateIdList().optional(),
+		product: this.validateIdList().optional(),
+		category: this.validateIdList().optional(),
+		brand: this.validateIdList().optional(),
+	});
 
 	readonly delete = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
@@ -239,9 +308,6 @@ export class DiscountValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_type'),
 				{ required: false },
 			),
-			reference: this.validateString(this.getMessage('invalid_string'), {
-				required: false,
-			}),
 			start_at_start: this.validateDate(
 				{
 					invalid_date: this.getMessage('invalid_date'),

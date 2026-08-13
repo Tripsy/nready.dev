@@ -10,6 +10,8 @@
 		"percent_must_be_between_0_and_100": "Percent discount must be between 0 and 100",
 		"invalid_start_at": "Start date is invalid",
 		"invalid_end_at": "End date is invalid",
+		"start_at_in_the_past": "Start date cannot be in the past",
+		"end_at_in_the_past": "End date cannot be in the past",
 		"end_at_must_be_after_start_at": "End date must be after start date"
 	},
 	"error": {
@@ -19,7 +21,8 @@
 		"create": "Discount created successfully",
 		"update": "Discount updated successfully",
 		"delete": "Discount deleted successfully",
-		"restore": "Discount restored successfully"
+		"restore": "Discount restored successfully",
+		"targets": "Discount targets updated successfully"
 	},
 	"history": {
 		"created": "Discount #{{entity_id}} created by user #{{auth_id}}",

@@ -1,16 +1,14 @@
 import {
 	isDirectRun,
-	loadIds,
 	type SeedDefinition,
 	type SeedSummary,
 	topUp,
 } from '@/database/seed/seed.helper';
 import { runSeedFile } from '@/database/seed/seed.runner';
-import CategoryEntity from '@/features/category/category.entity';
 import DiscountEntity, {
+	type DiscountConditions,
 	type DiscountReason,
 	DiscountReasonEnum,
-	type DiscountRules,
 	type DiscountScope,
 	DiscountScopeEnum,
 	type DiscountType,
@@ -42,10 +40,13 @@ type DiscountBlueprint = {
 	window: Window;
 	/**
 	 * Built per row rather than stored flat, because the meaningful rule keys follow the
-	 * scope — a country discount is bounded by `applicable_countries`, an order one by
-	 * `min_order_value` — and category rules need ids only known at run time.
+	 * scope — an order-wide discount is bounded by `applicable_countries` or
+	 * `min_order_value`.
+	 *
+	 * Conditions gate *when* a discount applies. What it attaches to lives in the link tables
+	 * (`category_discount`, `brand_discount`, …), so no condition key names an entity id.
 	 */
-	buildRules: (categoryIds: readonly number[]) => DiscountRules | undefined;
+	buildConditions: () => DiscountConditions | undefined;
 	notes: string | null;
 };
 
@@ -58,7 +59,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.PERCENT,
 		value: 10,
 		window: WINDOW_RUNNING,
-		buildRules: () => ({ min_order_value: 150 }),
+		buildConditions: () => ({ min_order_value: 150 }),
 		notes: 'Site-wide weekend campaign',
 	},
 	{
@@ -69,7 +70,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.AMOUNT,
 		value: 25,
 		window: WINDOW_OPEN,
-		buildRules: () => ({ min_order_value: 200 }),
+		buildConditions: () => ({ min_order_value: 200 }),
 		notes: 'First order only',
 	},
 	{
@@ -80,7 +81,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.PERCENT,
 		value: 5,
 		window: WINDOW_OPEN,
-		buildRules: () => ({ min_order_count: 3 }),
+		buildConditions: () => ({ min_order_value: 250 }),
 		notes: null,
 	},
 	{
@@ -91,7 +92,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.PERCENT,
 		value: 15,
 		window: WINDOW_OPEN,
-		buildRules: () => undefined,
+		buildConditions: () => undefined,
 		notes: 'Valid during the birthday month',
 	},
 	{
@@ -102,7 +103,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.AMOUNT,
 		value: 20,
 		window: WINDOW_RUNNING,
-		buildRules: () => ({ min_order_value: 100 }),
+		buildConditions: () => ({ min_order_value: 100 }),
 		notes: 'Granted to the referring client',
 	},
 	{
@@ -113,7 +114,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.PERCENT,
 		value: 12,
 		window: WINDOW_OPEN,
-		buildRules: () => ({ client_tags: ['vip'] }),
+		buildConditions: () => ({ hour_range: [10, 18] }),
 		notes: null,
 	},
 	{
@@ -124,10 +125,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.PERCENT,
 		value: 20,
 		window: WINDOW_RUNNING,
-		buildRules: (categoryIds) =>
-			categoryIds.length > 0
-				? { eligible_categories: [...categoryIds] }
-				: undefined,
+		buildConditions: () => undefined,
 		notes: 'Ends when the stock is out',
 	},
 	{
@@ -138,15 +136,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.AMOUNT,
 		value: 30,
 		window: WINDOW_SCHEDULED,
-		buildRules: (categoryIds) => {
-			const rules: DiscountRules = { min_order_value: 250 };
-
-			if (categoryIds.length > 0) {
-				rules.eligible_categories = [...categoryIds];
-			}
-
-			return rules;
-		},
+		buildConditions: () => ({ min_order_value: 250 }),
 		notes: null,
 	},
 	{
@@ -157,7 +147,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.PERCENT,
 		value: 7,
 		window: WINDOW_RUNNING,
-		buildRules: () => undefined,
+		buildConditions: () => undefined,
 		notes: 'Linked to products through product_discount',
 	},
 	{
@@ -168,18 +158,18 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.PERCENT,
 		value: 18,
 		window: WINDOW_SCHEDULED,
-		buildRules: () => undefined,
+		buildConditions: () => undefined,
 		notes: null,
 	},
 	{
 		reference: 'RO8',
 		label: 'Romania Shipping Offset',
-		scope: DiscountScopeEnum.COUNTRY,
+		scope: DiscountScopeEnum.ORDER,
 		reason: DiscountReasonEnum.SPECIAL_DISCOUNT,
 		type: DiscountTypeEnum.AMOUNT,
 		value: 8,
 		window: WINDOW_OPEN,
-		buildRules: () => ({
+		buildConditions: () => ({
 			applicable_countries: ['RO'],
 			min_order_value: 120,
 		}),
@@ -188,12 +178,12 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 	{
 		reference: 'EU5',
 		label: 'EU Cross-Border 5%',
-		scope: DiscountScopeEnum.COUNTRY,
+		scope: DiscountScopeEnum.ORDER,
 		reason: DiscountReasonEnum.SPECIAL_DISCOUNT,
 		type: DiscountTypeEnum.PERCENT,
 		value: 5,
 		window: WINDOW_SCHEDULED,
-		buildRules: () => ({ applicable_countries: ['BG', 'HU', 'PL'] }),
+		buildConditions: () => ({ applicable_countries: ['BG', 'HU', 'PL'] }),
 		notes: null,
 	},
 	{
@@ -204,7 +194,7 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.PERCENT,
 		value: 30,
 		window: WINDOW_EXPIRED,
-		buildRules: () => ({ min_order_value: 100 }),
+		buildConditions: () => ({ min_order_value: 100 }),
 		notes: 'Kept as an expired campaign',
 	},
 	{
@@ -215,11 +205,19 @@ const DISCOUNTS: readonly DiscountBlueprint[] = [
 		type: DiscountTypeEnum.AMOUNT,
 		value: 15,
 		window: WINDOW_EXPIRED,
-		buildRules: (categoryIds) =>
-			categoryIds.length > 0
-				? { eligible_categories: categoryIds.slice(0, 3) }
-				: undefined,
+		buildConditions: () => undefined,
 		notes: 'Kept as an expired campaign',
+	},
+	{
+		reference: 'BRAND10',
+		label: 'Brand Partner 10%',
+		scope: DiscountScopeEnum.BRAND,
+		reason: DiscountReasonEnum.LOYALTY_DISCOUNT,
+		type: DiscountTypeEnum.PERCENT,
+		value: 10,
+		window: WINDOW_RUNNING,
+		buildConditions: () => undefined,
+		notes: null,
 	},
 ];
 
@@ -234,10 +232,6 @@ function resolveDate(offsetInDays: number | null): Date | null {
 export const discountSeed: SeedDefinition = {
 	name: 'discount',
 	run: async ({ manager }): Promise<SeedSummary> => {
-		// Category-scoped rows carry real ids so the rules resolve against seeded data; an
-		// empty category table only costs those rows their `eligible_categories` entry.
-		const categoryIds = await loadIds(manager, CategoryEntity);
-
 		return topUp({
 			entity: 'discount',
 			target: TARGET,
@@ -255,7 +249,7 @@ export const discountSeed: SeedDefinition = {
 					reason: blueprint.reason,
 					reference: blueprint.reference,
 					type: blueprint.type,
-					rules: blueprint.buildRules(categoryIds),
+					conditions: blueprint.buildConditions(),
 					value: blueprint.value,
 					start_at: resolveDate(startDays),
 					end_at: resolveDate(endDays),
