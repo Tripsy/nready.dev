@@ -8,30 +8,29 @@ import {
 	PrimaryGeneratedColumn,
 	UpdateDateColumn,
 } from 'typeorm';
-import type PlaceEntity from '@/features/place/place.entity';
+import type TermEntity from '@/features/term/term.entity';
 
-export type PlaceContentType = {
+export type TermContentType = {
 	language: string;
-	name: string;
-	type_label: string;
+	value: string;
 };
 
-const ENTITY_TABLE_NAME = 'place_content';
+const ENTITY_TABLE_NAME = 'term_content';
 
 /**
  * Deliberately not `EntityAbstract`: this table has no `deleted_at`.
  * A translation is never deleted on its own — the only write is `saveContent`'s upsert — and
- * the row dies with its place through the FK cascade.
+ * the row dies with its term through the FK cascade.
  */
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
-	comment: 'Language-specific content for places',
+	comment: 'Language-specific wording for terms',
 })
-@Index('IDX_place_content_unique_per_lang', ['place_id', 'language'], {
+@Index('IDX_term_content_unique_per_lang', ['term_id', 'language'], {
 	unique: true,
 })
-export default class PlaceContentEntity {
+export default class TermContentEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
 
@@ -45,7 +44,7 @@ export default class PlaceContentEntity {
 	updated_at!: Date | null;
 
 	@Column('int', { nullable: false })
-	place_id!: number;
+	term_id!: number;
 
 	@Column('varchar', {
 		length: 3,
@@ -53,25 +52,17 @@ export default class PlaceContentEntity {
 	})
 	language!: string;
 
-	@Column('varchar', { nullable: false })
-	name!: string;
-
 	@Column('varchar', {
+		length: 255,
 		nullable: false,
-		comment: 'ex: Country, Region, City, Oras, Judet',
+		comment: 'Localized term value',
 	})
-	type_label!: string;
-
-	@Column('jsonb', {
-		nullable: true,
-		comment: 'Reserved column for future use',
-	})
-	details!: Record<string, string | number | boolean> | null;
+	value!: string;
 
 	// RELATIONS
-	@ManyToOne('PlaceEntity', {
+	@ManyToOne('TermEntity', {
 		onDelete: 'CASCADE',
 	})
-	@JoinColumn({ name: 'place_id' })
-	place!: PlaceEntity;
+	@JoinColumn({ name: 'term_id' })
+	term!: TermEntity;
 }

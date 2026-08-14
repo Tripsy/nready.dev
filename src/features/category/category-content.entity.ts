@@ -1,32 +1,49 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import {
-	EntityAbstract,
-	type PageMeta,
-} from '@/shared/abstracts/entity.abstract';
-import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+	Column,
+	CreateDateColumn,
+	Entity,
+	Index,
+	JoinColumn,
+	ManyToOne,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn,
+} from 'typeorm';
+import type { PageMeta } from '@/shared/abstracts/entity.abstract';
 import type CategoryEntity from './category.entity';
 import { type CategoryType, CategoryTypeEnum } from './category.entity';
 
 const ENTITY_TABLE_NAME = 'category_content';
 
+/**
+ * Deliberately not `EntityAbstract`: this table has no `deleted_at`.
+ * A translation is never deleted on its own — the only write is `saveContent`'s upsert — and
+ * the row dies with its category through the FK cascade.
+ */
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
 	comment: 'Language-specific category content (slug, description, metadata)',
 })
-@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index(
 	'IDX_category_content_category_id_language',
 	['category_id', 'language'],
-	{ unique: true, where: 'deleted_at IS NULL' },
+	{ unique: true },
 )
 @Index('IDX_category_content_slug_language', ['type', 'slug', 'language'], {
 	unique: true,
-	where: 'deleted_at IS NULL',
 })
-export default class CategoryContentEntity extends EntityAbstract {
+export default class CategoryContentEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
+
+	@PrimaryGeneratedColumn({ type: 'int' })
+	id!: number;
+
+	@CreateDateColumn({ type: 'timestamp', nullable: false })
+	created_at!: Date;
+
+	@UpdateDateColumn({ type: 'timestamp', nullable: true })
+	updated_at!: Date | null;
 
 	@Column('int', { nullable: false })
 	category_id!: number;

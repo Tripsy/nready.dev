@@ -1,10 +1,15 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import type ArticleEntity from '@/features/article/article.entity';
 import {
-	EntityAbstract,
-	type PageMeta,
-} from '@/shared/abstracts/entity.abstract';
-import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+	Column,
+	CreateDateColumn,
+	Entity,
+	Index,
+	JoinColumn,
+	ManyToOne,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn,
+} from 'typeorm';
+import type ArticleEntity from '@/features/article/article.entity';
+import type { PageMeta } from '@/shared/abstracts/entity.abstract';
 
 export type ArticleAuthorType = {
 	name: string;
@@ -15,24 +20,35 @@ export type ArticleAuthorType = {
 
 const ENTITY_TABLE_NAME = 'article_content';
 
+/**
+ * Deliberately not `EntityAbstract`: this table has no `deleted_at`.
+ * A translation is never deleted on its own — the only write is `saveContent`'s upsert — and
+ * the row dies with its article through the FK cascade.
+ */
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
 	comment:
 		'Language-specific content for articles (title, slug, brief, content, meta)',
 })
-@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_article_content_unique_per_lang', ['article_id', 'language'], {
 	unique: true,
-	where: 'deleted_at IS NULL',
 })
 @Index('IDX_article_content_slug_lang', ['slug', 'language'], {
 	unique: true,
-	where: 'deleted_at IS NULL',
 })
-export default class ArticleContentEntity extends EntityAbstract {
+export default class ArticleContentEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
+
+	@PrimaryGeneratedColumn({ type: 'int' })
+	id!: number;
+
+	@CreateDateColumn({ type: 'timestamp', nullable: false })
+	created_at!: Date;
+
+	@UpdateDateColumn({ type: 'timestamp', nullable: true })
+	updated_at!: Date | null;
 
 	@Column('int', { nullable: false })
 	article_id!: number;

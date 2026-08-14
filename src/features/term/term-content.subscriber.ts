@@ -1,10 +1,10 @@
 import { EventSubscriber } from 'typeorm';
-import CategoryContentEntity from '@/features/category/category-content.entity';
+import TermContentEntity from '@/features/term/term-content.entity';
 import SubscriberAbstract from '@/shared/abstracts/subscriber.abstract';
 
 @EventSubscriber()
-export class CategoryContentSubscriber extends SubscriberAbstract<CategoryContentEntity> {
-	protected readonly Entity = CategoryContentEntity;
+export class TermContentSubscriber extends SubscriberAbstract<TermContentEntity> {
+	protected readonly Entity = TermContentEntity;
 
 	constructor() {
 		super();

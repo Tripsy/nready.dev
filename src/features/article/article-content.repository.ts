@@ -43,11 +43,6 @@ export const ArticleContentRepository = dataSource
 						meta: content.meta,
 					})),
 				)
-				/*
-				 * `indexPredicate` has to mirror the partial unique index exactly —
-				 * Postgres only infers a partial index as the conflict arbiter when the
-				 * statement repeats its predicate, and otherwise rejects the upsert.
-				 */
 				.orUpdate(
 					[
 						'slug',
@@ -59,13 +54,12 @@ export const ArticleContentRepository = dataSource
 						'meta',
 					],
 					['article_id', 'language'],
-					{ indexPredicate: 'deleted_at IS NULL' },
 				)
 				.execute();
 		},
 
 		/**
-		 * The (slug, language) unique index is global, not per article, so a duplicate is a
+		 * The (slug, language) unique index is global, so a duplicate is a
 		 * conflict with another article rather than a re-save of this one.
 		 */
 		async findConflictingSlug(

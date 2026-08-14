@@ -39,6 +39,27 @@ describe(validator, () => {
 		expect(validated.success).toBe(false);
 	});
 
+	it('create() rejects contents repeating a language', () => {
+		const validated = termValidator.create.safeParse({
+			...termInputPayloads.create,
+			contents: [
+				{ language: 'en', value: 'Summer' },
+				{ language: 'en', value: 'Summertime' },
+			],
+		});
+
+		expect(validated.success).toBe(false);
+	});
+
+	it('create() rejects an empty contents list', () => {
+		const validated = termValidator.create.safeParse({
+			...termInputPayloads.create,
+			contents: [],
+		});
+
+		expect(validated.success).toBe(false);
+	});
+
 	it('update() rejects a payload carrying only the id', () => {
 		const validated = termValidator.update.safeParse({ id: 1 });
 

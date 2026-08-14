@@ -39,10 +39,7 @@ export const PlaceContentRepository = dataSource
 						type_label: c.type_label,
 					})),
 				)
-				// Predicate must match the partial unique index — see brand-content.repository.ts
-				.orUpdate(['name', 'type_label'], ['place_id', 'language'], {
-					indexPredicate: 'deleted_at IS NULL',
-				})
+				.orUpdate(['name', 'type_label'], ['place_id', 'language'])
 				.execute();
 		},
 	});

@@ -1,15 +1,26 @@
 import type { DeepPartial } from 'typeorm';
+import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
-import type TermEntity from '@/features/term/term.entity';
 import type { TermType } from '@/features/term/term.entity';
+import TermEntity from '@/features/term/term.entity';
 import { getTermRepository } from '@/features/term/term.repository';
 import {
 	paramsUpdateList,
 	type TermValidator,
 } from '@/features/term/term.validator';
+import type { TermContentType } from '@/features/term/term-content.entity';
+import TermContentRepository from '@/features/term/term-content.repository';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
+import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
+
+/**
+ * Columns owned by the term row itself.
+ */
+const entryColumns: string[] = paramsUpdateList.filter(
+	(param) => param !== 'contents',
+);
 
 export class TermService {
 	constructor(private repository: ReturnType<typeof getTermRepository>) {}
@@ -20,15 +31,21 @@ export class TermService {
 	public async create(
 		data: ValidatorOutput<TermValidator, 'create'>,
 	): Promise<TermEntity> {
-		await this.assertNotDuplicate(data.type, data.language, data.value);
+		await this.assertNotDuplicate(data.type, data.contents);
 
-		const entry = {
-			type: data.type,
-			language: data.language,
-			value: data.value,
-		};
+		return dataSource.transaction(async (manager) => {
+			const repository = manager.getRepository(TermEntity);
 
-		return this.repository.save(entry);
+			const entrySaved = await repository.save({ type: data.type });
+
+			await TermContentRepository.saveContent(
+				manager,
+				data.contents,
+				entrySaved.id,
+			);
+
+			return entrySaved;
+		});
 	}
 
 	/**
@@ -43,26 +60,39 @@ export class TermService {
 	/**
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
 	 */
-	public async updateData(
+	public async updateDataWithContent(
 		entry: TermEntity,
 		data: ValidatorOutput<TermValidator, 'update'>,
 	) {
-		/*
-		 * The natural key is the whole triple, so a change to any one part can collide.
-		 * Unspecified parts fall back to the stored row rather than being treated as absent.
-		 */
-		if (data.type || data.language || data.value) {
+		if (data.contents?.length) {
 			await this.assertNotDuplicate(
 				data.type || entry.type,
-				data.language || entry.language,
-				data.value || entry.value,
+				data.contents,
 				entry.id,
 			);
 		}
 
-		Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
+		const updatedEntity = await dataSource.transaction(async (manager) => {
+			const repository = manager.getRepository(TermEntity);
 
-		return this.update(entry);
+			Object.assign(entry, pickValuesFromObject(data, entryColumns));
+
+			const saved = await repository.save(entry);
+
+			await TermContentRepository.saveContent(
+				manager,
+				data.contents ?? [],
+				entry.id,
+			);
+
+			return saved;
+		});
+
+		// One clean for the whole operation, after commit — the content rows written above
+		// have no subscriber invalidating the term's keys. See `cleanEntityCache`
+		cleanEntityCache(TermEntity, updatedEntity.id);
+
+		return updatedEntity;
 	}
 
 	public async delete(id: number) {
@@ -81,57 +111,135 @@ export class TermService {
 			.firstOrFail();
 	}
 
-	public findByValue(
-		type: TermType,
-		language: string,
-		value: string,
-		withoutId?: number,
-	) {
-		const q = this.repository
-			.createQuery()
-			.filterBy('type', type)
-			.filterBy('language', language)
-			.filterBy('value', value);
-
-		if (withoutId) {
-			q.filterBy('id', withoutId, '!=');
-		}
-
-		return q.first();
-	}
-
 	/**
-	 * Guards the partial unique index on (type, language, value) so a collision surfaces as a
-	 * 409 rather than a driver error. Soft-deleted rows are outside the index and therefore
-	 * outside this check — the same value can be recreated after a delete.
+	 * Two terms of the same type must not carry the same wording in the same language —
+	 * "Color" as an `attribute_label` twice is one vocabulary entry, not two.
+	 *
+	 * The database can no longer state this: the wording moved to `term_content`, whose unique
+	 * index only covers `(term_id, language)`. So the rule the old `IDX_term_unique` on
+	 * `(type, language, value)` gave for free is enforced here instead, and a collision surfaces
+	 * as a 409 rather than a duplicate row. The comparison is case-insensitive, which the old
+	 * index was not.
 	 */
 	private async assertNotDuplicate(
 		type: TermType,
-		language: string,
-		value: string,
+		contents: TermContentType[],
 		withoutId?: number,
 	): Promise<void> {
-		const existingTerm = await this.findByValue(
-			type,
-			language,
-			value,
-			withoutId,
-		);
+		if (!contents.length) {
+			return;
+		}
+
+		const query = this.repository
+			.createQuery()
+			.filterBy('term.type', type)
+			.filterRaw(
+				`EXISTS (
+					SELECT 1 FROM "term_content" "duplicate_content"
+					WHERE "duplicate_content"."term_id" = "term"."id"
+						AND (${contents
+							.map(
+								(_content, index) =>
+									`("duplicate_content"."language" = :duplicateLanguage${index} AND LOWER("duplicate_content"."value") = LOWER(:duplicateValue${index}))`,
+							)
+							.join(' OR ')})
+				)`,
+				contents.reduce<Record<string, string>>(
+					(parameters, content, index) => {
+						parameters[`duplicateLanguage${index}`] =
+							content.language;
+						parameters[`duplicateValue${index}`] = content.value;
+
+						return parameters;
+					},
+					{},
+				),
+			);
+
+		if (withoutId) {
+			query.filterBy('term.id', withoutId, '!=');
+		}
+
+		const existingTerm = await query.first();
 
 		if (existingTerm) {
 			throw new CustomError(409, lang('term.error.already_exists'));
 		}
 	}
 
+	/**
+	 * @description Used in `read` method from controller; this will return a custom shape
+	 */
+	public async getEntryData(data: {
+		id: number;
+		language?: string;
+		withDeleted: boolean;
+	}) {
+		const query = this.repository
+			.createQuery()
+			.select([
+				'term.id',
+				'term.type',
+				'term.created_at',
+				'term.updated_at',
+				'term.deleted_at',
+
+				'content.language',
+				'content.value',
+			])
+			.filterById(data.id)
+			.withDeleted(data.withDeleted);
+
+		if (data.language) {
+			query.joinAndSelect(
+				'term.contents',
+				'content',
+				'INNER',
+				'content.language = :language',
+				{
+					language: data.language,
+				},
+			);
+		} else {
+			// No language: take all contents
+			query.joinAndSelect('term.contents', 'content', 'LEFT');
+		}
+
+		return await query.firstOrFail();
+	}
+
 	public findByFilter(
 		data: ValidatorOutput<TermValidator, 'find'>,
 		withDeleted: boolean,
 	) {
+		/*
+		 * One wording per row, in the requested language — the controller always resolves one.
+		 *
+		 * LEFT rather than the INNER `place` uses: a term missing that language still belongs in
+		 * the list with an empty value, because this table is where those gaps get found and
+		 * filled. An INNER join would hide exactly the rows that need attention.
+		 */
 		return this.repository
 			.createQuery()
+			.join(
+				'term.contents',
+				'content',
+				'LEFT',
+				'content.language = :language',
+				{ language: data.filter.language },
+			)
+			.select([
+				'term.id',
+				'term.type',
+				'term.created_at',
+				'term.updated_at',
+				'term.deleted_at',
+
+				'content.language',
+				'content.value',
+			])
 			.filterById(data.filter.id)
-			.filterBy('type', data.filter.type)
-			.filterBy('language', data.filter.language)
+			.filterBy('term.type', data.filter.type)
 			.filterByTerm(data.filter.term)
 			.withDeleted(withDeleted && data.filter.is_deleted)
 			.orderBy(data.order_by, data.direction)

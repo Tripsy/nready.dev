@@ -1,4 +1,5 @@
-import { Column, Entity, Index } from 'typeorm';
+import { Column, Entity, Index, OneToMany } from 'typeorm';
+import type TermContentEntity from '@/features/term/term-content.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
@@ -20,10 +21,6 @@ const ENTITY_TABLE_NAME = 'term';
 		'Multilingual taxonomy terms: categories, tags, attribute labels/values',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
-@Index('IDX_term_unique', ['type', 'language', 'value'], {
-	unique: true,
-	where: 'deleted_at IS NULL',
-})
 export default class TermEntity extends EntityAbstract {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
@@ -36,24 +33,15 @@ export default class TermEntity extends EntityAbstract {
 	@Index('IDX_term_type')
 	type!: TermType;
 
-	@Column('varchar', {
-		length: 3,
-		default: 'en',
-		comment: 'ISO language code (en will the fallback for universal terms)',
-	})
-	@Index('IDX_term_language')
-	language!: string;
-
-	@Column('varchar', {
-		length: 255,
-		nullable: false,
-		comment: 'Localized or universal term value',
-	})
-	value!: string;
-
-	@Column('jsonb', {
-		nullable: true,
-		comment: 'Reserved column for future use',
-	})
-	details!: Record<string, string | number | boolean> | null;
+	// RELATIONS
+	/*
+	 * The term carries no text of its own — every string lives in `term_content`, one row per
+	 * language. Consumers (`product_attribute`, `product_tag`, `product_variant_attribute`) point
+	 * at this id, which is language-neutral, and resolve the wording at read time.
+	 */
+	@OneToMany(
+		'TermContentEntity',
+		(content: TermContentEntity) => content.term,
+	)
+	contents!: TermContentEntity[];
 }

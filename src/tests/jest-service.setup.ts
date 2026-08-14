@@ -25,6 +25,7 @@ export function createMockQuery() {
 
 		// Methods from RepositoryAbstract
 		filterAny: jest.fn().mockReturnThis(),
+		filterRaw: jest.fn().mockReturnThis(),
 		/*
 		 * The escape hatch to the underlying TypeORM builder, for a condition no `filterBy`
 		 * can express (`parent_id IS NULL`). `createMockRepository` points it at the same

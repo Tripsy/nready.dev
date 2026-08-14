@@ -34,19 +34,37 @@ class TermController extends BaseController {
 	public read = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canRead(res.locals.auth);
 
-		const data = this.validate(this.validator.read, req.params, res);
+		const data = this.validate(
+			this.validator.read,
+			{
+				...req.query,
+				id: req.params.id,
+			},
+			res,
+		);
 
+		const withDeleted = this.policy.allowDeleted(res.locals.auth);
+
+		/*
+		 * Unlike the other content-bearing features, an absent `language` returns every
+		 * translation rather than falling back to `res.locals.language`. A term has no wording
+		 * of its own, so the editor has to see the full set to work with it; a caller that
+		 * wants one language asks for it.
+		 */
 		const cacheKey = this.cache.buildKey(
 			TermEntity.NAME,
 			data.id.toString(),
+			data.language ?? 'all-languages',
+			withDeleted ? 'with-deleted' : 'non-deleted',
 			'read',
 		);
 
-		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.termService.findById(
-				data.id,
-				this.policy.allowDeleted(res.locals.auth),
-			),
+		const cacheGetResults = await this.cache.get(cacheKey, () =>
+			this.termService.getEntryData({
+				id: data.id,
+				language: data.language,
+				withDeleted,
+			}),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
@@ -69,7 +87,10 @@ class TermController extends BaseController {
 
 		const existingEntry = await this.termService.findById(data.id, false);
 
-		const entry = await this.termService.updateData(existingEntry, data);
+		const entry = await this.termService.updateDataWithContent(
+			existingEntry,
+			data,
+		);
 
 		res.locals.output.message(lang('term.success.update'));
 		res.locals.output.data(entry);
@@ -105,6 +126,10 @@ class TermController extends BaseController {
 		this.policy.canFind(res.locals.auth);
 
 		const data = this.validate(this.validator.find, req.query, res);
+
+		if (!data.filter.language) {
+			data.filter.language = res.locals.language;
+		}
 
 		const [entries, total] = await this.termService.findByFilter(
 			data,

@@ -56,9 +56,10 @@ export const articleSeed: SeedDefinition = {
 		const tagLinkRepository = manager.getRepository(ArticleTagEntity);
 
 		const categoryIds = await loadIds(manager, CategoryEntity);
+		// The type alone identifies a tag: a term is language-neutral, and its wording lives in
+		// `term_content`, so there is no longer a language to narrow by here
 		const tagIds = await loadIds(manager, TermEntity, {
 			type: TermTypeEnum.TAG,
-			language: 'en',
 		});
 		const userIds = await loadIds(manager, UserEntity);
 

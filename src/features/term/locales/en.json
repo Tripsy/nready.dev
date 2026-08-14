@@ -5,7 +5,7 @@
 	},
 	"error": {
 		"not_found": "Term not found",
-		"already_exists": "A term with this type, language and value already exists"
+		"already_exists": "Another term of this type already uses this wording in the same language"
 	},
 	"success": {
 		"create": "Term created successfully",

@@ -13,7 +13,6 @@ export class BrandContentSubscriber extends SubscriberAbstract<BrandContentEntit
 			afterInsert: true,
 			afterUpdate: true,
 			beforeRemove: true,
-			afterSoftRemove: true,
 		};
 	}
 }

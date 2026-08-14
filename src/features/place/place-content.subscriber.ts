@@ -13,7 +13,6 @@ export class PlaceContentSubscriber extends SubscriberAbstract<PlaceContentEntit
 			afterInsert: true,
 			afterUpdate: true,
 			beforeRemove: true,
-			afterSoftRemove: true,
 		};
 	}
 }

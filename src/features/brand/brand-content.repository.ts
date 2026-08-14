@@ -39,14 +39,7 @@ export const BrandContentRepository = dataSource
 						meta: c.meta,
 					})),
 				)
-				/*
-				 * `indexPredicate` has to mirror the partial unique index exactly —
-				 * Postgres only infers a partial index as the conflict arbiter when the
-				 * statement repeats its predicate, and otherwise rejects the upsert.
-				 */
-				.orUpdate(['description', 'meta'], ['brand_id', 'language'], {
-					indexPredicate: 'deleted_at IS NULL',
-				})
+				.orUpdate(['description', 'meta'], ['brand_id', 'language'])
 				.execute();
 		},
 	});

@@ -1,10 +1,15 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
-import type BrandEntity from '@/features/brand/brand.entity';
 import {
-	EntityAbstract,
-	type PageMeta,
-} from '@/shared/abstracts/entity.abstract';
-import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+	Column,
+	CreateDateColumn,
+	Entity,
+	Index,
+	JoinColumn,
+	ManyToOne,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn,
+} from 'typeorm';
+import type BrandEntity from '@/features/brand/brand.entity';
+import type { PageMeta } from '@/shared/abstracts/entity.abstract';
 
 export type BrandContentType = {
 	language: string;
@@ -14,6 +19,11 @@ export type BrandContentType = {
 
 const ENTITY_TABLE_NAME = 'brand_content';
 
+/**
+ * Deliberately not `EntityAbstract`: this table has no `deleted_at`.
+ * A translation is never deleted on its own — the only write is `saveContent`'s upsert — and
+ * the row dies with its brand through the FK cascade.
+ */
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
@@ -21,12 +31,19 @@ const ENTITY_TABLE_NAME = 'brand_content';
 })
 @Index('IDX_brand_content_unique_per_lang', ['brand_id', 'language'], {
 	unique: true,
-	where: 'deleted_at IS NULL',
 })
-@SoftDeleteIndex(ENTITY_TABLE_NAME)
-export default class BrandContentEntity extends EntityAbstract {
+export default class BrandContentEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
+
+	@PrimaryGeneratedColumn({ type: 'int' })
+	id!: number;
+
+	@CreateDateColumn({ type: 'timestamp', nullable: false })
+	created_at!: Date;
+
+	@UpdateDateColumn({ type: 'timestamp', nullable: true })
+	updated_at!: Date | null;
 
 	@Column('int', { nullable: false })
 	brand_id!: number;

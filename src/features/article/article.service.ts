@@ -26,7 +26,9 @@ import {
 } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
-/** Columns owned by the article row itself — the rest live in child tables. */
+/**
+ * Columns owned by the term row itself.
+ */
 const entryColumns: string[] = [
 	'layout',
 	'publish_at',

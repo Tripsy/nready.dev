@@ -2,7 +2,7 @@
 	"name": "term",
 	"version": "1.0.0",
 	"relativePath": "/term",
-	"entities": ["term"],
+	"entities": ["term", "term-content"],
 	"depends_on": [],
 	"required_by": ["article", "product"]
 }

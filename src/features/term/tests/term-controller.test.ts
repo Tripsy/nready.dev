@@ -14,7 +14,7 @@ import {
 	testControllerFind,
 	testControllerRead,
 	testControllerRestoreSingle,
-	testControllerUpdate,
+	testControllerUpdateWithContent,
 } from '@/tests/jest-controller.setup';
 
 beforeEach(() => {
@@ -33,7 +33,7 @@ testControllerCreate<TermEntity, TermValidator>({
 	createData: termInputPayloads.create,
 });
 
-testControllerUpdate<TermEntity, TermValidator>({
+testControllerUpdateWithContent<TermEntity, TermValidator>({
 	controller: controller,
 	route: `${basePath}/${getTermEntityMock().id}`,
 	entityMock: getTermEntityMock(),

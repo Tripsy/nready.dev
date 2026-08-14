@@ -15,6 +15,13 @@ import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
+/**
+ * Columns owned by the term row itself.
+ */
+const entryColumns: string[] = paramsUpdateList.filter(
+	(param) => param !== 'contents',
+);
+
 export class PlaceService {
 	constructor(private repository: ReturnType<typeof getPlaceRepository>) {}
 
@@ -133,7 +140,7 @@ export class PlaceService {
 		const updatedEntity = await dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(PlaceEntity); // We use the manager -> `getPlaceRepository` is not bound to the transaction
 
-			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
+			Object.assign(entry, pickValuesFromObject(data, entryColumns));
 
 			const saved = await repository.save(entry);
 
@@ -198,9 +205,22 @@ export class PlaceService {
 				'content.language',
 				'content.name',
 				'content.type_label',
+
+				'parent.id',
+				'parent.place_type',
+				'parentContent.language',
+				'parentContent.name',
 			])
 			.filterById(data.id)
-			.withDeleted(data.withDeleted);
+			.withDeleted(data.withDeleted)
+			/*
+			 * The parent comes back as a relation, not just the `parent_id` column: the update
+			 * form has to render its name in the autocomplete, and the id alone leaves it with
+			 * nothing to display. `parentContent` carries every language, since the form labels
+			 * the parent in whichever one the user is editing.
+			 */
+			.joinAndSelect('place.parent', 'parent', 'LEFT')
+			.joinAndSelect('parent.contents', 'parentContent', 'LEFT');
 
 		if (data.language) {
 			query.joinAndSelect(

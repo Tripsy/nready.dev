@@ -21,6 +21,13 @@ import {
 } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
+/**
+ * Columns owned by the brand row itself.
+ */
+const entryColumns: string[] = paramsUpdateList.filter(
+	(param) => param !== 'contents',
+);
+
 export class BrandService {
 	constructor(private repository: ReturnType<typeof getBrandRepository>) {}
 
@@ -85,7 +92,7 @@ export class BrandService {
 		const updatedEntity = await dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(BrandEntity);
 
-			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
+			Object.assign(entry, pickValuesFromObject(data, entryColumns));
 
 			const saved = await repository.save(entry);
 
