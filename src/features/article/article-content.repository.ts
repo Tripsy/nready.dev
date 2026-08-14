@@ -72,16 +72,19 @@ export const ArticleContentRepository = dataSource
 
 			// Filtered on slug alone and paired up in memory: the slug carries the
 			// selectivity, and one index scan beats a per-language OR chain
+			// Columns are left unprefixed so the query builder resolves them against
+			// its own alias — `article_content`, not the `content` join alias the
+			// article queries use
 			const query = this.createQuery()
-				.select(['content.id', 'content.slug', 'content.language'])
+				.select(['id', 'slug', 'language'])
 				.filterBy(
-					'content.slug',
+					'slug',
 					contents.map((content) => content.slug),
 					'IN',
 				);
 
 			if (article_id) {
-				query.filterBy('content.article_id', article_id, '!=');
+				query.filterBy('article_id', article_id, '!=');
 			}
 
 			const candidates = await query.all();

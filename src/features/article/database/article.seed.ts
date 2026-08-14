@@ -66,7 +66,6 @@ export const articleSeed: SeedDefinition = {
 		// The slug lives on the content row, so that is where the natural key is read from
 		const existingContent = await contentRepository.find({
 			select: { slug: true },
-			withDeleted: true,
 		});
 
 		const existingSlugs = new Set(

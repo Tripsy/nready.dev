@@ -1,4 +1,8 @@
-import type { DeepPartial, EntityManager } from 'typeorm';
+import {
+	type DeepPartial,
+	type EntityManager,
+	QueryFailedError,
+} from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
@@ -14,12 +18,16 @@ import type {
 } from '@/features/article/article.validator';
 import type { ArticleAccessTarget } from '@/features/article/article-access.policy';
 import ArticleCategoryRepository from '@/features/article/article-category.repository';
-import type { ArticleAuthorType } from '@/features/article/article-content.entity';
+import {
+	type ArticleAuthorType,
+	SLUG_UNIQUE_INDEX,
+} from '@/features/article/article-content.entity';
 import ArticleContentRepository from '@/features/article/article-content.repository';
 import ArticleTagRepository from '@/features/article/article-tag.repository';
 import ArticleVisibilityRuleEntity from '@/features/article/article-visibility-rule.entity';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { encryptPassword } from '@/helpers/security.helper';
+import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
 	assertValidStatusTransition,
 	cleanEntityCache,
@@ -27,7 +35,8 @@ import {
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 /**
- * Columns owned by the term row itself.
+ * Columns owned by the article row itself — the rest live in child tables
+ * (`article_content`, `article_category`, `article_tag`, `article_visibility_rule`).
  */
 const entryColumns: string[] = [
 	'layout',
@@ -41,8 +50,37 @@ const entryColumns: string[] = [
 	'author_id',
 ];
 
+const slugConflictError = (): CustomError =>
+	new CustomError(409, lang('article.error.slug_already_exists'));
+
 export class ArticleService {
 	constructor(private repository: ReturnType<typeof getArticleRepository>) {}
+
+	/**
+	 * The slug check reads outside the transaction that writes the content, so two
+	 * concurrent requests can both find the slug free and only the second one meets
+	 * the `(slug, language)` unique index. Postgres answers that with a bare unique
+	 * violation, which the error handler would mask as a 500 — mapped back onto the
+	 * same 409 the pre-check raises so the race and the ordinary case read alike.
+	 *
+	 * The index is matched by name: the table carries a second unique index whose
+	 * violation would mean something else entirely.
+	 */
+	private async withSlugGuard<T>(operation: () => Promise<T>): Promise<T> {
+		try {
+			return await operation();
+		} catch (error) {
+			if (
+				RepositoryAbstract.isUniqueViolation(error) &&
+				error instanceof QueryFailedError &&
+				error.driverError?.constraint === SLUG_UNIQUE_INDEX
+			) {
+				throw slugConflictError();
+			}
+
+			throw error;
+		}
+	}
 
 	/**
 	 * @description Used in `create` method from controller;
@@ -55,32 +93,31 @@ export class ArticleService {
 		);
 
 		if (conflict) {
-			throw new CustomError(
-				409,
-				lang('article.error.slug_already_exists'),
-			);
+			throw slugConflictError();
 		}
 
-		return dataSource.transaction(async (manager) => {
-			const repository = manager.getRepository(ArticleEntity);
+		return this.withSlugGuard(() =>
+			dataSource.transaction(async (manager) => {
+				const repository = manager.getRepository(ArticleEntity);
 
-			const entrySaved = await repository.save({
-				layout: data.layout,
-				publish_at: data.publish_at,
-				archive_at: data.archive_at,
-				featured_status: data.featured_status,
-				featured_order: data.featured_order,
-				visibility: data.visibility,
-				public_at: data.public_at,
-				source_mode: data.source_mode,
-				source: data.source,
-				author_id: data.author_id,
-			});
+				const entrySaved = await repository.save({
+					layout: data.layout,
+					publish_at: data.publish_at,
+					archive_at: data.archive_at,
+					featured_status: data.featured_status,
+					featured_order: data.featured_order,
+					visibility: data.visibility,
+					public_at: data.public_at,
+					source_mode: data.source_mode,
+					source: data.source,
+					author_id: data.author_id,
+				});
 
-			await this.saveRelations(manager, entrySaved, data);
+				await this.saveRelations(manager, entrySaved, data);
 
-			return entrySaved;
-		});
+				return entrySaved;
+			}),
+		);
 	}
 
 	/**
@@ -103,24 +140,23 @@ export class ArticleService {
 			);
 
 			if (conflict) {
-				throw new CustomError(
-					409,
-					lang('article.error.slug_already_exists'),
-				);
+				throw slugConflictError();
 			}
 		}
 
-		const updatedEntry = await dataSource.transaction(async (manager) => {
-			const repository = manager.getRepository(ArticleEntity);
+		const updatedEntry = await this.withSlugGuard(() =>
+			dataSource.transaction(async (manager) => {
+				const repository = manager.getRepository(ArticleEntity);
 
-			Object.assign(entry, pickValuesFromObject(data, entryColumns));
+				Object.assign(entry, pickValuesFromObject(data, entryColumns));
 
-			const saved = await repository.save(entry);
+				const saved = await repository.save(entry);
 
-			await this.saveRelations(manager, saved, data);
+				await this.saveRelations(manager, saved, data);
 
-			return saved;
-		});
+				return saved;
+			}),
+		);
 
 		/*
 		 * One clean for the whole operation, emitted after the transaction commits.
