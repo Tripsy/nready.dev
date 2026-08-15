@@ -46,13 +46,19 @@ class PlaceController extends BaseController {
 			res,
 		);
 
-		const language = data.language ?? res.locals.language;
+		/*
+		 * An omitted `language` means every translation, not the request's own — the dashboard
+		 * edits all of them at once and has no other way to ask. Falling back to
+		 * `res.locals.language` here is what made `getEntryData`'s no-language branch
+		 * unreachable, and left an editor unable to see a translation they had written.
+		 */
+		const language = data.language;
 		const withDeleted = this.policy.allowDeleted(res.locals.auth);
 
 		const cacheKey = this.cache.buildKey(
 			PlaceEntity.NAME,
 			data.id.toString(),
-			language,
+			language ?? 'all-languages',
 			withDeleted ? 'with-deleted' : 'non-deleted',
 			'read',
 		);

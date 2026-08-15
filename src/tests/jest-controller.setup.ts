@@ -50,7 +50,12 @@ export type CreateValidator = {
 };
 
 type CreateService<E, V extends CreateValidator> = {
-	create(data: ValidatorOutput<V, 'create'>): Promise<E>;
+	/*
+	 * The rest parameter covers a service that is handed something the payload does not carry —
+	 * `ArticleService.create` takes the session account for `author_id`. The tests only ever
+	 * spy on this method, so the extra arguments need to be admitted, not described.
+	 */
+	create(data: ValidatorOutput<V, 'create'>, ...rest: unknown[]): Promise<E>;
 };
 
 type ControllerCreateType<E, V extends CreateValidator> = {

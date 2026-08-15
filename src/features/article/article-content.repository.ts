@@ -39,20 +39,11 @@ export const ArticleContentRepository = dataSource
 						brief: content.brief,
 						content: content.content,
 						author: content.author,
-						content_blocks: content.content_blocks,
 						meta: content.meta,
 					})),
 				)
 				.orUpdate(
-					[
-						'slug',
-						'title',
-						'brief',
-						'content',
-						'author',
-						'content_blocks',
-						'meta',
-					],
+					['slug', 'title', 'brief', 'content', 'author', 'meta'],
 					['article_id', 'language'],
 				)
 				.execute();

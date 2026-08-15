@@ -5,6 +5,7 @@
 //  the data source dependencies
 
 import { Command } from 'commander';
+import { setupListeners } from '@/config/listeners.setup';
 import archiveArticle from '@/features/article/cron-jobs/archive-article.cron';
 import publicRestrictedArticle from '@/features/article/cron-jobs/public-restricted-article.cron';
 import publishScheduledArticle from '@/features/article/cron-jobs/publish-scheduled-article.cron';
@@ -13,6 +14,13 @@ import dataSource from '../src/config/data-source.config';
 import { getCronJobsPaths } from '../src/providers/cron.provider';
 
 type CronJob = () => Promise<unknown>;
+
+const BACKGROUND_DRAIN_MS = 500;
+
+/** Gives fire-and-forget listener writes time to finish before the process exits. */
+function drainBackgroundWork(): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, BACKGROUND_DRAIN_MS));
+}
 
 const program = new Command();
 
@@ -40,9 +48,23 @@ program
 
 		await dataSource.initialize();
 
+		/*
+		 * The scheduled runs inherit their listeners from `bootstrap.ts`; this runner has no
+		 * bootstrap, so without this the audit trail and cache purges a job emits go nowhere
+		 * and the job looks like it silently skipped them.
+		 */
+		await setupListeners();
+
 		console.debug(`Running ${cronName}...`);
 		const result = await cronFn();
 		console.debug('Result: ', result);
+
+		/*
+		 * Listeners write through `runInBackground`, which is deliberately not awaited — a
+		 * bare `process.exit` here outruns the insert. The server never faces this because it
+		 * keeps running; a one-shot process has to give the handlers a tick to land.
+		 */
+		await drainBackgroundWork();
 
 		process.exit(0);
 	});

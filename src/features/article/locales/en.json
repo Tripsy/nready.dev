@@ -4,9 +4,7 @@
 		"invalid_slug": "Invalid slug",
 		"invalid_brief": "Invalid brief",
 		"invalid_content": "Invalid content",
-		"invalid_content_blocks": "Invalid content blocks",
 		"invalid_author": "Invalid author details",
-		"invalid_author_id": "Invalid author",
 		"invalid_layout": "Invalid layout",
 		"invalid_featured_status": "Invalid featured status",
 		"invalid_featured_order": "Invalid featured order",
@@ -16,7 +14,8 @@
 		"invalid_source_mode": "Invalid source mode",
 		"invalid_categories": "Invalid categories",
 		"invalid_tags": "Invalid tags",
-		"invalid_publish_window": "The archive date must be after the publish date"
+		"archive_before_publish": "The archive date must be after the publish date",
+		"invalid_ids_provided": "The submitted ids do not match the articles in this featured group"
 	},
 	"error": {
 		"not_found": "Article not found",
@@ -34,7 +33,8 @@
 		"update": "Article updated successfully",
 		"delete": "Article deleted successfully",
 		"restore": "Article restored successfully",
-		"status_update": "Article status updated successfully"
+		"status_update": "Article status updated successfully",
+		"order_update": "Article order updated successfully"
 	},
 	"history": {
 		"created": "Article #{{entity_id}} created by user #{{auth_id}}",
@@ -42,6 +42,7 @@
 		"deleted": "Article(s) {{entity_ids}} marked as deleted by user #{{auth_id}}",
 		"removed": "Article(s) {{entity_ids}} removed by user #{{auth_id}}",
 		"restored": "Article(s) {{entity_ids}} restored by user #{{auth_id}}",
-		"status": "Article #{{entity_id}} updated from {{oldStatus}} to {{newStatus}} by user #{{auth_id}}"
+		"status": "Article #{{entity_id}} updated from {{oldStatus}} to {{newStatus}} by user #{{auth_id}}",
+		"visibility": "Article #{{entity_id}} released to public visibility by {{performed_by}}"
 	}
 }

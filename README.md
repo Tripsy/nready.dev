@@ -341,9 +341,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Go on FE → term
-2. Go on FE → article
-3. Revisit `discount` once `product` ships — the feature is complete except where it
+1. Revisit `discount` once `product` ships — the feature is complete except where it
    depends on products existing:
     - The dashboard target picker covers `client`, `category` and `brand` only. For the
       `product` and `variant` scopes it renders an explanatory note instead, because there
@@ -355,7 +353,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
       exercises them against real rows.
     - `DiscountLineContext` already carries `variantId`/`productId` and the resolver
       matches them; only the ways of *creating* those links are missing.
-4. Prepared entities:
+2. Prepared entities:
     - grn
         - grn-item
         - warehouse-movement

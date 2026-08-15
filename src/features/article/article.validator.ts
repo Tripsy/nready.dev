@@ -16,7 +16,9 @@ import {
 
 /**
  * `source_mode` is deliberately absent: it records whether the parser owns the article, so it
- * is set once on create and never accepted from an update payload.
+ * is set once on create and never accepted from an update payload. `author_id` is absent for a
+ * different reason — it is the account that filed the article, stamped from the session on
+ * create, and a per-language by-line goes in `contents[].author` instead.
  */
 export const paramsUpdateList: string[] = [
 	'layout',
@@ -28,7 +30,6 @@ export const paramsUpdateList: string[] = [
 	'visibility_rule',
 	'public_at',
 	'source',
-	'author_id',
 	'contents',
 	'categories',
 	'tags',
@@ -47,9 +48,7 @@ const validatorMessages = [
 	'invalid_slug',
 	'invalid_brief',
 	'invalid_content',
-	'invalid_content_blocks',
 	'invalid_author',
-	'invalid_author_id',
 	'invalid_layout',
 	'invalid_featured_status',
 	'invalid_featured_order',
@@ -59,7 +58,7 @@ const validatorMessages = [
 	'invalid_source_mode',
 	'invalid_categories',
 	'invalid_tags',
-	'invalid_publish_window',
+	'archive_before_publish',
 ] as const;
 
 export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
@@ -93,15 +92,6 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 		}),
 		content: this.validateString(this.getMessage('invalid_content')),
 		author: this.authorSchema,
-		content_blocks: z
-			.record(
-				z.string(),
-				z.string({
-					message: this.getMessage('invalid_content_blocks'),
-				}),
-			)
-			.nullable()
-			.optional(),
 		meta: this.validateMeta({
 			invalid_meta_title: this.getMessage('invalid_meta_title'),
 			invalid_meta_description: this.getMessage(
@@ -178,62 +168,87 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 			)
 			.optional();
 
-	readonly create = z.object({
-		layout: this.validateEnum(
-			ArticleLayoutEnum,
-			this.getMessage('invalid_layout'),
-			{ required: false },
-		),
-		publish_at: this.validateDate(this.getMessage('invalid_date'), {
-			required: false,
-		}),
-		archive_at: this.validateDate(this.getMessage('invalid_date'), {
-			required: false,
-		}),
-		featured_status: this.validateEnum(
-			ArticleFeaturedStatusEnum,
-			this.getMessage('invalid_featured_status'),
-			{ required: false },
-		),
-		featured_order: this.validateNumber(
-			this.getMessage('invalid_featured_order'),
-			{ required: false },
-		),
-		visibility: this.validateEnum(
-			ArticleVisibilityEnum,
-			this.getMessage('invalid_visibility'),
-			{ required: false },
-		),
-		visibility_rule: this.visibilityRuleSchema,
-		public_at: this.validateDate(this.getMessage('invalid_date'), {
-			required: false,
-		}),
-		source_mode: this.validateEnum(
-			ArticleSourceModeEnum,
-			this.getMessage('invalid_source_mode'),
-			{ required: false },
-		),
-		source: this.sourceSchema,
-		author_id: this.validateId(
-			this.getMessage('invalid_id', { name: 'author_id' }),
-			{ required: false },
-		),
-		contents: this.contentsSchema
-			.array()
-			.min(1, this.getMessage('invalid_contents'))
-			.refine(
-				(contents) => {
-					const languages = contents.map(
-						(content) => content.language,
-					);
+	/**
+	 * An article whose archive deadline falls on or before its release is never displayed at
+	 * all. Both dates are optional on their own, so this only bites when a payload carries the
+	 * pair — a partial update that moves one of them is checked against the stored row in
+	 * `ArticleService.assertPublishWindow`.
+	 */
+	private readonly refinePublishWindow = (
+		data: { publish_at?: Date | null; archive_at?: Date | null },
+		ctx: z.RefinementCtx,
+	): void => {
+		if (!data.publish_at || !data.archive_at) {
+			return;
+		}
 
-					return new Set(languages).size === languages.length;
-				},
-				{ message: this.getMessage('duplicate_contents') },
+		if (data.archive_at > data.publish_at) {
+			return;
+		}
+
+		ctx.addIssue({
+			code: 'custom',
+			path: ['archive_at'],
+			message: this.getMessage('archive_before_publish'),
+		});
+	};
+
+	readonly create = z
+		.object({
+			layout: this.validateEnum(
+				ArticleLayoutEnum,
+				this.getMessage('invalid_layout'),
+				{ required: false },
 			),
-		categories: this.idListSchema(this.getMessage('invalid_categories')),
-		tags: this.idListSchema(this.getMessage('invalid_tags')),
-	});
+			publish_at: this.validateDate(this.getMessage('invalid_date'), {
+				required: false,
+			}),
+			archive_at: this.validateDate(this.getMessage('invalid_date'), {
+				required: false,
+			}),
+			featured_status: this.validateEnum(
+				ArticleFeaturedStatusEnum,
+				this.getMessage('invalid_featured_status'),
+				{ required: false },
+			),
+			featured_order: this.validateNumber(
+				this.getMessage('invalid_featured_order'),
+				{ required: false },
+			),
+			visibility: this.validateEnum(
+				ArticleVisibilityEnum,
+				this.getMessage('invalid_visibility'),
+				{ required: false },
+			),
+			visibility_rule: this.visibilityRuleSchema,
+			public_at: this.validateDate(this.getMessage('invalid_date'), {
+				required: false,
+			}),
+			source_mode: this.validateEnum(
+				ArticleSourceModeEnum,
+				this.getMessage('invalid_source_mode'),
+				{ required: false },
+			),
+			source: this.sourceSchema,
+			contents: this.contentsSchema
+				.array()
+				.min(1, this.getMessage('invalid_contents'))
+				.refine(
+					(contents) => {
+						const languages = contents.map(
+							(content) => content.language,
+						);
+
+						return new Set(languages).size === languages.length;
+					},
+					{ message: this.getMessage('duplicate_contents') },
+				),
+			categories: this.idListSchema(
+				this.getMessage('invalid_categories'),
+			),
+			tags: this.idListSchema(this.getMessage('invalid_tags')),
+		})
+		.superRefine(this.refinePublishWindow);
 
 	readonly read = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
@@ -275,10 +290,6 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 				required: false,
 			}),
 			source: this.sourceSchema,
-			author_id: this.validateId(
-				this.getMessage('invalid_id', { name: 'author_id' }),
-				{ required: false },
-			),
 			contents: this.contentsSchema
 				.array()
 				.refine(
@@ -302,7 +313,8 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 				params: paramsUpdateList.join(', '),
 			}),
 			path: ['_global'],
-		});
+		})
+		.superRefine(this.refinePublishWindow);
 
 	readonly delete = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
@@ -441,6 +453,46 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 			),
 		},
 	});
+
+	/**
+	 * The ordering group is a scope, not a single column: `section` is every article flagged for
+	 * the section slot, `category` is the articles under one category subtree. `category_id` is
+	 * therefore required for the second and meaningless for the first, which is what the refine
+	 * enforces — the service resolves the subtree and rejects a set that is not the whole group.
+	 */
+	readonly orderUpdate = z
+		.object({
+			featured_status: this.validateEnum(
+				ArticleFeaturedStatusEnum,
+				this.getMessage('invalid_featured_status'),
+			),
+			category_id: this.validateId(
+				this.getMessage('invalid_id', { name: 'category_id' }),
+				{ required: false },
+			),
+			positions: z
+				.array(
+					z.number({
+						message: this.getMessage('invalid_number'),
+					}),
+				)
+				.min(2, {
+					message: this.getMessage('array_min', {
+						length: '2',
+					}),
+				}),
+		})
+		.refine(
+			(data) =>
+				data.featured_status !== ArticleFeaturedStatusEnum.CATEGORY ||
+				!!data.category_id,
+			{
+				message: this.getMessage('invalid_id', {
+					name: 'category_id',
+				}),
+				path: ['category_id'],
+			},
+		);
 
 	readonly statusUpdate = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),

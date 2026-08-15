@@ -86,12 +86,6 @@ export default class ArticleContentEntity {
 
 	@Column('jsonb', {
 		nullable: true,
-		comment: 'Reserved column for future use',
-	})
-	content_blocks!: Record<string, string> | null;
-
-	@Column('jsonb', {
-		nullable: true,
 		comment: 'SEO metadata, canonical URL, images, structured data, etc.',
 	})
 	meta!: PageMeta | null;

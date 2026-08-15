@@ -84,6 +84,7 @@ export function createMockRepository<
 		createQueryBuilder: jest.fn(() => queryBuilder),
 		save: jest.fn(),
 		update: jest.fn(),
+		softDelete: jest.fn(),
 	} as unknown as jest.Mocked<Repository<E>> & {
 		createQuery(): Q;
 	};
