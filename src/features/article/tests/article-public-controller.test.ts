@@ -118,7 +118,7 @@ describe(controller, () => {
 			'findFields',
 		).mockResolvedValue({
 			requires_auth: false,
-			requires_subscription: null,
+			requires_subscription: false,
 			allowed_countries: ['RO'],
 			is_listed: true,
 			has_password: true,

@@ -41,7 +41,12 @@ Requested action: **$ARGUMENTS** (empty means `start all`).
      `lsof -nP -iTCP:80 -sTCP:LISTEN`.
    - **exit 137 / OOMKilled** — the container hit its `mem_limit: 4g`. Check what else was
      running; a Next dev server plus a jest run in the API container is the usual squeeze.
-   - **`EADDRINUSE`** — a previous dev server survived. `stop` then `start` that side.
+   - **`EADDRINUSE`** — a previous dev server survived the last stop. The script catches this
+     itself now: `stop` verifies the port went quiet and, if it did not, fails with the
+     surviving processes listed rather than reporting success, and `restart` aborts instead of
+     starting on top of a server that is still answering. Seeing it in a log means the kill
+     pattern missed a link of the process chain — widen `API_PROC` / `UI_PROC` in the script,
+     rather than killing by hand and leaving the next session to hit it again.
    - **`ECONNREFUSED` from the API** — `postgres` or `redis` is down; start those stacks.
    - **Next.js compile / module-resolution errors** — a real code error in `nready-ui`;
      quote the file and line from the log.

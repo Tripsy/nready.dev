@@ -11,6 +11,7 @@ import type VendorEntity from '@/features/vendor/vendor.entity';
 import type WarehouseEntity from '@/features/warehouse/warehouse.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
 export const GrnStatusEnum = {
@@ -131,6 +132,7 @@ export default class GrnEntity extends EntityAbstract {
 		nullable: false,
 		default: 1,
 		comment: 'Rate to the base currency (1 = same currency)',
+		transformer: numericTransformer,
 	})
 	exchange_rate!: number;
 

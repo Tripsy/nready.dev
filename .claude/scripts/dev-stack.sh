@@ -25,9 +25,19 @@ API_PORT=3000
 UI_PORT=80
 
 # ERE matched against the container's full process list (`pgrep -f`) to decide whether a dev
-# server is up. `pnpm run dev` is part of every pattern because it is the first process to
-# appear — matching only the child would read the seconds before it spawns as a crash.
-API_PROC="nodemon|pnpm run dev"
+# server is up, and to kill it again. `pnpm run dev` is part of every pattern because it is the
+# first process to appear — matching only the child would read the seconds before it spawns as
+# a crash.
+#
+# The pattern must also reach the process that *binds the port*, not just the runner that
+# spawned it. The API chain is `pnpm run dev` → `sh -c nodemon` → `nodemon.js` →
+# `sh -c tsx ./src/server.ts` → `tsx` → `node … ./src/server.ts`, and only the last of those
+# holds :3000. A pattern covering the runner alone kills nodemon, leaves the server orphaned
+# and still listening, and the next `start` then reports ready against the process it was
+# supposed to replace — so every source change after that point is silently not live.
+# `next` already matches the whole UI chain, `next-server` and the build workers under
+# `.next/dev/build/` included.
+API_PROC="nodemon|pnpm run dev|src/server\.ts"
 UI_PROC="next|pnpm run dev"
 
 NETWORK="development"
@@ -83,6 +93,22 @@ http_ok() {
     local code
     code="$(curl -so /dev/null --max-time 3 -w '%{http_code}' "$1" 2>/dev/null)"
     [ -n "$code" ] && [ "$code" != 000 ] && [ "$code" -lt 500 ]
+}
+
+# The port going quiet is the only proof a stop worked. The process list is not: a pattern that
+# misses one link of the chain leaves an orphan holding the port while `pgrep` reads clean, and
+# the health check that follows a restart then passes against that orphan. Probed from the host
+# because the port is published and neither container is guaranteed to have `ss` or `curl`.
+wait_port_released() {
+    local target=$1 waited=0 timeout=${2:-10}
+
+    while [ "$waited" -lt "$timeout" ]; do
+        http_ok "$(health_of "$target")" || return 0
+        sleep 1
+        waited=$((waited + 1))
+    done
+
+    return 1
 }
 
 preflight() {
@@ -215,22 +241,37 @@ wait_ready() {
 
 # Kills the dev server but leaves the container up, so a restart skips container boot.
 cmd_stop() {
-    local target
+    local target rc=0
     for target in $(targets "${1:-all}"); do
         if ! container_running "$(container_of "$target")"; then
             ok "$target container not running"
             continue
         fi
-        if dev_running "$target"; then
-            docker exec "$(container_of "$target")" pkill -f "$(proc_of "$target")" >/dev/null 2>&1
-            sleep 1
-            dev_running "$target" \
-                && { docker exec "$(container_of "$target")" pkill -9 -f "$(proc_of "$target")" >/dev/null 2>&1; sleep 1; }
-            ok "$target dev server stopped"
-        else
+        if ! dev_running "$target" && ! http_ok "$(health_of "$target")"; then
             ok "$target dev server not running"
+            continue
         fi
+
+        docker exec "$(container_of "$target")" pkill -f "$(proc_of "$target")" >/dev/null 2>&1
+        sleep 1
+        dev_running "$target" \
+            && { docker exec "$(container_of "$target")" pkill -9 -f "$(proc_of "$target")" >/dev/null 2>&1; sleep 1; }
+
+        if wait_port_released "$target"; then
+            ok "$target dev server stopped"
+            continue
+        fi
+
+        # Reported rather than papered over: the caller has to know the port is still held,
+        # because a `start` on top of this looks healthy and serves stale code.
+        err "$target still answering on :$(port_of "$target") after stop — a process outside" \
+            "the kill pattern is holding the port"
+        docker exec "$(container_of "$target")" ps -eo pid,args 2>/dev/null \
+            | grep -viE 'defunct|grep|ps -eo' | sed 's/^/    /'
+        rc=1
     done
+
+    return $rc
 }
 
 cmd_down() {
@@ -243,7 +284,9 @@ cmd_down() {
 }
 
 cmd_restart() {
-    cmd_stop "${1:-all}"
+    # Starting on top of a failed stop is the silent-stale-server case: the new server cannot
+    # bind, the old one keeps answering, and `wait_ready` calls it a success.
+    cmd_stop "${1:-all}" || { err "restart aborted — stop did not free the port"; return 1; }
     cmd_start "${1:-all}"
 }
 

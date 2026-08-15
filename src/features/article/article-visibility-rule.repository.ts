@@ -12,7 +12,7 @@ import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
  */
 export type ArticleVisibilityRuleFields = {
 	requires_auth: boolean;
-	requires_subscription: string[] | null;
+	requires_subscription: boolean;
 	allowed_countries: string[] | null;
 	is_listed: boolean;
 	has_password: boolean;

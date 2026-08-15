@@ -12,6 +12,7 @@ import type ProductPriceEntity from '@/features/product/product-price.entity';
 import type ProductVariantAttributeEntity from '@/features/product/product-variant-attribute.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 
 const ENTITY_TABLE_NAME = 'product_variant';
 
@@ -143,6 +144,7 @@ export default class ProductVariantEntity extends EntityAbstract {
 		nullable: true,
 		comment:
 			'Weighted average acquisition cost in the base currency; drives margin reporting',
+		transformer: numericTransformer,
 	})
 	cost_price!: number | null;
 

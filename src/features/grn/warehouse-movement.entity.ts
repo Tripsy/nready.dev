@@ -3,6 +3,7 @@ import type GrnItemEntity from '@/features/grn/grn-item.entity';
 import type ProductVariantEntity from '@/features/product/product-variant.entity';
 import type WarehouseEntity from '@/features/warehouse/warehouse.entity';
 import { EntityAppendOnlyAbstract } from '@/shared/abstracts/entity-append-only.abstract';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 
 export const WarehouseMovementTypeEnum = {
 	RECEIPT: 'receipt', // A GRN confirmed
@@ -112,6 +113,7 @@ export default class WarehouseMovementEntity extends EntityAppendOnlyAbstract {
 		nullable: false,
 		comment:
 			'Cost recognised per unit, in base currency, taken from the lot',
+		transformer: numericTransformer,
 	})
 	unit_cost_base!: number;
 

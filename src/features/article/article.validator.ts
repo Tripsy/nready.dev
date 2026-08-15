@@ -107,14 +107,10 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
-			requires_subscription: z
-				.array(
-					z.string({
-						message: this.getMessage('invalid_visibility_rule'),
-					}),
-				)
-				.nullable()
-				.optional(),
+			requires_subscription: this.validateBoolean(
+				this.getMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
 			allowed_countries: z
 				.array(
 					z

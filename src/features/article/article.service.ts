@@ -292,7 +292,7 @@ export class ArticleService {
 
 		entry.deleted_at = null;
 		entry.requires_auth = rule.requires_auth;
-		entry.requires_subscription = rule.requires_subscription ?? null;
+		entry.requires_subscription = rule.requires_subscription;
 		entry.allowed_countries = rule.allowed_countries ?? null;
 		entry.is_listed = rule.is_listed;
 
@@ -463,6 +463,9 @@ export class ArticleService {
 	 * account that owns the article, `content.author` is the by-line as it should read in that
 	 * language. The by-line wins field by field, so a translated bio or a pen name overrides
 	 * the account without having to restate the parts it agrees with.
+	 *
+	 * Applied on the public read only. The dashboard read returns the stored override
+	 * untouched, because that is what the editor edits — see `getEntryData`.
 	 */
 	private resolveAuthor(
 		entry: ArticleEntity,
@@ -549,9 +552,14 @@ export class ArticleService {
 
 		const entry = await query.firstOrFail();
 
-		for (const content of entry.contents ?? []) {
-			content.author = this.resolveAuthor(entry, content.author);
-		}
+		/*
+		 * The by-line is returned exactly as stored, unmerged. This is the editing surface: an
+		 * editor has to see which fields the translation actually overrides, and a resolved
+		 * value handed to a form comes straight back on the next save — which would bake the
+		 * account's name and email into `article_content.author` and turn the fallback into
+		 * a frozen copy. `article.author` is selected alongside for anything that wants to
+		 * show the filing account.
+		 */
 
 		if (entry.visibility === ArticleVisibilityEnum.RESTRICTED) {
 			// Loaded separately so the rule's `password` hash never rides along in the
@@ -607,8 +615,8 @@ export class ArticleService {
 	 * visibility out of the cached value — both decide access and both move without the
 	 * payload changing.
 	 */
-	public getPublicEntryById(id: number, language: string) {
-		return this.repository
+	public async getPublicEntryById(id: number, language: string) {
+		const entry = await this.repository
 			.createQuery()
 			.select([
 				'article.id',
@@ -648,6 +656,12 @@ export class ArticleService {
 			.joinAndSelect('article.tags', 'tag', 'LEFT')
 			.filterById(id)
 			.firstOrFail();
+
+		for (const content of entry.contents ?? []) {
+			content.author = this.resolveAuthor(entry, content.author);
+		}
+
+		return entry;
 	}
 
 	/**
