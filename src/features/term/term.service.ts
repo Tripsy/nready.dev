@@ -9,7 +9,9 @@ import {
 	paramsUpdateList,
 	type TermValidator,
 } from '@/features/term/term.validator';
-import type { TermContentType } from '@/features/term/term-content.entity';
+import TermContentEntity, {
+	type TermContentType,
+} from '@/features/term/term-content.entity';
 import TermContentRepository from '@/features/term/term-content.repository';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
@@ -42,6 +44,20 @@ export class TermService {
 				manager,
 				data.contents,
 				entrySaved.id,
+			);
+
+			/*
+			 * The translations are written through a query builder, so the saved term carries
+			 * none of them back on its own. A term has no wording outside `contents` — a
+			 * response without them names nothing, and a caller that links the new term
+			 * straight away (the article form's tag picker) has nothing to label it with.
+			 */
+			entrySaved.contents = data.contents.map((content) =>
+				Object.assign(new TermContentEntity(), {
+					term_id: entrySaved.id,
+					language: content.language,
+					value: content.value,
+				}),
 			);
 
 			return entrySaved;

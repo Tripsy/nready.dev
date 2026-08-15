@@ -6,6 +6,7 @@ export const LogHistoryActionEnum = {
 	RESTORED: 'restored',
 	STATUS: 'status',
 	VISIBILITY: 'visibility',
+	FEATURED_EXPIRED: 'featured_expired',
 	PASSWORD_CHANGE: 'password_change',
 } as const;
 

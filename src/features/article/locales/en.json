@@ -8,6 +8,7 @@
 		"invalid_layout": "Invalid layout",
 		"invalid_featured_status": "Invalid featured status",
 		"invalid_featured_order": "Invalid featured order",
+		"featured_expire_without_status": "The featured expiry date requires a featured status",
 		"invalid_visibility": "Invalid visibility",
 		"invalid_visibility_rule": "Invalid visibility rule",
 		"invalid_source": "Invalid source details",
@@ -43,6 +44,7 @@
 		"removed": "Article(s) {{entity_ids}} removed by user #{{auth_id}}",
 		"restored": "Article(s) {{entity_ids}} restored by user #{{auth_id}}",
 		"status": "Article #{{entity_id}} updated from {{oldStatus}} to {{newStatus}} by user #{{auth_id}}",
-		"visibility": "Article #{{entity_id}} released to public visibility by {{performed_by}}"
+		"visibility": "Article #{{entity_id}} released to public visibility by {{performed_by}}",
+		"featured_expired": "Article #{{entity_id}} removed from the {{featuredStatus}} featured group by {{performed_by}}"
 	}
 }

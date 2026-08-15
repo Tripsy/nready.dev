@@ -69,6 +69,15 @@ const TERMS: readonly TermRow[] = [
 	},
 ];
 
+/**
+ * Terms are stored lower-cased, the same rule `TermValidator` applies to every write. The
+ * literals above keep their natural capitalisation for readability, so both the rows written
+ * here and the keys re-runs match on have to go through this — comparing a raw literal against
+ * a stored value would miss every existing term and insert the whole set again.
+ */
+const normalizeTermValue = (value: string): string =>
+	value.trim().toLowerCase();
+
 export const termSeed: SeedDefinition = {
 	name: 'term',
 	run: async ({ manager }): Promise<SeedSummary> => {
@@ -90,13 +99,13 @@ export const termSeed: SeedDefinition = {
 			existingContents
 				.filter((content) => content.term)
 				.map((content) => [
-					`${content.term.type}:${content.value}`,
+					`${content.term.type}:${normalizeTermValue(content.value)}`,
 					content.term_id,
 				]),
 		);
 
 		const pending = TERMS.filter(
-			(row) => !idByKey.has(`${row.type}:${row.en}`),
+			(row) => !idByKey.has(`${row.type}:${normalizeTermValue(row.en)}`),
 		);
 
 		for (const row of pending) {
@@ -108,7 +117,7 @@ export const termSeed: SeedDefinition = {
 				contentRepository.create({
 					term_id: term.id,
 					language: 'en',
-					value: row.en,
+					value: normalizeTermValue(row.en),
 				}),
 			];
 
@@ -117,14 +126,14 @@ export const termSeed: SeedDefinition = {
 					contentRepository.create({
 						term_id: term.id,
 						language: 'ro',
-						value: row.ro,
+						value: normalizeTermValue(row.ro),
 					}),
 				);
 			}
 
 			await contentRepository.save(contents);
 
-			idByKey.set(`${row.type}:${row.en}`, term.id);
+			idByKey.set(`${row.type}:${normalizeTermValue(row.en)}`, term.id);
 		}
 
 		return {

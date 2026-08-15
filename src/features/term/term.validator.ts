@@ -24,11 +24,18 @@ const validatorMessages = [
 const VALUE_MAX_CHARS = 255;
 
 export class TermValidator extends BaseValidator<typeof validatorMessages> {
+	/*
+	 * Every wording is stored lower-cased. Terms are labels reused across articles and
+	 * products, and the duplicate check in `TermService.assertNotDuplicate` compares the
+	 * stored value: without this, "Summer" and "summer" are two terms that render as the
+	 * same tag. Normalising on the way in rather than at each read keeps the column itself
+	 * the single answer to what a term says.
+	 */
 	readonly contentsSchema = z.object({
 		language: this.validateLanguage(this.getMessage('invalid_language')),
 		value: this.validateString(this.getMessage('invalid_value'), {
 			maxChars: VALUE_MAX_CHARS,
-		}),
+		}).transform((value) => value.trim().toLowerCase()),
 	});
 
 	readonly create = z.object({

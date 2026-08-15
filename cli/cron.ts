@@ -7,6 +7,7 @@
 import { Command } from 'commander';
 import { setupListeners } from '@/config/listeners.setup';
 import archiveArticle from '@/features/article/cron-jobs/archive-article.cron';
+import expireFeaturedArticle from '@/features/article/cron-jobs/expire-featured-article.cron';
 import publicRestrictedArticle from '@/features/article/cron-jobs/public-restricted-article.cron';
 import publishScheduledArticle from '@/features/article/cron-jobs/publish-scheduled-article.cron';
 import cronTimeCheck from '@/shared/cron-jobs/cron-time-check.cron';
@@ -27,6 +28,7 @@ const program = new Command();
 const cronJobs: Record<string, CronJob> = {
 	'cron-time-check': cronTimeCheck,
 	'archive-article': archiveArticle,
+	'expire-featured-article': expireFeaturedArticle,
 	'public-restricted-article': publicRestrictedArticle,
 	'publish-scheduled-article': publishScheduledArticle,
 };

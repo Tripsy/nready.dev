@@ -126,7 +126,9 @@ export const articleSeed: SeedDefinition = {
 					slug,
 					title,
 					brief: `${title} — what to look for and what to skip.`,
-					content: `<p>${title}.</p><p>Demo content for article ${sequenceLabel(index)}.</p>`,
+					// Markdown, which is what the column holds and the editor edits — the
+					// dashboard renders it to HTML for display only.
+					content: `## ${title}\n\nDemo content for article ${sequenceLabel(index)}.`,
 					author: null,
 					meta: {
 						title,

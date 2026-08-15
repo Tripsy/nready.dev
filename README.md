@@ -482,6 +482,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
       credit-note-style reuse would need an explicit release path
     - one series per document type, by design. Two concurrent invoice series (per company, per
       branch) would mean re-keying the table and giving `allocate` something to choose with
+ 11. Run cron`s on a separate work / container 
 
 # 🔗 Dependencies
     

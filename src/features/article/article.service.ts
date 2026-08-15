@@ -160,6 +160,8 @@ export class ArticleService {
 
 				this.assertPublishWindow(entry);
 
+				this.assertFeaturedWindow(entry);
+
 				const saved = await repository.save(entry);
 
 				await this.saveRelations(manager, saved, data);
@@ -206,6 +208,55 @@ export class ArticleService {
 			422,
 			lang('article.validation.archive_before_publish'),
 		);
+	}
+
+	/**
+	 * The featured window on the row as it will be saved.
+	 *
+	 * Same division of labour as `assertPublishWindow`: the validator rejects a payload that
+	 * states an expiry with no slot, but an update setting the date alone is compared against
+	 * nothing there. After the merge both values are known, so this is the check that holds
+	 * for a partial update.
+	 */
+	private assertFeaturedWindow(entry: ArticleEntity): void {
+		if (!entry.featured_expire_at || entry.featured_status) {
+			return;
+		}
+
+		throw new CustomError(
+			422,
+			lang('article.validation.featured_expire_without_status'),
+		);
+	}
+
+	/**
+	 * Drops an article out of its featured group once `featured_expire_at` has passed.
+	 *
+	 * All three fields go together: an order position in a group the article has left would
+	 * collide with the rows still in it, and a deadline pointing at a slot it no longer holds
+	 * reads as still-featured in the form. Re-featuring therefore starts from a clean row.
+	 *
+	 * Saved through `update` so the cache and audit subscribers fire; the explicit event on
+	 * top of the generic `updated` one is what names the slot that was given up, which the
+	 * row itself no longer records.
+	 */
+	public async expireFeatured(entry: ArticleEntity): Promise<void> {
+		const expiredStatus = entry.featured_status;
+
+		entry.featured_status = null;
+		entry.featured_order = 0;
+		entry.featured_expire_at = null;
+
+		await this.update(entry);
+
+		eventEmitter.emit('history', {
+			entity: ArticleEntity.NAME,
+			entity_ids: [entry.id],
+			action: LogHistoryActionEnum.FEATURED_EXPIRED,
+			data: {
+				featuredStatus: expiredStatus ?? 'unknown',
+			},
+		});
 	}
 
 	/**
@@ -505,6 +556,7 @@ export class ArticleService {
 				'article.archive_at',
 				'article.featured_status',
 				'article.featured_order',
+				'article.featured_expire_at',
 				'article.visibility',
 				'article.public_at',
 				'article.source_mode',
@@ -528,26 +580,79 @@ export class ArticleService {
 
 				'category.category_id',
 				'tag.tag_id',
+
+				// The wording behind each link, so a form seeded from this row can show
+				// names rather than the bare ids it stores.
+				'category_row.id',
+				'category_content.id',
+				'category_content.language',
+				'category_content.label',
+
+				'tag_row.id',
+				'tag_content.id',
+				'tag_content.language',
+				'tag_content.value',
 			])
 			.filterById(data.id)
 			.withDeleted(data.withDeleted)
 			.joinAndSelect('article.author', 'author', 'LEFT')
-			.joinAndSelect('article.categories', 'category', 'LEFT')
-			.joinAndSelect('article.tags', 'tag', 'LEFT');
+			/*
+			 * The link joins are pinned to live rows by hand because `withDeleted` reaches
+			 * them too: it exists so an admin can read a soft-deleted *article*, but TypeORM
+			 * applies it to every joined relation, which brings back the links unlinked in
+			 * earlier edits. The form seeds itself from these rows, so a resurrected link
+			 * reads as a removal that did not save.
+			 */
+			.joinAndSelect(
+				'article.categories',
+				'category',
+				'LEFT',
+				'category.deleted_at IS NULL',
+			)
+			.joinAndSelect(
+				'article.tags',
+				'tag',
+				'LEFT',
+				'tag.deleted_at IS NULL',
+			)
+			.join('category.category', 'category_row', 'LEFT')
+			.join('tag.tag', 'tag_row', 'LEFT');
 
+		/*
+		 * The link wording follows the article's own: asking for one language returns one
+		 * label per link, and asking for all returns every translation the caller then picks
+		 * from. Both are LEFT joins — a link whose term lost its translation still has to come
+		 * back, or the article would silently drop the tag from the form.
+		 */
 		if (data.language) {
-			query.joinAndSelect(
-				'article.contents',
-				'content',
-				'INNER',
-				'content.language = :language',
-				{
-					language: data.language,
-				},
-			);
+			query
+				.joinAndSelect(
+					'article.contents',
+					'content',
+					'INNER',
+					'content.language = :language',
+					{
+						language: data.language,
+					},
+				)
+				.join(
+					'category_row.contents',
+					'category_content',
+					'LEFT',
+					'category_content.language = :language',
+				)
+				.join(
+					'tag_row.contents',
+					'tag_content',
+					'LEFT',
+					'tag_content.language = :language',
+				);
 		} else {
 			// No language: take all contents
-			query.joinAndSelect('article.contents', 'content', 'LEFT');
+			query
+				.joinAndSelect('article.contents', 'content', 'LEFT')
+				.join('category_row.contents', 'category_content', 'LEFT')
+				.join('tag_row.contents', 'tag_content', 'LEFT');
 		}
 
 		const entry = await query.firstOrFail();
@@ -748,6 +853,32 @@ export class ArticleService {
 				},
 			)
 			.join('article.author', 'author', 'LEFT')
+			/*
+			 * The dashboard list names the categories, which live two relations away (link row ->
+			 * category -> translation). Selected on the same language as the article translation,
+			 * so a row shows one label per category rather than one per language.
+			 *
+			 * The link is to-many, so these joins multiply the raw rows; pagination survives it
+			 * because `getManyAndCount` with skip/take resolves the page as a distinct-id
+			 * subquery first. The primary keys are selected for the same reason — without them
+			 * TypeORM cannot tell the duplicated rows apart when it rebuilds the entities.
+			 */
+			// Pinned to live links for the same reason as `getEntryData`: `withDeleted` is
+			// about listing deleted articles, not about naming categories they were
+			// unlinked from.
+			.join(
+				'article.categories',
+				'article_category',
+				'LEFT',
+				'article_category.deleted_at IS NULL',
+			)
+			.join('article_category.category', 'category', 'LEFT')
+			.join(
+				'category.contents',
+				'category_content',
+				'LEFT',
+				'category_content.language = :language',
+			)
 			.select([
 				'article.id',
 				'article.status',
@@ -771,6 +902,13 @@ export class ArticleService {
 
 				'author.id',
 				'author.name',
+
+				'article_category.id',
+				'article_category.category_id',
+				'category.id',
+				'category_content.id',
+				'category_content.language',
+				'category_content.label',
 			])
 			.filterById(data.filter.id)
 			.filterBy('article.status', data.filter.status)
@@ -783,9 +921,11 @@ export class ArticleService {
 			.withDeleted(withDeleted && data.filter.is_deleted);
 
 		if (data.filter.category_id) {
+			// Its own join: `article_category` above is a LEFT join feeding the label, and
+			// narrowing it would turn every listed article into a category match.
 			query
-				.join('article.categories', 'category', 'INNER')
-				.filterRaw('category.category_id IN (:...categoryIds)', {
+				.join('article.categories', 'category_filter', 'INNER')
+				.filterRaw('category_filter.category_id IN (:...categoryIds)', {
 					categoryIds: await this.resolveCategorySubtree(
 						data.filter.category_id,
 					),

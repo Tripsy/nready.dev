@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import {
+	type ArticleFeaturedStatus,
 	ArticleFeaturedStatusEnum,
 	ArticleLayoutEnum,
 	ArticleSourceModeEnum,
@@ -26,6 +27,7 @@ export const paramsUpdateList: string[] = [
 	'archive_at',
 	'featured_status',
 	'featured_order',
+	'featured_expire_at',
 	'visibility',
 	'visibility_rule',
 	'public_at',
@@ -52,6 +54,7 @@ const validatorMessages = [
 	'invalid_layout',
 	'invalid_featured_status',
 	'invalid_featured_order',
+	'featured_expire_without_status',
 	'invalid_visibility',
 	'invalid_visibility_rule',
 	'invalid_source',
@@ -189,6 +192,33 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 		});
 	};
 
+	/**
+	 * The expiry only means anything alongside a featured slot — it is what the
+	 * `expire-featured-article` cron clears the slot by. A payload carrying a date and no
+	 * status would schedule the removal of a placement the article does not hold.
+	 *
+	 * Only a payload stating both is checked here. An update that sets the date alone is
+	 * checked against the stored row in `ArticleService.assertFeaturedWindow`, which is the
+	 * only place the article's current `featured_status` is known.
+	 */
+	private readonly refineFeaturedWindow = (
+		data: {
+			featured_status?: ArticleFeaturedStatus | null;
+			featured_expire_at?: Date | null;
+		},
+		ctx: z.RefinementCtx,
+	): void => {
+		if (!data.featured_expire_at || data.featured_status) {
+			return;
+		}
+
+		ctx.addIssue({
+			code: 'custom',
+			path: ['featured_expire_at'],
+			message: this.getMessage('featured_expire_without_status'),
+		});
+	};
+
 	readonly create = z
 		.object({
 			layout: this.validateEnum(
@@ -209,6 +239,10 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 			),
 			featured_order: this.validateNumber(
 				this.getMessage('invalid_featured_order'),
+				{ required: false },
+			),
+			featured_expire_at: this.validateDate(
+				this.getMessage('invalid_date'),
 				{ required: false },
 			),
 			visibility: this.validateEnum(
@@ -244,7 +278,8 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 			),
 			tags: this.idListSchema(this.getMessage('invalid_tags')),
 		})
-		.superRefine(this.refinePublishWindow);
+		.superRefine(this.refinePublishWindow)
+		.superRefine(this.refineFeaturedWindow);
 
 	readonly read = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
@@ -274,6 +309,10 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 			),
 			featured_order: this.validateNumber(
 				this.getMessage('invalid_featured_order'),
+				{ required: false },
+			),
+			featured_expire_at: this.validateDate(
+				this.getMessage('invalid_date'),
 				{ required: false },
 			),
 			visibility: this.validateEnum(
@@ -310,7 +349,8 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 			}),
 			path: ['_global'],
 		})
-		.superRefine(this.refinePublishWindow);
+		.superRefine(this.refinePublishWindow)
+		.superRefine(this.refineFeaturedWindow);
 
 	readonly delete = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),

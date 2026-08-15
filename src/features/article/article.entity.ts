@@ -166,6 +166,14 @@ export default class ArticleEntity extends EntityAbstract {
 	featured_order!: number;
 
 	@Column({
+		type: 'timestamp',
+		nullable: true,
+		comment:
+			'Controls when featured_status should be cleared; Relevant only when featured_status is set',
+	})
+	featured_expire_at?: Date | null;
+
+	@Column({
 		type: 'enum',
 		enum: ArticleVisibilityEnum,
 		default: ArticleVisibilityEnum.PUBLIC,
