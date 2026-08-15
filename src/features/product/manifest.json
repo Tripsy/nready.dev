@@ -10,6 +10,8 @@
 		"product-bundle-item",
 		"product-bundle-item-price",
 		"product-category",
+		"product-category-attribute",
+		"product-category-attribute-option",
 		"product-content",
 		"product-option",
 		"product-option-group",
