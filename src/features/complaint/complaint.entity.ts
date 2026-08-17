@@ -3,6 +3,14 @@ import type UserEntity from '@/features/user/user.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import {SoftDeleteIndex} from "@/shared/decorators/soft-delete-index.decorator";
 
+export const ComplaintEntityTypeEnum = {
+    ARTICLE: 'article',
+    COMMENT: 'comment',
+} as const;
+
+export type ComplaintEntityType =
+    (typeof ComplaintEntityTypeEnum)[keyof typeof ComplaintEntityTypeEnum];
+
 export const ComplaintReasonEnum = {
     SPAM: 'spam',
     OFFENSIVE: 'offensive',
@@ -17,35 +25,37 @@ export const ComplaintReasonEnum = {
 export type ComplaintReason =
     (typeof ComplaintReasonEnum)[keyof typeof ComplaintReasonEnum];
 
-const ENTITY_TABLE_NAME = 'rating';
+const ENTITY_TABLE_NAME = 'complaint';
 
 @Entity({
     name: ENTITY_TABLE_NAME,
     schema: 'public',
 })
 @SoftDeleteIndex(ENTITY_TABLE_NAME)
-export class ComplaintEntity extends EntityAbstract {
+@Index('IDX_comment_created_at', ['entity_type', 'entity_id', 'user_id'], {
+    where: 'deleted_at IS NULL',
+})
+@Index('IDX_complaint_created_at', ['created_at'])
+export default class ComplaintEntity extends EntityAbstract {
     static readonly NAME: string = ENTITY_TABLE_NAME;
     static readonly HAS_CACHE: boolean = false;
 
     // Target Entity (Polymorphic)
     @Column({
-        type: 'varchar',
-        length: 50,
+        type: 'enum',
+        enum: ComplaintEntityTypeEnum,
         nullable: false,
     })
-    @Index('IDX_comment_entity_type')
-    entity_type!: string; // 'article', 'product', etc.
+    entity_type!: ComplaintEntityType;
 
     @Column({
         type: 'int',
         nullable: false,
     })
-    @Index('IDX_comment_entity_id')
     entity_id!: number;
 
     @Column('int', { nullable: false })
-    @Index('IDX_comment_report_user_id')
+    @Index('IDX_complaint_user_id')
     user_id!: number;
 
     @Column({
@@ -64,15 +74,7 @@ export class ComplaintEntity extends EntityAbstract {
     })
     is_resolved!: boolean;
 
-    @Column({
-        type: 'timestamp',
-        nullable: true,
-    })
-    resolved_at?: Date | null;
-
-    @Column('int', { nullable: true })
-    resolved_by?: number | null;
-
+    // RELATIONS
     @ManyToOne('UserEntity', {
         onDelete: 'CASCADE',
     })
