@@ -26,7 +26,17 @@ import {
 import ArticleContentRepository from '@/features/article/article-content.repository';
 import ArticleTagRepository from '@/features/article/article-tag.repository';
 import ArticleVisibilityRuleEntity from '@/features/article/article-visibility-rule.entity';
-import CategoryEntity from '@/features/category/category.entity';
+import CategoryEntity, {
+	CategoryTypeEnum,
+} from '@/features/category/category.entity';
+import {
+	type ImagePropertiesType,
+	ImageSectionEnum,
+	ImageStatusEnum,
+	type ImageStorage,
+	ImageTypeEnum,
+} from '@/features/image/image.entity';
+import { getImageRepository } from '@/features/image/image.repository';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { encryptPassword } from '@/helpers/security.helper';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
@@ -54,6 +64,21 @@ const entryColumns: string[] = [
 
 const slugConflictError = (): CustomError =>
 	new CustomError(409, lang('article.error.slug_already_exists'));
+
+/**
+ * The one image a public surface shows for an article: the first of its gallery, by
+ * `sort_order`. `null` when the article has none — a listing is expected to hold both.
+ */
+export type ArticleCoverImageType = {
+	id: number;
+	path: string;
+	storage: ImageStorage;
+	properties: ImagePropertiesType | null;
+};
+
+export type WithCoverImage<T> = T & {
+	cover_image: ArticleCoverImageType | null;
+};
 
 export class ArticleService {
 	constructor(private repository: ReturnType<typeof getArticleRepository>) {}
@@ -712,6 +737,62 @@ export class ArticleService {
 	}
 
 	/**
+	 * Attaches each article's cover image — the first active gallery image, by `sort_order`.
+	 *
+	 * A separate query rather than a join: `image` is polymorphic (`section` + `entity_id`,
+	 * no foreign key to `article`), so there is no relation for the query builder to walk,
+	 * and a manual join would need a LATERAL to keep one row per article. One extra
+	 * statement per page reads better and costs a single index seek on
+	 * `IDX_image_type_id`.
+	 */
+	private async attachCoverImages<T extends { id: number }>(
+		entries: T[],
+	): Promise<WithCoverImage<T>[]> {
+		if (entries.length === 0) {
+			return [];
+		}
+
+		const images = await getImageRepository()
+			.createQuery()
+			.select([
+				'image.id',
+				'image.entity_id',
+				'image.path',
+				'image.storage',
+				'image.properties',
+				'image.sort_order',
+			])
+			.filterBy('image.section', ImageSectionEnum.ARTICLE)
+			.filterBy('image.image_type', ImageTypeEnum.GALLERY)
+			.filterBy('image.status', ImageStatusEnum.ACTIVE)
+			.filterRaw('image.entity_id IN (:...entityIds)', {
+				entityIds: entries.map((entry) => entry.id),
+			})
+			.orderBy('image.sort_order', 'ASC')
+			.all();
+
+		// Ordered ascending, so the first image seen for an article is its cover and later
+		// ones are ignored.
+		const covers = new Map<number, ArticleCoverImageType>();
+
+		for (const image of images) {
+			if (!covers.has(image.entity_id)) {
+				covers.set(image.entity_id, {
+					id: image.id,
+					path: image.path,
+					storage: image.storage,
+					properties: image.properties ?? null,
+				});
+			}
+		}
+
+		return entries.map((entry) => ({
+			...entry,
+			cover_image: covers.get(entry.id) ?? null,
+		}));
+	}
+
+	/**
 	 * @description Used in `publicRead` from controller, behind the cache.
 	 *
 	 * Keyed by id rather than slug on purpose: `SubscriberAbstract.cacheClean` invalidates by
@@ -748,6 +829,15 @@ export class ArticleService {
 
 				'category.category_id',
 				'tag.tag_id',
+
+				// The category is named, not just linked: the public URL of an article is
+				// `/<category-slug>/<article-slug>`, so the reader's own address needs the
+				// translation, not only the id.
+				'category_entry.id',
+				'category_entry_content.id',
+				'category_entry_content.language',
+				'category_entry_content.label',
+				'category_entry_content.slug',
 			])
 			.joinAndSelect(
 				'article.contents',
@@ -758,6 +848,21 @@ export class ArticleService {
 			)
 			.joinAndSelect('article.author', 'author', 'LEFT')
 			.joinAndSelect('article.categories', 'category', 'LEFT')
+			// Same article-only guard as the listing, so both agree on the category an
+			// article's public URL is built from.
+			.joinAndSelect(
+				'category.category',
+				'category_entry',
+				'LEFT',
+				'category_entry.type = :categoryType',
+				{ categoryType: CategoryTypeEnum.ARTICLE },
+			)
+			.joinAndSelect(
+				'category_entry.contents',
+				'category_entry_content',
+				'LEFT',
+				'category_entry_content.language = :language',
+			)
 			.joinAndSelect('article.tags', 'tag', 'LEFT')
 			.filterById(id)
 			.firstOrFail();
@@ -766,7 +871,9 @@ export class ArticleService {
 			content.author = this.resolveAuthor(entry, content.author);
 		}
 
-		return entry;
+		const [entryWithCover] = await this.attachCoverImages([entry]);
+
+		return entryWithCover;
 	}
 
 	/**
@@ -790,6 +897,43 @@ export class ArticleService {
 			)
 			.join('article.author', 'author', 'LEFT')
 			.join('article.visibility_rule', 'rule', 'LEFT')
+			/*
+			 * The listing names each article's categories, which live two relations away
+			 * (link row -> category -> translation) and are what its public URL is built
+			 * from. Selected on the same language as the article translation, so a row
+			 * shows one label per category rather than one per language.
+			 *
+			 * The link is to-many, so these joins multiply the raw rows; pagination
+			 * survives it because `getManyAndCount` with skip/take resolves the page as a
+			 * distinct-id subquery first. The primary keys are selected for the same
+			 * reason — without them TypeORM cannot tell the duplicated rows apart when it
+			 * rebuilds the entities.
+			 */
+			.join(
+				'article.categories',
+				'article_category',
+				'LEFT',
+				'article_category.deleted_at IS NULL',
+			)
+			/*
+			 * Article categories only. The link table accepts any category, and demo data
+			 * has filed articles under product ones — a category the article site has no
+			 * page for. Filtered in the join rather than after it, so such a link comes
+			 * back as a link with no category and the article simply shows none.
+			 */
+			.join(
+				'article_category.category',
+				'category',
+				'LEFT',
+				'category.type = :categoryType',
+				{ categoryType: CategoryTypeEnum.ARTICLE },
+			)
+			.join(
+				'category.contents',
+				'category_content',
+				'LEFT',
+				'category_content.language = :language',
+			)
 			.select([
 				'article.id',
 				'article.publish_at',
@@ -806,6 +950,14 @@ export class ArticleService {
 
 				'author.id',
 				'author.name',
+
+				'article_category.id',
+				'article_category.category_id',
+				'category.id',
+				'category_content.id',
+				'category_content.language',
+				'category_content.label',
+				'category_content.slug',
 			])
 			.filterBy('article.featured_status', data.filter.featured_status)
 			.filterByTerm(data.filter.term)
@@ -816,9 +968,11 @@ export class ArticleService {
 			);
 
 		if (data.filter.category_id) {
+			// Its own join: `article_category` above is a LEFT join feeding the label, and
+			// narrowing it would turn every listed article into a category match.
 			query
-				.join('article.categories', 'category', 'INNER')
-				.filterRaw('category.category_id IN (:...categoryIds)', {
+				.join('article.categories', 'category_filter', 'INNER')
+				.filterRaw('category_filter.category_id IN (:...categoryIds)', {
 					categoryIds: await this.resolveCategorySubtree(
 						data.filter.category_id,
 					),
@@ -831,10 +985,12 @@ export class ArticleService {
 				.filterBy('tag.tag_id', data.filter.tag_id);
 		}
 
-		return query
+		const [entries, total] = await query
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit)
 			.all(true);
+
+		return [await this.attachCoverImages(entries), total] as const;
 	}
 
 	public async findByFilter(
@@ -872,7 +1028,19 @@ export class ArticleService {
 				'LEFT',
 				'article_category.deleted_at IS NULL',
 			)
-			.join('article_category.category', 'category', 'LEFT')
+			/*
+			 * Article categories only. The link table accepts any category, and demo data
+			 * has filed articles under product ones — a category the article site has no
+			 * page for. Filtered in the join rather than after it, so such a link comes
+			 * back as a link with no category and the article simply shows none.
+			 */
+			.join(
+				'article_category.category',
+				'category',
+				'LEFT',
+				'category.type = :categoryType',
+				{ categoryType: CategoryTypeEnum.ARTICLE },
+			)
 			.join(
 				'category.contents',
 				'category_content',

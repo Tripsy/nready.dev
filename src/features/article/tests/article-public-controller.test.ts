@@ -34,9 +34,13 @@ const adminBasePath = (await articleRoutes()).basePath;
 describe(controller, () => {
 	const entity = getArticleEntityMock();
 
+	// The public surfaces answer with the cover image attached (`attachCoverImages`), so the
+	// mocked service has to return that shape rather than the bare entity.
+	const publicEntry = { ...entity, cover_image: null };
+
 	it('find should answer an unauthenticated caller', async () => {
 		jest.spyOn(articleService, 'findByFilterPublic').mockResolvedValue([
-			[entity],
+			[publicEntry],
 			1,
 		]);
 
@@ -53,7 +57,7 @@ describe(controller, () => {
 			entity,
 		);
 		jest.spyOn(articleService, 'getPublicEntryById').mockResolvedValue(
-			entity,
+			publicEntry,
 		);
 		jest.spyOn(articleAccessPolicy, 'assertAccess').mockResolvedValue();
 
@@ -70,7 +74,7 @@ describe(controller, () => {
 			entity,
 		);
 		jest.spyOn(articleService, 'getPublicEntryById').mockResolvedValue(
-			entity,
+			publicEntry,
 		);
 		jest.spyOn(articleAccessPolicy, 'assertAccess').mockRejectedValue(
 			new UnauthorizedError('nope'),
@@ -89,7 +93,7 @@ describe(controller, () => {
 			visibility: ArticleVisibilityEnum.PUBLIC,
 		});
 		jest.spyOn(articleService, 'getPublicEntryById').mockResolvedValue(
-			entity,
+			publicEntry,
 		);
 		jest.spyOn(articleAccessPolicy, 'assertAccess').mockResolvedValue();
 
@@ -111,7 +115,7 @@ describe(controller, () => {
 			visibility: ArticleVisibilityEnum.RESTRICTED,
 		});
 		jest.spyOn(articleService, 'getPublicEntryById').mockResolvedValue(
-			entity,
+			publicEntry,
 		);
 		jest.spyOn(
 			ArticleVisibilityRuleRepository,

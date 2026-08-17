@@ -19,11 +19,13 @@ import ArticleEntity, {
 import ArticleCategoryEntity from '@/features/article/article-category.entity';
 import ArticleContentEntity from '@/features/article/article-content.entity';
 import ArticleTagEntity from '@/features/article/article-tag.entity';
-import CategoryEntity from '@/features/category/category.entity';
+import CategoryEntity, {
+	CategoryTypeEnum,
+} from '@/features/category/category.entity';
 import TermEntity, { TermTypeEnum } from '@/features/term/term.entity';
 import UserEntity from '@/features/user/user.entity';
 
-const TARGET = 12;
+const TARGET = 96;
 
 const TITLES: readonly string[] = [
 	'Choosing a laptop that lasts',
@@ -38,6 +40,22 @@ const TITLES: readonly string[] = [
 	'Headphones for an open office',
 	'Webcams that survive daylight',
 	'Keeping a workstation quiet',
+	'Docking stations, ranked by regret',
+	'When a mouse is worth replacing',
+	'Reading the fine print on warranties',
+	'Desk lamps and the colour of light',
+	'A chair you will still like in year three',
+	'Backups that actually get restored',
+	'Notes on refurbished hardware',
+	'Two machines, one keyboard',
+	'What a good return policy looks like',
+	'Cheap cables and expensive lessons',
+	'Standing desks after the novelty',
+	'Colour accuracy without the ceremony',
+	'The quiet case for wired networking',
+	'Buying storage you will not outgrow',
+	'Laptop bags that survive a commute',
+	'Screen sizes and the space you have',
 ];
 
 /**
@@ -55,7 +73,11 @@ export const articleSeed: SeedDefinition = {
 		);
 		const tagLinkRepository = manager.getRepository(ArticleTagEntity);
 
-		const categoryIds = await loadIds(manager, CategoryEntity);
+		// Article categories only: a product category linked to an article would be listed
+		// under a tree the article site never shows.
+		const categoryIds = await loadIds(manager, CategoryEntity, {
+			type: CategoryTypeEnum.ARTICLE,
+		});
 		// The type alone identifies a tag: a term is language-neutral, and its wording lives in
 		// `term_content`, so there is no longer a language to narrow by here
 		const tagIds = await loadIds(manager, TermEntity, {
@@ -98,17 +120,26 @@ export const articleSeed: SeedDefinition = {
 				articleRepository.create({
 					status,
 					layout: ArticleLayoutEnum.DEFAULT,
-					// A scheduled article is due in the future; a published one is already out
+					/*
+					 * A scheduled article is due in the future; a published one is
+					 * already out. Every third one is dated within the last few days,
+					 * because the public listing switches from a relative date to an
+					 * absolute one at two weeks and both branches need rows to show.
+					 */
 					publish_at: isScheduled
 						? new Date(
 								Date.now() +
 									randomInt(random, 1, 30) * 86400 * 1000,
 							)
-						: randomPastDate(random, 120),
+						: randomPastDate(random, index % 3 === 0 ? 6 : 120),
 					archive_at: null,
+					// Every seventh row, so the featured treatment is visible in a listing
+					// without the whole page wearing it.
 					featured_status:
-						index < 2 ? ArticleFeaturedStatusEnum.SECTION : null,
-					featured_order: index < 2 ? (index + 1) * 10 : 0,
+						index % 7 === 0
+							? ArticleFeaturedStatusEnum.SECTION
+							: null,
+					featured_order: index % 7 === 0 ? (index + 1) * 10 : 0,
 					visibility: ArticleVisibilityEnum.PUBLIC,
 					source_mode: ArticleSourceModeEnum.INPUT,
 					author_id: userIds.length
@@ -117,7 +148,16 @@ export const articleSeed: SeedDefinition = {
 				}),
 			);
 
-			const title = TITLES[index % TITLES.length];
+			/*
+			 * The title list is shorter than the target, so it wraps. A repeated title
+			 * gets its pass number appended — the slug is already unique per index, and
+			 * two rows reading identically in a listing look like a bug rather than
+			 * volume.
+			 */
+			const pass = Math.floor(index / TITLES.length);
+			const title = pass
+				? `${TITLES[index % TITLES.length]} (part ${pass + 1})`
+				: TITLES[index % TITLES.length];
 
 			await contentRepository.save(
 				contentRepository.create({

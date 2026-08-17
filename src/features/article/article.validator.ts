@@ -60,6 +60,7 @@ const validatorMessages = [
 	'invalid_source',
 	'invalid_source_mode',
 	'invalid_categories',
+	'categories_required',
 	'invalid_tags',
 	'archive_before_publish',
 ] as const;
@@ -156,16 +157,34 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 		.nullable()
 		.optional();
 
-	readonly idListSchema = (message: string) =>
-		z
-			.array(
-				z.coerce
-					.number({ message: message })
-					.int({ message: message })
-					.positive({ message: message }),
-				{ message: message },
-			)
+	/**
+	 * `required` here means "not empty when present" rather than "key must exist": an update
+	 * is partial, and `saveRelations` only touches a link table when its key is in the
+	 * payload, so an absent list means "leave the links alone" while `[]` means "remove them
+	 * all". A list that may not be emptied therefore has to reject the empty array, and the
+	 * create schema — where nothing is stored yet to leave alone — adds its own presence
+	 * check on top.
+	 */
+	readonly idListSchema = (
+		message: string,
+		options: { required?: boolean; requiredMessage?: string } = {},
+	) => {
+		const schema = z.array(
+			z.coerce
+				.number({ message: message })
+				.int({ message: message })
+				.positive({ message: message }),
+			{ message: message },
+		);
+
+		if (!options.required) {
+			return schema.optional();
+		}
+
+		return schema
+			.min(1, { message: options.requiredMessage ?? message })
 			.optional();
+	};
 
 	/**
 	 * An article whose archive deadline falls on or before its release is never displayed at
@@ -273,9 +292,21 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 					},
 					{ message: this.getMessage('duplicate_contents') },
 				),
+			/*
+			 * Not optional here, unlike every other relation: the public site addresses an
+			 * article as `/articles/<category>/<slug>`, so one filed under nothing has no
+			 * canonical URL. `update` keeps the key optional — a partial payload that omits
+			 * it leaves the existing links alone — but cannot empty the list either.
+			 */
 			categories: this.idListSchema(
 				this.getMessage('invalid_categories'),
-			),
+				{
+					required: true,
+					requiredMessage: this.getMessage('categories_required'),
+				},
+			).nonoptional({
+				message: this.getMessage('categories_required'),
+			}),
 			tags: this.idListSchema(this.getMessage('invalid_tags')),
 		})
 		.superRefine(this.refinePublishWindow)
@@ -340,6 +371,10 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 				.optional(),
 			categories: this.idListSchema(
 				this.getMessage('invalid_categories'),
+				{
+					required: true,
+					requiredMessage: this.getMessage('categories_required'),
+				},
 			),
 			tags: this.idListSchema(this.getMessage('invalid_tags')),
 		})

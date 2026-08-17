@@ -10,6 +10,7 @@ import { categorySeed } from '@/features/category/database/category.seed';
 import { clientSeed } from '@/features/client/database/client.seed';
 import { discountSeed } from '@/features/discount/database/discount.seed';
 import { documentSeriesSeed } from '@/features/document-series/database/document-series.seed';
+import { imageSeed } from '@/features/image/database/image.seed';
 import { placeSeed } from '@/features/place/database/place.seed';
 import { termSeed } from '@/features/term/database/term.seed';
 import { userSeed } from '@/features/user/database/user.seed';
@@ -42,6 +43,8 @@ const seeds: readonly SeedDefinition[] = [
 	discountTargetSeed,
 	// Reads category, term and user ids
 	articleSeed,
+	// Reads article ids; the files it names are fetched separately (see the seed)
+	imageSeed,
 ];
 
 function resolveSeeds(

@@ -14,6 +14,7 @@
 		"invalid_source": "Invalid source details",
 		"invalid_source_mode": "Invalid source mode",
 		"invalid_categories": "Invalid categories",
+		"categories_required": "At least one category is required",
 		"invalid_tags": "Invalid tags",
 		"archive_before_publish": "The archive date must be after the publish date",
 		"invalid_ids_provided": "The submitted ids do not match the articles in this featured group"
