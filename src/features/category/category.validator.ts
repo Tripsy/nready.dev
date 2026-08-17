@@ -142,6 +142,15 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 			is_root: this.validateBoolean(this.getMessage('invalid_boolean'), {
 				required: false,
 			}).default(false),
+			/*
+			 * Only categories with room for a child under their type's depth limit — what a
+			 * parent picker has to offer, so the choice it presents and the rule the service
+			 * enforces on save cannot drift apart.
+			 */
+			can_parent: this.validateBoolean(
+				this.getMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
 			is_deleted: this.validateBoolean(
 				this.getMessage('invalid_boolean'),
 				{ required: false },

@@ -979,10 +979,20 @@ export class ArticleService {
 				});
 		}
 
-		if (data.filter.tag_id) {
+		if (data.filter.tag_id?.length) {
+			/*
+			 * Any of the tags, not all of them — the box asks for articles that share
+			 * something with this one. The INNER join multiplies an article that matches
+			 * several, which pagination absorbs the same way the category filter's does
+			 * (see above).
+			 */
 			query
 				.join('article.tags', 'tag', 'INNER')
-				.filterBy('tag.tag_id', data.filter.tag_id);
+				.filterBy('tag.tag_id', data.filter.tag_id, 'IN');
+		}
+
+		if (data.filter.exclude_id) {
+			query.filterBy('article.id', data.filter.exclude_id, '!=');
 		}
 
 		const [entries, total] = await query

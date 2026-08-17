@@ -3,6 +3,7 @@ import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/message.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import CategoryEntity, {
+	CATEGORY_MAX_DEPTH,
 	type CategoryStatus,
 	CategoryStatusEnum,
 	type CategoryType,
@@ -23,6 +24,19 @@ import {
 	cleanEntityCache,
 } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
+
+/**
+ * `CASE` mapping each category type to its depth ceiling, for the `can_parent` filter.
+ *
+ * Built from `CATEGORY_MAX_DEPTH` rather than written out, so adding a type cannot leave the
+ * filter silently applying the wrong limit. The values are this module's own constants, never
+ * client input, which is what makes the interpolation safe.
+ */
+const MAX_DEPTH_SQL_CASE = `CASE category.type ${Object.entries(
+	CATEGORY_MAX_DEPTH,
+)
+	.map(([type, maxDepth]) => `WHEN '${type}' THEN ${maxDepth}`)
+	.join(' ')} END`;
 
 export class CategoryService {
 	constructor(
@@ -61,6 +75,8 @@ export class CategoryService {
 							lang('category.error.invalid_parent_type'),
 						);
 					}
+
+					await this.assertDepthFits(data.type, parent, 1);
 
 					entry.parent = parent;
 				} else {
@@ -167,6 +183,19 @@ export class CategoryService {
 			throw new CustomError(
 				400,
 				lang('category.error.parent_descendant'),
+			);
+		}
+
+		/*
+		 * Checked after the cycle guard, so moving a category under its own descendant is
+		 * still reported as that rather than as a depth failure. What has to fit is the whole
+		 * subtree, not the moved node — a two-level branch needs two levels of room.
+		 */
+		if (data.parent_id) {
+			await this.assertDepthFits(
+				entry.type,
+				await this.findById(data.parent_id, true),
+				await this.getSubtreeHeight(entry),
 			);
 		}
 
@@ -407,6 +436,69 @@ export class CategoryService {
 		}
 
 		await this.repository.createQuery().filterById(id).restore();
+	}
+
+	/**
+	 * How many levels a category sits under the root, itself included — a root is 1.
+	 *
+	 * Read from the closure table through `findAncestors`, which returns the node plus every
+	 * ancestor, rather than by walking `parent` one query at a time.
+	 */
+	private async getDepth(entry: CategoryEntity): Promise<number> {
+		const ancestors =
+			await RepositoryAbstract.getTreeRepository(
+				CategoryEntity,
+			).findAncestors(entry);
+
+		return ancestors.length;
+	}
+
+	/**
+	 * How many levels the subtree rooted at `entry` spans — a leaf is 1.
+	 *
+	 * A move takes the whole subtree with it, so this is what has to fit under the new
+	 * parent, not just the moved node.
+	 */
+	private async getSubtreeHeight(entry: CategoryEntity): Promise<number> {
+		const tree = (await RepositoryAbstract.getTreeRepository(
+			CategoryEntity,
+		).findDescendantsTree(entry)) as CategoryEntity;
+
+		// `children` is only populated on a tree read, so the cast is what the shared
+		// `getTreeRepository` (typed `ObjectLiteral`) gives back rather than a claim about
+		// the row.
+		const measure = (node: CategoryEntity): number =>
+			1 +
+			Math.max(
+				0,
+				...(node.children ?? []).map((child) => measure(child)),
+			);
+
+		return measure(tree);
+	}
+
+	/**
+	 * Refuses a placement that would push the tree past its type's ceiling.
+	 *
+	 * `height` is the depth of what is being placed — 1 for a new category, the subtree's
+	 * own height for a move.
+	 */
+	private async assertDepthFits(
+		type: CategoryType,
+		parent: CategoryEntity,
+		height: number,
+	): Promise<void> {
+		const maxDepth = CATEGORY_MAX_DEPTH[type];
+
+		if ((await this.getDepth(parent)) + height > maxDepth) {
+			throw new CustomError(
+				400,
+				lang('category.error.max_depth', {
+					type,
+					max: String(maxDepth),
+				}),
+			);
+		}
 	}
 
 	public findById(id: number, withDeleted: boolean): Promise<CategoryEntity> {
@@ -670,6 +762,17 @@ export class CategoryService {
 			.filterBy('type', data.filter.type)
 			.filterBy('status', data.filter.status)
 			.filterByTerm(data.filter.term);
+
+		if (data.filter.can_parent) {
+			/*
+			 * Depth is the closure row count for the category as a descendant — the table
+			 * carries a self-reference, so a root counts 1. A category may take a child
+			 * while that count is below its type's ceiling.
+			 */
+			query.filterRaw(
+				`(SELECT COUNT(*) FROM category_closure cc WHERE cc.id_descendant = category.id) < ${MAX_DEPTH_SQL_CASE}`,
+			);
+		}
 
 		// Mirrors the grouping `updateOrder` enforces: same type, same parent — or the
 		// roots, which `filterBy` cannot express because it drops null values.

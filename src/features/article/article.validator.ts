@@ -513,7 +513,32 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 					required: false,
 				},
 			),
-			tag_id: this.validateNumber(this.getMessage('invalid_number'), {
+			/*
+			 * A list rather than a scalar, unlike the dashboard `find`: the article page's
+			 * "similar articles" box is matched against every tag the article it sits on
+			 * carries. `qs` hands over a bare value for one `filter[tag_id][]` and an array
+			 * for several, so a single id is wrapped rather than rejected.
+			 */
+			tag_id: z
+				.preprocess(
+					(value) =>
+						value === undefined || Array.isArray(value)
+							? value
+							: [value],
+					z
+						.array(
+							this.validateNumber(
+								this.getMessage('invalid_number'),
+							),
+						)
+						.nonempty(),
+				)
+				.optional(),
+			/*
+			 * The one article a listing must not contain: the sidebar boxes are rendered on
+			 * an article page and would otherwise recommend the page the reader is on.
+			 */
+			exclude_id: this.validateNumber(this.getMessage('invalid_number'), {
 				required: false,
 			}),
 			language: this.validateLanguage(

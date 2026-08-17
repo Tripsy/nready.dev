@@ -59,6 +59,76 @@ const TITLES: readonly string[] = [
 ];
 
 /**
+ * The article the public site is developed against — index 1, so `article-0002`. The rest of
+ * the seed is volume: one title, one paragraph, no attribution. This one carries what the
+ * article page actually has to lay out — several headings with prose between them, a by-line
+ * with a bio, and the source block a parsed article shows — so every one of those branches is
+ * visible without hand-editing the database.
+ */
+const SHOWCASE_INDEX = 1;
+
+const SHOWCASE_CONTENT = `Desk accessories are where a budget quietly leaks. Most of them solve a problem
+you do not have, and the few that matter are the ones you stop noticing after a week.
+
+## Start with what you touch all day
+
+The keyboard, the mouse and the chair are in contact with you for hours. Everything else is
+scenery. If the budget only stretches to one upgrade, spend it here — a wrist that aches at
+four in the afternoon is not fixed by a nicer monitor arm.
+
+Look for a switch weight you can sustain, not the one that feels best in the shop. Ten minutes
+of typing tells you more than any specification sheet.
+
+## A monitor arm buys back the desk
+
+The stand a monitor ships with is designed to survive a drop test, not to leave you room to
+write. An arm clamps to the back edge and returns the whole footprint to you.
+
+- Check the VESA pattern before ordering; 100×100 is common, 75×75 is not gone.
+- Weigh the monitor. Gas-spring arms have a range, and one loaded past it drifts down all day.
+- Clamp mounts need a desk edge under 60 mm and nothing bolted underneath.
+
+## Cable management is a one-afternoon job
+
+Two adhesive channels and a fistful of reusable ties will outlast three attempts at doing it
+properly later. The trick is to route power and data separately, then leave one slack loop
+near the desk so the whole thing survives a monitor being raised.
+
+> Anything you have to unplug weekly belongs on the front of the desk, not behind it.
+
+## Light before decoration
+
+A desk lamp with adjustable colour temperature is the accessory people regret buying last and
+should have bought first. Cool light in the morning, warm after sunset, and the screen stops
+being the brightest thing in the room.
+
+## What to skip
+
+Wrist rests that force an angle, drawer organisers for a drawer you do not open, and any hub
+that draws its power from the laptop it is supposed to be charging. None of these fail
+loudly — they simply sit there, having cost money.
+
+## Where to stop
+
+A desk is finished when nothing on it annoys you. That is a lower bar than the shopping lists
+suggest, and reaching it costs less than one bad monitor.`;
+
+const SHOWCASE_AUTHOR = {
+	name: 'Irina Balan',
+	email: 'irina.balan@example.com',
+	description:
+		'Writes about the hardware people actually keep. Ten years of buying, returning and living with desk equipment, mostly so you do not have to.',
+};
+
+const SHOWCASE_SOURCE = {
+	label: 'Desk Notes Weekly',
+	url: 'https://example.com/desk-notes/accessories-worth-the-space',
+	about: 'An independent newsletter reviewing workspace hardware, published since 2018. It buys what it reviews and takes no vendor placements.',
+	disclaimer:
+		"Republished with permission. The text is the publisher's; any errors introduced in editing are ours.",
+};
+
+/**
  * The seed spreads articles across the status enum on purpose: `scheduled` and `archived`
  * rows are what make the publish window, the cron transitions and the listing indexes
  * observable without hand-editing the database.
@@ -105,6 +175,8 @@ export const articleSeed: SeedDefinition = {
 				continue;
 			}
 
+			const isShowcase = index === SHOWCASE_INDEX;
+
 			const status = randomPick(random, [
 				ArticleStatusEnum.DRAFT,
 				ArticleStatusEnum.PENDING,
@@ -114,11 +186,14 @@ export const articleSeed: SeedDefinition = {
 				ArticleStatusEnum.ARCHIVED,
 			]);
 
-			const isScheduled = status === ArticleStatusEnum.SCHEDULED;
+			// The showcase article is what the public page is opened against, so it is
+			// published rather than left to the random spread.
+			const isScheduled =
+				!isShowcase && status === ArticleStatusEnum.SCHEDULED;
 
 			const article = await articleRepository.save(
 				articleRepository.create({
-					status,
+					status: isShowcase ? ArticleStatusEnum.PUBLISHED : status,
 					layout: ArticleLayoutEnum.DEFAULT,
 					/*
 					 * A scheduled article is due in the future; a published one is
@@ -141,7 +216,10 @@ export const articleSeed: SeedDefinition = {
 							: null,
 					featured_order: index % 7 === 0 ? (index + 1) * 10 : 0,
 					visibility: ArticleVisibilityEnum.PUBLIC,
-					source_mode: ArticleSourceModeEnum.INPUT,
+					source_mode: isShowcase
+						? ArticleSourceModeEnum.PARSED
+						: ArticleSourceModeEnum.INPUT,
+					source: isShowcase ? SHOWCASE_SOURCE : null,
 					author_id: userIds.length
 						? randomPick(random, userIds)
 						: null,
@@ -168,8 +246,10 @@ export const articleSeed: SeedDefinition = {
 					brief: `${title} — what to look for and what to skip.`,
 					// Markdown, which is what the column holds and the editor edits — the
 					// dashboard renders it to HTML for display only.
-					content: `## ${title}\n\nDemo content for article ${sequenceLabel(index)}.`,
-					author: null,
+					content: isShowcase
+						? SHOWCASE_CONTENT
+						: `## ${title}\n\nDemo content for article ${sequenceLabel(index)}.`,
+					author: isShowcase ? SHOWCASE_AUTHOR : null,
 					meta: {
 						title,
 						description: `${title} — a short guide`,
