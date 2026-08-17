@@ -380,6 +380,10 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - subscription
         - subscription-evidence
     - warehouse
+3. Proposed entities
+    - comments
+    - complaint
+    - rating 
 
 # 📌 TODO - EXTRA
 
