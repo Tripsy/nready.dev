@@ -1,0 +1,28 @@
+{
+	"validation": {
+		"invalid_entity_type": "Select what is being commented on",
+		"invalid_entity_id": "Invalid entity ID",
+		"invalid_type": "Select comment type",
+		"invalid_content": "The comment must be between 2 and 5000 characters",
+		"invalid_parent_id": "Invalid parent comment",
+		"invalid_guest_name": "Your name must be between 2 and 100 characters",
+		"invalid_guest_email": "Invalid email address",
+		"invalid_guest_website": "The website must be at most 255 characters",
+		"invalid_moderation_reason": "The moderation reason must be at most 255 characters",
+		"invalid_is_pinned": "Invalid pinned value",
+		"invalid_term": "Invalid search term"
+	},
+	"error": {
+		"not_found": "Comment not found",
+		"guest_required": "Your name and email address are required to comment",
+		"invalid_parent": "The comment you are replying to is not available",
+		"not_editable": "A comment can no longer be edited once it has been moderated",
+		"ip_unresolved": "Your comment could not be recorded because your origin address is unknown"
+	},
+	"success": {
+		"create": "Comment submitted successfully and is awaiting moderation",
+		"update": "Comment updated successfully",
+		"delete": "Comment removed successfully",
+		"status_update": "Comment status updated successfully"
+	}
+}

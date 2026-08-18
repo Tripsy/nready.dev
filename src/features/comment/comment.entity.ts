@@ -85,11 +85,20 @@ const ENTITY_TABLE_NAME = 'comment';
 	schema: 'public',
 	comment: 'Stores user comments on articles and replies to reviews',
 })
+/**
+ * The thread read, which is the hottest query on this table: one target, the approved rows only,
+ * one level of the tree at a time — `parent_id IS NULL` for the roots, `parent_id = ?` for the
+ * replies under one of them — newest first.
+ *
+ * `type` is not in it. Three values over a table dominated by `comment` buy almost no selectivity,
+ * and sitting between the target and `status` they would have cost every thread read the ordering
+ * this index exists to provide.
+ */
 @Index('IDX_comment_entity', [
 	'entity_type',
 	'entity_id',
-	'type',
 	'status',
+	'parent_id',
 	'created_at',
 ])
 // Moderation queue. Partial: only `pending` rows are ever listed this way, and the table is
@@ -97,7 +106,9 @@ const ENTITY_TABLE_NAME = 'comment';
 @Index('IDX_comment_moderation', ['created_at'], {
 	where: `status = 'pending'`,
 })
-@Index('IDX_comment_user_status', ['user_id', 'status'])
+// One author's history, which the dashboard lists newest first — the trailing `created_at` is what
+// keeps that ordering inside the index scan.
+@Index('IDX_comment_user_status', ['user_id', 'status', 'created_at'])
 @Index('IDX_comment_user_ip_hash', ['user_ip_hash', 'created_at'])
 @Check(
 	'CHK_comment_author',

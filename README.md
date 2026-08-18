@@ -341,19 +341,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 
 # 📌 TODO
 
-1. Revisit `discount` once `product` ships — the feature is complete except where it
-   depends on products existing:
-    - The dashboard target picker covers `client`, `category` and `brand` only. For the
-      `product` and `variant` scopes it renders an explanatory note instead, because there
-      is no product dashboard to search (`form-targets-discount.component.tsx`).
-    - The "pick at least one target" rule applies to every scope except `order`, so until
-      that picker exists a product- or variant-scoped discount cannot be saved from the
-      form at all. The API accepts both.
-    - `discount-target.seed.ts` skips the two scopes for the same reason, so nothing
-      exercises them against real rows.
-    - `DiscountLineContext` already carries `variantId`/`productId` and the resolver
-      matches them; only the ways of *creating* those links are missing.
-2. Prepared entities:
+1. Prepared entities:
     - grn
         - grn-item
         - warehouse-movement
@@ -380,11 +368,10 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - subscription
         - subscription-evidence
     - warehouse
-3. Proposed entities
-    - comments
-    - reviews 
     - complaint
-    - rating 
+    - reviews 
+2. Add settings per article: allow rating, allow comments - based on  ENV variable (which represent the default value)
+
 
 # 📌 TODO - EXTRA
 
@@ -428,7 +415,19 @@ $ pnpx tsx cli/cron.ts run cron-time-check
    }   
 6. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
 7. cron hanging / delaying / semaphore 
-8. Stock handling — entities exist (`warehouse`, `grn`), the behaviour does not
+8. Revisit `discount` once `product` ships — the feature is complete except where it
+   depends on products existing:
+    - The dashboard target picker covers `client`, `category` and `brand` only. For the
+      `product` and `variant` scopes it renders an explanatory note instead, because there
+      is no product dashboard to search (`form-targets-discount.component.tsx`).
+    - The "pick at least one target" rule applies to every scope except `order`, so until
+      that picker exists a product- or variant-scoped discount cannot be saved from the
+      form at all. The API accepts both.
+    - `discount-target.seed.ts` skips the two scopes for the same reason, so nothing
+      exercises them against real rows.
+    - `DiscountLineContext` already carries `variantId`/`productId` and the resolver
+      matches them; only the ways of *creating* those links are missing.
+9. Stock handling — entities exist (`warehouse`, `grn`), the behaviour does not
    The tables are in place and documented on themselves; what is missing is every rule that makes
    them mean anything, since none of it can live in a constraint:
    - **Confirming a GRN** writes `warehouse_movement` rows, sets `qty_remaining = qty` on each lot,
@@ -469,13 +468,13 @@ $ pnpx tsx cli/cron.ts run cron-time-check
    - dropped from scope for now: reservations (only matter once there is a fulfilment gap), serial
      numbers, stocktake documents, landing costs, and the payable a
      confirmed GRN should raise in `cash-flow`
-9. Named menus for `product_availability`
-   - the recurring windows say *when* a product can be ordered, but nothing groups them into a
-     named "lunch menu" / "brunch" a customer can be shown, and two products sharing one schedule
-     repeat it row for row
-   - would be a `menu` entity holding the schedule once, with products linked to it; the current
-     per-product windows stay as the override
-10. Document numbering — leftovers from the `document-series` feature
+10. Named menus for `product_availability`
+    - the recurring windows say *when* a product can be ordered, but nothing groups them into a
+      named "lunch menu" / "brunch" a customer can be shown, and two products sharing one schedule
+      repeat it row for row
+    - would be a `menu` entity holding the schedule once, with products linked to it; the current
+      per-product windows stay as the override
+11. Document numbering — leftovers from the `document-series` feature
     - the entity, the atomic allocation and the CRUD surface are in place; what is not:
     - **nothing calls `documentSeriesService.allocate` yet.** `invoice`, `order`, `grn` and
       `subscription` are still entity-only, so the wiring happens when their services are written —
@@ -487,7 +486,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
       credit-note-style reuse would need an explicit release path
     - one series per document type, by design. Two concurrent invoice series (per company, per
       branch) would mean re-keying the table and giving `allocate` something to choose with
- 11. Run cron`s on a separate work / container 
+12. Run cron`s on a separate work / container 
 
 # 🔗 Dependencies
     

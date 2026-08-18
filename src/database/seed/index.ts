@@ -8,6 +8,7 @@ import { carrierSeed } from '@/features/carrier/database/carrier.seed';
 import { cashFlowSeed } from '@/features/cash-flow/database/cash-flow.seed';
 import { categorySeed } from '@/features/category/database/category.seed';
 import { clientSeed } from '@/features/client/database/client.seed';
+import { commentSeed } from '@/features/comment/database/comment.seed';
 import { discountSeed } from '@/features/discount/database/discount.seed';
 import { documentSeriesSeed } from '@/features/document-series/database/document-series.seed';
 import { imageSeed } from '@/features/image/database/image.seed';
@@ -48,6 +49,8 @@ const seeds: readonly SeedDefinition[] = [
 	imageSeed,
 	// Reads article and user ids
 	ratingSeed,
+	// Reads article and user ids; replies are inserted after the roots they hang from
+	commentSeed,
 ];
 
 function resolveSeeds(
