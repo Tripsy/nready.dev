@@ -1,6 +1,15 @@
-import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import {
+	Check,
+	Column,
+	CreateDateColumn,
+	Entity,
+	Index,
+	JoinColumn,
+	ManyToOne,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn,
+} from 'typeorm';
 import type UserEntity from '@/features/user/user.entity';
-import { EntityAppendOnlyAbstract } from '@/shared/abstracts/entity-append-only.abstract';
 
 export const RatingEntityTypeEnum = {
 	ARTICLE: 'article',
@@ -32,9 +41,19 @@ export type RatingEmoji =
 const ENTITY_TABLE_NAME = 'rating';
 
 /**
- * Insert-only: a row records that someone rated something, and is never edited afterwards. The
- * uniques below mean re-rating is a delete followed by an insert — the one write that is not an
- * append, and a hard one, since there is no `deleted_at` to soft-delete into.
+ * A row is the rating a visitor currently holds on one target, not a record of the moment they
+ * cast it: the uniques below allow exactly one per owner per `(target, type)`, so a reader who
+ * changes their mind edits that row rather than adding another. `created_at` is when they first
+ * rated, `updated_at` when they last changed it.
+ *
+ * Deliberately **not** `EntityAbstract`: this table has no `deleted_at`. A withdrawn rating has to
+ * leave the table outright — a soft-deleted row goes on holding its slot under both uniques, so
+ * nobody at that address could ever rate the target again, and it would keep counting in the
+ * aggregates. Both deletes are therefore hard, and there is no `restore` to pair with them.
+ *
+ * `type` is not editable. It sits in both uniques and decides which of `value` / `reaction` the
+ * row carries, so a reader moving from stars to a like is casting a different rating, not
+ * changing this one.
  *
  * A rating is rationed twice over — once per origin address and once per account — so both uniques
  * have to be reckoned with on write: an insert can collide on either, and the two say different
@@ -69,9 +88,18 @@ const ENTITY_TABLE_NAME = 'rating';
 @Check('CHK_rating_value', `(type = 'emoji') = (value IS NULL)`)
 @Check('CHK_rating_like_range', `type <> 'like' OR value IN (-1, 1)`)
 @Check('CHK_rating_stars_range', `type <> 'stars' OR value BETWEEN 1 AND 5`)
-export default class RatingEntity extends EntityAppendOnlyAbstract {
+export default class RatingEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = false;
+
+	@PrimaryGeneratedColumn({ type: 'int' })
+	id!: number;
+
+	@CreateDateColumn({ type: 'timestamp', nullable: false })
+	created_at!: Date;
+
+	@UpdateDateColumn({ type: 'timestamp', nullable: true })
+	updated_at!: Date | null;
 
 	// Target Entity (Polymorphic)
 	@Column({

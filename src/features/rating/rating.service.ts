@@ -57,8 +57,10 @@ export class RatingService {
 	/**
 	 * @description Used in `create` method from the public controller
 	 *
-	 * The row is inserted, never merged onto an existing one: re-rating is a withdrawal followed
-	 * by a fresh vote, so the two uniques are left to reject the second insert (see `asConflict`).
+	 * Strictly an insert, never an upsert: a caller who already holds a rating on this target is
+	 * told so (see `asConflict`) and changes it through `updateOwn`. Silently folding the two
+	 * would also swallow `UQ_rating_ip`, whose collision is somebody *else* behind the same
+	 * address — a row this caller must not overwrite.
 	 */
 	public async create(
 		data: ValidatorOutput<RatingValidator, 'create'>,
@@ -113,6 +115,37 @@ export class RatingService {
 	}
 
 	/**
+	 * @description Used in `update` method from the public controller
+	 *
+	 * Addressed the way `deleteOwn` is — by target plus the identity resolved from the request,
+	 * never by id — so the row this resolves to is by construction one the caller may edit, and
+	 * no ownership check is left to a later step.
+	 *
+	 * `firstOrFail` answers 404 when the caller holds no rating on this target, which is the same
+	 * answer somebody else's rating gives; a caller learns nothing about rows they cannot see.
+	 *
+	 * Only `value` / `reaction` move. The columns in the two uniques are the ones that addressed
+	 * the row, so this write cannot collide and needs none of `create`'s conflict handling.
+	 */
+	public async updateOwn(
+		data: ValidatorOutput<RatingValidator, 'update'>,
+		owner: RatingOwner,
+	): Promise<RatingEntity> {
+		const entry = await this.repository
+			.createQuery()
+			.filterByTarget(data.entity_type, data.entity_id, data.type)
+			.filterByOwner(owner.user_id, owner.user_ip_hash)
+			.firstOrFail();
+
+		const isEmoji = data.type === RatingTypeEnum.EMOJI;
+
+		entry.value = isEmoji ? null : data.value;
+		entry.reaction = isEmoji ? data.reaction : null;
+
+		return this.repository.save(entry);
+	}
+
+	/**
 	 * @description Used in `delete` method from the dashboard controller
 	 *
 	 * Hard, and it has to be: `rating` has no `deleted_at` to soft-delete into, and a row that
@@ -156,6 +189,7 @@ export class RatingService {
 				'rating.reaction',
 				'rating.user_id',
 				'rating.created_at',
+				'rating.updated_at',
 
 				'user.id',
 				'user.name',
@@ -184,6 +218,7 @@ export class RatingService {
 				'rating.reaction',
 				'rating.user_id',
 				'rating.created_at',
+				'rating.updated_at',
 
 				'user.id',
 				'user.name',
@@ -293,6 +328,7 @@ export class RatingService {
 				'rating.value',
 				'rating.reaction',
 				'rating.created_at',
+				'rating.updated_at',
 			])
 			.filterByTarget(data.entity_type, data.entity_id)
 			.filterByOwner(owner.user_id, owner.user_ip_hash)

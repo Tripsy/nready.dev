@@ -24,9 +24,21 @@ export default async () => {
 			/*
 			 * The target and the rating type address the row; who owns it comes from the
 			 * request, never from the path. An `/:id` route would have to be checked against
-			 * the caller afterwards, and getting that check wrong lets anyone delete anyone's
-			 * rating — the id is simply not the caller's to name.
+			 * the caller afterwards, and getting that check wrong lets anyone edit or delete
+			 * anyone's rating — the id is simply not the caller's to name. Both writes below
+			 * are addressed this way for that reason.
 			 */
+			update: {
+				path: '/:entity_type/:entity_id/:type',
+				method: 'put',
+				handlers: [
+					validateParamsWhenId('entity_id'),
+					validateParamsWhenEnum({
+						entity_type: Object.values(RatingEntityTypeEnum),
+						type: Object.values(RatingTypeEnum),
+					}),
+				],
+			},
 			delete: {
 				path: '/:entity_type/:entity_id/:type',
 				method: 'delete',

@@ -70,31 +70,43 @@ export class RatingValidator extends BaseValidator<typeof validatorMessages> {
 	 * looser schema here does not admit the row — it turns a 422 the caller can act on into a
 	 * constraint violation, which reaches them as a masked 500.
 	 */
-	readonly create = z.discriminatedUnion('type', [
-		// Like — a direction, no reaction
-		z.object({
-			...this.targetSchema(),
-			type: z.literal(RatingTypeEnum.LIKE),
-			value: this.likeValueSchema(),
-		}),
+	private ratingSchema() {
+		return z.discriminatedUnion('type', [
+			// Like — a direction, no reaction
+			z.object({
+				...this.targetSchema(),
+				type: z.literal(RatingTypeEnum.LIKE),
+				value: this.likeValueSchema(),
+			}),
 
-		// Stars — a score, no reaction
-		z.object({
-			...this.targetSchema(),
-			type: z.literal(RatingTypeEnum.STARS),
-			value: this.starsValueSchema(),
-		}),
+			// Stars — a score, no reaction
+			z.object({
+				...this.targetSchema(),
+				type: z.literal(RatingTypeEnum.STARS),
+				value: this.starsValueSchema(),
+			}),
 
-		// Emoji — a reaction, no value
-		z.object({
-			...this.targetSchema(),
-			type: z.literal(RatingTypeEnum.EMOJI),
-			reaction: this.validateEnum(
-				RatingEmojiEnum,
-				this.getMessage('invalid_reaction'),
-			),
-		}),
-	]);
+			// Emoji — a reaction, no value
+			z.object({
+				...this.targetSchema(),
+				type: z.literal(RatingTypeEnum.EMOJI),
+				reaction: this.validateEnum(
+					RatingEmojiEnum,
+					this.getMessage('invalid_reaction'),
+				),
+			}),
+		]);
+	}
+
+	readonly create = this.ratingSchema();
+
+	/**
+	 * The same shape as `create`, and necessarily so: the target and `type` address the row and
+	 * are not editable, while `value` / `reaction` are the payload — which is exactly what a
+	 * cast carries. The controller merges the params holding the first three with the body
+	 * holding the rest, so one schema validates the whole request.
+	 */
+	readonly update = this.ratingSchema();
 
 	readonly read = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),

@@ -67,8 +67,37 @@ class RatingPublicController extends BaseController {
 	});
 
 	/**
-	 * Withdrawing a rating. Also the first half of changing one: the row is insert-only, so a
-	 * reader who moves from three stars to five deletes and casts again.
+	 * Changing a rating already cast. The target and `type` come from the params — they address
+	 * the row and are not editable — while the body carries the new `value` / `reaction`, so the
+	 * two are merged into the one schema that validates a rating of that type. Params are spread
+	 * last on purpose: a body naming a different target would otherwise redirect the write to a
+	 * row the path never authorised.
+	 *
+	 * Separate from `create` rather than folded into an upsert: `create`'s 409 distinguishes the
+	 * caller's own earlier rating from one cast by somebody else behind the same address, and an
+	 * upsert would have to answer both the same way.
+	 */
+	public update = asyncHandler(async (req: Request, res: Response) => {
+		const data = this.validate(
+			this.validator.update,
+			{ ...req.body, ...req.params },
+			res,
+		);
+
+		const entry = await this.ratingService.updateOwn(
+			data,
+			this.resolveOwner(req, res),
+		);
+
+		res.locals.output.data(entry);
+		res.locals.output.message(lang('rating.success.update'));
+
+		res.json(res.locals.output);
+	});
+
+	/**
+	 * Withdrawing a rating — the reader takes it back entirely. Changing one's mind about the
+	 * score goes through `update` instead and keeps the row.
 	 */
 	public delete = asyncHandler(async (req: Request, res: Response) => {
 		const data = this.validate(

@@ -15,6 +15,7 @@
 	},
 	"success": {
 		"create": "Rating recorded successfully",
+		"update": "Rating updated successfully",
 		"delete": "Rating removed successfully"
 	}
 }
