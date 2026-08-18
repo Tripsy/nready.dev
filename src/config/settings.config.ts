@@ -58,7 +58,7 @@ function loadSettings() {
 			 * rationed per address (one rating per target, guest comment throttling) starts
 			 * counting again from zero.
 			 */
-			ipHashSecret: (process.env.IP_HASH_SECRET as string) || 'secret',
+			ipHashSecret: process.env.IP_HASH_SECRET || 'secret',
 		},
 		redis: {
 			host: process.env.REDIS_HOST || 'localhost',
