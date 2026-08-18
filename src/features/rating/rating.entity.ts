@@ -116,9 +116,9 @@ export default class RatingEntity extends EntityAppendOnlyAbstract {
 	reaction?: RatingEmoji | null;
 
 	// RELATIONS
-	// Cascade rather than SET NULL: nulling `user_id` moves the row under `UQ_rating_guest`, where
-	// a guest rating from the same IP hash on the same target collides and fails the account
-	// deletion outright.
+	// Cascade rather than SET NULL: nulling `user_id` does not remove the rating, it turns a
+	// member's vote into a guest one that keeps counting in every aggregate — and the row goes on
+	// holding its slot under `UQ_rating_ip`, so nobody at that address can rate the target again.
 	@ManyToOne('UserEntity', {
 		onDelete: 'CASCADE',
 	})

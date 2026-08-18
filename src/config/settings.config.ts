@@ -50,6 +50,15 @@ function loadSettings() {
 			allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',').map((v) =>
 				v.trim(),
 			) || ['http://localhost'],
+			/*
+			 * Keys the HMAC behind `hashClientIp` — the form every `user_ip_hash` column
+			 * stores an address in. A separate secret from `user.authSecret` because the two
+			 * rotate on different schedules and the consequences differ: rotating this one
+			 * makes every stored hash stop matching the caller it belongs to, so anything
+			 * rationed per address (one rating per target, guest comment throttling) starts
+			 * counting again from zero.
+			 */
+			ipHashSecret: (process.env.IP_HASH_SECRET as string) || 'secret',
 		},
 		redis: {
 			host: process.env.REDIS_HOST || 'localhost',
