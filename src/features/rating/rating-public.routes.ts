@@ -60,6 +60,19 @@ export default async () => {
 					}),
 				],
 			},
+			/*
+			 * Declared after `read` and matching one segment where that matches two, so an
+			 * `/article/12` request cannot fall through to it and be answered without its id.
+			 */
+			summaries: {
+				path: '/:entity_type',
+				method: 'get',
+				handlers: [
+					validateParamsWhenEnum({
+						entity_type: Object.values(RatingEntityTypeEnum),
+					}),
+				],
+			},
 		},
 	};
 

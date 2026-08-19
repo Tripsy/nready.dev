@@ -238,9 +238,8 @@ export class RatingService {
 	/**
 	 * @description Used in `read` method from the public controller
 	 *
-	 * One grouped query for the whole target rather than one per rating type. The group is
-	 * `(type, value, reaction)`, which is at most a dozen rows — three like directions, five
-	 * scores, one per reaction — so the folding below runs on a set that cannot grow with traffic.
+	 * One grouped query for the whole target rather than one per rating type; `foldSummary` turns
+	 * those groups into the shape a widget renders.
 	 *
 	 * Reads members and guests together, which is what `IDX_rating_entity` exists for: the partial
 	 * `UQ_rating_user` cannot serve a query that does not imply `user_id IS NOT NULL`.
@@ -259,6 +258,106 @@ export class RatingService {
 			.addGroupBy('rating.reaction')
 			.getRawMany<RatingSummaryRow>();
 
+		return RatingService.foldSummary(rows);
+	}
+
+	/**
+	 * @description Used in `summaries` method from the public controller
+	 *
+	 * The same aggregate for a set of targets, in one query. A list of rated things — a page of
+	 * comments, a feed of articles — would otherwise issue one request per row, which is the
+	 * shape that turns a thread into a dozen round trips.
+	 *
+	 * Targets nobody has rated are absent from the result rather than present and empty: the
+	 * caller knows which ids it asked about, and an empty summary is what a missing key means.
+	 */
+	public async getSummaries(
+		entityType: RatingEntityType,
+		entityIds: number[],
+	): Promise<Record<number, RatingSummary>> {
+		const rows = await this.repository
+			.createQuery()
+			.filterBy('entity_type', entityType)
+			.filterBy('entity_id', entityIds, 'IN')
+			.getQuery()
+			.select('rating.entity_id', 'entity_id')
+			.addSelect('rating.type', 'type')
+			.addSelect('rating.value', 'value')
+			.addSelect('rating.reaction', 'reaction')
+			.addSelect('COUNT(*)', 'count')
+			.groupBy('rating.entity_id')
+			.addGroupBy('rating.type')
+			.addGroupBy('rating.value')
+			.addGroupBy('rating.reaction')
+			.getRawMany<RatingSummaryRow & { entity_id: number }>();
+
+		const grouped = new Map<number, RatingSummaryRow[]>();
+
+		for (const row of rows) {
+			const entityId = Number(row.entity_id);
+			const bucket = grouped.get(entityId);
+
+			if (bucket) {
+				bucket.push(row);
+			} else {
+				grouped.set(entityId, [row]);
+			}
+		}
+
+		const summaries: Record<number, RatingSummary> = {};
+
+		for (const [entityId, bucket] of grouped) {
+			summaries[entityId] = RatingService.foldSummary(bucket);
+		}
+
+		return summaries;
+	}
+
+	/**
+	 * What the caller cast across a set of targets, keyed by target — the `own` half of the
+	 * summary above, resolved in the same single query rather than per row.
+	 */
+	public async getOwnRatingsForTargets(
+		entityType: RatingEntityType,
+		entityIds: number[],
+		owner: RatingOwner,
+	): Promise<Record<number, RatingEntity[]>> {
+		const entries = await this.repository
+			.createQuery()
+			.select([
+				'rating.id',
+				'rating.entity_id',
+				'rating.type',
+				'rating.value',
+				'rating.reaction',
+			])
+			.filterBy('entity_type', entityType)
+			.filterBy('entity_id', entityIds, 'IN')
+			.filterByOwner(owner.user_id, owner.user_ip_hash)
+			.all();
+
+		const own: Record<number, RatingEntity[]> = {};
+
+		for (const entry of entries) {
+			const bucket = own[entry.entity_id];
+
+			if (bucket) {
+				bucket.push(entry);
+			} else {
+				own[entry.entity_id] = [entry];
+			}
+		}
+
+		return own;
+	}
+
+	/**
+	 * Folds one target's `(type, value, reaction)` groups into the shape a widget renders.
+	 *
+	 * At most a dozen rows per target — three like directions, five scores, one per reaction —
+	 * so this runs on a set that cannot grow with traffic.
+	 */
+	private static foldSummary(rows: RatingSummaryRow[]): RatingSummary {
 		const summary: RatingSummary = {
 			total: 0,
 			like: { up: 0, down: 0, score: 0 },

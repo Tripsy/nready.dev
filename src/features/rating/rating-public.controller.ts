@@ -114,6 +114,37 @@ class RatingPublicController extends BaseController {
 	});
 
 	/**
+	 * The same two halves for a set of targets, in two queries rather than two per target.
+	 *
+	 * This is what a list of rated things reads: a page of comments would otherwise call `read`
+	 * once per comment, and the page's own request count would grow with its length.
+	 *
+	 * The ids travel in the query string rather than the path — there are many of them, and the
+	 * path already means "one target" here.
+	 */
+	public summaries = asyncHandler(async (req: Request, res: Response) => {
+		const data = this.validate(
+			this.validator.publicSummaryList,
+			{ ...req.query, ...req.params },
+			res,
+		);
+
+		res.locals.output.data({
+			summaries: await this.ratingService.getSummaries(
+				data.entity_type,
+				data.entity_ids,
+			),
+			own: await this.ratingService.getOwnRatingsForTargets(
+				data.entity_type,
+				data.entity_ids,
+				this.resolveOwner(req, res),
+			),
+		});
+
+		res.json(res.locals.output);
+	});
+
+	/**
 	 * The aggregate for one target, plus what this caller cast on it — the two halves a rating
 	 * widget renders at once, so they are resolved together rather than over two round trips.
 	 *

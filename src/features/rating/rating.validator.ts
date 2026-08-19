@@ -21,6 +21,13 @@ export const RATING_LIKE_VALUES: readonly number[] = [-1, 1];
 export const RATING_STARS_MIN = 1;
 export const RATING_STARS_MAX = 5;
 
+/**
+ * How many targets one summary request may ask about. A comment thread reads a page of comments
+ * at a time, so the cap sits above a page and well below "every rating in the table" — the point
+ * is that a caller cannot turn one request into a full scan.
+ */
+export const RATING_SUMMARY_MAX_TARGETS = 50;
+
 const validatorMessages = [
 	...sharedValidatorMessages,
 	'invalid_entity_type',
@@ -29,6 +36,7 @@ const validatorMessages = [
 	'invalid_value_like',
 	'invalid_value_stars',
 	'invalid_reaction',
+	'invalid_entity_ids',
 ] as const;
 
 export class RatingValidator extends BaseValidator<typeof validatorMessages> {
@@ -132,6 +140,38 @@ export class RatingValidator extends BaseValidator<typeof validatorMessages> {
 	/** The anonymous summary: the aggregate for one target, plus whatever the caller cast. */
 	readonly publicRead = z.object({
 		...this.targetSchema(),
+	});
+
+	/**
+	 * The same summary for a set of targets at once — what a list of rated things needs, and the
+	 * only shape that keeps a comment thread from issuing one request per comment.
+	 *
+	 * The ids arrive as a comma-separated query value, which is what a URL can carry; anything
+	 * already shaped as an array (a repeated parameter) is taken as it is.
+	 */
+	readonly publicSummaryList = z.object({
+		entity_type: this.validateEnum(
+			RatingEntityTypeEnum,
+			this.getMessage('invalid_entity_type'),
+		),
+		entity_ids: z.preprocess(
+			(value) => (typeof value === 'string' ? value.split(',') : value),
+			z
+				.array(
+					z.coerce
+						.number({
+							message: this.getMessage('invalid_entity_ids'),
+						})
+						.positive({
+							message: this.getMessage('invalid_entity_ids'),
+						}),
+					{ message: this.getMessage('invalid_entity_ids') },
+				)
+				.min(1, { message: this.getMessage('invalid_entity_ids') })
+				.max(RATING_SUMMARY_MAX_TARGETS, {
+					message: this.getMessage('invalid_entity_ids'),
+				}),
+		),
 	});
 
 	readonly find = this.validateFind({
