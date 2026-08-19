@@ -463,6 +463,53 @@ export class CommentService {
 	}
 
 	/**
+	 * @description Used in `find` method from the public controller
+	 *
+	 * The earliest approved reply under each of the given comments, keyed by the comment it
+	 * answers.
+	 *
+	 * A thread shows its first reply without being unrolled, and resolving that per root would
+	 * cost one request per root on every page — the same shape the bulk rating read exists to
+	 * avoid. One query answers for the whole page instead.
+	 *
+	 * `MIN(id)` rather than the earliest `created_at`: ids are sequential here, so the two agree,
+	 * and a grouped subquery on the primary key is portable in a way `DISTINCT ON` is not.
+	 */
+	public async findFirstReplies(
+		parentIds: number[],
+	): Promise<Record<number, CommentEntity>> {
+		if (parentIds.length === 0) {
+			return {};
+		}
+
+		const entries = await this.repository
+			.createQuery()
+			.join('comment.user', 'user', 'LEFT')
+			.select([...PUBLIC_COLUMNS, 'user.id', 'user.name'])
+			.filterRaw(
+				`${CommentEntity.NAME}.id IN (
+					SELECT MIN(reply.id)
+					FROM "${CommentEntity.NAME}" reply
+					WHERE reply.parent_id IN (:...parentIds)
+					  AND reply.status = :status
+					GROUP BY reply.parent_id
+				)`,
+				{ parentIds, status: CommentStatusEnum.APPROVED },
+			)
+			.all();
+
+		const firstReplies: Record<number, CommentEntity> = {};
+
+		for (const entry of entries) {
+			if (entry.parent_id) {
+				firstReplies[entry.parent_id] = entry;
+			}
+		}
+
+		return firstReplies;
+	}
+
+	/**
 	 * What a public write may hand back: the comment, minus everything about its author that the
 	 * author did not send. `user_ip_hash` above all — it is the handle a guest's later edit is
 	 * matched by, so echoing it publishes the one credential an anonymous comment has — but the

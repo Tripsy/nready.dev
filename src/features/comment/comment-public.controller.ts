@@ -149,6 +149,18 @@ class CommentPublicController extends BaseController {
 					limit: data.limit,
 					total: total,
 				},
+				/*
+				 * Only when reading the roots: a thread shows its first reply straight away, and
+				 * this is what spares the client one request per root to find it. A reply list is
+				 * already the replies, so it needs nothing further.
+				 */
+				first_replies: data.filter.parent_id
+					? {}
+					: await this.commentService.findFirstReplies(
+							entries
+								.filter((entry) => entry.reply_count > 0)
+								.map((entry) => entry.id),
+						),
 			};
 		});
 
