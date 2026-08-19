@@ -1,5 +1,4 @@
 import type { EntityManager } from 'typeorm';
-import { In } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/message.setup';
@@ -15,9 +14,6 @@ import CommentEntity, {
 } from '@/features/comment/comment.entity';
 import { getCommentRepository } from '@/features/comment/comment.repository';
 import type { CommentValidator } from '@/features/comment/comment.validator';
-import RatingEntity, {
-	RatingEntityTypeEnum,
-} from '@/features/rating/rating.entity';
 import { createCurrentDate } from '@/helpers/date.helper';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
@@ -199,12 +195,15 @@ export class CommentService {
 	 *
 	 * `parent_id` is `ON DELETE CASCADE`, so the descendants go with the root on their own. What
 	 * cascade cannot reach is everything pointing at those rows *polymorphically* — `rating` names
-	 * a comment through `(entity_type, entity_id)` with no foreign key to travel — so the subtree
-	 * has to be resolved up front and those rows cleared in the same transaction. Left behind, they
-	 * would resurface the moment a new comment reused the id.
+	 * a comment through `(entity_type, entity_id)` with no foreign key to travel. The subtree is
+	 * therefore resolved before the delete and announced afterwards on `entityRemoved`, which the
+	 * feature owning those rows listens for and clears on its own; this service holds no reference
+	 * to any of them, and names nothing beyond its own table.
 	 *
-	 * `complaint` targets comments the same way and belongs in this cleanup, but its table does not
-	 * exist yet; add it here when the feature ships.
+	 * The announcement sits outside the transaction, and after it commits: a listener running
+	 * inside would be clearing rows for a delete that could still roll back. The cleanup is
+	 * therefore eventually consistent rather than atomic, which is safe because Postgres does not
+	 * reuse a serial id — nothing can claim the ids those rows still point at in the meantime.
 	 *
 	 * The parent's `reply_count` drops by exactly one, and only when the row being removed was
 	 * approved: the counter follows visibility (see `updateStatus`), so a pending reply was never
@@ -212,13 +211,8 @@ export class CommentService {
 	 * parent a single reply.
 	 */
 	private async removeSubtree(entry: CommentEntity): Promise<void> {
-		await dataSource.transaction(async (manager) => {
+		const removedIds = await dataSource.transaction(async (manager) => {
 			const ids = await this.resolveSubtree(manager, entry.id);
-
-			await manager.getRepository(RatingEntity).delete({
-				entity_type: RatingEntityTypeEnum.COMMENT,
-				entity_id: In(ids),
-			});
 
 			if (
 				entry.parent_id &&
@@ -230,6 +224,13 @@ export class CommentService {
 			}
 
 			await manager.getRepository(CommentEntity).delete({ id: entry.id });
+
+			return ids;
+		});
+
+		eventEmitter.emit('entityRemoved', {
+			entity_type: CommentEntity.NAME,
+			entity_ids: removedIds,
 		});
 
 		this.cleanThreadCache(entry.entity_type, entry.entity_id);

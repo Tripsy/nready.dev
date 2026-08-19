@@ -1,6 +1,6 @@
 import { QueryFailedError } from 'typeorm';
 import { lang } from '@/config/message.setup';
-import { CustomError } from '@/exceptions';
+import { CustomError, NotFoundError } from '@/exceptions';
 import type RatingEntity from '@/features/rating/rating.entity';
 import type {
 	RatingEmoji,
@@ -171,6 +171,42 @@ export class RatingService {
 			.filterByTarget(data.entity_type, data.entity_id, data.type)
 			.filterByOwner(owner.user_id, owner.user_ip_hash)
 			.delete(false);
+	}
+
+	/**
+	 * @description Used by `RatingListener`, on `entityRemoved`
+	 *
+	 * Ratings left pointing at targets that no longer exist. `(entity_type, entity_id)` carries no
+	 * foreign key, so nothing removes them when the target goes — the feature that owned it
+	 * announces the removal and this clears what was cast on it.
+	 *
+	 * Hard, like every other delete on this table: there is no `deleted_at` to soft-delete into,
+	 * and a lingering row would keep counting towards both uniques and every aggregate.
+	 */
+	public async deleteByTargets(
+		entityType: RatingEntityType,
+		entityIds: number[],
+	): Promise<void> {
+		if (entityIds.length === 0) {
+			return;
+		}
+
+		try {
+			await this.repository
+				.createQuery()
+				.filterBy('entity_type', entityType)
+				.filterBy('entity_id', entityIds, 'IN')
+				.delete(false, true);
+		} catch (error) {
+			/*
+			 * A target nobody rated is the ordinary case, and `RepositoryAbstract.delete` reports
+			 * "nothing matched" as a 404 — meaningful when a caller named one row, noise when the
+			 * caller is a cleanup sweeping ids it has no expectations about.
+			 */
+			if (!(error instanceof NotFoundError)) {
+				throw error;
+			}
+		}
 	}
 
 	/**

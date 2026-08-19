@@ -17,9 +17,8 @@ export const ComplaintReasonEnum = {
 	HARASSMENT: 'harassment',
 	HATE_SPEECH: 'hate_speech',
 	MISINFORMATION: 'misinformation',
-	INAPPROPRIATE: 'inappropriate',
+	AI_SLOP: 'ai_slop',
 	COPYRIGHT: 'copyright',
-	OTHER: 'other',
 } as const;
 
 export type ComplaintReason =
@@ -28,8 +27,12 @@ export type ComplaintReason =
 const ENTITY_TABLE_NAME = 'complaint';
 
 /**
- * Comments are hard-deleted, so a complaint outliving its target is normal — the row stays for
- * audit, and the moderation queue has to tolerate an `entity_id` that no longer resolves.
+ * A complaint does not outlive its target. `(entity_type, entity_id)` carries no foreign key, so
+ * `ComplaintListener` clears these rows when the target announces a hard delete on `entityRemoved`
+ * — there is nothing left to moderate once the thing being accused is gone.
+ *
+ * That covers comments, which are hard-deleted. An article leaves through `deleted_at` instead and
+ * can be restored, so its complaints stay: they become answerable again the moment it comes back.
  *
  * Reviews are not a target: a review is reported by flagging it through moderation, not here.
  */
@@ -44,8 +47,10 @@ const ENTITY_TABLE_NAME = 'complaint';
 	where: 'deleted_at IS NULL',
 })
 // Moderation queue. Partial: the open set stays small while the table only grows.
+// `deleted_at IS NULL` belongs in the predicate, not only in the query — without it the index
+// carries withdrawn complaints, and a queue read that excludes them cannot be answered from it.
 @Index('IDX_complaint_open', ['created_at'], {
-	where: 'is_resolved = false',
+	where: 'is_resolved = false AND deleted_at IS NULL',
 })
 @Check('CHK_complaint_resolved', 'is_resolved = (resolved_at IS NOT NULL)')
 export default class ComplaintEntity extends EntityAbstract {

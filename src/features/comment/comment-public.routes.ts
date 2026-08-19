@@ -20,7 +20,7 @@ export default async () => {
 			},
 			/*
 			 * Addressed by id, unlike the public rating routes: an author holds many comments on
-			 * one target, so the target does not name a row. The id alone authorises nothing —
+			 * one target, so the target does not name a row. The id alone authorizes nothing —
 			 * `CommentQuery.filterByOwner` narrows the same query to the caller's own rows, so a
 			 * request naming somebody else's comment resolves to nothing rather than to a row it
 			 * then has to be checked against.

@@ -368,9 +368,30 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - subscription
         - subscription-evidence
     - warehouse
-    - complaint
     - reviews 
-2. Add settings per article: allow rating, allow comments - based on  ENV variable (which represent the default value)
+2. Add settings per article: allow rating, allow comments, allow complaints - based on  ENV variable (which represent the default value)
+3. Implement `comment_subscription` — the entity and its table ship with the `comment` feature,
+   but nothing reads or writes them yet. What it takes:
+    - Repository + service, and a subscriber row created whenever someone comments, member or
+      guest. `user_name` and `user_email` are required either way: they are what the notification
+      is addressed to.
+    - Lower-case `user_email` on write. `UQ_comment_subscription_user` compares it byte-for-byte
+      and a decorator cannot declare the `lower(user_email)` expression index that would hold the
+      rule in the schema.
+    - Generate `unsubscribe_token` on create. It is the only credential a guest subscriber has —
+      they hold no session — so it reaches them through the notification email and nowhere else.
+    - Public endpoints: unsubscribe by token, and change `notification_type`. `unsubscribed` is a
+      state, not an absent row: deleting it would re-subscribe them with their next comment.
+    - Fan-out on **approval**, not on submission — a pending comment is not public yet, so
+      notifying about it leaks what a moderator has not passed. `all` notifies every subscriber of
+      the target; `replies_to_me` only the author of the comment being answered.
+    - The mail itself: a template (`template.seed.ts`), a `comment-email.service.ts` alongside
+      `account-email.service.ts`, and the send enqueued through `email.queue.ts`. Never awaited
+      inline in the request — and never `void`ed either; see `runInBackground`.
+    - Frontend (`../nready-ui`): a "notify me of replies" checkbox on the comment form, and the
+      unsubscribe landing page the emailed link points at.
+      - 
+ 5. Comment edit, remove, moderation directly in front;     
 
 
 # 📌 TODO - EXTRA

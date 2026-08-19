@@ -9,6 +9,7 @@ import { cashFlowSeed } from '@/features/cash-flow/database/cash-flow.seed';
 import { categorySeed } from '@/features/category/database/category.seed';
 import { clientSeed } from '@/features/client/database/client.seed';
 import { commentSeed } from '@/features/comment/database/comment.seed';
+import { complaintSeed } from '@/features/complaint/database/complaint.seed';
 import { discountSeed } from '@/features/discount/database/discount.seed';
 import { documentSeriesSeed } from '@/features/document-series/database/document-series.seed';
 import { imageSeed } from '@/features/image/database/image.seed';
@@ -51,6 +52,8 @@ const seeds: readonly SeedDefinition[] = [
 	ratingSeed,
 	// Reads article and user ids; replies are inserted after the roots they hang from
 	commentSeed,
+	// Reads article, comment and user ids
+	complaintSeed,
 ];
 
 function resolveSeeds(
