@@ -34,6 +34,41 @@ export type EntityRemovedEventPayload = {
 	entity_ids: number[];
 };
 
+/**
+ * A complaint has just been filed against a target, with how many separate people now stand behind
+ * the live complaints on it.
+ *
+ * The count travels with the event rather than being looked up by the listener: counting is a
+ * question about the `complaint` table, and the feature owning the target has no business reading
+ * it — it only decides what its own rows do at a given number.
+ *
+ * `entity_type` is the table name, the way a polymorphic target is always named here.
+ */
+export type ComplaintFiledEventPayload = {
+	entity_type: string;
+	entity_id: number;
+	/** Distinct reporters, resolved by the rule in `ComplaintQuery.countDistinctReporters`. */
+	reporters: number;
+};
+
+/**
+ * A comment has just been written — whatever a moderator will make of it later.
+ *
+ * Only the row is named. Everything a listener needs about the author (a member's current address,
+ * a guest's) is resolved from it: the comment carries `user_id` rather than an address, and the
+ * address a notification goes to has to be the one the account holds when it is sent.
+ */
+export type CommentPostedEventPayload = {
+	comment_id: number;
+	entity_type: string;
+	entity_id: number;
+	/**
+	 * The language the comment was written from, captured while a request still exists — the
+	 * listener runs after the response and the digest runs from a cron, and neither has one.
+	 */
+	language: string;
+};
+
 export type UserRegisteredEventPayload = Partial<UserEntity> & {
 	id: number;
 	name: string;
@@ -46,6 +81,8 @@ type Events = {
 	history: LogHistoryEventPayload;
 	cacheClean: CacheCleanEventPayload;
 	entityRemoved: EntityRemovedEventPayload;
+	complaintFiled: ComplaintFiledEventPayload;
+	commentPosted: CommentPostedEventPayload;
 	userRegistered: UserRegisteredEventPayload;
 };
 

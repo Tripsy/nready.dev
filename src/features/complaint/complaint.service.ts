@@ -1,3 +1,4 @@
+import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/message.setup';
 import { BadRequestError, CustomError, NotFoundError } from '@/exceptions';
 import type ComplaintEntity from '@/features/complaint/complaint.entity';
@@ -48,7 +49,7 @@ export class ComplaintService {
 		userId: number,
 	): Promise<ComplaintEntity> {
 		try {
-			return await this.repository.save(
+			const entry = await this.repository.save(
 				this.repository.create({
 					entity_type: data.entity_type,
 					entity_id: data.entity_id,
@@ -57,6 +58,10 @@ export class ComplaintService {
 					description: data.description ?? null,
 				}),
 			);
+
+			await this.announceFiled(entry.entity_type, entry.entity_id);
+
+			return entry;
 		} catch (error) {
 			if (!RepositoryAbstract.isUniqueViolation(error)) {
 				throw error;
@@ -67,6 +72,43 @@ export class ComplaintService {
 				lang('complaint.error.already_reported'),
 			);
 		}
+	}
+
+	/**
+	 * Tells whoever owns the target that it has been reported, and by how many separate people.
+	 *
+	 * Only a filing announces: an amendment changes what a complaint says, not who stands behind
+	 * it, and a withdrawal lowers a count that has already been acted on — a moderator's decision
+	 * is not unmade by the reporter who asked for it. A restored complaint stays quiet for the same
+	 * reason, being a decision in the other direction.
+	 *
+	 * Awaited rather than backgrounded: the count is the point of the event, and a listener acting
+	 * on a stale one would flag the wrong target. What listeners then do with it is their own
+	 * concern — `complaint` neither knows nor waits for it.
+	 */
+	private async announceFiled(
+		entityType: ComplaintEntityType,
+		entityId: number,
+	): Promise<void> {
+		eventEmitter.emit('complaintFiled', {
+			entity_type: entityType,
+			entity_id: entityId,
+			reporters: await this.countDistinctReporters(entityType, entityId),
+		});
+	}
+
+	/**
+	 * How many separate people have live complaints against one target. Public because the
+	 * dashboard has the same question to answer about a row it is showing.
+	 */
+	public countDistinctReporters(
+		entityType: ComplaintEntityType,
+		entityId: number,
+	): Promise<number> {
+		return this.repository
+			.createQuery()
+			.filterByTarget(entityType, entityId)
+			.countDistinctReporters();
 	}
 
 	/**

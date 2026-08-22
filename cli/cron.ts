@@ -10,6 +10,7 @@ import archiveArticle from '@/features/article/cron-jobs/archive-article.cron';
 import expireFeaturedArticle from '@/features/article/cron-jobs/expire-featured-article.cron';
 import publicRestrictedArticle from '@/features/article/cron-jobs/public-restricted-article.cron';
 import publishScheduledArticle from '@/features/article/cron-jobs/publish-scheduled-article.cron';
+import notifyCommentSubscribers from '@/features/comment/cron-jobs/notify-comment-subscribers.cron';
 import cronTimeCheck from '@/shared/cron-jobs/cron-time-check.cron';
 import dataSource from '../src/config/data-source.config';
 import { getCronJobsPaths } from '../src/providers/cron.provider';
@@ -31,6 +32,7 @@ const cronJobs: Record<string, CronJob> = {
 	'expire-featured-article': expireFeaturedArticle,
 	'public-restricted-article': publicRestrictedArticle,
 	'publish-scheduled-article': publishScheduledArticle,
+	'notify-comment-subscribers': notifyCommentSubscribers,
 };
 
 program

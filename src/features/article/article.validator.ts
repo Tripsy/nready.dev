@@ -498,6 +498,15 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 		// author filter. A visitor can only ever address the display window, so a filter that
 		// could widen it must not exist on this schema at all
 		filterSchema: {
+			/*
+			 * One article by id, which is how a permalink is resolved: a link that has to
+			 * survive a re-slug cannot carry the slug. It narrows the same display window as
+			 * every other filter here — an article that is not published, or restricted and
+			 * not listed, is no more addressable by id than it is by anything else.
+			 */
+			id: this.validateId(this.getMessage('invalid_id', { name: 'id' }), {
+				required: false,
+			}),
 			term: this.validateString(this.getMessage('invalid_string'), {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength'),

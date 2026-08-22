@@ -4,11 +4,14 @@ import {
 	RequestContextSourceEnum,
 	requestContext,
 } from '@/config/request.context';
+import { Configuration } from '@/config/settings.config';
 import TemplateEntity, {
+	type TemplateSeedEntry,
 	TemplateTypeEnum,
 } from '@/features/template/template.entity';
+import { getFeaturesFilesPathByFolderAndExtension } from '@/helpers/system.helper';
 
-const templateData = [
+const templateData: TemplateSeedEntry[] = [
 	{
 		label: 'email-confirm-create',
 		language: 'en',
@@ -217,12 +220,49 @@ const templateData = [
 	},
 ];
 
+/**
+ * The templates an additional feature owns, collected from every
+ * `features/<name>/database/<name>.templates.ts`. Discovery rather than a list of imports so that
+ * installing or removing a feature through `cli/feature.ts` needs no edit here — and so that a
+ * removed feature cannot leave this file importing a path that no longer exists.
+ *
+ * Each file default-exports a `TemplateSeedEntry[]`. A feature template collides with a core one
+ * only if it reuses a `label`/`language`/`type` triple, which the unique index rejects on insert.
+ */
+async function loadFeatureTemplates(): Promise<TemplateSeedEntry[]> {
+	const paths = getFeaturesFilesPathByFolderAndExtension(
+		Configuration.get('folder.features'),
+		'/database',
+		`templates.${Configuration.resolveExtension()}`,
+	);
+
+	const modules = await Promise.all(
+		paths.map(async (filePath) => {
+			const module = await import(filePath);
+
+			if (!Array.isArray(module.default)) {
+				throw new Error(
+					`There is no 'export default' template array found in ${filePath}`,
+				);
+			}
+
+			return module.default as TemplateSeedEntry[];
+		}),
+	);
+
+	return modules.flat();
+}
+
 async function seedTemplates() {
 	const connection = dataSource;
 
 	try {
 		console.debug('Initializing database connection...');
 		await connection.initialize();
+
+		// Loaded before the transaction opens: a feature file that fails to import should not
+		// leave the table wiped.
+		const featureTemplates = await loadFeatureTemplates();
 
 		await requestContext.run(
 			{
@@ -256,7 +296,10 @@ async function seedTemplates() {
 						console.debug('Inserting new templates...');
 
 						// Insert new data
-						await repository.save(templateData);
+						await repository.save([
+							...templateData,
+							...featureTemplates,
+						]);
 					},
 				);
 			},

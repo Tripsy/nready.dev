@@ -80,6 +80,17 @@ export default class CommentSubscriptionEntity {
 	})
 	entity_id!: number;
 
+	/**
+	 * What the notification — and the page its unsubscribe link leads to — is written in.
+	 *
+	 * Stored rather than resolved at send time: a guest has no account to read a language from, and
+	 * the digest runs from a cron with no request behind it. It is the language of the page they
+	 * commented on, refreshed on every later comment, so somebody who switches the site to another
+	 * language is followed by their notifications.
+	 */
+	@Column({ type: 'varchar', length: 3, nullable: false })
+	language!: string;
+
 	@Column({
 		type: 'enum',
 		enum: CommentSubscriptionTypeEnum,

@@ -959,6 +959,7 @@ export class ArticleService {
 				'category_content.label',
 				'category_content.slug',
 			])
+			.filterBy('article.id', data.filter.id)
 			.filterBy('article.featured_status', data.filter.featured_status)
 			.filterByTerm(data.filter.term)
 			.filterPublished(true)

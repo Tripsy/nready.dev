@@ -2,6 +2,8 @@ import type { EntityManager } from 'typeorm';
 import dataSource from '@/config/data-source.config';
 import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/message.setup';
+import { requestContext } from '@/config/request.context';
+import { Configuration } from '@/config/settings.config';
 import { BadRequestError } from '@/exceptions';
 import type {
 	CommentEntityType,
@@ -32,6 +34,35 @@ export type CommentAuthor = {
 	is_staff: boolean;
 };
 
+/**
+ * How many separate people have to report a comment before it leaves the thread on its own.
+ *
+ * Three rather than one: a single report is as often a disagreement as a problem, and taking a
+ * comment down on it would hand any reader a mute button for anybody they argue with. Three
+ * independent readers — distinct, identifiable accounts, which is what `complaint` counts — is
+ * enough of a signal to hide the comment until a moderator has looked at it, and the move is
+ * reversible from the dashboard either way.
+ */
+export const COMMENT_FLAG_REPORTER_THRESHOLD = 3;
+
+/**
+ * Whether a **member's** comment is public the moment it is written. A guest's is never
+ * auto-approved — see `create` below for why an account is the line.
+ *
+ * On by default: a discussion that only appears after somebody has looked at it is not a
+ * discussion, and the moderation this replaces is reactive for members — a comment can be
+ * rejected, and `COMMENT_FLAG_REPORTER_THRESHOLD` separate reports take it down on their own
+ * (`comment.listener.ts`). Turn it off per deployment for a site that would rather read
+ * everything first; nothing else changes, the queue simply fills again.
+ *
+ * `comment` is an additional feature, so the switch lives with the code it governs rather than in
+ * `settings.config.ts`, which every project started from this boilerplate carries. Read at call
+ * time rather than frozen into a module-level const: a test can set the variable and get the other
+ * branch without reloading the module.
+ */
+export const isCommentAutoApproved = (): boolean =>
+	process.env.COMMENT_AUTO_APPROVE !== 'false';
+
 /** The columns a public read returns. The author's address hash is never among them. */
 const PUBLIC_COLUMNS: string[] = [
 	'comment.id',
@@ -56,15 +87,26 @@ export class CommentService {
 	/**
 	 * @description Used in `create` method from the public controller
 	 *
-	 * Lands as `pending` whoever writes it — the column default — so nothing reaches a reader
-	 * before a moderator has seen it.
+	 * A **member's** comment lands `approved` — public straight away — unless `isCommentAutoApproved()`
+	 * is turned off for the deployment. Moderation is reactive for them: a comment can still be
+	 * rejected, and three separate reports take one down on their own (`comment.listener.ts`).
 	 *
-	 * The parent's `reply_count` does **not** move here, and that is the whole reason moderation
-	 * exists: the counter is read publicly, next to a list that shows approved replies only, so
-	 * counting a pending one would advertise a reply nobody can open. It moves in `updateStatus`
-	 * instead, when the reply actually becomes visible.
+	 * A **guest's** always lands `pending` and waits for a moderator, whatever the setting says.
+	 * An account is the only thing standing behind what a comment claims: it can be suspended, it
+	 * carries an address somebody confirmed, and the reports that flag a comment count identifiable
+	 * reporters for the same reason. A guest is an address hash and a name they typed, so the one
+	 * thing that could be undone afterwards — publishing it — is not done first.
 	 *
-	 * Nothing is cached away either, for the same reason: a pending comment changes no public read.
+	 * Both consequences of being visible are handled here rather than left to `updateStatus`,
+	 * which is where they used to happen:
+	 *
+	 * - the parent's `reply_count` moves in the same transaction as the insert, because the
+	 *   counter is read publicly next to a list of approved replies — a visible reply the counter
+	 *   does not know about is as wrong as a pending one it does;
+	 * - the thread cache is dropped, because a public read now returns something different.
+	 *
+	 * Neither happens for a `pending` comment: it changes no public read, and counting it would
+	 * advertise a reply nobody can open. `updateStatus` still owns both for the moderated path.
 	 */
 	public async create(
 		data: ValidatorOutput<CommentValidator, 'create'>,
@@ -83,23 +125,68 @@ export class CommentService {
 
 		const parent = await this.resolveParent(data);
 
-		return this.repository.save(
-			this.repository.create({
-				entity_type: data.entity_type,
-				entity_id: data.entity_id,
-				type: data.type ?? CommentTypeEnum.COMMENT,
-				content: data.content,
-				parent_id: parent?.id ?? null,
-				user_id: author.user_id,
-				user_ip_hash: author.user_ip_hash,
-				// A member is identified by their account; the guest fields describe somebody
-				// who has none, so carrying both would leave two names on one comment.
-				guest_name: isGuest ? data.guest_name : null,
-				guest_email: isGuest ? data.guest_email : null,
-				guest_website: isGuest ? data.guest_website : null,
-				is_staff: author.is_staff,
-			}),
-		);
+		const isPublic = isCommentAutoApproved() && !isGuest;
+
+		const entry = await dataSource.transaction(async (manager) => {
+			const repository = manager.getRepository(CommentEntity);
+
+			const stored = await repository.save(
+				repository.create({
+					entity_type: data.entity_type,
+					entity_id: data.entity_id,
+					type: data.type ?? CommentTypeEnum.COMMENT,
+					content: data.content,
+					parent_id: parent?.id ?? null,
+					status: isPublic
+						? CommentStatusEnum.APPROVED
+						: CommentStatusEnum.PENDING,
+					user_id: author.user_id,
+					user_ip_hash: author.user_ip_hash,
+					// A member is identified by their account; the guest fields describe
+					// somebody who has none, so carrying both would leave two names on one
+					// comment.
+					guest_name: isGuest ? data.guest_name : null,
+					guest_email: isGuest ? data.guest_email : null,
+					guest_website: isGuest ? data.guest_website : null,
+					is_staff: author.is_staff,
+				}),
+			);
+
+			// The moderation trail stays empty: nobody decided this, the setting did — the same
+			// reason `moderated_by` is null for the automatic flag.
+			if (isPublic && stored.parent_id) {
+				await repository.increment(
+					{ id: stored.parent_id },
+					'reply_count',
+					1,
+				);
+			}
+
+			return stored;
+		});
+
+		if (isPublic) {
+			this.cleanThreadCache(entry.entity_type, entry.entity_id);
+		}
+
+		/*
+		 * Announced on submission rather than on approval, unlike the notification itself: the
+		 * subscription is about the author following the discussion they just wrote in, which is
+		 * their intent whatever a moderator later decides about the comment. A rejected comment
+		 * still leaves somebody who cared enough to write it.
+		 */
+		eventEmitter.emit('commentPosted', {
+			comment_id: entry.id,
+			entity_type: entry.entity_type,
+			entity_id: entry.entity_id,
+			// `res.locals.language` as the request-context middleware copied it. Read here
+			// rather than passed down from the controller: it is ambient request state, not an
+			// input to writing a comment, and the async store is where this app keeps it.
+			language:
+				requestContext.getStore()?.language ?? Configuration.language(),
+		});
+
+		return entry;
 	}
 
 	/**
@@ -371,6 +458,84 @@ export class CommentService {
 		this.cleanThreadCache(saved.entity_type, saved.entity_id);
 
 		return saved;
+	}
+
+	/**
+	 * Takes an approved comment out of the thread once enough separate readers have reported it,
+	 * pending a moderator's decision.
+	 *
+	 * Only from `approved`: every other status is either already off the thread or a decision
+	 * somebody took, and `STATUS_TRANSITIONS` refuses the move anyway — checking here keeps a
+	 * background sweep from throwing over a comment a moderator has just rejected. A comment
+	 * already `flagged` is likewise left alone: the reports keep arriving, and re-flagging it
+	 * would rewrite `moderated_at` on every one of them.
+	 *
+	 * `moderatedBy` is null because nobody decided this — the threshold did.
+	 */
+	public async flagWhenReported(
+		id: number,
+		reporters: number,
+	): Promise<void> {
+		if (reporters < COMMENT_FLAG_REPORTER_THRESHOLD) {
+			return;
+		}
+
+		const entry = await this.repository
+			.createQuery()
+			.filterById(id)
+			.first();
+
+		if (!entry || entry.status !== CommentStatusEnum.APPROVED) {
+			return;
+		}
+
+		await this.updateStatus(
+			entry,
+			CommentStatusEnum.FLAGGED,
+			null,
+			lang('comment.moderation.flagged_by_reports', {
+				reporters: String(reporters),
+			}),
+		);
+	}
+
+	/**
+	 * Marks a batch as answered for by the subscriber digest.
+	 *
+	 * A bare `update` rather than a save per row: nothing about this is a moderation decision, so
+	 * there is no transition to validate, no cache to drop — the public read does not show
+	 * `notified_at` — and no audit entry worth writing. It is the run's own bookkeeping.
+	 */
+	public async markNotified(ids: number[]): Promise<void> {
+		if (!ids.length) {
+			return;
+		}
+
+		await this.repository.update(ids, {
+			notified_at: createCurrentDate(),
+		});
+	}
+
+	/**
+	 * Where one comment lives, for a permalink to resolve against — the target it hangs from and
+	 * the comment it answers, which is what addresses it inside a thread.
+	 *
+	 * Approved only, and it is `firstOrFail`, so a comment that was rejected or removed after the
+	 * link went out answers 404 rather than sending a reader to a page where it is not. The body
+	 * is not returned: this answers *where*, and whoever follows the link reads the thread itself.
+	 */
+	public findPublicLocation(id: number): Promise<CommentEntity> {
+		return this.repository
+			.createQuery()
+			.select([
+				'comment.id',
+				'comment.entity_type',
+				'comment.entity_id',
+				'comment.parent_id',
+			])
+			.filterById(id)
+			.filterBy('comment.status', CommentStatusEnum.APPROVED)
+			.firstOrFail() as Promise<CommentEntity>;
 	}
 
 	public findById(id: number): Promise<CommentEntity> {

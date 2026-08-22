@@ -45,6 +45,7 @@ context yet. Read the relevant one *before* proposing an approach in that area, 
 |---|---|---|
 | `api.md` | Express app setup, route registration, controller structure, response envelope | `*.routes.ts`, `*.controller.ts`, `app.ts`, output/param middleware |
 | `auth.md` | Token model, `res.locals.auth`, policy layer, passwords, rate limiting, social login | `account`/`user-permission` features, `*.policy.ts`, auth middleware |
+| `comment.md` | Comment status model, guest vs member writes, automatic flagging at 3 distinct reporters, thread cache | `src/features/comment/**`, `src/features/complaint/**`, `event.config.ts` |
 | `database.md` | Entities, repository/query layer, transactions, migrations, seeds | `*.entity.ts`, `*.repository.ts`, `*.service.ts`, `*.subscriber.ts`, migrations |
 | `error-handling.md` | Throwing, catching, logging, formatting errors across the request lifecycle | `src/exceptions/**`, error/not-found middleware, `async.handler.ts` |
 | `product.md` | The product / variant / option / bundle split, availability windows, order-line arithmetic | `src/features/product/**`, `order-product.entity.ts`, `order-shipping/**` |

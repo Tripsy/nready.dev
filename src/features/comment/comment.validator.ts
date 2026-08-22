@@ -141,6 +141,11 @@ export class CommentValidator extends BaseValidator<typeof validatorMessages> {
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 	});
 
+	/** One comment by id, for a link that has to find its way back to it. */
+	readonly publicRead = z.object({
+		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+	});
+
 	/**
 	 * The thread as a visitor sees it. The target comes from the path, so it sits in `querySchema`
 	 * (top level) rather than in `filter`; `parent_id` picks the level being read — omitted means

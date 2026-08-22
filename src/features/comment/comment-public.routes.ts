@@ -35,6 +35,16 @@ export default async () => {
 				method: 'delete',
 				handlers: [validateParamsWhenId('id')],
 			},
+			/*
+			 * One segment, so it never collides with `find` below (`/:entity_type/:entity_id`,
+			 * two segments) — a permalink resolver asks for a comment by id the same way the
+			 * edit and delete routes address one.
+			 */
+			read: {
+				path: '/:id',
+				method: 'get',
+				handlers: [validateParamsWhenId('id')],
+			},
 			find: {
 				path: '/:entity_type/:entity_id',
 				method: 'get',

@@ -112,6 +112,50 @@ target redirects the write.
 
 `hashClientIp` returning null is a 400 (`error.ip_unresolved`), never a fallback hash.
 
+## 4b. Rows pointing at your target — announce, and answer for your own
+
+Two rules, and the second is the one that gets forgotten.
+
+**If the feature hard-deletes rows, it must announce them.** Emit `entityRemoved`
+(`{ entity_type: Entity.NAME, entity_ids }`) after the delete. `rating`, `complaint` and `comment`
+all store rows against a polymorphic target with no foreign key behind it, so nothing else can
+clean up after you — and a soft delete is *not* announced, because the row can come back.
+
+**If the feature accepts a polymorphic target, it must listen.** `<feature>.listener.ts`, one per
+feature, registered by filename — see `rating.listener.ts` and `complaint.listener.ts`, which are
+the same twelve lines with a different service.
+
+Adding a **new commentable target** (a review, a product, anything that joins
+`CommentEntityTypeEnum`) means the comment side is already handled — `comment.listener.ts` clears
+the comments *and* the subscriptions on `entityRemoved`. What the new feature owes is the emit:
+hard-delete a commentable row without announcing it and you leave an orphaned discussion, live
+unsubscribe tokens for a page that no longer exists, and complaints queued against comments nobody
+can read.
+
+The direction is deliberate and must not be inverted: the feature owning the target knows nothing
+about who stores rows against it. It announces what left; each feature holding something answers
+for its own. A target added later needs no change in `rating`/`complaint`/`comment` beyond its enum
+entry.
+
+```typescript
+eventEmitter.on('entityRemoved', (payload: EntityRemovedEventPayload) => {
+	if (!isMyTarget(payload.entity_type)) {
+		return;
+	}
+
+	runInBackground(
+		myService.deleteByTargets(payload.entity_type, payload.entity_ids),
+		`Failed to remove … for ${payload.entity_type}(s) ${payload.entity_ids.join(", ")}`,
+	);
+});
+```
+
+`runInBackground`, never `await` inside the request and never a bare `void`: a failed cleanup logs
+instead of rejecting into `server.ts`'s `unhandledRejection` handler, which would shut the API down.
+The predicate is a type guard, so the check that decides to act is the one that proves the type.
+
+See `.claude/rules/comment.md` for what the comment/complaint side does with these events.
+
 ## 5. Migration
 
 `pnpm run migration:generate ./src/database/migrations/<feature>` inside the container, then **read
@@ -146,4 +190,8 @@ Run from inside the container (`docker exec $DOCKER_CONTAINER sh -c "cd /var/www
   follow: the `src/services/*.service.ts`, `src/models/permission.model.ts`
   (`PermissionEntityType`), `src/models/log-history.model.ts` (the backend *table* name), and the
   dashboard page, which `/add-dashboard-feature <feature>` builds there.
+- **If the feature became a comment target** (it joined `CommentEntityTypeEnum`), the frontend also
+  owes a resolver in `src/config/comment-target.config.ts` — the map that turns a comment's target
+  into a page URL for the permalinks in notification emails. Without it the discussion works and
+  every emailed link to it 404s, silently. `../nready-ui/.claude/rules/comment.md` §7 has the list.
 - Anything deliberately left out, and why.

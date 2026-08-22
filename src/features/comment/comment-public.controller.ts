@@ -1,7 +1,9 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/message.setup';
 import { BadRequestError } from '@/exceptions';
-import CommentEntity from '@/features/comment/comment.entity';
+import CommentEntity, {
+	CommentStatusEnum,
+} from '@/features/comment/comment.entity';
 import {
 	type CommentPolicy,
 	commentPolicy,
@@ -57,6 +59,29 @@ class CommentPublicController extends BaseController {
 		};
 	}
 
+	/**
+	 * Where a comment lives, so a link in an email can find its way to it. Deliberately thin: the
+	 * target and the parent, which is everything the frontend needs to build the address of the
+	 * page the comment is on and the anchor inside it.
+	 *
+	 * Not cached — it is one row and it is read once per followed link — and approved-only, which
+	 * `findPublicLocation` enforces.
+	 */
+	public read = asyncHandler(async (req: Request, res: Response) => {
+		const data = this.validate(this.validator.publicRead, req.params, res);
+
+		const entry = await this.commentService.findPublicLocation(data.id);
+
+		res.locals.output.data({
+			id: entry.id,
+			entity_type: entry.entity_type,
+			entity_id: entry.entity_id,
+			parent_id: entry.parent_id ?? null,
+		});
+
+		res.json(res.locals.output);
+	});
+
 	public create = asyncHandler(async (req: Request, res: Response) => {
 		const data = this.validate(this.validator.create, req.body, res);
 
@@ -66,7 +91,19 @@ class CommentPublicController extends BaseController {
 		);
 
 		res.locals.output.data(this.commentService.toPublicView(entry));
-		res.locals.output.message(lang('comment.success.create'));
+		/*
+		 * The message has to match what actually happened: telling somebody their comment awaits
+		 * moderation when it is already on the page — or the reverse — is the one thing this
+		 * response is for. `status` is on the returned row, so it is read from there rather than
+		 * from the setting a second time.
+		 */
+		res.locals.output.message(
+			lang(
+				entry.status === CommentStatusEnum.APPROVED
+					? 'comment.success.create_public'
+					: 'comment.success.create',
+			),
+		);
 
 		res.status(201).json(res.locals.output);
 	});

@@ -110,33 +110,41 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 ### Core features
 
 - [x] account: register, login, removeToken, logout, passwordRecover, passwordRecoverChange, passwordUpdate, emailConfirm, emailUpdate, me, sessions, edit, delete
-- [x] cron-history: read, delete, find
-- [x] log-data: read, delete, find
-- [x] log-history: read, delete, find
-- [x] mail-queue: read, delete, find
-- [x] permission (create, read, update, delete, restore, find
-- [x] template (create, read, update, delete, restore, find)
-- [x] user (create, read, update, delete, restore, find, statusUpdate)
-- [x] user-permission (create, delete, restore, find)
+- [x] cron-history
+- [x] log-data
+- [x] log-history
+- [x] mail-queue
+- [x] permission
+- [x] template
+- [x] user
+- [x] user-permission
 
 ### Modular features
 
-- [ ] article: 
-- [x] brand: create, read, update, delete, restore, find, statusUpdate, orderUpdate
-- [x] carrier: create, read, update, delete, restore, find
-- [x] cash-flow: create, read, update, delete, find, statusUpdate
-- [x] category: create, read, update, delete, restore, find, statusUpdate
-- [x] client: create, read, update, delete, restore, find, statusUpdate
-- [x] client_address: create, read, update, delete, restore, find
-- [x] discount: create, read, update, delete, restore, find
-- [x] image: create, read, update, delete, restore, find, statusUpdate, orderUpdate
-- [ ] invoice:
-- [ ] order:
-- [ ] order-shipping:
-- [x] place: create, read, update, delete, restore, find
-- [ ] product:
-- [ ] subscription:
-- [x] term: create, read, update, delete, restore, find
+- [x] address
+- [x] article 
+- [x] brand
+- [x] carrier
+- [x] cash-flow
+- [x] category
+- [x] client
+- [x] comment
+- [x] complaint
+- [x] discount
+- [x] document-series
+- [ ] grn
+- [x] image
+- [ ] invoice
+- [ ] order
+- [ ] order-shipping
+- [x] place
+- [ ] product
+- [x] rating
+- [ ] review
+- [ ] subscription
+- [x] term
+- [x] vendor
+- [ ] warehouse
 
 # 🛠 Setup
 
@@ -294,23 +302,24 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 │   ├── features/          # Feature-based modules
 │   │   ├── user/
 │   │   │   ├── cron-jobs/
-│   │   │   │   └── pending-account-reminder.cron.ts
+│   │   │   ├── database/
+│   │   │   │   └── user.seed.ts
 │   │   │   ├── locales/
 │   │   │   │   └── en.json
 │   │   │   ├── tests/
 │   │   │   │   └── user-controller.test.ts
 │   │   │   │   └── user-service.test.ts
 │   │   │   │   └── user-validator.test.ts
+│   │   │   └── manifest.json 
 │   │   │   ├── user.controller.ts
 │   │   │   ├── user.entity.ts
 │   │   │   ├── user.mock.ts
+│   │   │   ├── user.policy.ts
 │   │   │   ├── user.repository.ts
 │   │   │   ├── user.routes.ts
 │   │   │   ├── user.service.ts
 │   │   │   ├── user.subscriber.ts
 │   │   │   └── user.validator.ts
-│   │   │   └── user.seed.ts 
-│   │   │   └── manifest.json 
 │   │   └── ...            # Other features (invoice, category, etc.)
 │   ├── helpers/           # Utilities (date, string, object, etc.)
 │   ├── middleware/        # Custom Express middlewares
@@ -322,6 +331,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 │   │   ├── decorators/    
 │   │   ├── listeners/     # Core event listeners
 │   │   ├── locales/       # Shared language
+│   │   ├── transformers/  # Shared transformers
 │   │   ├── types/         # Shared types
 │   ├── templates/         # Email layout templates
 │   └── tests/             # Jest & Supertest tests
@@ -330,12 +340,13 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 │   └── bootstrap.ts          
 │   └── server.ts          
 ├── .env
+├── .gitignore
 ├── biome.json
 ├── docker-compose.yml
+├── jest.config.js
 ├── package.json
 ├── pnpm-lock.yaml
 ├── tsconfig.build.json
-├── jest.config.js
 └── tsconfig.json
 ```
 
@@ -370,29 +381,15 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - warehouse
     - reviews 
 2. Add settings per article: allow rating, allow comments, allow complaints - based on  ENV variable (which represent the default value)
-3. Implement `comment_subscription` — the entity and its table ship with the `comment` feature,
-   but nothing reads or writes them yet. What it takes:
-    - Repository + service, and a subscriber row created whenever someone comments, member or
-      guest. `user_name` and `user_email` are required either way: they are what the notification
-      is addressed to.
-    - Lower-case `user_email` on write. `UQ_comment_subscription_user` compares it byte-for-byte
-      and a decorator cannot declare the `lower(user_email)` expression index that would hold the
-      rule in the schema.
-    - Generate `unsubscribe_token` on create. It is the only credential a guest subscriber has —
-      they hold no session — so it reaches them through the notification email and nowhere else.
-    - Public endpoints: unsubscribe by token, and change `notification_type`. `unsubscribed` is a
-      state, not an absent row: deleting it would re-subscribe them with their next comment.
-    - Fan-out on **approval**, not on submission — a pending comment is not public yet, so
-      notifying about it leaks what a moderator has not passed. `all` notifies every subscriber of
-      the target; `replies_to_me` only the author of the comment being answered.
-    - The mail itself: a template (`template.seed.ts`), a `comment-email.service.ts` alongside
-      `account-email.service.ts`, and the send enqueued through `email.queue.ts`. Never awaited
-      inline in the request — and never `void`ed either; see `runInBackground`.
-    - Frontend (`../nready-ui`): a "notify me of replies" checkbox on the comment form, and the
-      unsubscribe landing page the emailed link points at.
-      - 
- 5. Comment edit, remove, moderation directly in front;     
-
+3. Comment edit, remove, moderation directly in front;    
+4. Create cron to purge old comment-subscription (older than 60 days should do the trick) 
+5. `stats` feature on the backend — the dashboard home widgets (expenses, revenues,
+   recent activity) call `/stats/*`, which nready-api does not serve yet
+    - show recent activity - log history
+    - show a resume of previous day (new entries): users, addresses, clients
+    - show expenses and revenues as in star-ui
+    - show errors (log data, mail queue, cron-history) from last 24 hours
+    - other stats: user activity in last 24 hours (if is relevant)
 
 # 📌 TODO - EXTRA
 

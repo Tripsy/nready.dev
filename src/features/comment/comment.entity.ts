@@ -248,6 +248,23 @@ export default class CommentEntity {
 	})
 	moderation_reason?: string | null;
 
+	/**
+	 * When this comment went out in a subscriber digest, so the four-hourly run does not send it
+	 * twice. Null means "not yet announced", which is what the run selects on — and what a comment
+	 * approved but never notified stays until it is.
+	 *
+	 * Stamped whether or not anybody was notified: a target with no subscribers still has to leave
+	 * the queue, or every run re-scans it forever.
+	 */
+	@Column({
+		type: 'timestamp',
+		nullable: true,
+	})
+	@Index('IDX_comment_notify_pending', {
+		where: `status = 'approved' AND notified_at IS NULL`,
+	})
+	notified_at?: Date | null;
+
 	// RELATIONS
 	@ManyToOne('CommentEntity', {
 		onDelete: 'CASCADE',
