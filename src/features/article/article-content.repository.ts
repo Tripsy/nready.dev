@@ -39,33 +39,18 @@ export const ArticleContentRepository = dataSource
 						brief: content.brief,
 						content: content.content,
 						author: content.author,
-						content_blocks: content.content_blocks,
 						meta: content.meta,
 					})),
 				)
-				/*
-				 * `indexPredicate` has to mirror the partial unique index exactly —
-				 * Postgres only infers a partial index as the conflict arbiter when the
-				 * statement repeats its predicate, and otherwise rejects the upsert.
-				 */
 				.orUpdate(
-					[
-						'slug',
-						'title',
-						'brief',
-						'content',
-						'author',
-						'content_blocks',
-						'meta',
-					],
+					['slug', 'title', 'brief', 'content', 'author', 'meta'],
 					['article_id', 'language'],
-					{ indexPredicate: 'deleted_at IS NULL' },
 				)
 				.execute();
 		},
 
 		/**
-		 * The (slug, language) unique index is global, not per article, so a duplicate is a
+		 * The (slug, language) unique index is global, so a duplicate is a
 		 * conflict with another article rather than a re-save of this one.
 		 */
 		async findConflictingSlug(
@@ -78,16 +63,19 @@ export const ArticleContentRepository = dataSource
 
 			// Filtered on slug alone and paired up in memory: the slug carries the
 			// selectivity, and one index scan beats a per-language OR chain
+			// Columns are left unprefixed so the query builder resolves them against
+			// its own alias — `article_content`, not the `content` join alias the
+			// article queries use
 			const query = this.createQuery()
-				.select(['content.id', 'content.slug', 'content.language'])
+				.select(['id', 'slug', 'language'])
 				.filterBy(
-					'content.slug',
+					'slug',
 					contents.map((content) => content.slug),
 					'IN',
 				);
 
 			if (article_id) {
-				query.filterBy('content.article_id', article_id, '!=');
+				query.filterBy('article_id', article_id, '!=');
 			}
 
 			const candidates = await query.all();

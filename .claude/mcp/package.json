@@ -1,9 +1,9 @@
 {
-	"name": "nready-mcp",
+	"name": "nready-api-mcp",
 	"version": "1.0.0",
 	"private": true,
 	"type": "module",
-	"description": "Local MCP servers (Postgres, Redis) for Claude Code access to nready infrastructure.",
+	"description": "Local MCP servers (Postgres, Redis) for Claude Code access to nready-api infrastructure.",
 	"scripts": {
 		"postgres": "tsx src/postgres/index.ts",
 		"redis": "tsx src/redis/index.ts",

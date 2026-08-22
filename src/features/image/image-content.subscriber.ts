@@ -13,7 +13,6 @@ export class ImageContentSubscriber extends SubscriberAbstract<ImageContentEntit
 			afterInsert: true,
 			afterUpdate: true,
 			beforeRemove: true,
-			afterSoftRemove: true,
 		};
 	}
 }

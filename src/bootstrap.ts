@@ -1,3 +1,4 @@
+import { setupFeatureBootstrap } from '@/config/bootstrap.setup';
 import { initQueues } from '@/config/init-queue.config';
 import { setupListeners } from '@/config/listeners.setup';
 import { initializeMessages } from '@/config/message.setup';
@@ -30,6 +31,8 @@ export async function bootstrap(): Promise<void> {
 
 	if (!Configuration.isEnvironment('test')) {
 		await initDatabase();
+		// Before the listeners, so a registry is populated before anything can consult it
+		await setupFeatureBootstrap();
 		await setupListeners();
 		await initQueues();
 

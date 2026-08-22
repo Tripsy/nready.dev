@@ -1,13 +1,20 @@
+import { discountTargetSeed } from '@/database/seed/discount-target.seed';
 import type { SeedDefinition } from '@/database/seed/seed.helper';
 import { bootstrapSeeds } from '@/database/seed/seed.runner';
 import { addressSeed } from '@/features/address/database/address.seed';
 import { articleSeed } from '@/features/article/database/article.seed';
 import { brandSeed } from '@/features/brand/database/brand.seed';
+import { carrierSeed } from '@/features/carrier/database/carrier.seed';
 import { cashFlowSeed } from '@/features/cash-flow/database/cash-flow.seed';
 import { categorySeed } from '@/features/category/database/category.seed';
 import { clientSeed } from '@/features/client/database/client.seed';
+import { commentSeed } from '@/features/comment/database/comment.seed';
+import { complaintSeed } from '@/features/complaint/database/complaint.seed';
+import { discountSeed } from '@/features/discount/database/discount.seed';
 import { documentSeriesSeed } from '@/features/document-series/database/document-series.seed';
+import { imageSeed } from '@/features/image/database/image.seed';
 import { placeSeed } from '@/features/place/database/place.seed';
+import { ratingSeed } from '@/features/rating/database/rating.seed';
 import { termSeed } from '@/features/term/database/term.seed';
 import { userSeed } from '@/features/user/database/user.seed';
 import { vendorSeed } from '@/features/vendor/database/vendor.seed';
@@ -27,14 +34,26 @@ const seeds: readonly SeedDefinition[] = [
 	placeSeed,
 	addressSeed,
 	brandSeed,
+	carrierSeed,
 	categorySeed,
 	clientSeed,
 	vendorSeed,
 	userSeed,
 	cashFlowSeed,
 	termSeed,
+	discountSeed,
+	// Reads discount ids alongside client, category and brand ids
+	discountTargetSeed,
 	// Reads category, term and user ids
 	articleSeed,
+	// Reads article ids; the files it names are fetched separately (see the seed)
+	imageSeed,
+	// Reads article and user ids
+	ratingSeed,
+	// Reads article and user ids; replies are inserted after the roots they hang from
+	commentSeed,
+	// Reads article, comment and user ids
+	complaintSeed,
 ];
 
 function resolveSeeds(

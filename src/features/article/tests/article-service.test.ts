@@ -34,6 +34,9 @@ describe('ArticleService', () => {
 		jest.restoreAllMocks();
 	});
 
+	/** The signed-in account `create` stamps onto `author_id`. */
+	const AUTHOR_ID = 7;
+
 	const mockArticle = createMockRepository<ArticleEntity, ArticleQuery>();
 	const serviceArticle = new ArticleService(mockArticle.repository);
 
@@ -64,7 +67,7 @@ describe('ArticleService', () => {
 
 		stubRelationWrites();
 
-		const result = await serviceArticle.create(createData);
+		const result = await serviceArticle.create(createData, AUTHOR_ID);
 
 		expect(transaction).toHaveBeenCalled();
 
@@ -94,7 +97,7 @@ describe('ArticleService', () => {
 		).mockResolvedValue({ id: 99 } as never);
 
 		await expect(
-			serviceArticle.create(articleOutputPayloads.create),
+			serviceArticle.create(articleOutputPayloads.create, AUTHOR_ID),
 		).rejects.toMatchObject({ statusCode: 409 });
 	});
 

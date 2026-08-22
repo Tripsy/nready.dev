@@ -1,7 +1,14 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
+import {
+	Column,
+	CreateDateColumn,
+	Entity,
+	Index,
+	JoinColumn,
+	ManyToOne,
+	PrimaryGeneratedColumn,
+	UpdateDateColumn,
+} from 'typeorm';
 import type PlaceEntity from '@/features/place/place.entity';
-import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
-import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
 
 export type PlaceContentType = {
 	language: string;
@@ -11,19 +18,31 @@ export type PlaceContentType = {
 
 const ENTITY_TABLE_NAME = 'place_content';
 
+/**
+ * Deliberately not `EntityAbstract`: this table has no `deleted_at`.
+ * A translation is never deleted on its own — the only write is `saveContent`'s upsert — and
+ * the row dies with its place through the FK cascade.
+ */
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',
 	comment: 'Language-specific content for places',
 })
-@SoftDeleteIndex(ENTITY_TABLE_NAME)
 @Index('IDX_place_content_unique_per_lang', ['place_id', 'language'], {
 	unique: true,
-	where: 'deleted_at IS NULL',
 })
-export default class PlaceContentEntity extends EntityAbstract {
+export default class PlaceContentEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
 	static readonly HAS_CACHE: boolean = true;
+
+	@PrimaryGeneratedColumn({ type: 'int' })
+	id!: number;
+
+	@CreateDateColumn({ type: 'timestamp', nullable: false })
+	created_at!: Date;
+
+	@UpdateDateColumn({ type: 'timestamp', nullable: true })
+	updated_at!: Date | null;
 
 	@Column('int', { nullable: false })
 	place_id!: number;

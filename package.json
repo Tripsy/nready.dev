@@ -1,5 +1,5 @@
 {
-	"name": "sample-node-api",
+	"name": "nready-api",
 	"version": "1.0.0",
 	"description": "Sample API",
 	"keywords": [
@@ -8,10 +8,10 @@
 		"typescript"
 	],
 	"author": "Gabriel David",
-	"license": "GNU",
-	"homepage": "https://github.com/Tripsy/nready.dev#readme",
+	"license": "MIT",
+	"homepage": "https://github.com/Tripsy/nready-api#readme",
 	"bugs": {
-		"url": "https://github.com/Tripsy/nready.dev/issues"
+		"url": "https://github.com/Tripsy/nready-api/issues"
 	},
 	"main": "server.js",
 	"type": "module",

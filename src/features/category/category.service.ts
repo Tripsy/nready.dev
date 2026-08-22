@@ -3,13 +3,20 @@ import dataSource from '@/config/data-source.config';
 import { lang } from '@/config/message.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
 import CategoryEntity, {
+	CATEGORY_MAX_DEPTH,
 	type CategoryStatus,
 	CategoryStatusEnum,
 	type CategoryType,
 	STATUS_TRANSITIONS,
 } from '@/features/category/category.entity';
-import { getCategoryRepository } from '@/features/category/category.repository';
-import type { CategoryValidator } from '@/features/category/category.validator';
+import {
+	type CategoryQuery,
+	getCategoryRepository,
+} from '@/features/category/category.repository';
+import {
+	type CategoryValidator,
+	OrderByEnum,
+} from '@/features/category/category.validator';
 import CategoryContentRepository from '@/features/category/category-content.repository';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
@@ -17,6 +24,19 @@ import {
 	cleanEntityCache,
 } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
+
+/**
+ * `CASE` mapping each category type to its depth ceiling, for the `can_parent` filter.
+ *
+ * Built from `CATEGORY_MAX_DEPTH` rather than written out, so adding a type cannot leave the
+ * filter silently applying the wrong limit. The values are this module's own constants, never
+ * client input, which is what makes the interpolation safe.
+ */
+const MAX_DEPTH_SQL_CASE = `CASE category.type ${Object.entries(
+	CATEGORY_MAX_DEPTH,
+)
+	.map(([type, maxDepth]) => `WHEN '${type}' THEN ${maxDepth}`)
+	.join(' ')} END`;
 
 export class CategoryService {
 	constructor(
@@ -56,6 +76,8 @@ export class CategoryService {
 						);
 					}
 
+					await this.assertDepthFits(data.type, parent, 1);
+
 					entry.parent = parent;
 				} else {
 					throw new CustomError(
@@ -80,13 +102,30 @@ export class CategoryService {
 
 	/**
 	 * @description Used in `update` method from controller; `data` is filtered by `paramsUpdateList` - which is declared in validator
+	 *
+	 * `entry` must carry its `parent` relation — load it with `findByIdWithParent`. The relation
+	 * is not eager, so an entry loaded without it reads as a root: a move would compare against
+	 * the wrong current parent and a detach would find nothing to clear.
 	 */
 	public async updateDataWithContent(
 		entry: CategoryEntity,
 		data: ValidatorOutput<CategoryValidator, 'update'>,
 	) {
+		const currentParentId = entry.parent?.id ?? null;
+
+		/*
+		 * Key presence is what marks an intentional re-parent, not the value: the validator's
+		 * `preprocessOptional` folds a client's `null` onto the configured empty value
+		 * (`undefined` on the backend), so the only signal left is that `parent_id` was sent at
+		 * all. A falsy value therefore means "clear the parent"; `validateId` rejects `0`, so no
+		 * real id can be read as a detach.
+		 */
+		const newParentId =
+			'parent_id' in data ? (data.parent_id ?? null) : currentParentId;
+		const hasMoved = newParentId !== currentParentId;
+
 		if (data.parent_id) {
-			if (entry.parent && entry.parent.id === data.parent_id) {
+			if (currentParentId === data.parent_id) {
 				throw new CustomError(400, lang('category.error.parent_same'));
 			}
 
@@ -124,56 +163,59 @@ export class CategoryService {
 					}),
 				);
 			}
+		}
 
-			const treeRepository =
-				RepositoryAbstract.getTreeRepository(CategoryEntity);
-			const descendants = await treeRepository.findDescendants(entry);
+		/*
+		 * Loaded once for two uses: the cycle guard below, and the cache clean after the
+		 * commit — a move re-roots the whole subtree, so every descendant's `with_ancestors`
+		 * read is stale. `findDescendants` includes `entry` itself.
+		 */
+		const descendants = hasMoved
+			? await RepositoryAbstract.getTreeRepository(
+					CategoryEntity,
+				).findDescendants(entry)
+			: [];
 
-			if (descendants.some((d) => d.id === data.parent_id)) {
-				throw new CustomError(
-					400,
-					lang('category.error.parent_descendant'),
-				);
-			}
+		if (
+			data.parent_id &&
+			descendants.some((d) => d.id === data.parent_id)
+		) {
+			throw new CustomError(
+				400,
+				lang('category.error.parent_descendant'),
+			);
+		}
+
+		/*
+		 * Checked after the cycle guard, so moving a category under its own descendant is
+		 * still reported as that rather than as a depth failure. What has to fit is the whole
+		 * subtree, not the moved node — a two-level branch needs two levels of room.
+		 */
+		if (data.parent_id) {
+			await this.assertDepthFits(
+				entry.type,
+				await this.findById(data.parent_id, true),
+				await this.getSubtreeHeight(entry),
+			);
 		}
 
 		const updatedEntry = await dataSource.transaction(async (manager) => {
-			if (entry.parent && 'parent_id' in data) {
-				let flagUpdate = false;
+			if (hasMoved) {
+				const repository = manager.getRepository(CategoryEntity); // We use the manager -> `getCategoryRepository` is not bound to the transaction
+
+				entry.parent = newParentId
+					? ({ id: newParentId } as CategoryEntity)
+					: null;
 
 				/*
-				 * Key presence is what marks an intentional detach, not the value: the
-				 * validator's `preprocessOptional` folds a client's `null` onto the
-				 * configured empty value (`undefined` on the backend), so the only signal
-				 * left is that `parent_id` was sent at all — which the guard above
-				 * establishes. A falsy value here therefore means "clear the parent";
-				 * `validateId` rejects `0`, so no real id can reach this branch.
+				 * Position is meaningful only among siblings, and the move lands the
+				 * category in a group it was never ordered against — carrying the old
+				 * value over would place it arbitrarily. Zero puts it at the end until
+				 * the group is reordered.
 				 */
-				if (!data.parent_id) {
-					entry.parent = null;
+				entry.sort_order = 0;
 
-					flagUpdate = true;
-				} else if (entry.parent.id !== data.parent_id) {
-					entry.parent = {
-						id: data.parent_id,
-					} as CategoryEntity;
-
-					flagUpdate = true;
-				}
-
-				if (flagUpdate) {
-					const repository = manager.getRepository(CategoryEntity); // We use the manager -> `getCategoryRepository` is not bound to the transaction
-
-					/*
-					 * Position is meaningful only among siblings, and the move lands the
-					 * category in a group it was never ordered against — carrying the old
-					 * value over would place it arbitrarily. Zero puts it at the end until
-					 * the group is reordered.
-					 */
-					entry.sort_order = 0;
-
-					await repository.save(entry);
-				}
+				await repository.save(entry);
 			}
 
 			if (data.contents) {
@@ -192,6 +234,28 @@ export class CategoryService {
 		// have no subscriber invalidating the category's keys, and a contents-only update
 		// never saves the category row either. See `cleanEntityCache`
 		cleanEntityCache(CategoryEntity, updatedEntry.id);
+
+		if (hasMoved) {
+			/*
+			 * A move invalidates rows that were never written, so no subscriber speaks for
+			 * them: both sibling groups cache the moved row under `with_children`, and the
+			 * subtree caches the old chain under `with_ancestors`. Each id is one Redis
+			 * SCAN, which is why the set is built only for an actual move.
+			 */
+			const staleIds = new Set<number>(descendants.map((d) => d.id));
+
+			for (const parentId of [currentParentId, newParentId]) {
+				if (parentId) {
+					staleIds.add(parentId);
+				}
+			}
+
+			staleIds.delete(updatedEntry.id); // Already cleaned above
+
+			for (const staleId of staleIds) {
+				cleanEntityCache(CategoryEntity, staleId);
+			}
+		}
 
 		return updatedEntry;
 	}
@@ -374,12 +438,117 @@ export class CategoryService {
 		await this.repository.createQuery().filterById(id).restore();
 	}
 
+	/**
+	 * How many levels a category sits under the root, itself included — a root is 1.
+	 *
+	 * Read from the closure table through `findAncestors`, which returns the node plus every
+	 * ancestor, rather than by walking `parent` one query at a time.
+	 */
+	private async getDepth(entry: CategoryEntity): Promise<number> {
+		const ancestors =
+			await RepositoryAbstract.getTreeRepository(
+				CategoryEntity,
+			).findAncestors(entry);
+
+		return ancestors.length;
+	}
+
+	/**
+	 * How many levels the subtree rooted at `entry` spans — a leaf is 1.
+	 *
+	 * A move takes the whole subtree with it, so this is what has to fit under the new
+	 * parent, not just the moved node.
+	 */
+	private async getSubtreeHeight(entry: CategoryEntity): Promise<number> {
+		const tree = (await RepositoryAbstract.getTreeRepository(
+			CategoryEntity,
+		).findDescendantsTree(entry)) as CategoryEntity;
+
+		// `children` is only populated on a tree read, so the cast is what the shared
+		// `getTreeRepository` (typed `ObjectLiteral`) gives back rather than a claim about
+		// the row.
+		const measure = (node: CategoryEntity): number =>
+			1 +
+			Math.max(
+				0,
+				...(node.children ?? []).map((child) => measure(child)),
+			);
+
+		return measure(tree);
+	}
+
+	/**
+	 * Refuses a placement that would push the tree past its type's ceiling.
+	 *
+	 * `height` is the depth of what is being placed — 1 for a new category, the subtree's
+	 * own height for a move.
+	 */
+	private async assertDepthFits(
+		type: CategoryType,
+		parent: CategoryEntity,
+		height: number,
+	): Promise<void> {
+		const maxDepth = CATEGORY_MAX_DEPTH[type];
+
+		if ((await this.getDepth(parent)) + height > maxDepth) {
+			throw new CustomError(
+				400,
+				lang('category.error.max_depth', {
+					type,
+					max: String(maxDepth),
+				}),
+			);
+		}
+	}
+
 	public findById(id: number, withDeleted: boolean): Promise<CategoryEntity> {
 		return this.repository
 			.createQuery()
 			.filterById(id)
 			.withDeleted(withDeleted)
 			.firstOrFail();
+	}
+
+	/**
+	 * @description The loader for anything that re-parents; see `updateDataWithContent`, which
+	 * cannot tell a root from an entry whose relation was simply left unloaded.
+	 */
+	public findByIdWithParent(
+		id: number,
+		withDeleted: boolean,
+	): Promise<CategoryEntity> {
+		return this.repository
+			.createQuery()
+			.joinAndSelect('category.parent', 'parent', 'LEFT')
+			.filterById(id)
+			.withDeleted(withDeleted)
+			.firstOrFail();
+	}
+
+	/**
+	 * Contents are joined the same way everywhere: narrowed to the requested language, or all
+	 * rows when none is given. The join type applies only to the language-narrowed case — a
+	 * category with no content in that language is not a result (INNER), but the same absence
+	 * on a *related* category must not drop the relation itself (LEFT).
+	 */
+	private joinContents(
+		query: CategoryQuery,
+		relation: string,
+		alias: string,
+		language: string | undefined,
+		type: 'INNER' | 'LEFT' = 'INNER',
+	): CategoryQuery {
+		if (language) {
+			return query.joinAndSelect(
+				relation,
+				alias,
+				type,
+				`${alias}.language = :language`,
+				{ language },
+			);
+		}
+
+		return query.joinAndSelect(relation, alias, 'LEFT');
 	}
 
 	/**
@@ -397,18 +566,25 @@ export class CategoryService {
 			.filterById(data.id)
 			.withDeleted(data.withDeleted);
 
-		if (data.language) {
-			categoryQuery.joinAndSelect(
-				'category.contents',
-				'content',
-				'INNER',
-				'content.language = :language',
-				{ language: data.language },
-			);
-		} else {
-			// No language: take all contents
-			categoryQuery.joinAndSelect('category.contents', 'content', 'LEFT');
-		}
+		this.joinContents(
+			categoryQuery,
+			'category.contents',
+			'content',
+			data.language,
+		);
+
+		// The immediate parent rides along unconditionally: `with_ancestors` answers a
+		// different question (the whole chain, for a breadcrumb) and the edit form needs the
+		// one relation it is allowed to change.
+		categoryQuery.joinAndSelect('category.parent', 'parent', 'LEFT');
+
+		this.joinContents(
+			categoryQuery,
+			'parent.contents',
+			'parentContent',
+			data.language,
+			'LEFT',
+		);
 
 		const categoryEntry = await categoryQuery.firstOrFail();
 
@@ -431,22 +607,12 @@ export class CategoryService {
 					.filterBy('id', orderedIds, 'IN')
 					.withDeleted(data.withDeleted);
 
-				if (data.language) {
-					ancestorsWithContentDataQuery.joinAndSelect(
-						'category.contents',
-						'content',
-						'INNER',
-						'content.language = :language',
-						{ language: data.language },
-					);
-				} else {
-					// No language: take all contents
-					ancestorsWithContentDataQuery.joinAndSelect(
-						'category.contents',
-						'content',
-						'LEFT',
-					);
-				}
+				this.joinContents(
+					ancestorsWithContentDataQuery,
+					'category.contents',
+					'content',
+					data.language,
+				);
 
 				const ancestorsWithContentData =
 					await ancestorsWithContentDataQuery.all();
@@ -464,22 +630,12 @@ export class CategoryService {
 					.filterBy('parent_id', categoryEntry.id)
 					.withDeleted(data.withDeleted);
 
-				if (data.language) {
-					childrenWithContentQuery.joinAndSelect(
-						'category.contents',
-						'content',
-						'INNER',
-						'content.language = :language',
-						{ language: data.language },
-					);
-				} else {
-					// No language: take all contents
-					childrenWithContentQuery.joinAndSelect(
-						'category.contents',
-						'content',
-						'LEFT',
-					);
-				}
+				this.joinContents(
+					childrenWithContentQuery,
+					'category.contents',
+					'content',
+					data.language,
+				);
 
 				childrenWithContent = await childrenWithContentQuery.all();
 			}
@@ -496,11 +652,77 @@ export class CategoryService {
 		};
 	}
 
+	/**
+	 * @description Used in `find` method from the public controller; the anonymous listing
+	 *
+	 * Status is pinned here rather than taken from the payload, and soft-deleted rows are
+	 * never included — the validator has no filter that could widen either.
+	 */
+	public findByFilterPublic(
+		data: ValidatorOutput<CategoryValidator, 'publicFind'>,
+	) {
+		const orderBy =
+			data.order_by === OrderByEnum.LABEL
+				? 'content.label'
+				: data.order_by;
+
+		const query = this.repository
+			.createQuery()
+			.join(
+				'category.contents',
+				'content',
+				'INNER',
+				'content.language = :language',
+				{
+					language: data.filter.language,
+				},
+			)
+			.join('category.parent', 'parent', 'LEFT')
+			.select([
+				'category.id',
+				'category.type',
+				'category.sort_order',
+
+				'content.language',
+				'content.label',
+				'content.slug',
+				'content.description',
+				'content.meta',
+
+				// The id alone: enough for a caller to nest the rows it was given, without
+				// naming a category the listing did not otherwise return.
+				'parent.id',
+			])
+			.filterBy('type', data.filter.type)
+			.filterBy('status', CategoryStatusEnum.ACTIVE);
+
+		if (data.filter.is_root) {
+			query.getQuery().andWhere('category.parent_id IS NULL');
+		} else {
+			query.filterBy('parent.id', data.filter.parent_id);
+		}
+
+		return query
+			.orderBy(orderBy, data.direction)
+			.pagination(data.page, data.limit)
+			.all(true);
+	}
+
 	public findByFilter(
 		data: ValidatorOutput<CategoryValidator, 'find'>,
 		withDeleted: boolean,
 	) {
-		return this.repository
+		/*
+		 * `orderBy` prefixes a bare column with the root alias, and `label` lives on the
+		 * joined content row — passed through unmapped it builds `category.label`, which
+		 * is not a column and fails at the database.
+		 */
+		const orderBy =
+			data.order_by === OrderByEnum.LABEL
+				? 'content.label'
+				: data.order_by;
+
+		const query = this.repository
 			.createQuery()
 			.join(
 				'category.contents',
@@ -525,6 +747,7 @@ export class CategoryService {
 				'category.id',
 				'category.type',
 				'category.status',
+				'category.sort_order',
 				'category.created_at',
 				'category.deleted_at',
 
@@ -538,9 +761,30 @@ export class CategoryService {
 			])
 			.filterBy('type', data.filter.type)
 			.filterBy('status', data.filter.status)
-			.filterByTerm(data.filter.term)
+			.filterByTerm(data.filter.term);
+
+		if (data.filter.can_parent) {
+			/*
+			 * Depth is the closure row count for the category as a descendant — the table
+			 * carries a self-reference, so a root counts 1. A category may take a child
+			 * while that count is below its type's ceiling.
+			 */
+			query.filterRaw(
+				`(SELECT COUNT(*) FROM category_closure cc WHERE cc.id_descendant = category.id) < ${MAX_DEPTH_SQL_CASE}`,
+			);
+		}
+
+		// Mirrors the grouping `updateOrder` enforces: same type, same parent — or the
+		// roots, which `filterBy` cannot express because it drops null values.
+		if (data.filter.is_root) {
+			query.getQuery().andWhere('category.parent_id IS NULL');
+		} else {
+			query.filterBy('parent.id', data.filter.parent_id);
+		}
+
+		return query
 			.withDeleted(withDeleted && data.filter.is_deleted)
-			.orderBy(data.order_by, data.direction)
+			.orderBy(orderBy, data.direction)
 			.pagination(data.page, data.limit)
 			.all(true);
 	}

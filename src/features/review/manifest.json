@@ -1,0 +1,8 @@
+{
+	"name": "review",
+	"version": "1.0.0",
+	"relativePath": "/review",
+	"entities": ["review"],
+	"depends_on": ["product", "user"],
+	"required_by": []
+}

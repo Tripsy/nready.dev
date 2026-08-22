@@ -85,6 +85,102 @@ export type ArticleSource = {
 	about?: string; // Short description of the source
 };
 
+/**
+ * The reader-contributed features an article opts into: ratings, comments and complaints. They
+ * are per-article switches kept in `details` rather than columns of their own — three booleans
+ * nothing filters or sorts by, on a table whose jsonb column exists for exactly this.
+ *
+ * A key absent from `details` means "whatever the deployment defaults to", which is what
+ * `resolveArticleSettings` reads from the environment. Only an explicit override is stored, so an
+ * article filed before a default was flipped follows the new default instead of freezing the old
+ * one.
+ */
+export const ArticleSettingEnum = {
+	ALLOW_RATING: 'allow_rating',
+	ALLOW_COMMENTS: 'allow_comments',
+	ALLOW_COMPLAINTS: 'allow_complaints',
+} as const;
+
+export type ArticleSetting =
+	(typeof ArticleSettingEnum)[keyof typeof ArticleSettingEnum];
+
+export type ArticleSettings = Record<ArticleSetting, boolean>;
+
+export type ArticleDetails = Record<string, string | number | boolean>;
+
+/**
+ * `article` is an additional feature, so its switches live with the code that governs them rather
+ * than in `settings.config.ts`, which every project started from this boilerplate carries — the
+ * same reasoning as `isCommentAutoApproved()` in `comment.service.ts`.
+ */
+const SETTING_ENVIRONMENT_VARIABLE: Record<ArticleSetting, string> = {
+	[ArticleSettingEnum.ALLOW_RATING]: 'ARTICLE_ALLOW_RATING',
+	[ArticleSettingEnum.ALLOW_COMMENTS]: 'ARTICLE_ALLOW_COMMENTS',
+	[ArticleSettingEnum.ALLOW_COMPLAINTS]: 'ARTICLE_ALLOW_COMPLAINTS',
+};
+
+/**
+ * All three default to on: an article nobody can react to is the exception, not the norm, so the
+ * variable is only ever set to close something down. Read at call time rather than frozen into a
+ * module-level const, so a test can set the variable and get the other branch without reloading
+ * the module.
+ */
+export const isArticleSettingEnabledByDefault = (
+	setting: ArticleSetting,
+): boolean => process.env[SETTING_ENVIRONMENT_VARIABLE[setting]] !== 'false';
+
+/**
+ * The effective switches for one article — the stored override where there is one, the
+ * deployment default everywhere else. A non-boolean under a known key is treated as absent:
+ * `details` is free-form jsonb and nothing but this guards what lands in it.
+ */
+export const resolveArticleSettings = (
+	details: ArticleDetails | null | undefined,
+): ArticleSettings => {
+	const settings = {} as ArticleSettings;
+
+	for (const setting of Object.values(ArticleSettingEnum)) {
+		const stored = details?.[setting];
+
+		settings[setting] =
+			typeof stored === 'boolean'
+				? stored
+				: isArticleSettingEnabledByDefault(setting);
+	}
+
+	return settings;
+};
+
+/**
+ * Merge overrides into `details` without disturbing the keys this does not own. An override set
+ * back to the deployment default is dropped rather than stored, so the article keeps following
+ * the default when it changes; `details` collapses to `null` once nothing is left in it.
+ */
+export const applyArticleSettings = (
+	details: ArticleDetails | null | undefined,
+	overrides: Partial<ArticleSettings>,
+): ArticleDetails | null => {
+	const merged: ArticleDetails = { ...details };
+
+	for (const setting of Object.values(ArticleSettingEnum)) {
+		const override = overrides[setting];
+
+		if (override === undefined) {
+			continue;
+		}
+
+		if (override === isArticleSettingEnabledByDefault(setting)) {
+			delete merged[setting];
+
+			continue;
+		}
+
+		merged[setting] = override;
+	}
+
+	return Object.keys(merged).length > 0 ? merged : null;
+};
+
 const ENTITY_TABLE_NAME = 'article';
 
 @Entity({
@@ -132,9 +228,10 @@ export default class ArticleEntity extends EntityAbstract {
 
 	@Column('jsonb', {
 		nullable: true,
-		comment: 'Reserved column for future use',
+		comment:
+			'Free-form article data; the `allow_rating` / `allow_comments` / `allow_complaints` keys hold the per-article overrides of the deployment defaults',
 	})
-	details!: Record<string, string | number | boolean> | null;
+	details!: ArticleDetails | null;
 
 	@Column({
 		type: 'timestamp',
@@ -164,6 +261,14 @@ export default class ArticleEntity extends EntityAbstract {
 			'Order/position of the article within the featured group; Relevant only when featured_status is set',
 	})
 	featured_order!: number;
+
+	@Column({
+		type: 'timestamp',
+		nullable: true,
+		comment:
+			'Controls when featured_status should be cleared; Relevant only when featured_status is set',
+	})
+	featured_expire_at?: Date | null;
 
 	@Column({
 		type: 'enum',

@@ -10,26 +10,36 @@ export function getTermEntityMock(): TermEntity {
 	return {
 		id: 1,
 		type: TermTypeEnum.TAG,
-		language: 'en',
-		value: 'Summer',
-		details: null,
 		created_at: createPastDate(28800),
 		updated_at: null,
 		deleted_at: null,
+		contents: [],
 	};
 }
 
 export const termInputPayloads = {
 	create: {
 		type: TermTypeEnum.TAG,
-		language: 'en',
-		value: 'Summer',
+		contents: [
+			{
+				language: 'en',
+				value: 'Summer',
+			},
+			{
+				language: 'ro',
+				value: 'Vara',
+			},
+		],
 	},
 	update: {
 		id: 1,
 		type: TermTypeEnum.TAG,
-		language: 'en',
-		value: 'Summer Update',
+		contents: [
+			{
+				language: 'en',
+				value: 'Summer Update',
+			},
+		],
 	},
 	find: {
 		page: 1,

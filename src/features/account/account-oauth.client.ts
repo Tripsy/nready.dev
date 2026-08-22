@@ -112,7 +112,7 @@ async function requestProvider<T>(
 		);
 
 		if (response.status >= 400 && response.status < 500) {
-			throw new BadRequestError(lang('account.error.oauth_code_invalid'));
+			throw new BadRequestError(lang('account.error.invalid_oauth_code'));
 		}
 
 		throw new CustomError(502, lang('account.error.oauth_provider_error'));
@@ -135,7 +135,7 @@ function readGoogleIdToken(idToken: string, clientId: string): OAuthProfile {
 	const segments = idToken.split('.');
 
 	if (segments.length !== 3) {
-		throw new BadRequestError(lang('account.error.oauth_code_invalid'));
+		throw new BadRequestError(lang('account.error.invalid_oauth_code'));
 	}
 
 	let claims: GoogleIdTokenClaims;
@@ -145,7 +145,7 @@ function readGoogleIdToken(idToken: string, clientId: string): OAuthProfile {
 			Buffer.from(segments[1], 'base64url').toString('utf8'),
 		) as GoogleIdTokenClaims;
 	} catch {
-		throw new BadRequestError(lang('account.error.oauth_code_invalid'));
+		throw new BadRequestError(lang('account.error.invalid_oauth_code'));
 	}
 
 	const isValid =
@@ -157,7 +157,7 @@ function readGoogleIdToken(idToken: string, clientId: string): OAuthProfile {
 		!!claims.sub;
 
 	if (!isValid) {
-		throw new BadRequestError(lang('account.error.oauth_code_invalid'));
+		throw new BadRequestError(lang('account.error.invalid_oauth_code'));
 	}
 
 	return {
@@ -196,7 +196,7 @@ async function resolveGoogleProfile(
 
 	if (!id_token) {
 		// Only happens when the authorization request omitted the `openid` scope.
-		throw new BadRequestError(lang('account.error.oauth_code_invalid'));
+		throw new BadRequestError(lang('account.error.invalid_oauth_code'));
 	}
 
 	return readGoogleIdToken(id_token, clientId);
@@ -224,7 +224,7 @@ async function resolveFacebookProfile(
 	);
 
 	if (!access_token) {
-		throw new BadRequestError(lang('account.error.oauth_code_invalid'));
+		throw new BadRequestError(lang('account.error.invalid_oauth_code'));
 	}
 
 	/*

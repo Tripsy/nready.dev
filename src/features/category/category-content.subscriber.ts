@@ -13,7 +13,6 @@ export class CategoryContentSubscriber extends SubscriberAbstract<CategoryConten
 			afterInsert: true,
 			afterUpdate: true,
 			beforeRemove: true,
-			afterSoftRemove: true,
 		};
 	}
 }

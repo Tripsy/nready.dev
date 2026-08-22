@@ -1,0 +1,37 @@
+{
+	"validation": {
+		"invalid_entity_type": "Select what is being commented on",
+		"invalid_entity_id": "Invalid entity ID",
+		"invalid_type": "Select comment type",
+		"invalid_content": "The comment must be between 2 and 5000 characters",
+		"invalid_parent_id": "Invalid parent comment",
+		"invalid_guest_name": "Your name must be between 2 and 100 characters",
+		"invalid_guest_email": "Invalid email address",
+		"invalid_guest_website": "The website must be at most 255 characters",
+		"invalid_moderation_reason": "The moderation reason must be at most 255 characters",
+		"invalid_is_pinned": "Invalid pinned value",
+		"invalid_term": "Invalid search term",
+		"invalid_token": "Invalid unsubscribe link",
+		"invalid_notification_type": "Select what you want to be notified about"
+	},
+	"error": {
+		"not_found": "Comment not found",
+		"subscription_not_found": "This unsubscribe link is no longer valid",
+		"guest_required": "Your name and email address are required to comment",
+		"invalid_parent": "The comment you are replying to is not available",
+		"not_editable": "A comment can no longer be edited once it has been moderated",
+		"ip_unresolved": "Your comment could not be recorded because your origin address is unknown",
+		"not_accepted": "Comments are closed for this"
+	},
+	"moderation": {
+		"flagged_by_reports": "Hidden automatically after being reported by {{reporters}} readers"
+	},
+	"success": {
+		"create": "Comment submitted successfully and is awaiting moderation",
+		"update": "Comment updated successfully",
+		"delete": "Comment removed successfully",
+		"status_update": "Comment status updated successfully",
+		"subscription_update": "Notification preference saved",
+		"create_public": "Comment posted successfully"
+	}
+}

@@ -1,4 +1,4 @@
-# nready-mcp
+# nready-api-mcp
 
 Local [MCP](https://modelcontextprotocol.io) servers giving Claude Code direct access to this project's infrastructure. One shared package, one `node_modules`, multiple servers.
 

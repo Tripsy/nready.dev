@@ -2,18 +2,20 @@ import {
 	isDirectRun,
 	type SeedDefinition,
 	type SeedSummary,
-	topUp,
 } from '@/database/seed/seed.helper';
 import { runSeedFile } from '@/database/seed/seed.runner';
 import TermEntity, {
 	type TermType,
 	TermTypeEnum,
 } from '@/features/term/term.entity';
+import TermContentEntity from '@/features/term/term-content.entity';
 
 type TermRow = {
 	type: TermType;
-	language: string;
-	value: string;
+	/** The English wording, and the key this seed re-runs against. */
+	en: string;
+	/** Omitted where no translation exists yet — the reader falls back to `en`. */
+	ro?: string;
 };
 
 /**
@@ -21,73 +23,127 @@ type TermRow = {
  * mean something, and `attribute_label` / `attribute_value` have to pair up for
  * `product_attribute` to be seeded on top of them later.
  *
- * Every `value` is distinct across the whole list — `topUp` keys on a single column, so two
- * rows sharing a value would make the second look already-present and never be inserted.
- * The database's own key is the (type, language, value) triple, which is wider.
+ * One entry is one term across every language, which is the whole point of the shape — a
+ * product pointing at "Color" renders as "Culoare" in Romanian rather than pinning itself to
+ * whichever row was picked at write time.
+ *
+ * `type` + `en` is the key this seed matches on, so no two entries may share that pair.
  */
 const TERMS: readonly TermRow[] = [
-	// Tags — English
-	{ type: TermTypeEnum.TAG, language: 'en', value: 'Summer' },
-	{ type: TermTypeEnum.TAG, language: 'en', value: 'Winter' },
-	{ type: TermTypeEnum.TAG, language: 'en', value: 'New Arrival' },
-	{ type: TermTypeEnum.TAG, language: 'en', value: 'Best Seller' },
-	{ type: TermTypeEnum.TAG, language: 'en', value: 'Clearance' },
-	{ type: TermTypeEnum.TAG, language: 'en', value: 'Limited Edition' },
-	{ type: TermTypeEnum.TAG, language: 'en', value: 'Eco Friendly' },
-
-	// Tags — Romanian, so the language filter has something to separate
-	{ type: TermTypeEnum.TAG, language: 'ro', value: 'Vara' },
-	{ type: TermTypeEnum.TAG, language: 'ro', value: 'Iarna' },
-	{ type: TermTypeEnum.TAG, language: 'ro', value: 'Noutati' },
+	// Tags
+	{ type: TermTypeEnum.TAG, en: 'Summer', ro: 'Vara' },
+	{ type: TermTypeEnum.TAG, en: 'Winter', ro: 'Iarna' },
+	{ type: TermTypeEnum.TAG, en: 'New Arrival', ro: 'Noutati' },
+	{ type: TermTypeEnum.TAG, en: 'Best Seller', ro: 'Cel mai vandut' },
+	{ type: TermTypeEnum.TAG, en: 'Clearance', ro: 'Lichidare' },
+	{ type: TermTypeEnum.TAG, en: 'Limited Edition', ro: 'Editie limitata' },
+	{ type: TermTypeEnum.TAG, en: 'Eco Friendly', ro: 'Ecologic' },
 
 	// Attribute labels
-	{ type: TermTypeEnum.ATTRIBUTE_LABEL, language: 'en', value: 'Color' },
-	{ type: TermTypeEnum.ATTRIBUTE_LABEL, language: 'en', value: 'Size' },
-	{ type: TermTypeEnum.ATTRIBUTE_LABEL, language: 'en', value: 'Material' },
-	{ type: TermTypeEnum.ATTRIBUTE_LABEL, language: 'en', value: 'Capacity' },
-	{ type: TermTypeEnum.ATTRIBUTE_LABEL, language: 'ro', value: 'Culoare' },
-	{ type: TermTypeEnum.ATTRIBUTE_LABEL, language: 'ro', value: 'Marime' },
+	{ type: TermTypeEnum.ATTRIBUTE_LABEL, en: 'Color', ro: 'Culoare' },
+	{ type: TermTypeEnum.ATTRIBUTE_LABEL, en: 'Size', ro: 'Marime' },
+	{ type: TermTypeEnum.ATTRIBUTE_LABEL, en: 'Material', ro: 'Material' },
+	{ type: TermTypeEnum.ATTRIBUTE_LABEL, en: 'Capacity', ro: 'Capacitate' },
 
 	// Attribute values — colors
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Red' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Blue' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Green' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Black' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'ro', value: 'Rosu' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'ro', value: 'Albastru' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Red', ro: 'Rosu' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Blue', ro: 'Albastru' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Green', ro: 'Verde' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Black', ro: 'Negru' },
 
 	// Attribute values — sizes and materials
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Small' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Medium' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Large' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Cotton' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: 'Leather' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: '500 ml' },
-	{ type: TermTypeEnum.ATTRIBUTE_VALUE, language: 'en', value: '1 litre' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Small', ro: 'Mic' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Medium', ro: 'Mediu' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Large', ro: 'Mare' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Cotton', ro: 'Bumbac' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: 'Leather', ro: 'Piele' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: '500 ml' },
+	{ type: TermTypeEnum.ATTRIBUTE_VALUE, en: '1 litre', ro: '1 litru' },
 
 	// Free text
-	{ type: TermTypeEnum.TEXT, language: 'en', value: 'Free shipping' },
+	{ type: TermTypeEnum.TEXT, en: 'Free shipping', ro: 'Transport gratuit' },
 	{
 		type: TermTypeEnum.TEXT,
-		language: 'en',
-		value: 'Returns within 30 days',
+		en: 'Returns within 30 days',
+		ro: 'Retur in 30 de zile',
 	},
-	{ type: TermTypeEnum.TEXT, language: 'ro', value: 'Transport gratuit' },
 ];
 
-const TARGET = TERMS.length;
+/**
+ * Terms are stored lower-cased, the same rule `TermValidator` applies to every write. The
+ * literals above keep their natural capitalisation for readability, so both the rows written
+ * here and the keys re-runs match on have to go through this — comparing a raw literal against
+ * a stored value would miss every existing term and insert the whole set again.
+ */
+const normalizeTermValue = (value: string): string =>
+	value.trim().toLowerCase();
 
 export const termSeed: SeedDefinition = {
 	name: 'term',
-	run: async ({ manager }): Promise<SeedSummary> =>
-		topUp<TermRow>({
+	run: async ({ manager }): Promise<SeedSummary> => {
+		const termRepository = manager.getRepository(TermEntity);
+		const contentRepository = manager.getRepository(TermContentEntity);
+
+		/*
+		 * The term itself carries nothing to match on, so re-runs are keyed on the English
+		 * wording of the existing contents joined back to their term's type.
+		 */
+		const existingContents = await contentRepository.find({
+			select: { term_id: true, language: true, value: true },
+			where: { language: 'en' },
+			withDeleted: true,
+			relations: { term: true },
+		});
+
+		const idByKey = new Map<string, number>(
+			existingContents
+				.filter((content) => content.term)
+				.map((content) => [
+					`${content.term.type}:${normalizeTermValue(content.value)}`,
+					content.term_id,
+				]),
+		);
+
+		const pending = TERMS.filter(
+			(row) => !idByKey.has(`${row.type}:${normalizeTermValue(row.en)}`),
+		);
+
+		for (const row of pending) {
+			const term = await termRepository.save(
+				termRepository.create({ type: row.type }),
+			);
+
+			const contents = [
+				contentRepository.create({
+					term_id: term.id,
+					language: 'en',
+					value: normalizeTermValue(row.en),
+				}),
+			];
+
+			if (row.ro) {
+				contents.push(
+					contentRepository.create({
+						term_id: term.id,
+						language: 'ro',
+						value: normalizeTermValue(row.ro),
+					}),
+				);
+			}
+
+			await contentRepository.save(contents);
+
+			idByKey.set(`${row.type}:${normalizeTermValue(row.en)}`, term.id);
+		}
+
+		return {
 			entity: 'term',
-			target: TARGET,
-			manager,
-			entityClass: TermEntity,
-			keyColumn: 'value',
-			buildRow: (index) => TERMS[index],
-		}),
+			alreadyPresent: TERMS.length - pending.length,
+			inserted: pending.length,
+			target: TERMS.length,
+			tableTotal: idByKey.size,
+		};
+	},
 };
 
 if (isDirectRun(import.meta.url)) {

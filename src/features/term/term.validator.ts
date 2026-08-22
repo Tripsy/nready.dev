@@ -8,11 +8,10 @@ import {
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
 
-export const paramsUpdateList: string[] = ['type', 'language', 'value'];
+export const paramsUpdateList: string[] = ['type', 'contents'];
 
 export const OrderByEnum = {
 	ID: 'id',
-	VALUE: 'value',
 } as const;
 
 const validatorMessages = [
@@ -21,20 +20,46 @@ const validatorMessages = [
 	'invalid_value',
 ] as const;
 
-/** Matches the `value` column width, so a rejected input never reaches the database. */
+/** Matches the `term_content.value` column width, so a rejected input never reaches the database. */
 const VALUE_MAX_CHARS = 255;
 
 export class TermValidator extends BaseValidator<typeof validatorMessages> {
-	readonly create = z.object({
-		type: this.validateEnum(TermTypeEnum, this.getMessage('invalid_type')),
+	/*
+	 * Every wording is stored lower-cased. Terms are labels reused across articles and
+	 * products, and the duplicate check in `TermService.assertNotDuplicate` compares the
+	 * stored value: without this, "Summer" and "summer" are two terms that render as the
+	 * same tag. Normalising on the way in rather than at each read keeps the column itself
+	 * the single answer to what a term says.
+	 */
+	readonly contentsSchema = z.object({
 		language: this.validateLanguage(this.getMessage('invalid_language')),
 		value: this.validateString(this.getMessage('invalid_value'), {
 			maxChars: VALUE_MAX_CHARS,
-		}),
+		}).transform((value) => value.trim().toLowerCase()),
+	});
+
+	readonly create = z.object({
+		type: this.validateEnum(TermTypeEnum, this.getMessage('invalid_type')),
+		contents: this.contentsSchema
+			.array()
+			.min(1, this.getMessage('invalid_contents'))
+			.refine(
+				(contents) => {
+					const languages = contents.map(
+						(content) => content.language,
+					);
+
+					return new Set(languages).size === languages.length;
+				},
+				{ message: this.getMessage('duplicate_contents') },
+			),
 	});
 
 	readonly read = z.object({
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
+		language: this.validateLanguage(this.getMessage('invalid_language'), {
+			required: false,
+		}),
 	});
 
 	readonly update = z
@@ -45,14 +70,19 @@ export class TermValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_type'),
 				{ required: false },
 			),
-			language: this.validateLanguage(
-				this.getMessage('invalid_language'),
-				{ required: false },
-			),
-			value: this.validateString(this.getMessage('invalid_value'), {
-				required: false,
-				maxChars: VALUE_MAX_CHARS,
-			}),
+			contents: this.contentsSchema
+				.array()
+				.refine(
+					(contents) => {
+						const languages = contents.map(
+							(content) => content.language,
+						);
+
+						return new Set(languages).size === languages.length;
+					},
+					{ message: this.getMessage('duplicate_contents') },
+				)
+				.optional(),
 		})
 		.refine((data) => hasAtLeastOneValue(data, paramsUpdateList), {
 			message: this.getMessage('params_at_least_one', {

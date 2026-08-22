@@ -1,13 +1,25 @@
 import { Column, Entity, Index } from 'typeorm';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 
+/**
+ * What a discount attaches to, which decides the link table its targets live in:
+ * `client_discount`, `variant_discount`, `product_discount`, `category_discount`,
+ * `brand_discount`. `order` is the exception — it takes no targets and applies to the
+ * basket as a whole.
+ *
+ * Country is deliberately absent. It describes the buyer rather than the goods and its key
+ * is a string code, so it stays a *condition* in `conditions.applicable_countries`, evaluated
+ * after candidates are selected rather than used to select them.
+ */
 export const DiscountScopeEnum = {
 	CLIENT: 'client',
 	ORDER: 'order',
 	PRODUCT: 'product',
+	VARIANT: 'variant',
 	CATEGORY: 'category',
-	COUNTRY: 'country',
+	BRAND: 'brand',
 } as const;
 
 export type DiscountScope =
@@ -34,18 +46,40 @@ export const DiscountReasonEnum = {
 export type DiscountReason =
 	(typeof DiscountReasonEnum)[keyof typeof DiscountReasonEnum];
 
-/*
-    @example
-    {
-      "min_order_value": 100,           // number
-      "eligible_categories": [1, 2, 5], // number[]
-      "applicable_countries": ["RO"]    // string[]
-    }
-*/
-export type DiscountRules = Record<
-	string,
-	number | number[] | string | string[]
->;
+/**
+ * A discount applies only when every condition it carries is met.
+ *
+ * **These are re-evaluated, not decided once.** `hour_range` and `day_range` depend on when
+ * the question is asked, and `min_order_value` on a basket that is still being edited — so a
+ * discount that qualifies when a product is added to the cart may not qualify when the order
+ * is confirmed. Resolve again at confirmation and treat the snapshot on the order line as the
+ * record of what was actually granted, never as a promise made earlier.
+ *
+ *   {
+ *     "hour_range": [10, 18],           // hours of the day, inclusive
+ *     "day_range": [1, 7],              // ISO weekday, Monday = 1
+ *     "min_order_value": 100,           // base currency, excluding VAT
+ *     "applicable_countries": ["RO"]
+ *   }
+ */
+export type DiscountConditions = {
+	/** Inclusive hour-of-day window, 0–23. Wraps when the first value is the larger one. */
+	hour_range?: [number, number];
+	/** Inclusive ISO weekday window, Monday = 1 through Sunday = 7. Wraps the same way. */
+	day_range?: [number, number];
+	/** Basket subtotal in the base currency, excluding VAT. */
+	min_order_value?: number;
+	/** ISO 3166-1 alpha-2 codes. */
+	applicable_countries?: string[];
+};
+
+/** Every condition key, for validators and evaluators that need to enumerate them. */
+export const DiscountConditionKeys = [
+	'hour_range',
+	'day_range',
+	'min_order_value',
+	'applicable_countries',
+] as const satisfies readonly (keyof DiscountConditions)[];
 
 export type DiscountSnapshot = {
 	label: string;
@@ -53,7 +87,7 @@ export type DiscountSnapshot = {
 	reason: DiscountReason;
 	reference?: string | null;
 	type: DiscountType;
-	rules?: DiscountRules;
+	conditions?: DiscountConditions;
 	value: number;
 };
 
@@ -106,11 +140,19 @@ export default class DiscountEntity extends EntityAbstract {
 
 	@Column('jsonb', {
 		nullable: true,
-		comment: 'Optional rules or conditions for discount applicability',
+		comment:
+			'Conditions the discount is subject to; all must be met for it to apply',
 	})
-	rules?: DiscountRules;
+	conditions?: DiscountConditions;
 
-	@Column('decimal', { precision: 12, scale: 2, nullable: false })
+	// Transformed rather than left as the driver's string: the resolver compares a percentage
+	// against an absolute amount by computing both, which is arithmetic, not text.
+	@Column('decimal', {
+		precision: 12,
+		scale: 2,
+		nullable: false,
+		transformer: numericTransformer,
+	})
 	value!: number;
 
 	@Column({ type: 'timestamp', nullable: true })

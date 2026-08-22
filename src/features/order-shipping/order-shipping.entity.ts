@@ -5,6 +5,7 @@ import type OrderEntity from '@/features/order/order.entity';
 import type WarehouseEntity from '@/features/warehouse/warehouse.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 
 export const ShippingStatusEnum = {
 	PENDING: 'pending',
@@ -81,10 +82,20 @@ export default class OrderShippingEntity extends EntityAbstract {
 	tracking_url!: string | null;
 
 	// COST RELATED
-	@Column('decimal', { precision: 5, scale: 2, nullable: false })
+	@Column('decimal', {
+		precision: 5,
+		scale: 2,
+		nullable: false,
+		transformer: numericTransformer,
+	})
 	vat_rate!: number;
 
-	@Column('decimal', { precision: 12, scale: 2, nullable: false })
+	@Column('decimal', {
+		precision: 12,
+		scale: 2,
+		nullable: false,
+		transformer: numericTransformer,
+	})
 	price!: number;
 
 	@Column('char', {
@@ -102,6 +113,7 @@ export default class OrderShippingEntity extends EntityAbstract {
 		default: 1,
 		comment:
 			'Exchange rate to invoice base currency (default 1 = same currency)',
+		transformer: numericTransformer,
 	})
 	exchange_rate!: number;
 

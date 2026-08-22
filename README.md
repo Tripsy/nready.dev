@@ -1,8 +1,9 @@
 # NReady
 
-![Node.js](https://img.shields.io/badge/Node.js-22-green)
-![Express](https://img.shields.io/badge/Express-4.21-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)
+![Node.js](https://img.shields.io/badge/Node.js-24-green)
+![Express](https://img.shields.io/badge/Express-5.2-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-336791)
 ![Docker](https://img.shields.io/badge/Docker-ready-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Redis](https://img.shields.io/badge/Redis-integrated-red)
@@ -13,15 +14,17 @@
 
 NReady is a **Node.js - Express / TypeScript** boilerplate designed for complex, secure REST APIs.
 
-This boilerplate can serve as a foundation to quickly build MVPs, CMS platforms, or E-commerce solutions.
+This boilerplate can serve as a foundation to quickly build MVPs, CMS platforms, CRMs and in the near future E-commerce solutions.
 
-It comes with a [solid structure](#Structure), it is fully modular and feature-based, and already contains a lot of useful [features](#Features),
-and many [goodies](#Characteristics) including: 
-- **Complete authentication system**;
-- Multiple background workers (email, cron, etc.);
-- Advanced logging and error handling;
+It comes with a [solid structure](#-structure), it is fully modular and feature-based, and already contains a lot of useful [features](#-features),
+and many [goodies](#-characteristics) including:
+- **Complete authentication system** — JWT access / refresh tokens, email confirmation, password recovery, session limits;
+- Convention-based auto-discovery — drop in a `*.routes.ts`, `*.cron.ts`, `*.listener.ts` or `*.bootstrap.ts` and it is wired at startup;
+- A feature installer (`cli/feature.ts`) with version-aware dependency resolution, so a slice can be packaged and moved between projects;
+- Background processing — BullMQ queues, an email worker, and a cron provider that records every run;
+- Advanced logging and error handling, with a destination per level (console, file, database, email, CloudWatch);
 - Custom middlewares;
-- Multi-language support;
+- Multi-language support for content and outgoing email;
 - Strong validation and policy-based authorization;
 - Testsuite based on Jest and Supertest;
 - Docker support;
@@ -29,32 +32,32 @@ and many [goodies](#Characteristics) including:
 The code follows **best practices** and **design principles** like SOLID, KISS, DRY, and strong security standards. 
 The codebase is fully typed in **TypeScript**. **Biome** ensures code quality.
 
-The recommended database is **PostgreSQL**, though it has also been tested with MariaDB, using **TypeORM** as the ORM layer. 
+The recommended database is **PostgreSQL**, though it has also been tested with MariaDB, using **TypeORM** as the ORM layer.
+**Redis** backs both the cache and the queues.
 
-A ready-to-use Docker environment is provided for quick [setup](#Setup).
+A ready-to-use Docker environment is provided for quick [setup](#-setup).
 
 This project is still a work in progress, and the next goals are:
-   - Add new [features](#Features) such as articles, images, products, orders, invoices,and subscriptions
+   - Finish the commerce [features](#-features) — products, orders, invoices, stock and subscriptions are entity-only so far
    - Create documentation
 
 Meanwhile, we're open to suggestions / feedback, and if you find this project useful, please consider giving it a star ⭐
 
-> On a [separate project](https://github.com/Tripsy/dashboard.dev), powered by **React / Next.js** you can find a 
-> working #FrontEnd interface which demonstrate the usability of the `authentification system` and 
+> On a [separate project](https://github.com/Tripsy/nready-ui), powered by **React / Next.js** you can find a 
+> working #FrontEnd interface which demonstrates the usability of the `authentication system` and 
 > an **Administration Dashboard** with some features already included: Users, Permissions, Template, Logs, Clients, Cash-Flow, Places, etc
 
 # 🚀 Tech Stack
 
 ## Core
-- Language: TypeScript 5.9
-- Runtime Environment: Node.js 22
-- Runtime: Node.js 22
-- Framework: Express.js 4.21
+- Language: TypeScript 6.0
+- Runtime: Node.js 24 (Active LTS)
+- Framework: Express.js 5.2
+- Package manager: pnpm
 
 ## Code Quality
-- Linting & Formatting: Biome
-- Circular Dependency Check: Madge
-- Validation: Zod 4.3
+- Linting, Formatting, Import Cycles: Biome
+- Validation: Zod 4.4
 
 ## Security
 - Authentication: JWT tokens
@@ -62,22 +65,25 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - Headers Security: Helmet
 - Cross-Origin: CORS
 - Rate Limiting: express-rate-limit
-- Input Validation: Zod 4.3
+- Input Validation: Zod 4.4
+- HTML Sanitizing: sanitize-html
 
 ## Database
-- Primary: PostgreSQL 15
+- Primary: PostgreSQL 18
 - Secondary: MariaDB 11
 - ORM: TypeORM
+- Cache & Queues: Redis (ioredis, BullMQ)
 
 ## Logging
 - Logger: Pino
-- Transports: file, email, database
+- Destinations, selected per level: console, file, database, email, CloudWatch
 
 ## Infrastructure
 - Containerization: Docker
+- Email: SMTP (nodemailer) or AWS SES
 - Testing: Jest, Supertest
 
-# ⚙️ Characteristics
+# ⚙ Characteristics
 
 - [x] Ready-to-use boilerplate with a modular, feature-based architecture
 - [x] Best Practices: Clean architecture, TypeScript, error handling, async patterns, DRY, SOLID, KISS
@@ -86,7 +92,7 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 - [x] Request validation (powered by Zod)
 - [x] Standardized JSON Responses: Consistent response structures for better frontend integration
 - [x] Caching (powered by ioredis)
-- [x] Cron jobs provider with automatic discovery and registration
+- [x] Cron jobs provider with automatic discovery, registration and run history
 - [x] Auto-registered event listeners
 - [x] Email sending via queues (powered by BullMQ)
 - [x] Template management for emails and pages
@@ -98,11 +104,12 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
     - API documentation displayed on error responses (development only)
     - API Output formatting
     - Params validation
-- [x] Internationalization / language management (powered by i18next)
+- [x] Internationalization / language management (own `lang()` layer over per-feature `locales/*.json`)
 - [x] Complete `Auth System`: Secure, modular auth layer supporting user registration, login (token-based authentication), etc.
 - [x] Authorization policies based on user roles and permissions
 - [x] Testing (powered by Jest & Supertest)
 - [x] Documentation provided for APIs endpoints
+- [x] Packaged features, installable via CLI with version-aware dependency resolution
 - [x] Development environment available (Docker)
 
 # ✨ Features
@@ -110,37 +117,48 @@ Meanwhile, we're open to suggestions / feedback, and if you find this project us
 ### Core features
 
 - [x] account: register, login, removeToken, logout, passwordRecover, passwordRecoverChange, passwordUpdate, emailConfirm, emailUpdate, me, sessions, edit, delete
-- [x] cron-history: read, delete, find
-- [x] log-data: read, delete, find
-- [x] log-history: read, delete, find
-- [x] mail-queue: read, delete, find
-- [x] permission (create, read, update, delete, restore, find
-- [x] template (create, read, update, delete, restore, find)
-- [x] user (create, read, update, delete, restore, find, statusUpdate)
-- [x] user-permission (create, delete, restore, find)
+- [x] cron-history
+- [x] log-data
+- [x] log-history
+- [x] mail-queue
+- [x] permission
+- [x] template
+- [x] user
+- [x] user-permission
 
 ### Modular features
 
-- [ ] article: 
-- [x] brand: create, read, update, delete, restore, find, statusUpdate, orderUpdate
-- [x] carrier: create, read, update, delete, restore, find
-- [x] cash-flow: create, read, update, delete, find, statusUpdate
-- [x] category: create, read, update, delete, restore, find, statusUpdate
-- [x] client: create, read, update, delete, restore, find, statusUpdate
-- [x] client_address: create, read, update, delete, restore, find
-- [x] discount: create, read, update, delete, restore, find
-- [x] image: create, read, update, delete, restore, find, statusUpdate, orderUpdate
-- [ ] invoice:
-- [ ] order:
-- [ ] order-shipping:
-- [x] place: create, read, update, delete, restore, find
-- [ ] product:
-- [ ] subscription:
-- [x] term: create, read, update, delete, restore, find
+- [x] address
+- [x] article 
+- [x] brand
+- [x] carrier
+- [x] cash-flow
+- [x] category
+- [x] client
+- [x] comment
+- [x] complaint
+- [x] discount
+- [x] document-series
+- [ ] grn
+- [x] image
+- [ ] invoice
+- [ ] order
+- [ ] order-shipping
+- [x] place
+- [ ] product
+- [x] rating
+- [ ] review
+- [ ] subscription
+- [x] term
+- [x] vendor
+- [ ] warehouse
 
 # 🛠 Setup
 
 ### 1. Add `hosts` record
+
+sudo nano /private/etc/hosts
+
 For configuration refer to this guide:  
 [How to Edit the Host File on macOS](https://phoenixnap.com/kb/mac-hosts-file)
 
@@ -157,7 +175,7 @@ docker compose up
 Once the container is running, connect to it with:
 
 ```
-docker exec -it nready.dev /bin/bash
+docker exec -it nready-api.test /bin/bash
 ```
 
 ### 4. Install dependencies inside the container
@@ -207,7 +225,7 @@ $ pnpx tsx cli/feature.ts [feature] remove
 $ pnpx tsx cli/feature.ts [feature] upgrade
 ```
 
-# 🖥️ Commands
+# 🖥 Commands
 
 > **⚠ Warning**
 > Always check the migrations before run it, sometimes columns are dropped
@@ -291,23 +309,24 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 │   ├── features/          # Feature-based modules
 │   │   ├── user/
 │   │   │   ├── cron-jobs/
-│   │   │   │   └── pending-account-reminder.cron.ts
+│   │   │   ├── database/
+│   │   │   │   └── user.seed.ts
 │   │   │   ├── locales/
 │   │   │   │   └── en.json
 │   │   │   ├── tests/
 │   │   │   │   └── user-controller.test.ts
 │   │   │   │   └── user-service.test.ts
 │   │   │   │   └── user-validator.test.ts
+│   │   │   └── manifest.json 
 │   │   │   ├── user.controller.ts
 │   │   │   ├── user.entity.ts
 │   │   │   ├── user.mock.ts
+│   │   │   ├── user.policy.ts
 │   │   │   ├── user.repository.ts
 │   │   │   ├── user.routes.ts
 │   │   │   ├── user.service.ts
 │   │   │   ├── user.subscriber.ts
 │   │   │   └── user.validator.ts
-│   │   │   └── user.seed.ts 
-│   │   │   └── manifest.json 
 │   │   └── ...            # Other features (invoice, category, etc.)
 │   ├── helpers/           # Utilities (date, string, object, etc.)
 │   ├── middleware/        # Custom Express middlewares
@@ -319,6 +338,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 │   │   ├── decorators/    
 │   │   ├── listeners/     # Core event listeners
 │   │   ├── locales/       # Shared language
+│   │   ├── transformers/  # Shared transformers
 │   │   ├── types/         # Shared types
 │   ├── templates/         # Email layout templates
 │   └── tests/             # Jest & Supertest tests
@@ -327,22 +347,20 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 │   └── bootstrap.ts          
 │   └── server.ts          
 ├── .env
+├── .gitignore
 ├── biome.json
 ├── docker-compose.yml
+├── jest.config.js
 ├── package.json
 ├── pnpm-lock.yaml
 ├── tsconfig.build.json
-├── jest.config.js
 └── tsconfig.json
 ```
 
 # 📌 TODO
 
-1. Go on FE → carrier, discount,
-2. Go on FE → term
-3. Go on FE → category
-4. Go on FE → article
-5. Prepared entities:
+1. Go product, then reviews 
+2. Prepared entities:
     - grn
         - grn-item
         - warehouse-movement
@@ -359,7 +377,6 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         - product-bundle-item-price
         - product-category
         - product-content
-        - product-discount
         - product-option
         - product-option-group
         - product-option-price
@@ -370,6 +387,15 @@ $ pnpx tsx cli/cron.ts run cron-time-check
     - subscription
         - subscription-evidence
     - warehouse
+    - reviews 
+3. Comment edit, remove, moderation directly in front;
+4. `stats` feature on the backend — the dashboard home widgets (expenses, revenues,
+   recent activity) call `/stats/*`, which nready-api does not serve yet
+    - show recent activity - log history
+    - show a resume of previous day (new entries): users, addresses, clients
+    - show expenses and revenues as in star-ui
+    - show errors (log data, mail queue, cron-history) from last 24 hours
+    - other stats: user activity in last 24 hours (if is relevant)
 
 # 📌 TODO - EXTRA
 
@@ -391,7 +417,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
 4. API documentation (`done` for discounts)
 5. create CLI script which should generate something like:
    POST /discounts HTTP/1.1
-   Host: nready.dev:3000
+   Host: nready-api.test:3000
    Content-Type: application/json
    Authorization: Bearer ****
    Content-Length: 344
@@ -413,7 +439,19 @@ $ pnpx tsx cli/cron.ts run cron-time-check
    }   
 6. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
 7. cron hanging / delaying / semaphore 
-8. Stock handling — entities exist (`warehouse`, `grn`), the behaviour does not
+8. Revisit `discount` once `product` ships — the feature is complete except where it
+   depends on products existing:
+    - The dashboard target picker covers `client`, `category` and `brand` only. For the
+      `product` and `variant` scopes it renders an explanatory note instead, because there
+      is no product dashboard to search (`form-targets-discount.component.tsx`).
+    - The "pick at least one target" rule applies to every scope except `order`, so until
+      that picker exists a product- or variant-scoped discount cannot be saved from the
+      form at all. The API accepts both.
+    - `discount-target.seed.ts` skips the two scopes for the same reason, so nothing
+      exercises them against real rows.
+    - `DiscountLineContext` already carries `variantId`/`productId` and the resolver
+      matches them; only the ways of *creating* those links are missing.
+9. Stock handling — entities exist (`warehouse`, `grn`), the behaviour does not
    The tables are in place and documented on themselves; what is missing is every rule that makes
    them mean anything, since none of it can live in a constraint:
    - **Confirming a GRN** writes `warehouse_movement` rows, sets `qty_remaining = qty` on each lot,
@@ -454,13 +492,13 @@ $ pnpx tsx cli/cron.ts run cron-time-check
    - dropped from scope for now: reservations (only matter once there is a fulfilment gap), serial
      numbers, stocktake documents, landing costs, and the payable a
      confirmed GRN should raise in `cash-flow`
-9. Named menus for `product_availability`
-   - the recurring windows say *when* a product can be ordered, but nothing groups them into a
-     named "lunch menu" / "brunch" a customer can be shown, and two products sharing one schedule
-     repeat it row for row
-   - would be a `menu` entity holding the schedule once, with products linked to it; the current
-     per-product windows stay as the override
-10. Document numbering — leftovers from the `document-series` feature
+10. Named menus for `product_availability`
+    - the recurring windows say *when* a product can be ordered, but nothing groups them into a
+      named "lunch menu" / "brunch" a customer can be shown, and two products sharing one schedule
+      repeat it row for row
+    - would be a `menu` entity holding the schedule once, with products linked to it; the current
+      per-product windows stay as the override
+11. Document numbering — leftovers from the `document-series` feature
     - the entity, the atomic allocation and the CRUD surface are in place; what is not:
     - **nothing calls `documentSeriesService.allocate` yet.** `invoice`, `order`, `grn` and
       `subscription` are still entity-only, so the wiring happens when their services are written —
@@ -472,30 +510,50 @@ $ pnpx tsx cli/cron.ts run cron-time-check
       credit-note-style reuse would need an explicit release path
     - one series per document type, by design. Two concurrent invoice series (per company, per
       branch) would mean re-keying the table and giving `allocate` something to choose with
+12. Run cron`s on a separate work / container 
 
 # 🔗 Dependencies
-    
-- [Pino](https://github.com/pinojs/pino) — Fast, low-overhead Node.js logger
-- [Mysql2](https://github.com/sidorares/node-mysql2) — MySQL client for Node.js with TypeScript support
+
+### Runtime
+
+- [express](https://expressjs.com/) — Web framework
 - [TypeORM](https://github.com/typeorm/typeorm) — ORM for TypeScript and JavaScript with support for multiple databases
-- [i18next](https://github.com/i18next/i18next) — Internationalization framework for JavaScript/Node.js
-- [nodemailer](https://nodemailer.com/) — Email sending library for Node.js
+- [pg](https://github.com/brianc/node-postgres) — PostgreSQL client, the primary driver
+- [mysql2](https://github.com/sidorares/node-mysql2) — MySQL / MariaDB client, for the secondary database
+- [ioredis](https://github.com/redis/ioredis) — Robust Redis client, backing both the cache and the queues
+- [BullMQ](https://docs.bullmq.io/) — Redis-based message queue
 - [zod](https://zod.dev) — TypeScript-first schema validation with static type inference
-- [helmet](https://helmetjs.github.io/) — Security middleware for Express.js
-- [express-rate-limit](https://express-rate-limit.mintlify.app/overview) — Rate limiting middleware for Express.js
-- [ioredis](https://github.com/luin/ioredis) — Robust Redis client for Node.js
+- [Pino](https://github.com/pinojs/pino) — Fast, low-overhead logger, with `pino-abstract-transport` and `pino-pretty`
+- [helmet](https://helmetjs.github.io/) — Security middleware for Express
+- [express-rate-limit](https://express-rate-limit.mintlify.app/overview) — Rate limiting middleware for Express
+- [cors](https://github.com/expressjs/cors) — Cross-origin resource sharing
+- [compression](https://github.com/expressjs/compression) — Response compression
+- [cookie-parser](https://github.com/expressjs/cookie-parser) — Cookie parsing
+- [qs](https://github.com/ljharb/qs) — Query string parsing, for nested filter params
 - [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) — JSON Web Token implementation
-- [node-cron](https://github.com/node-cron/node-cron) — Task scheduler for Node.js
-- [nodemailer](https://nodemailer.com/) — Email sending library
-- [BullMQ](https://docs.bullmq.io/) — Redis-based message queue for Node.js
-- [nunjucks](https://github.com/mozilla/nunjucks) — Templating engine for JavaScript
-- [dayjs](https://day.js.org/) — Parses, validates, manipulates, and displays dates and times 
+- [bcrypt](https://github.com/kelektiv/node.bcrypt.js) — Password hashing
+- [sanitize-html](https://github.com/apostrophecms/sanitize-html) — Strips untrusted HTML out of user-submitted content
+- [nodemailer](https://nodemailer.com/) — Email sending over SMTP
+- [@aws-sdk/client-ses](https://github.com/aws/aws-sdk-js-v3) — The alternative email transport
+- [@aws-sdk/client-cloudwatch-logs](https://github.com/aws/aws-sdk-js-v3) — The remote log destination
+- [nunjucks](https://github.com/mozilla/nunjucks) — Templating engine, for emails and pages
+- [node-cron](https://github.com/node-cron/node-cron) — Task scheduler
+- [file-stream-rotator](https://github.com/rogerc/file-stream-rotator) — Rotates the log files
+- [dayjs](https://day.js.org/) — Parses, validates, manipulates, and displays dates and times
+- [uuid](https://github.com/uuidjs/uuid) — Identifier generation
+- [dotenv](https://github.com/motdotla/dotenv) — Loads `.env` in development
+- [reflect-metadata](https://github.com/rbuckton/reflect-metadata) — Required by TypeORM's decorators
 
-Dev only:
+### Dev only
 
-- [typescript](https://www.typescriptlang.org/) 
+- [typescript](https://www.typescriptlang.org/)
+- [tsx](https://github.com/privatenumber/tsx) — Runs the TypeScript entry points and CLI scripts directly
+- [nodemon](https://nodemon.io/) — Restarts the dev server on change
 - [jest](https://jestjs.io/) — JavaScript testing framework
+- [ts-jest](https://kulshekhar.github.io/ts-jest/) — TypeScript preprocessor for Jest
 - [supertest](https://www.npmjs.com/package/supertest) — HTTP assertion library for testing Node.js servers
-- [mailtrap](https://github.com/mailtrap/mailtrap-nodejs) — Mailtrap client for Node.js
+- [node-mocks-http](https://github.com/eugef/node-mocks-http) — Mock `req` / `res` objects for unit tests
+- [mailtrap](https://github.com/mailtrap/mailtrap-nodejs) — Mailtrap client, for inspecting outgoing email
+- [commander](https://github.com/tj/commander.js) — Argument parsing for the `cli/` scripts
 - [tsc-alias](https://github.com/justkey007/tsc-alias) — Rewrites the `@/*` alias to relative paths in the build output
-- [biome](https://biomejs.dev/) — Biome is a fast formatter for JavaScript, TypeScript, JSX, TSX, JSON, HTML, CSS and GraphQL 
+- [biome](https://biomejs.dev/) — Fast formatter and linter for JavaScript, TypeScript, JSX, TSX, JSON, HTML, CSS and GraphQL

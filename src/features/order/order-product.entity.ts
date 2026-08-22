@@ -13,6 +13,7 @@ import type { ProductOptionSnapshot } from '@/features/product/product-option.en
 import type ProductVariantEntity from '@/features/product/product-variant.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 
 const ENTITY_TABLE_NAME = 'order_product';
 
@@ -75,10 +76,20 @@ export default class OrderProductEntity extends EntityAbstract {
 	quantity!: number;
 
 	// COST RELATED
-	@Column('decimal', { precision: 5, scale: 2, nullable: false })
+	@Column('decimal', {
+		precision: 5,
+		scale: 2,
+		nullable: false,
+		transformer: numericTransformer,
+	})
 	vat_rate!: number;
 
-	@Column('decimal', { precision: 12, scale: 2, nullable: false })
+	@Column('decimal', {
+		precision: 12,
+		scale: 2,
+		nullable: false,
+		transformer: numericTransformer,
+	})
 	price!: number;
 
 	@Column('char', {
@@ -96,6 +107,7 @@ export default class OrderProductEntity extends EntityAbstract {
 		default: 1,
 		comment:
 			'Exchange rate to invoice base currency (default 1 = same currency)',
+		transformer: numericTransformer,
 	})
 	exchange_rate!: number;
 

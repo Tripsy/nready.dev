@@ -2,6 +2,7 @@ import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type ProductBundleItemEntity from '@/features/product/product-bundle-item.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 
 const ENTITY_TABLE_NAME = 'product_bundle_item_price';
 
@@ -45,6 +46,7 @@ export default class ProductBundleItemPriceEntity extends EntityAbstract {
 		nullable: false,
 		default: 0,
 		comment: 'Added to the bundle price; negative subtracts',
+		transformer: numericTransformer,
 	})
 	price_delta!: number;
 

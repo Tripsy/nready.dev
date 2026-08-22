@@ -38,6 +38,16 @@ export default async () => {
 				path: '',
 				method: 'get',
 			},
+			readTargets: {
+				path: '/:id/targets',
+				method: 'get',
+				handlers: [validateParamsWhenId('id')],
+			},
+			updateTargets: {
+				path: '/:id/targets',
+				method: 'put',
+				handlers: [validateParamsWhenId('id')],
+			},
 		},
 	};
 

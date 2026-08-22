@@ -84,7 +84,7 @@ export class ArticleAccessPolicy {
 			}
 		}
 
-		if (rule.requires_subscription?.length) {
+		if (rule.requires_subscription) {
 			await this.assertSubscription(auth);
 		}
 
@@ -105,18 +105,17 @@ export class ArticleAccessPolicy {
 				!(await comparePassword(context.password, hashedPassword))
 			) {
 				throw new NotAllowedError(
-					lang('article.error.access_password_invalid'),
+					lang('article.error.invalid_access_password'),
 				);
 			}
 		}
 	}
 
 	/**
-	 * `requires_subscription` holds plan identifiers, but there is no plan entity to match
-	 * them against yet (`subscription` hangs off `order`, and the plan is effectively a
-	 * `product`) — so this only proves the reader holds *an* active subscription, not that it
-	 * is one of the listed plans. Tighten it here once `article_source`-style plan ids exist;
-	 * see the README TODO.
+	 * Proves the reader holds *an* active subscription. The rule carries no plan identifiers:
+	 * there is no plan entity to match them against yet (`subscription` hangs off `order`, and
+	 * the plan is effectively a `product`), so a per-plan gate would be a list nothing reads.
+	 * Add the plan dimension here once plans exist; see the README TODO.
 	 */
 	private async assertSubscription(auth: AuthContext): Promise<void> {
 		if (auth.id === 0) {

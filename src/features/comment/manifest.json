@@ -1,0 +1,8 @@
+{
+	"name": "comment",
+	"version": "1.0.0",
+	"relativePath": "/comment",
+	"entities": ["comment", "comment_subscription"],
+	"depends_on": ["user"],
+	"required_by": []
+}

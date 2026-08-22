@@ -12,13 +12,10 @@ export const EXPECTED_RUN_TIME = 5; // seconds
  * is the only thing that opens the article up: a `public_at` of 09:00 takes effect at the next
  * daily pass, not at 09:00. Set the date to the day the restriction should end, not the minute.
  *
- * `public_at` is deliberately left in place: the flip to `public` is what takes the row out of
- * this query, and the date stays as a record of when the restriction ended. Clearing it would
- * erase that for no gain.
- *
- * The visibility rule row is left alone too — an article that goes public keeps its rule so a
- * later re-restriction does not have to be reconstructed from scratch. `visibility` is the
- * switch; the rule is only consulted while it reads `restricted`.
+ * The release is final. `public_at` is cleared and the visibility rule row is soft-deleted, so
+ * re-restricting an article means stating the terms again rather than reviving a password and
+ * country list nobody has looked at since. `ArticleService.releaseRestricted` does all three
+ * writes in one transaction and records the transition in the audit trail.
  */
 const publicRestrictedArticle = async () => {
 	const entries = await getArticleRepository()
@@ -31,9 +28,7 @@ const publicRestrictedArticle = async () => {
 	let released = 0;
 
 	for (const entry of entries) {
-		entry.visibility = ArticleVisibilityEnum.PUBLIC;
-
-		await articleService.update(entry);
+		await articleService.releaseRestricted(entry);
 
 		released++;
 	}

@@ -52,10 +52,10 @@ export const docs: Record<
 					required: true,
 					values: Object.values(DiscountTypeEnum),
 				},
-				rules: {
+				conditions: {
 					type: 'object',
 					required: false,
-					format: 'Record<string, number | number[] | string | string[]>',
+					format: '{ hour_range?: [number, number]; day_range?: [number, number]; min_order_value?: number; applicable_countries?: string[] }',
 				},
 				value: {
 					type: 'number',
@@ -138,10 +138,10 @@ export const docs: Record<
 					required: false,
 					values: Object.values(DiscountTypeEnum),
 				},
-				rules: {
+				conditions: {
 					type: 'object',
 					required: false,
-					format: 'Record<string, number | number[] | string | string[]>',
+					format: '{ hour_range?: [number, number]; day_range?: [number, number]; min_order_value?: number; applicable_countries?: string[] }',
 				},
 				value: {
 					type: 'number',
@@ -195,6 +195,73 @@ export const docs: Record<
 				id: {
 					type: 'number',
 					required: true,
+				},
+			},
+		},
+	}),
+	readTargets: helperApiInputDocumentation({
+		description:
+			'List the entities a discount is linked to, grouped by scope. Scopes with no links are omitted',
+		withBearerAuth: true,
+		success: {
+			status: 200,
+			description: 'Discount targets retrieved with success',
+			dataSample: { client: [3, 9], category: [12] },
+		},
+		withAuthErrors: true,
+		withErrors: [404],
+		request: {
+			params: {
+				id: {
+					type: 'number',
+					required: true,
+				},
+			},
+		},
+	}),
+	updateTargets: helperApiInputDocumentation({
+		description:
+			'Replace the entities a discount is linked to. Only the scopes present in the body are touched; an empty array clears that scope',
+		withBearerAuth: true,
+		success: {
+			status: 200,
+			description: 'Discount targets updated with success',
+			dataSample: { client: [3, 9], category: [12] },
+		},
+		withAuthErrors: true,
+		withErrors: [404, 422],
+		request: {
+			params: {
+				id: {
+					type: 'number',
+					required: true,
+				},
+			},
+			body: {
+				client: {
+					type: 'array',
+					required: false,
+					format: 'number[]',
+				},
+				variant: {
+					type: 'array',
+					required: false,
+					format: 'number[]',
+				},
+				product: {
+					type: 'array',
+					required: false,
+					format: 'number[]',
+				},
+				category: {
+					type: 'array',
+					required: false,
+					format: 'number[]',
+				},
+				brand: {
+					type: 'array',
+					required: false,
+					format: 'number[]',
 				},
 			},
 		},
@@ -272,10 +339,6 @@ export const docs: Record<
 						type: 'enum',
 						required: false,
 						values: Object.values(DiscountTypeEnum),
-					},
-					reference: {
-						type: 'string',
-						required: false,
 					},
 					start_at_start: {
 						type: 'string',

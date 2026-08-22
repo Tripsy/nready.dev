@@ -28,13 +28,12 @@ export default class ArticleVisibilityRuleEntity extends EntityAbstract {
 	})
 	requires_auth!: boolean;
 
-	@Column('varchar', {
-		array: true,
-		nullable: true,
-		comment:
-			'Subscription plan identifiers granting access; null means subscription is not required',
+	@Column('boolean', {
+		nullable: false,
+		default: false,
+		comment: 'An active subscription is required to view the article',
 	})
-	requires_subscription!: string[] | null;
+	requires_subscription!: boolean;
 
 	@Column('varchar', {
 		length: 2,

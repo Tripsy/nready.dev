@@ -1,0 +1,8 @@
+{
+	"name": "rating",
+	"version": "1.0.0",
+	"relativePath": "/rating",
+	"entities": ["rating"],
+	"depends_on": ["user"],
+	"required_by": []
+}

@@ -21,13 +21,13 @@ function loadSettings() {
 		app: {
 			environment: process.env.APP_ENV || 'development',
 			debug: process.env.APP_DEBUG === 'true',
-			url: process.env.APP_URL || 'http://nready.test',
+			url: process.env.APP_URL || 'http://nready-api.test',
 			port: parseInt(process.env.APP_PORT || '3000', 10),
 			port_while_testing: parseInt(
 				process.env.APP_PORT_WHILE_TESTING || '3001',
 				10,
 			),
-			name: process.env.APP_NAME || 'sample-node-api',
+			name: process.env.APP_NAME || 'nready-api',
 			email: process.env.APP_EMAIL || 'hello@example.com',
 			timezone: process.env.APP_TIMEZONE || 'UTC',
 			currency: process.env.APP_CURRENCY || 'RON',
@@ -43,13 +43,22 @@ function loadSettings() {
 			shared: '/shared',
 		},
 		frontend: {
-			url: process.env.FRONTEND_URL || 'http://dashboard.test',
-			name: process.env.FRONTEND_APP_NAME || 'sample-nextjs-client',
+			url: process.env.FRONTEND_URL || 'http://nready-ui.test',
+			name: process.env.FRONTEND_APP_NAME || 'nready-ui',
 		},
 		security: {
 			allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',').map((v) =>
 				v.trim(),
 			) || ['http://localhost'],
+			/*
+			 * Keys the HMAC behind `hashClientIp` — the form every `user_ip_hash` column
+			 * stores an address in. A separate secret from `user.authSecret` because the two
+			 * rotate on different schedules and the consequences differ: rotating this one
+			 * makes every stored hash stop matching the caller it belongs to, so anything
+			 * rationed per address (one rating per target, guest comment throttling) starts
+			 * counting again from zero.
+			 */
+			ipHashSecret: process.env.IP_HASH_SECRET || 'secret',
 		},
 		redis: {
 			host: process.env.REDIS_HOST || 'localhost',
@@ -63,7 +72,7 @@ function loadSettings() {
 			 * then delete against them — leaving the collision risk in place while appearing
 			 * to solve it.
 			 */
-			keyPrefix: process.env.REDIS_KEY_PREFIX || 'backend',
+			keyPrefix: process.env.REDIS_KEY_PREFIX || 'nready-api',
 		},
 		cache: {
 			ttl: Number(process.env.CACHE_TTL) ?? 60,

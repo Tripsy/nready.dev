@@ -45,6 +45,7 @@ context yet. Read the relevant one *before* proposing an approach in that area, 
 |---|---|---|
 | `api.md` | Express app setup, route registration, controller structure, response envelope | `*.routes.ts`, `*.controller.ts`, `app.ts`, output/param middleware |
 | `auth.md` | Token model, `res.locals.auth`, policy layer, passwords, rate limiting, social login | `account`/`user-permission` features, `*.policy.ts`, auth middleware |
+| `comment.md` | Comment status model, guest vs member writes, automatic flagging at 3 distinct reporters, thread cache, the target-participation registry a target closes itself with | `src/features/comment/**`, `src/features/complaint/**`, `event.config.ts`, `target-participation.config.ts` |
 | `database.md` | Entities, repository/query layer, transactions, migrations, seeds | `*.entity.ts`, `*.repository.ts`, `*.service.ts`, `*.subscriber.ts`, migrations |
 | `error-handling.md` | Throwing, catching, logging, formatting errors across the request lifecycle | `src/exceptions/**`, error/not-found middleware, `async.handler.ts` |
 | `product.md` | The product / variant / option / bundle split, availability windows, order-line arithmetic | `src/features/product/**`, `order-product.entity.ts`, `order-shipping/**` |
@@ -77,27 +78,37 @@ context yet. Read the relevant one *before* proposing an approach in that area, 
 - The code should follow **best practices** and **design principles** like SOLID, KISS, DRY, and
   strong security standards.
 
-## Decision Documentation
+## Code Comments
 
-- Explain your reasoning for non-obvious decisions in comments
-- **Write comments about the code as it is, never as a diff against what it was.** No "this
-  used to run unconditionally", no "the previous order broke X". State the constraint that
-  still applies ("split before the lowercase, which destroys the case boundary the split
+Comments are wanted — they carry what the code cannot say for itself, and they are the
+reference both a future reader and a future session work from.
+
+- **Describe the code as it is, never as a diff against what it was.** No "this used to run
+  unconditionally", no "the previous order broke X", no "chose X over Y". State the constraint
+  that still applies ("split before the lowercase, which destroys the case boundary the split
   reads") and leave the before/after for the commit message
-- If there are two valid approaches, document why you chose one over the other
+- Not absolute: name a past state when it still constrains the present — a workaround an
+  upstream bug requires, a shape kept for data already written — because a reader has to know
+  it to change the code safely
 - Note any performance implications or trade-offs
 
 ## Development Environment
 
-Development runs **inside a Docker container** (`nready`, `$DOCKER_CONTAINER`), where the project is
-mounted at `/var/www/html`. Several scripts and CLI entry points hardcode that path — run migration,
-seed and CLI commands from inside the container. Package manager is **pnpm** (single-package
+Development runs **inside a Docker container** (`nready-api.test`, `$DOCKER_CONTAINER`), where the
+project is mounted at `/var/www/html`. Several scripts and CLI entry points hardcode that path — run
+migration, seed and CLI commands from inside the container. Package manager is **pnpm** (single-package
 workspace defined in `pnpm-workspace.yaml`).
 
 ```bash
 docker compose up                     # start container (requires external `development` network)
 docker exec -it $DOCKER_CONTAINER /bin/bash
 ```
+
+**Both dev servers (this API and `../nready-ui`) are driven by `/dev-stack`** —
+`.claude/scripts/dev-stack.sh start|stop|down|restart|status|logs|doctor [api|ui|all]`. It brings
+the containers up, launches `pnpm run dev` detached in each, waits on the health endpoints and
+writes `<project>/logs/dev.log` (gitignored, readable from the host). Use it instead of
+`docker exec -it … pnpm run dev`, which blocks the session and leaves no log to diagnose from.
 
 ## Commands
 
@@ -187,7 +198,7 @@ wired via constructor injection at the bottom of the file:
 - `*.routes.ts` — default-exports a `FeatureRoutesModule` (`basePath`, `controller`, `routes` map).
 
 Optional per-feature `locales/`, `cron-jobs/`, `database/`, `*.subscriber.ts`, `*.listener.ts`,
-`*.mock.ts`, `tests/`, `manifest.json`.
+`*.bootstrap.ts`, `*.mock.ts`, `tests/`, `manifest.json`.
 
 **A new feature owning a table gets a demo seed** — `database/<feature>.seed.ts`, registered in
 `src/database/seed/index.ts` after its parents. Treat it as part of the feature, not a follow-up:
@@ -218,6 +229,15 @@ suffix and a file is picked up automatically:
   job fn), `SCHEDULE_EXPRESSION` and `EXPECTED_RUN_TIME`. Runs are recorded to `cron_history`.
 - **Event listeners** — `src/config/listeners.setup.ts` finds `*.listener.{ts|js}` and calls each
   default export to register handlers on the shared emitter (`src/config/event.config.ts`).
+- **Feature bootstrap** — `src/config/bootstrap.setup.ts` finds `*.bootstrap.{ts|js}` (features
+  only) and calls each default export before the server listens. This is where a feature
+  *registers itself* with a shared registry so another feature can reach it by name without
+  importing it — `article.bootstrap.ts` registers what an article accepts from its readers with
+  `target-participation.config.ts`. Not for event handlers, and not for work: it is startup
+  latency on every deployment.
+
+Both of the last two run through `runFeatureModules()` (`src/config/feature-modules.setup.ts`),
+which owns the scan, the import, the "no default export" error and the one-line-per-pass logging.
 
 The dev/prod file extension is resolved by `Configuration.resolveExtension()` (`ts` in dev, `js` in
 production), so discovery works against built output too.
@@ -380,20 +400,23 @@ driver-session, stats) but shares `src/shared/**`, `src/config/**`, `src/middlew
 say so and offer to port it; when reviewing a fix that originated there, check it applies before
 copying it over.
 
-`../nready-ui` is this project's frontend. **It does not exist yet** — it will be a Next.js app
-modelled on `../star-ui`, which pairs with `star-api` the same way. Until it lands, treat every
-mention of it as forward-looking: don't try to read it, and don't assume a call site there.
+`../nready-ui` (available via `permissions.additionalDirectories`) is this project's frontend — a
+Next.js 16 app.
 
 The two connect purely over HTTP, so the API contract is the whole coupling:
 
 - When `src/features/**/*.controller.ts` or `src/features/**/*.routes.ts` changes, state which
-  `nready-ui` service (`src/services/*.service.ts`) needs the matching update. Once the repo exists,
-  make the change there too.
+  `nready-ui` service (`src/services/*.service.ts`) needs the matching update, and make the change
+  there too.
+- Enums are mirrored by hand on both sides. `nready-ui`'s `src/models/permission.model.ts`
+  (`PermissionEntityType`), `log-history.model.ts` (`LogHistoryEntities`, backend *table* names) and
+  the per-entity model enums track this project's entities — when an entity, status, role or
+  category enum changes here, say so and update the matching model there.
 - Response shape is the envelope above; dates are ISO 8601 strings; protected routes need
   `Authorization: Bearer {accessToken}`.
 - Frontend conventions live in that repo's own `.claude/rules/` (`forms.md`, `data-fetching.md`,
   `state.md`, `typescript.md`) — consult those rather than inferring frontend rules from this
-  project. `star-ui` carries the same set today and is the closest reference.
+  project.
 
 ## Project Structure
 
@@ -461,7 +484,7 @@ The two connect purely over HTTP, so the API contract is the whole coupling:
 - Skip tests after applying changes. Run tests only on demand or before git push commands. When
   running tests, scope them to the changed files in the current diff rather than the full suite,
   unless a full run is requested.
-- Do not run biome after applying changes. Run it only on demand or before git push commands.
+- Do not run biome after applying changes. Run it only on demand or before git commit commands.
 - **Never commit onto `main`.** GitHub refuses a direct push to it, so a commit made there has to be
   moved off before it can go anywhere. If the current branch is `main` when a commit is requested,
   create the branch first (`git switch -c <type>/<short-name>`) and commit on that. The same applies

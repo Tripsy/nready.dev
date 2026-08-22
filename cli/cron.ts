@@ -5,22 +5,35 @@
 //  the data source dependencies
 
 import { Command } from 'commander';
+import { setupFeatureBootstrap } from '@/config/bootstrap.setup';
+import { setupListeners } from '@/config/listeners.setup';
 import archiveArticle from '@/features/article/cron-jobs/archive-article.cron';
+import expireFeaturedArticle from '@/features/article/cron-jobs/expire-featured-article.cron';
 import publicRestrictedArticle from '@/features/article/cron-jobs/public-restricted-article.cron';
 import publishScheduledArticle from '@/features/article/cron-jobs/publish-scheduled-article.cron';
+import notifyCommentSubscribers from '@/features/comment/cron-jobs/notify-comment-subscribers.cron';
 import cronTimeCheck from '@/shared/cron-jobs/cron-time-check.cron';
 import dataSource from '../src/config/data-source.config';
 import { getCronJobsPaths } from '../src/providers/cron.provider';
 
 type CronJob = () => Promise<unknown>;
 
+const BACKGROUND_DRAIN_MS = 500;
+
+/** Gives fire-and-forget listener writes time to finish before the process exits. */
+function drainBackgroundWork(): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, BACKGROUND_DRAIN_MS));
+}
+
 const program = new Command();
 
 const cronJobs: Record<string, CronJob> = {
 	'cron-time-check': cronTimeCheck,
 	'archive-article': archiveArticle,
+	'expire-featured-article': expireFeaturedArticle,
 	'public-restricted-article': publicRestrictedArticle,
 	'publish-scheduled-article': publishScheduledArticle,
+	'notify-comment-subscribers': notifyCommentSubscribers,
 };
 
 program
@@ -40,9 +53,26 @@ program
 
 		await dataSource.initialize();
 
+		/*
+		 * The scheduled runs inherit both of these from `bootstrap.ts`; this runner has no
+		 * bootstrap, so without them the audit trail and cache purges a job emits go nowhere
+		 * (the job looks like it silently skipped them), and a job writing against a
+		 * polymorphic target would find every target open because nothing registered a
+		 * resolver.
+		 */
+		await setupFeatureBootstrap();
+		await setupListeners();
+
 		console.debug(`Running ${cronName}...`);
 		const result = await cronFn();
 		console.debug('Result: ', result);
+
+		/*
+		 * Listeners write through `runInBackground`, which is deliberately not awaited — a
+		 * bare `process.exit` here outruns the insert. The server never faces this because it
+		 * keeps running; a one-shot process has to give the handlers a tick to land.
+		 */
+		await drainBackgroundWork();
 
 		process.exit(0);
 	});

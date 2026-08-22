@@ -2,6 +2,7 @@ import { Check, Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import type ProductVariantEntity from '@/features/product/product-variant.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 
 const ENTITY_TABLE_NAME = 'product_price';
 
@@ -47,6 +48,7 @@ export default class ProductPriceEntity extends EntityAbstract {
 		scale: 2,
 		nullable: false,
 		comment: 'The selling price, per `product.unit`',
+		transformer: numericTransformer,
 	})
 	price!: number;
 
@@ -56,6 +58,7 @@ export default class ProductPriceEntity extends EntityAbstract {
 		nullable: true,
 		comment:
 			"Manufacturer's recommended retail price; display reference only, never charged",
+		transformer: numericTransformer,
 	})
 	rrp!: number | null;
 
@@ -67,6 +70,7 @@ export default class ProductPriceEntity extends EntityAbstract {
 		scale: 2,
 		nullable: true,
 		comment: 'Lowest price a discount may resolve to',
+		transformer: numericTransformer,
 	})
 	min_price!: number | null;
 

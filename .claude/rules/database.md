@@ -263,6 +263,12 @@ tsx /var/www/html/src/features/template/database/template.seed.ts
 tsx /var/www/html/src/features/permission/database/permission.seed.ts
 ```
 
+A feature that sends its own email keeps its templates with itself, in
+`features/<name>/database/<name>.templates.ts`, default-exporting a `TemplateSeedEntry[]`. The
+template seed discovers those files and inserts them alongside its own list, so an additional
+feature installed or removed through `cli/feature.ts` takes its templates with it and the core seed
+needs no edit. Only templates the core features render belong in `template.seed.ts` itself.
+
 **Bootstrap** — `account/database/admin.seed.ts`. Creates the first administrator so a freshly
 migrated database has a way in. Credentials are read from `ADMIN_EMAIL` / `ADMIN_PASSWORD` and have
 **no defaults**: a fallback would be a published administrator password the moment it runs anywhere

@@ -16,6 +16,7 @@ export const paramsUpdateList: string[] = ['parent_id', 'contents'];
 export const OrderByEnum = {
 	ID: 'id',
 	LABEL: 'label',
+	SORT_ORDER: 'sort_order',
 	CREATED_AT: 'created_at',
 	UPDATED_AT: 'updated_at',
 } as const;
@@ -127,10 +128,72 @@ export class CategoryValidator extends BaseValidator<typeof validatorMessages> {
 				required: false,
 				minChars: Configuration.get('filter.termMinLength'),
 			}),
+			/*
+			 * `parent_id` and `is_root` together address one sibling group — the same set
+			 * `orderUpdate` reorders, which is why a manual-order listing needs them.
+			 * They are separate params because a null parent cannot survive a query
+			 * string: `preprocessOptional` folds an empty value onto `undefined`, so
+			 * "the roots" is indistinguishable from "any parent" without its own flag.
+			 * `is_root` wins when both are sent.
+			 */
+			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
+				required: false,
+			}),
+			is_root: this.validateBoolean(this.getMessage('invalid_boolean'), {
+				required: false,
+			}).default(false),
+			/*
+			 * Only categories with room for a child under their type's depth limit — what a
+			 * parent picker has to offer, so the choice it presents and the rule the service
+			 * enforces on save cannot drift apart.
+			 */
+			can_parent: this.validateBoolean(
+				this.getMessage('invalid_boolean'),
+				{ required: false },
+			).default(false),
 			is_deleted: this.validateBoolean(
 				this.getMessage('invalid_boolean'),
 				{ required: false },
 			).default(false),
+		},
+	});
+
+	/**
+	 * The anonymous listing. Deliberately narrower than `find`: no `status` and no
+	 * `is_deleted`, because a visitor may only ever address the published tree and the
+	 * service pins both. What remains is how to slice that tree — by type, by sibling group,
+	 * or by search term.
+	 */
+	readonly publicFind = this.validateFind({
+		orderByEnum: OrderByEnum,
+		defaultOrderBy: OrderByEnum.SORT_ORDER,
+
+		directionEnum: OrderDirectionEnum,
+		defaultDirection: OrderDirectionEnum.DESC,
+
+		defaultLimit: Configuration.get('filter.limit'),
+		defaultPage: 1,
+
+		filterSchema: {
+			language: this.validateLanguage(
+				this.getMessage('invalid_language'),
+				{ required: false },
+			),
+			type: this.validateEnum(
+				CategoryTypeEnum,
+				this.getMessage('invalid_type'),
+				{ required: false },
+			).default(CategoryTypeEnum.PRODUCT),
+			// No `term`: `filterByTerm` searches the parent's label too, through a
+			// `parentContent` alias this projection has no reason to join.
+			// Same pair as `find`, for the same reason: an empty `parent_id` cannot express
+			// "the roots" in a query string, so the flag carries it.
+			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
+				required: false,
+			}),
+			is_root: this.validateBoolean(this.getMessage('invalid_boolean'), {
+				required: false,
+			}).default(false),
 		},
 	});
 

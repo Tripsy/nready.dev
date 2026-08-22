@@ -176,6 +176,9 @@ product, and the line has to keep saying what it was.
 | Happy hour, coupons, loyalty | `discount` + `product_discount` | Conditional on customer or date, applied *on top of* the resolved price |
 | Size, colour, capacity | `product_variant_attribute` | Own SKU, own price, own stock |
 
+Which labels a product is *expected* to fill in, and what counts as an admissible value, is declared
+per category — see §12.
+
 ## 8. Bundles
 
 `product.composition` is `simple` or `bundle`. It is deliberately **not** a value on `type`:
@@ -306,6 +309,15 @@ These need the service layer. None of them can be pushed into a constraint.
    component lines hold the real, stockable variants. Allocating the header would leave the stock
    movement with nothing to consume.
 
+10. **A list-backed attribute definition has at least one option**, and a recorded `value_term_id`
+    is one of them. `value_type = 'term'` implies rows in `product_category_attribute_option`, which
+    a row-level check cannot count; the admissible-value check spans three tables (§12).
+11. **`value_base` agrees with `value_numeric` and the definition's `unit`.** The check ties the two
+    columns' nullability together, but nothing verifies the arithmetic — only the service applying
+    `toBaseUnit` on every write does. Changing a definition's `unit` therefore has to rewrite every
+    value already recorded under it, or the stored base figures describe a quantity the form no
+    longer shows.
+
 `order_product.variant_id` and `product_id` used to belong on this list. They no longer do: the
 `variant` relation is a composite foreign key over both columns against
 `product_variant (id, product_id)`, so the database rejects the mismatch. Worth copying for
@@ -331,7 +343,149 @@ full design is in the README TODO. Two things settled here because they touch th
   again. They belong in a write-off, or in a quarantine location. Nothing detects this
   automatically; the return has to ask.
 
-## 12. Deferred, with the decision already made
+## 12. Category-declared attributes
+
+`product_category_attribute` declares what a product in a category is expected to say about itself.
+It holds no product data — it is the schema the product form renders from and the validator checks
+against.
+
+### 12.1. The value stops being text
+
+The point of the table is that `500 ml` stops being one string. The number goes in
+`product_attribute.value_numeric` as a bare `500`; `ml` is the definition's `unit` and is applied at
+render. Only that split makes *"drinks between 300 and 600 ml"* answerable — a value living in
+`term_content` would have to be cast out of localized text, per language, with no index in reach.
+
+Four value columns, exactly one filled, enforced by a `@Check`:
+
+| Definition `value_type` | Column |
+|---|---|
+| `term` | `value_term_id` |
+| `number` | `value_numeric` (+ `value_base`) |
+| `string` | `value_text` |
+| `boolean` | `value_boolean` |
+
+`term` is the default and the one to reach for whenever the value is a word. A term-backed value is
+a row other products point at too, so renaming *Gluten* corrects every product at once and both
+language catalogs read the same record. `string` is for a literal owned by a single product — a
+model code, a batch reference — where sharing would mean nothing.
+
+### 12.2. Units convert on write
+
+A label may legitimately be quoted differently in different categories — *Volume* in `ml` under
+Drinks, in `l` under Bulk. `value_base` is what makes a range spanning both correct: every unit in
+`MeasureUnitEnum` (`src/shared/types/measure-unit.type.ts`) declares a `dimension` and a `factor`
+into that dimension's base, and `toBaseUnit` applies it as the row is written. 0.5 l and 500 ml both
+land on 500.
+
+- **Filters compare `value_base`; display uses `value_numeric` + the unit's symbol.** The facet
+  index is on `value_base` for that reason.
+- **A unitless number gets a `value_base` too**, equal to `value_numeric`. Every numeric attribute
+  has one, so the filter needs no branch and there is one indexed column rather than two.
+- **Converting at read time would cost the index scan** — arithmetic between the filter and the
+  index. It happens once, on write.
+- **`value_base` is wider than its source** (`numeric(20,6)` against `numeric(14,4)`): converting
+  upward multiplies, and 5 t is 5,000,000 g.
+- **Only ratio scales convert.** Temperature is absent on purpose — °C to K is affine, so a factor
+  cannot express it.
+- **Changing a definition's `unit` does not reinterpret existing values.** Every row under it has to
+  be rewritten through the same conversion, or the stored base figures describe a quantity the form
+  no longer shows (§10.11).
+
+`suffix` survives alongside `unit` for decoration a measure does not cover — `pcs`, `%`. A `@Check`
+forbids both at once, since they would give two answers to what follows the number.
+
+### 12.3. `scope` — which table the value lands in
+
+`product` writes to `product_attribute`, `variant` to `product_variant_attribute`. The distinction
+is §7's, and the form cannot place a value without it: *Colour* asked once for the product and
+*Colour* asked once per variant are different products.
+
+### 12.4. `value_type` and `type` are orthogonal
+
+`value_type` is storage, `type` is capture — *330* is a number whether typed or picked from a list.
+A `@Check` holds the pairings that mean something:
+
+| `type` | admissible `value_type` |
+|---|---|
+| `input` | `number`, `string`, `boolean` |
+| `select`, `radio` | `term` |
+| `checkbox` | `term` (multi-pick) or `boolean` (lone toggle) |
+
+Options live in **`product_category_attribute_option`** — one row per admissible value, pointing at
+an `attribute_value` term, ordered by `sort_order`. A table rather than a `jsonb` array of strings,
+because the term buys three things a literal cannot: wording renders per language from
+`term_content`, two categories offering the same list point at the same records, and a rename
+corrects every product already carrying the value. The product stores that same `term_id` in
+`value_term_id`, so the option list and the recorded value are one vocabulary rather than two
+spellings that have to agree.
+
+That the list is non-empty, and that a recorded value is on it, are **service-layer invariants**
+(§10.10) — a row-level check cannot count rows in another table.
+
+**A numeric attribute has no options.** Its restriction is `min_value` / `max_value`, which is what
+bounds a measurement and leaves the number in `value_numeric` where it stays filterable. A dropdown
+of allowed numbers would put the value back in a `term` and forfeit range filtering entirely; if a
+catalog genuinely needs one, that trade is the thing to weigh.
+
+### 12.5. Uniqueness says two different things
+
+`product_attribute` carries two partial unique indexes rather than one, because the rule genuinely
+differs by shape and a nullable column inside a single key would enforce neither — Postgres counts
+every NULL as distinct.
+
+- Term-backed rows are unique on `(product_id, attribute_label_id, value_term_id)`, so a product may
+  list three allergens under one label.
+- Scalar rows are unique on `(product_id, attribute_label_id)`, so a label admits exactly one
+  number, string or boolean. A product has one volume.
+
+A multi-pick `checkbox` is therefore **one row** whose `value_text` holds the joined selection, not
+one row per choice.
+
+### 12.6. Resolving the form for a product
+
+A product sits in *several* categories (`product_category` is many-to-many), so the definition set
+is a union, not a lookup:
+
+1. The product's `category_id`s.
+2. Expand to ancestors through the closure table, keeping rows with `inherit = true`; a category's
+   own definitions apply regardless.
+3. Dedupe by `attribute_label_id`, **deepest category wins** — a child overrides an ancestor's
+   `type` / `suffix` / `options` rather than adding to it.
+4. Split by `scope`.
+5. Order by `sort_order`, then label.
+
+### 12.7. Filtering
+
+Two partial covering indexes per attribute table, one for each filterable shape. Both lead on the
+label, because a filter always names one, and both carry the owning id so the scan answers from the
+index alone. The pre-existing `IDX_product_attribute_attribute_value_id` cannot serve either — it
+leads on the value — and stays only for the cascade `term` triggers on delete.
+
+Combine facets with **one indexed subquery per facet, `INTERSECT`ed**. A single `OR`-of-`AND`s
+cannot use a composite index leading on the label and degrades to a sequential scan:
+
+```sql
+SELECT product_id FROM product_attribute
+ WHERE attribute_label_id = :volume AND value_numeric BETWEEN 300 AND 600
+   AND deleted_at IS NULL
+INTERSECT
+SELECT product_id FROM product_attribute
+ WHERE attribute_label_id = :colour AND value_term_id = ANY(:colours)
+   AND deleted_at IS NULL;
+```
+
+`is_filterable` governs which facets the storefront offers. The indexes cover every row regardless,
+so it is a product decision, not a performance one.
+
+### 12.8. Not built yet
+
+The entities exist and nothing else does — no migration, repository, service, validator, policy or
+routes, and no UI. The `product` feature has no HTTP surface at all, so the end goal (the product
+form rendering its category's attributes) is blocked on that feature being built. The resolution
+walk in §12.6 and the `@Check` combinations in §12.4 both want tests when they are written.
+
+## 13. Deferred, with the decision already made
 
 - **Named menus** — `product_availability` says *when*, but nothing groups windows into a
   customer-facing "lunch menu", and two products sharing a schedule repeat it row for row.

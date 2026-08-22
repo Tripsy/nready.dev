@@ -52,6 +52,11 @@ testControllerUpdateWithContent<CategoryEntity, CategoryValidator>({
 	policy: categoryPolicy,
 	service: categoryService,
 	updateData: categoryInputPayloads.update,
+	mockLoadEntry: (entityMock) => {
+		jest.spyOn(categoryService, 'findByIdWithParent').mockResolvedValue(
+			entityMock,
+		);
+	},
 });
 
 testControllerRead<CategoryEntity>({

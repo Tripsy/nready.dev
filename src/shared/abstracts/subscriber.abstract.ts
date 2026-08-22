@@ -102,6 +102,22 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 	}
 
 	/**
+	 * The id the event concerns, or `undefined` when neither side carries one.
+	 *
+	 * Both sides can be absent at once: TypeORM schedules a removal for a relation row it never
+	 * loaded when `save()` is handed a populated relation the entity was not loaded with, and
+	 * such a subject has no `entity.id` and no `databaseEntity` at all. Reading through it threw
+	 * and took the whole save down, so the handlers below skip rather than guess an id — an
+	 * unidentifiable row has no cache key to clear and nothing meaningful to log.
+	 */
+	private resolveEventId(event: {
+		entity?: { id?: number } | null;
+		databaseEntity?: { id?: number } | null;
+	}): number | undefined {
+		return event.entity?.id ?? event.databaseEntity?.id;
+	}
+
+	/**
 	 * When entry is removed from the database,
 	 * `event.entity` will be undefined if the entity is not properly loaded via Repository
 	 *
@@ -112,7 +128,11 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 			return;
 		}
 
-		const id: number = event.entity?.id || event.databaseEntity.id;
+		const id = this.resolveEventId(event);
+
+		if (!id) {
+			return;
+		}
 
 		this.cacheClean(id);
 
@@ -130,7 +150,11 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 			return;
 		}
 
-		const id: number = event.entity?.id || event.databaseEntity.id;
+		const id = this.resolveEventId(event);
+
+		if (!id) {
+			return;
+		}
 
 		this.cacheClean(id);
 
@@ -150,7 +174,11 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 			return;
 		}
 
-		const id: number = event.entity?.id || event.databaseEntity.id;
+		const id = this.resolveEventId(event);
+
+		if (!id) {
+			return;
+		}
 
 		this.cacheClean(id);
 

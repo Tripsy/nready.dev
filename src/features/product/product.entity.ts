@@ -12,7 +12,6 @@ import type ProductAvailabilityEntity from '@/features/product/product-availabil
 import type ProductBundleGroupEntity from '@/features/product/product-bundle-group.entity';
 import type ProductBundleItemEntity from '@/features/product/product-bundle-item.entity';
 import type ProductCategoryEntity from '@/features/product/product-category.entity';
-import type ProductDiscountEntity from '@/features/product/product-discount.entity';
 import type ProductOptionGroupEntity from '@/features/product/product-option-group.entity';
 import type ProductTagEntity from '@/features/product/product-tag.entity';
 import type ProductVariantEntity from '@/features/product/product-variant.entity';
@@ -303,12 +302,6 @@ export default class ProductEntity extends EntityAbstract {
 		(bundleItem: ProductBundleItemEntity) => bundleItem.product,
 	)
 	bundle_items?: ProductBundleItemEntity[];
-
-	@OneToMany(
-		'ProductDiscountEntity',
-		(productDiscount: ProductDiscountEntity) => productDiscount.product,
-	)
-	discounts?: ProductDiscountEntity[];
 
 	@OneToMany('ProductTagEntity', (tag: ProductTagEntity) => tag.product)
 	tags?: ProductTagEntity[];

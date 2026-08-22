@@ -1,0 +1,8 @@
+{
+	"name": "complaint",
+	"version": "1.0.0",
+	"relativePath": "/complaint",
+	"entities": ["complaint"],
+	"depends_on": ["user"],
+	"required_by": []
+}

@@ -1,0 +1,23 @@
+{
+	"validation": {
+		"invalid_entity_type": "Select what is being rated",
+		"invalid_entity_id": "Invalid entity ID",
+		"invalid_type": "Select rating type",
+		"invalid_value_like": "A like must be 1 or -1",
+		"invalid_value_stars": "A star rating must be a whole number between 1 and 5",
+		"invalid_reaction": "Select a reaction",
+		"invalid_entity_ids": "Ask for between 1 and 50 targets"
+	},
+	"error": {
+		"not_found": "Rating not found",
+		"already_rated": "You already rated this",
+		"already_rated_ip": "This address already rated this",
+		"ip_unresolved": "Your rating could not be recorded because your origin address is unknown",
+		"not_accepted": "Ratings are closed for this"
+	},
+	"success": {
+		"create": "Rating recorded successfully",
+		"update": "Rating updated successfully",
+		"delete": "Rating removed successfully"
+	}
+}

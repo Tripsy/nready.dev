@@ -19,7 +19,8 @@
 		"has_descendants": "Category has active descendants",
 		"not_deleted": "Category is not marked as deleted",
 		"parent_not_active": "Parent category is not active",
-		"has_active_descendants": "Category has active descendants"
+		"has_active_descendants": "Category has active descendants",
+		"max_depth": "A `{{type}}` category tree may be at most {{max}} levels deep"
 	},
 	"success": {
 		"create": "Category created successfully",

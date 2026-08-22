@@ -10,6 +10,10 @@ import {
 	discountService,
 } from '@/features/discount/discount.service';
 import { DiscountValidator } from '@/features/discount/discount.validator';
+import {
+	type DiscountTargetService,
+	discountTargetService,
+} from '@/features/discount/discount-target.service';
 import asyncHandler from '@/helpers/async.handler';
 import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { BaseController } from '@/shared/abstracts/controller.abstract';
@@ -20,6 +24,7 @@ class DiscountController extends BaseController {
 		private validator: DiscountValidator,
 		private cache: CacheProvider,
 		private discountService: DiscountService,
+		private targetService: DiscountTargetService,
 	) {
 		super();
 	}
@@ -89,6 +94,47 @@ class DiscountController extends BaseController {
 		res.json(res.locals.output);
 	});
 
+	public readTargets = asyncHandler(async (req: Request, res: Response) => {
+		this.policy.canRead(res.locals.auth);
+
+		const data = this.validate(this.validator.read, req.params, res);
+
+		// Confirms the discount exists (and is not soft-deleted for this caller) before
+		// reporting links, so a bad id answers 404 rather than an empty set.
+		await this.discountService.findById(
+			data.id,
+			this.policy.allowDeleted(res.locals.auth),
+		);
+
+		res.locals.output.data(await this.targetService.listTargets(data.id));
+
+		res.json(res.locals.output);
+	});
+
+	public updateTargets = asyncHandler(async (req: Request, res: Response) => {
+		this.policy.canUpdate(res.locals.auth);
+
+		const data = this.validate(
+			this.validator.targets,
+			{
+				...req.body,
+				id: req.params.id,
+			},
+			res,
+		);
+
+		await this.discountService.findById(data.id, false);
+
+		const { id, ...targets } = data;
+
+		res.locals.output.data(
+			await this.targetService.replaceTargets(id, targets),
+		);
+		res.locals.output.message(lang('discount.success.targets'));
+
+		res.json(res.locals.output);
+	});
+
 	public delete = asyncHandler(async (req: Request, res: Response) => {
 		this.policy.canDelete(res.locals.auth);
 
@@ -142,4 +188,5 @@ export const discountController = new DiscountController(
 	new DiscountValidator('discount'),
 	cacheProvider,
 	discountService,
+	discountTargetService,
 );

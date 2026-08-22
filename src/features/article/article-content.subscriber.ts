@@ -13,7 +13,6 @@ export class ArticleContentSubscriber extends SubscriberAbstract<ArticleContentE
 			afterInsert: true,
 			afterUpdate: true,
 			beforeRemove: true,
-			afterSoftRemove: true,
 		};
 	}
 }

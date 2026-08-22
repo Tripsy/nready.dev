@@ -1,5 +1,6 @@
 import { expect, jest } from '@jest/globals';
 import { Configuration } from '@/config/settings.config';
+import { NotFoundError } from '@/exceptions/not-found.error';
 import { getAccountRecoveryMock } from '@/features/account/account.mock';
 import type AccountRecoveryEntity from '@/features/account/account-recovery.entity';
 import type { AccountRecoveryQuery } from '@/features/account/account-recovery.repository';
@@ -152,6 +153,31 @@ describe('AccountRecoveryService', () => {
 				false,
 				true,
 			);
+		});
+
+		/*
+		 * The redeemed row is spared by `exceptId`, so the filter usually matches nothing
+		 * and `delete()` answers with a 404. Letting that escape surfaced as a
+		 * "Record(s) not found" on an otherwise successful password recovery.
+		 */
+		it('should tolerate an empty match', async () => {
+			mockAccountRecovery.query.delete.mockRejectedValue(
+				new NotFoundError('Record(s) not found'),
+			);
+
+			await expect(
+				serviceAccountRecovery.removeAccountRecoveryForUser(7, 42),
+			).resolves.toBeUndefined();
+		});
+
+		it('should propagate any other failure', async () => {
+			mockAccountRecovery.query.delete.mockRejectedValue(
+				new Error('connection lost'),
+			);
+
+			await expect(
+				serviceAccountRecovery.removeAccountRecoveryForUser(7),
+			).rejects.toThrow('connection lost');
 		});
 	});
 

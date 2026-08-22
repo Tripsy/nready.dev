@@ -1,10 +1,19 @@
-import type { DeepPartial, EntityManager } from 'typeorm';
+import {
+	type DeepPartial,
+	type EntityManager,
+	QueryFailedError,
+} from 'typeorm';
 import dataSource from '@/config/data-source.config';
+import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import ArticleEntity, {
+	type ArticleDetails,
+	type ArticleSettings,
 	type ArticleStatus,
 	ArticleVisibilityEnum,
+	applyArticleSettings,
+	resolveArticleSettings,
 	STATUS_TRANSITIONS,
 } from '@/features/article/article.entity';
 import { getArticleRepository } from '@/features/article/article.repository';
@@ -14,19 +23,39 @@ import type {
 } from '@/features/article/article.validator';
 import type { ArticleAccessTarget } from '@/features/article/article-access.policy';
 import ArticleCategoryRepository from '@/features/article/article-category.repository';
-import type { ArticleAuthorType } from '@/features/article/article-content.entity';
+import {
+	type ArticleAuthorType,
+	SLUG_UNIQUE_INDEX,
+} from '@/features/article/article-content.entity';
 import ArticleContentRepository from '@/features/article/article-content.repository';
 import ArticleTagRepository from '@/features/article/article-tag.repository';
 import ArticleVisibilityRuleEntity from '@/features/article/article-visibility-rule.entity';
+import CategoryEntity, {
+	CategoryTypeEnum,
+} from '@/features/category/category.entity';
+import {
+	type ImagePropertiesType,
+	ImageSectionEnum,
+	ImageStatusEnum,
+	type ImageStorage,
+	ImageTypeEnum,
+} from '@/features/image/image.entity';
+import { getImageRepository } from '@/features/image/image.repository';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { encryptPassword } from '@/helpers/security.helper';
+import { cacheProvider } from '@/providers/cache.provider';
+import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
 	assertValidStatusTransition,
 	cleanEntityCache,
 } from '@/shared/abstracts/service.abstract';
+import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
-/** Columns owned by the article row itself — the rest live in child tables. */
+/**
+ * Columns owned by the article row itself — the rest live in child tables
+ * (`article_content`, `article_category`, `article_tag`, `article_visibility_rule`).
+ */
 const entryColumns: string[] = [
 	'layout',
 	'publish_at',
@@ -36,49 +65,122 @@ const entryColumns: string[] = [
 	'visibility',
 	'public_at',
 	'source',
-	'author_id',
 ];
+
+const slugConflictError = (): CustomError =>
+	new CustomError(409, lang('article.error.slug_already_exists'));
+
+/**
+ * The one image a public surface shows for an article: the first of its gallery, by
+ * `sort_order`. `null` when the article has none — a listing is expected to hold both.
+ */
+export type ArticleCoverImageType = {
+	id: number;
+	path: string;
+	storage: ImageStorage;
+	properties: ImagePropertiesType | null;
+};
+
+export type WithCoverImage<T> = T & {
+	cover_image: ArticleCoverImageType | null;
+};
 
 export class ArticleService {
 	constructor(private repository: ReturnType<typeof getArticleRepository>) {}
 
 	/**
+	 * The slug check reads outside the transaction that writes the content, so two
+	 * concurrent requests can both find the slug free and only the second one meets
+	 * the `(slug, language)` unique index. Postgres answers that with a bare unique
+	 * violation, which the error handler would mask as a 500 — mapped back onto the
+	 * same 409 the pre-check raises so the race and the ordinary case read alike.
+	 *
+	 * The index is matched by name: the table carries a second unique index whose
+	 * violation would mean something else entirely.
+	 */
+	private async withSlugGuard<T>(operation: () => Promise<T>): Promise<T> {
+		try {
+			return await operation();
+		} catch (error) {
+			if (
+				RepositoryAbstract.isUniqueViolation(error) &&
+				error instanceof QueryFailedError &&
+				error.driverError?.constraint === SLUG_UNIQUE_INDEX
+			) {
+				throw slugConflictError();
+			}
+
+			throw error;
+		}
+	}
+
+	/**
+	 * The read shape: `details` traded for the switches it holds, resolved against the
+	 * deployment defaults.
+	 *
+	 * Both read surfaces hand articles out this way. `settings` is a response field rather than
+	 * a column — the effective value of three keys, not the storage — so it is assembled here
+	 * instead of being set on the entity, which has no such property and would carry it
+	 * undefined everywhere else.
+	 *
+	 * `details` itself does not travel. It is free-form storage the article may hold anything
+	 * else in, the public payload is cached and served anonymously, and the dashboard edits the
+	 * switches through `settings`.
+	 */
+	private withSettings<T extends { details: ArticleDetails | null }>(
+		entry: T,
+	): Omit<T, 'details'> & { settings: ArticleSettings } {
+		const { details, ...rest } = entry;
+
+		return {
+			...rest,
+			settings: resolveArticleSettings(details),
+		};
+	}
+
+	/**
 	 * @description Used in `create` method from controller;
+	 *
+	 * `authorId` is the signed-in account, passed in rather than read from the payload: it
+	 * records who filed the article and is not an editorial choice. The by-line a reader sees
+	 * is `contents[].author`, which is per-language and overrides this field by field.
+	 * `null` is allowed — the column is nullable so an article survives its author's deletion.
 	 */
 	public async create(
 		data: ValidatorOutput<ArticleValidator, 'create'>,
+		authorId: number | null,
 	): Promise<ArticleEntity> {
 		const conflict = await ArticleContentRepository.findConflictingSlug(
 			data.contents,
 		);
 
 		if (conflict) {
-			throw new CustomError(
-				409,
-				lang('article.error.slug_already_exists'),
-			);
+			throw slugConflictError();
 		}
 
-		return dataSource.transaction(async (manager) => {
-			const repository = manager.getRepository(ArticleEntity);
+		return this.withSlugGuard(() =>
+			dataSource.transaction(async (manager) => {
+				const repository = manager.getRepository(ArticleEntity);
 
-			const entrySaved = await repository.save({
-				layout: data.layout,
-				publish_at: data.publish_at,
-				archive_at: data.archive_at,
-				featured_status: data.featured_status,
-				featured_order: data.featured_order,
-				visibility: data.visibility,
-				public_at: data.public_at,
-				source_mode: data.source_mode,
-				source: data.source,
-				author_id: data.author_id,
-			});
+				const entrySaved = await repository.save({
+					layout: data.layout,
+					publish_at: data.publish_at,
+					archive_at: data.archive_at,
+					featured_status: data.featured_status,
+					featured_order: data.featured_order,
+					visibility: data.visibility,
+					public_at: data.public_at,
+					source_mode: data.source_mode,
+					source: data.source,
+					details: applyArticleSettings(null, data.settings ?? {}),
+					author_id: authorId,
+				});
 
-			await this.saveRelations(manager, entrySaved, data);
+				await this.saveRelations(manager, entrySaved, data);
 
-			return entrySaved;
-		});
+				return entrySaved;
+			}),
+		);
 	}
 
 	/**
@@ -101,24 +203,36 @@ export class ArticleService {
 			);
 
 			if (conflict) {
-				throw new CustomError(
-					409,
-					lang('article.error.slug_already_exists'),
-				);
+				throw slugConflictError();
 			}
 		}
 
-		const updatedEntry = await dataSource.transaction(async (manager) => {
-			const repository = manager.getRepository(ArticleEntity);
+		const updatedEntry = await this.withSlugGuard(() =>
+			dataSource.transaction(async (manager) => {
+				const repository = manager.getRepository(ArticleEntity);
 
-			Object.assign(entry, pickValuesFromObject(data, entryColumns));
+				Object.assign(entry, pickValuesFromObject(data, entryColumns));
 
-			const saved = await repository.save(entry);
+				if (data.settings) {
+					entry.details = applyArticleSettings(
+						entry.details,
+						data.settings,
+					);
+				}
 
-			await this.saveRelations(manager, saved, data);
+				this.assertPublishWindow(entry);
 
-			return saved;
-		});
+				this.assertFeaturedWindow(entry);
+
+				const saved = await repository.save(entry);
+
+				await this.saveRelations(manager, saved, data);
+
+				await this.clearRestrictionWhenPublic(manager, saved);
+
+				return saved;
+			}),
+		);
 
 		/*
 		 * One clean for the whole operation, emitted after the transaction commits.
@@ -133,6 +247,78 @@ export class ArticleService {
 		cleanEntityCache(ArticleEntity, updatedEntry.id);
 
 		return updatedEntry;
+	}
+
+	/**
+	 * The publish window on the row as it will be saved.
+	 *
+	 * The validator already rejects a payload that carries both dates inverted, but it only
+	 * sees the payload: an update that moves `archive_at` alone is compared against nothing
+	 * there. This runs after the merge, where both values are known, and is the check that
+	 * actually holds for a partial update.
+	 */
+	private assertPublishWindow(entry: ArticleEntity): void {
+		if (!entry.publish_at || !entry.archive_at) {
+			return;
+		}
+
+		if (entry.archive_at > entry.publish_at) {
+			return;
+		}
+
+		throw new CustomError(
+			422,
+			lang('article.validation.archive_before_publish'),
+		);
+	}
+
+	/**
+	 * The featured window on the row as it will be saved.
+	 *
+	 * Same division of labour as `assertPublishWindow`: the validator rejects a payload that
+	 * states an expiry with no slot, but an update setting the date alone is compared against
+	 * nothing there. After the merge both values are known, so this is the check that holds
+	 * for a partial update.
+	 */
+	private assertFeaturedWindow(entry: ArticleEntity): void {
+		if (!entry.featured_expire_at || entry.featured_status) {
+			return;
+		}
+
+		throw new CustomError(
+			422,
+			lang('article.validation.featured_expire_without_status'),
+		);
+	}
+
+	/**
+	 * Drops an article out of its featured group once `featured_expire_at` has passed.
+	 *
+	 * All three fields go together: an order position in a group the article has left would
+	 * collide with the rows still in it, and a deadline pointing at a slot it no longer holds
+	 * reads as still-featured in the form. Re-featuring therefore starts from a clean row.
+	 *
+	 * Saved through `update` so the cache and audit subscribers fire; the explicit event on
+	 * top of the generic `updated` one is what names the slot that was given up, which the
+	 * row itself no longer records.
+	 */
+	public async expireFeatured(entry: ArticleEntity): Promise<void> {
+		const expiredStatus = entry.featured_status;
+
+		entry.featured_status = null;
+		entry.featured_order = 0;
+		entry.featured_expire_at = null;
+
+		await this.update(entry);
+
+		eventEmitter.emit('history', {
+			entity: ArticleEntity.NAME,
+			entity_ids: [entry.id],
+			action: LogHistoryActionEnum.FEATURED_EXPIRED,
+			data: {
+				featuredStatus: expiredStatus ?? 'unknown',
+			},
+		});
 	}
 
 	/**
@@ -172,6 +358,34 @@ export class ArticleService {
 	}
 
 	/**
+	 * Public visibility owns no restriction state, so an article moved back to `public` drops
+	 * its deadline and its rule row — the same end state the release cron produces.
+	 *
+	 * This lives here rather than in the payload because a form cannot express it: an optional
+	 * date parsed from an absent value comes through as `undefined`, which TypeORM reads as "no
+	 * change", so the UI has no way to send "clear this". The rule is derivable from
+	 * `visibility` anyway, which makes the server the right place to enforce it.
+	 */
+	private async clearRestrictionWhenPublic(
+		manager: EntityManager,
+		entry: ArticleEntity,
+	): Promise<void> {
+		if (entry.visibility !== ArticleVisibilityEnum.PUBLIC) {
+			return;
+		}
+
+		if (entry.public_at) {
+			entry.public_at = null;
+
+			await manager.getRepository(ArticleEntity).save(entry);
+		}
+
+		await manager
+			.getRepository(ArticleVisibilityRuleEntity)
+			.softDelete({ article_id: entry.id });
+	}
+
+	/**
 	 * The rule row carries a plain UNIQUE on `article_id`, so a soft-deleted rule keeps its
 	 * slot — the existing row is restored and overwritten rather than replaced by a new one.
 	 */
@@ -191,7 +405,7 @@ export class ArticleService {
 
 		entry.deleted_at = null;
 		entry.requires_auth = rule.requires_auth;
-		entry.requires_subscription = rule.requires_subscription ?? null;
+		entry.requires_subscription = rule.requires_subscription;
 		entry.allowed_countries = rule.allowed_countries ?? null;
 		entry.is_listed = rule.is_listed;
 
@@ -203,6 +417,37 @@ export class ArticleService {
 		}
 
 		await repository.save(entry);
+	}
+
+	/**
+	 * Ends an article's restriction: `visibility` goes public, the deadline that scheduled it is
+	 * consumed, and the rule row is soft-deleted so a stale password or country list cannot come
+	 * back with a later re-restriction.
+	 *
+	 * One transaction, because a released article still carrying its rule row would read as
+	 * restricted to anything that consults the rule before the visibility.
+	 *
+	 * The `visibility` history entry is emitted on top of the `updated` one the subscriber
+	 * writes: the audit trail has to say *what* changed, and a bare "updated" from a cron run
+	 * does not distinguish this from an editor saving a typo.
+	 */
+	public async releaseRestricted(entry: ArticleEntity): Promise<void> {
+		await dataSource.transaction(async (manager) => {
+			entry.visibility = ArticleVisibilityEnum.PUBLIC;
+			entry.public_at = null;
+
+			await manager.getRepository(ArticleEntity).save(entry);
+
+			await manager
+				.getRepository(ArticleVisibilityRuleEntity)
+				.softDelete({ article_id: entry.id });
+		});
+
+		eventEmitter.emit('history', {
+			entity: ArticleEntity.NAME,
+			entity_ids: [entry.id],
+			action: LogHistoryActionEnum.VISIBILITY,
+		});
 	}
 
 	public async updateStatus(
@@ -218,6 +463,96 @@ export class ArticleService {
 		entry.status = newStatus;
 
 		await this.update(entry);
+	}
+
+	/**
+	 * Reorders one featured group. `featured_order` is a plain int on the article, so the group
+	 * the positions belong to is decided here, not by the column: `section` is every article
+	 * carrying that flag, `category` is the articles flagged for a category slot and linked to
+	 * the given category **or any of its descendants** — the order page lists a subtree, so the
+	 * write has to accept the same set the page showed.
+	 *
+	 * The submitted ids must be a complete reordering of that set. A subset would silently leave
+	 * the untouched rows sharing positions with the moved ones, which reads as a random order.
+	 *
+	 * Saved row by row through the repository rather than a bulk UPDATE so the subscribers fire
+	 * — same reason as the cron jobs.
+	 */
+	public async updateOrder(
+		data: ValidatorOutput<ArticleValidator, 'orderUpdate'>,
+	): Promise<void> {
+		await dataSource.transaction(async (manager) => {
+			const repository = manager.getRepository(ArticleEntity);
+
+			const query = repository
+				.createQueryBuilder('article')
+				.where('article.featured_status = :featured_status', {
+					featured_status: data.featured_status,
+				});
+
+			if (data.category_id) {
+				const categoryIds = await this.resolveCategorySubtree(
+					data.category_id,
+				);
+
+				query
+					.innerJoin('article.categories', 'link')
+					.andWhere('link.category_id IN (:...categoryIds)', {
+						categoryIds,
+					});
+			}
+
+			const entries = await query.getMany();
+
+			const foundIds = new Set(entries.map((entry) => entry.id));
+			const allProvidedAreValid = data.positions.every((id) =>
+				foundIds.has(id),
+			);
+
+			if (
+				entries.length !== data.positions.length ||
+				!allProvidedAreValid
+			) {
+				throw new CustomError(
+					400,
+					lang('article.validation.invalid_ids_provided'),
+				);
+			}
+
+			// Descending, so the first article in the list carries the highest weight — the
+			// same convention `brand.updateOrder` writes and the public listing reads.
+			const ordered = entries.map((entry) => {
+				entry.featured_order =
+					data.positions.length - data.positions.indexOf(entry.id);
+
+				return entry;
+			});
+
+			await repository.save(ordered);
+		});
+	}
+
+	/**
+	 * The category and every category beneath it, as ids.
+	 *
+	 * Every `category_id` filter in this service resolves through here, so "in this category"
+	 * means the same thing to the listing, the public feed and `updateOrder`. They have to
+	 * agree: the order page lists a subtree and then posts that exact set back, and a write
+	 * that recognised only the direct links would reject its own list as incomplete.
+	 */
+	private async resolveCategorySubtree(
+		category_id: number,
+	): Promise<number[]> {
+		const treeRepository =
+			RepositoryAbstract.getTreeRepository(CategoryEntity);
+
+		const category = await treeRepository.findOneOrFail({
+			where: { id: category_id },
+		});
+
+		const descendants = await treeRepository.findDescendants(category);
+
+		return descendants.map((descendant) => descendant.id);
 	}
 
 	public async delete(id: number) {
@@ -241,6 +576,9 @@ export class ArticleService {
 	 * account that owns the article, `content.author` is the by-line as it should read in that
 	 * language. The by-line wins field by field, so a translated bio or a pen name overrides
 	 * the account without having to restate the parts it agrees with.
+	 *
+	 * Applied on the public read only. The dashboard read returns the stored override
+	 * untouched, because that is what the editor edits — see `getEntryData`.
 	 */
 	private resolveAuthor(
 		entry: ArticleEntity,
@@ -280,10 +618,12 @@ export class ArticleService {
 				'article.archive_at',
 				'article.featured_status',
 				'article.featured_order',
+				'article.featured_expire_at',
 				'article.visibility',
 				'article.public_at',
 				'article.source_mode',
 				'article.source',
+				'article.details',
 				'article.author_id',
 				'article.created_at',
 				'article.updated_at',
@@ -295,7 +635,6 @@ export class ArticleService {
 				'content.brief',
 				'content.content',
 				'content.author',
-				'content.content_blocks',
 				'content.meta',
 
 				'author.id',
@@ -304,33 +643,91 @@ export class ArticleService {
 
 				'category.category_id',
 				'tag.tag_id',
+
+				// The wording behind each link, so a form seeded from this row can show
+				// names rather than the bare ids it stores.
+				'category_row.id',
+				'category_content.id',
+				'category_content.language',
+				'category_content.label',
+
+				'tag_row.id',
+				'tag_content.id',
+				'tag_content.language',
+				'tag_content.value',
 			])
 			.filterById(data.id)
 			.withDeleted(data.withDeleted)
 			.joinAndSelect('article.author', 'author', 'LEFT')
-			.joinAndSelect('article.categories', 'category', 'LEFT')
-			.joinAndSelect('article.tags', 'tag', 'LEFT');
+			/*
+			 * The link joins are pinned to live rows by hand because `withDeleted` reaches
+			 * them too: it exists so an admin can read a soft-deleted *article*, but TypeORM
+			 * applies it to every joined relation, which brings back the links unlinked in
+			 * earlier edits. The form seeds itself from these rows, so a resurrected link
+			 * reads as a removal that did not save.
+			 */
+			.joinAndSelect(
+				'article.categories',
+				'category',
+				'LEFT',
+				'category.deleted_at IS NULL',
+			)
+			.joinAndSelect(
+				'article.tags',
+				'tag',
+				'LEFT',
+				'tag.deleted_at IS NULL',
+			)
+			.join('category.category', 'category_row', 'LEFT')
+			.join('tag.tag', 'tag_row', 'LEFT');
 
+		/*
+		 * The link wording follows the article's own: asking for one language returns one
+		 * label per link, and asking for all returns every translation the caller then picks
+		 * from. Both are LEFT joins — a link whose term lost its translation still has to come
+		 * back, or the article would silently drop the tag from the form.
+		 */
 		if (data.language) {
-			query.joinAndSelect(
-				'article.contents',
-				'content',
-				'INNER',
-				'content.language = :language',
-				{
-					language: data.language,
-				},
-			);
+			query
+				.joinAndSelect(
+					'article.contents',
+					'content',
+					'INNER',
+					'content.language = :language',
+					{
+						language: data.language,
+					},
+				)
+				.join(
+					'category_row.contents',
+					'category_content',
+					'LEFT',
+					'category_content.language = :language',
+				)
+				.join(
+					'tag_row.contents',
+					'tag_content',
+					'LEFT',
+					'tag_content.language = :language',
+				);
 		} else {
 			// No language: take all contents
-			query.joinAndSelect('article.contents', 'content', 'LEFT');
+			query
+				.joinAndSelect('article.contents', 'content', 'LEFT')
+				.join('category_row.contents', 'category_content', 'LEFT')
+				.join('tag_row.contents', 'tag_content', 'LEFT');
 		}
 
 		const entry = await query.firstOrFail();
 
-		for (const content of entry.contents ?? []) {
-			content.author = this.resolveAuthor(entry, content.author);
-		}
+		/*
+		 * The by-line is returned exactly as stored, unmerged. This is the editing surface: an
+		 * editor has to see which fields the translation actually overrides, and a resolved
+		 * value handed to a form comes straight back on the next save — which would bake the
+		 * account's name and email into `article_content.author` and turn the fallback into
+		 * a frozen copy. `article.author` is selected alongside for anything that wants to
+		 * show the filing account.
+		 */
 
 		if (entry.visibility === ArticleVisibilityEnum.RESTRICTED) {
 			// Loaded separately so the rule's `password` hash never rides along in the
@@ -348,7 +745,38 @@ export class ArticleService {
 				});
 		}
 
-		return entry;
+		// The form editing an article needs the switches it will post back, defaults included
+		return this.withSettings(entry);
+	}
+
+	/**
+	 * The switches a reader-facing write is checked against, `null` when there is no article to
+	 * write to — soft-deleted, or never there. `article.listener.ts` turns that `null` into a
+	 * refusal: nothing may be attached to a page nobody can open.
+	 *
+	 * Cached as a sibling of the public payload (`article:<id>:settings`), so the prefix clean an
+	 * edit already runs drops it along with everything else about the row. A `null` is not
+	 * cached — `CacheProvider.set` skips it — so a missing article costs one lookup per attempt.
+	 */
+	public async getSettings(id: number): Promise<ArticleSettings | null> {
+		const results = await cacheProvider.get(
+			cacheProvider.buildKey(
+				ArticleEntity.NAME,
+				id.toString(),
+				'settings',
+			),
+			async () => {
+				const entry = await this.repository
+					.createQuery()
+					.select(['article.id', 'article.details'])
+					.filterById(id)
+					.first();
+
+				return entry ? resolveArticleSettings(entry.details) : null;
+			},
+		);
+
+		return results.data as ArticleSettings | null;
 	}
 
 	/**
@@ -378,6 +806,62 @@ export class ArticleService {
 	}
 
 	/**
+	 * Attaches each article's cover image — the first active gallery image, by `sort_order`.
+	 *
+	 * A separate query rather than a join: `image` is polymorphic (`section` + `entity_id`,
+	 * no foreign key to `article`), so there is no relation for the query builder to walk,
+	 * and a manual join would need a LATERAL to keep one row per article. One extra
+	 * statement per page reads better and costs a single index seek on
+	 * `IDX_image_type_id`.
+	 */
+	private async attachCoverImages<T extends { id: number }>(
+		entries: T[],
+	): Promise<WithCoverImage<T>[]> {
+		if (entries.length === 0) {
+			return [];
+		}
+
+		const images = await getImageRepository()
+			.createQuery()
+			.select([
+				'image.id',
+				'image.entity_id',
+				'image.path',
+				'image.storage',
+				'image.properties',
+				'image.sort_order',
+			])
+			.filterBy('image.section', ImageSectionEnum.ARTICLE)
+			.filterBy('image.image_type', ImageTypeEnum.GALLERY)
+			.filterBy('image.status', ImageStatusEnum.ACTIVE)
+			.filterRaw('image.entity_id IN (:...entityIds)', {
+				entityIds: entries.map((entry) => entry.id),
+			})
+			.orderBy('image.sort_order', 'ASC')
+			.all();
+
+		// Ordered ascending, so the first image seen for an article is its cover and later
+		// ones are ignored.
+		const covers = new Map<number, ArticleCoverImageType>();
+
+		for (const image of images) {
+			if (!covers.has(image.entity_id)) {
+				covers.set(image.entity_id, {
+					id: image.id,
+					path: image.path,
+					storage: image.storage,
+					properties: image.properties ?? null,
+				});
+			}
+		}
+
+		return entries.map((entry) => ({
+			...entry,
+			cover_image: covers.get(entry.id) ?? null,
+		}));
+	}
+
+	/**
 	 * @description Used in `publicRead` from controller, behind the cache.
 	 *
 	 * Keyed by id rather than slug on purpose: `SubscriberAbstract.cacheClean` invalidates by
@@ -386,8 +870,8 @@ export class ArticleService {
 	 * visibility out of the cached value — both decide access and both move without the
 	 * payload changing.
 	 */
-	public getPublicEntryById(id: number, language: string) {
-		return this.repository
+	public async getPublicEntryById(id: number, language: string) {
+		const entry = await this.repository
 			.createQuery()
 			.select([
 				'article.id',
@@ -397,6 +881,7 @@ export class ArticleService {
 				'article.visibility',
 				'article.source_mode',
 				'article.source',
+				'article.details',
 				'article.author_id',
 				'article.created_at',
 				'article.updated_at',
@@ -407,7 +892,6 @@ export class ArticleService {
 				'content.brief',
 				'content.content',
 				'content.author',
-				'content.content_blocks',
 				'content.meta',
 
 				'author.id',
@@ -415,6 +899,15 @@ export class ArticleService {
 
 				'category.category_id',
 				'tag.tag_id',
+
+				// The category is named, not just linked: the public URL of an article is
+				// `/<category-slug>/<article-slug>`, so the reader's own address needs the
+				// translation, not only the id.
+				'category_entry.id',
+				'category_entry_content.id',
+				'category_entry_content.language',
+				'category_entry_content.label',
+				'category_entry_content.slug',
 			])
 			.joinAndSelect(
 				'article.contents',
@@ -425,9 +918,34 @@ export class ArticleService {
 			)
 			.joinAndSelect('article.author', 'author', 'LEFT')
 			.joinAndSelect('article.categories', 'category', 'LEFT')
+			// Same article-only guard as the listing, so both agree on the category an
+			// article's public URL is built from.
+			.joinAndSelect(
+				'category.category',
+				'category_entry',
+				'LEFT',
+				'category_entry.type = :categoryType',
+				{ categoryType: CategoryTypeEnum.ARTICLE },
+			)
+			.joinAndSelect(
+				'category_entry.contents',
+				'category_entry_content',
+				'LEFT',
+				'category_entry_content.language = :language',
+			)
 			.joinAndSelect('article.tags', 'tag', 'LEFT')
 			.filterById(id)
 			.firstOrFail();
+
+		for (const content of entry.contents ?? []) {
+			content.author = this.resolveAuthor(entry, content.author);
+		}
+
+		const [entryWithCover] = await this.attachCoverImages([entry]);
+
+		// The switches tell the page whether to draw a rating widget, a comment form and a
+		// report link at all
+		return this.withSettings(entryWithCover);
 	}
 
 	/**
@@ -437,7 +955,7 @@ export class ArticleService {
 	 * always listed. The rule is LEFT-joined so a public article with no rule row survives
 	 * the condition.
 	 */
-	public findByFilterPublic(
+	public async findByFilterPublic(
 		data: ValidatorOutput<ArticleValidator, 'publicFind'>,
 	) {
 		const query = this.repository
@@ -451,6 +969,43 @@ export class ArticleService {
 			)
 			.join('article.author', 'author', 'LEFT')
 			.join('article.visibility_rule', 'rule', 'LEFT')
+			/*
+			 * The listing names each article's categories, which live two relations away
+			 * (link row -> category -> translation) and are what its public URL is built
+			 * from. Selected on the same language as the article translation, so a row
+			 * shows one label per category rather than one per language.
+			 *
+			 * The link is to-many, so these joins multiply the raw rows; pagination
+			 * survives it because `getManyAndCount` with skip/take resolves the page as a
+			 * distinct-id subquery first. The primary keys are selected for the same
+			 * reason — without them TypeORM cannot tell the duplicated rows apart when it
+			 * rebuilds the entities.
+			 */
+			.join(
+				'article.categories',
+				'article_category',
+				'LEFT',
+				'article_category.deleted_at IS NULL',
+			)
+			/*
+			 * Article categories only. The link table accepts any category, and demo data
+			 * has filed articles under product ones — a category the article site has no
+			 * page for. Filtered in the join rather than after it, so such a link comes
+			 * back as a link with no category and the article simply shows none.
+			 */
+			.join(
+				'article_category.category',
+				'category',
+				'LEFT',
+				'category.type = :categoryType',
+				{ categoryType: CategoryTypeEnum.ARTICLE },
+			)
+			.join(
+				'category.contents',
+				'category_content',
+				'LEFT',
+				'category_content.language = :language',
+			)
 			.select([
 				'article.id',
 				'article.publish_at',
@@ -467,7 +1022,16 @@ export class ArticleService {
 
 				'author.id',
 				'author.name',
+
+				'article_category.id',
+				'article_category.category_id',
+				'category.id',
+				'category_content.id',
+				'category_content.language',
+				'category_content.label',
+				'category_content.slug',
 			])
+			.filterBy('article.id', data.filter.id)
 			.filterBy('article.featured_status', data.filter.featured_status)
 			.filterByTerm(data.filter.term)
 			.filterPublished(true)
@@ -477,24 +1041,42 @@ export class ArticleService {
 			);
 
 		if (data.filter.category_id) {
+			// Its own join: `article_category` above is a LEFT join feeding the label, and
+			// narrowing it would turn every listed article into a category match.
 			query
-				.join('article.categories', 'category', 'INNER')
-				.filterBy('category.category_id', data.filter.category_id);
+				.join('article.categories', 'category_filter', 'INNER')
+				.filterRaw('category_filter.category_id IN (:...categoryIds)', {
+					categoryIds: await this.resolveCategorySubtree(
+						data.filter.category_id,
+					),
+				});
 		}
 
-		if (data.filter.tag_id) {
+		if (data.filter.tag_id?.length) {
+			/*
+			 * Any of the tags, not all of them — the box asks for articles that share
+			 * something with this one. The INNER join multiplies an article that matches
+			 * several, which pagination absorbs the same way the category filter's does
+			 * (see above).
+			 */
 			query
 				.join('article.tags', 'tag', 'INNER')
-				.filterBy('tag.tag_id', data.filter.tag_id);
+				.filterBy('tag.tag_id', data.filter.tag_id, 'IN');
 		}
 
-		return query
+		if (data.filter.exclude_id) {
+			query.filterBy('article.id', data.filter.exclude_id, '!=');
+		}
+
+		const [entries, total] = await query
 			.orderBy(data.order_by, data.direction)
 			.pagination(data.page, data.limit)
 			.all(true);
+
+		return [await this.attachCoverImages(entries), total] as const;
 	}
 
-	public findByFilter(
+	public async findByFilter(
 		data: ValidatorOutput<ArticleValidator, 'find'>,
 		withDeleted: boolean,
 	) {
@@ -510,6 +1092,44 @@ export class ArticleService {
 				},
 			)
 			.join('article.author', 'author', 'LEFT')
+			/*
+			 * The dashboard list names the categories, which live two relations away (link row ->
+			 * category -> translation). Selected on the same language as the article translation,
+			 * so a row shows one label per category rather than one per language.
+			 *
+			 * The link is to-many, so these joins multiply the raw rows; pagination survives it
+			 * because `getManyAndCount` with skip/take resolves the page as a distinct-id
+			 * subquery first. The primary keys are selected for the same reason — without them
+			 * TypeORM cannot tell the duplicated rows apart when it rebuilds the entities.
+			 */
+			// Pinned to live links for the same reason as `getEntryData`: `withDeleted` is
+			// about listing deleted articles, not about naming categories they were
+			// unlinked from.
+			.join(
+				'article.categories',
+				'article_category',
+				'LEFT',
+				'article_category.deleted_at IS NULL',
+			)
+			/*
+			 * Article categories only. The link table accepts any category, and demo data
+			 * has filed articles under product ones — a category the article site has no
+			 * page for. Filtered in the join rather than after it, so such a link comes
+			 * back as a link with no category and the article simply shows none.
+			 */
+			.join(
+				'article_category.category',
+				'category',
+				'LEFT',
+				'category.type = :categoryType',
+				{ categoryType: CategoryTypeEnum.ARTICLE },
+			)
+			.join(
+				'category.contents',
+				'category_content',
+				'LEFT',
+				'category_content.language = :language',
+			)
 			.select([
 				'article.id',
 				'article.status',
@@ -533,6 +1153,13 @@ export class ArticleService {
 
 				'author.id',
 				'author.name',
+
+				'article_category.id',
+				'article_category.category_id',
+				'category.id',
+				'category_content.id',
+				'category_content.language',
+				'category_content.label',
 			])
 			.filterById(data.filter.id)
 			.filterBy('article.status', data.filter.status)
@@ -545,9 +1172,15 @@ export class ArticleService {
 			.withDeleted(withDeleted && data.filter.is_deleted);
 
 		if (data.filter.category_id) {
+			// Its own join: `article_category` above is a LEFT join feeding the label, and
+			// narrowing it would turn every listed article into a category match.
 			query
-				.join('article.categories', 'category', 'INNER')
-				.filterBy('category.category_id', data.filter.category_id);
+				.join('article.categories', 'category_filter', 'INNER')
+				.filterRaw('category_filter.category_id IN (:...categoryIds)', {
+					categoryIds: await this.resolveCategorySubtree(
+						data.filter.category_id,
+					),
+				});
 		}
 
 		if (data.filter.tag_id) {

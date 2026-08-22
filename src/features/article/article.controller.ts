@@ -29,7 +29,16 @@ class ArticleController extends BaseController {
 
 		const data = this.validate(this.validator.create, req.body, res);
 
-		const entry = await this.articleService.create(data);
+		/*
+		 * `0` is the visitor sentinel the auth middleware seeds, not a user row, so it becomes
+		 * `null` rather than an id no `user` record answers to. `author_id` is nullable by
+		 * design — an article outlives the account that filed it — so an unattributable create
+		 * is a valid row, not an error.
+		 */
+		const entry = await this.articleService.create(
+			data,
+			res.locals.auth?.id || null,
+		);
 
 		res.locals.output.data(entry);
 		res.locals.output.message(lang('article.success.create'));
@@ -49,13 +58,19 @@ class ArticleController extends BaseController {
 			res,
 		);
 
-		const language = data.language ?? res.locals.language;
+		/*
+		 * An omitted `language` means every translation, not the request's own — the dashboard
+		 * edits all of them at once and has no other way to ask. Falling back to
+		 * `res.locals.language` here is what made `getEntryData`'s no-language branch
+		 * unreachable, and left an editor unable to see a translation they had written.
+		 */
+		const language = data.language;
 		const withDeleted = this.policy.allowDeleted(res.locals.auth);
 
 		const cacheKey = this.cache.buildKey(
 			ArticleEntity.NAME,
 			data.id.toString(),
-			language,
+			language ?? 'all-languages',
 			withDeleted ? 'with-deleted' : 'non-deleted',
 			'read',
 		);
@@ -149,6 +164,25 @@ class ArticleController extends BaseController {
 			},
 			query: data,
 		});
+
+		res.json(res.locals.output);
+	});
+
+	public orderUpdate = asyncHandler(async (req: Request, res: Response) => {
+		this.policy.canUpdate(res.locals.auth);
+
+		const data = this.validate(
+			this.validator.orderUpdate,
+			{
+				...req.body,
+				featured_status: req.params.featured_status,
+			},
+			res,
+		);
+
+		await this.articleService.updateOrder(data);
+
+		res.locals.output.message(lang('article.success.order_update'));
 
 		res.json(res.locals.output);
 	});

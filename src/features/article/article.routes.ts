@@ -1,4 +1,7 @@
-import { ArticleStatusEnum } from '@/features/article/article.entity';
+import {
+	ArticleFeaturedStatusEnum,
+	ArticleStatusEnum,
+} from '@/features/article/article.entity';
 import {
 	validateParamsWhenEnum,
 	validateParamsWhenId,
@@ -41,6 +44,17 @@ export default async () => {
 			find: {
 				path: '',
 				method: 'get',
+			},
+			orderUpdate: {
+				path: '/featured/:featured_status/order',
+				method: 'patch',
+				handlers: [
+					validateParamsWhenEnum({
+						featured_status: Object.values(
+							ArticleFeaturedStatusEnum,
+						),
+					}),
+				],
 			},
 			statusUpdate: {
 				path: '/:id/status/:status',

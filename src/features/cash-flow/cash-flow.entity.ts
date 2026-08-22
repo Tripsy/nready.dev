@@ -17,6 +17,7 @@ import OperationalRecordEntity from '@/features/cash-flow/operational-record.ent
 import { arrayHasValue } from '@/helpers/objects.helper';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 import type { StatusTransitions } from '@/shared/types/common.type';
 
 export const CurrencyEnum = {
@@ -286,7 +287,12 @@ export default class CashFlowEntity extends EntityAbstract {
 	})
 	amount!: number;
 
-	@Column('decimal', { precision: 5, scale: 2, nullable: false })
+	@Column('decimal', {
+		precision: 5,
+		scale: 2,
+		nullable: false,
+		transformer: numericTransformer,
+	})
 	vat_rate!: number;
 
 	/*
@@ -309,6 +315,7 @@ export default class CashFlowEntity extends EntityAbstract {
 		default: 1,
 		comment:
 			'Exchange rate to invoice base currency (default 1 = default currency)',
+		transformer: numericTransformer,
 	})
 	exchange_rate!: number;
 

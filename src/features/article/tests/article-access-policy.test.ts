@@ -43,7 +43,7 @@ function rule(
 ): ArticleVisibilityRuleFields {
 	return {
 		requires_auth: false,
-		requires_subscription: null,
+		requires_subscription: false,
 		allowed_countries: null,
 		is_listed: true,
 		has_password: false,
@@ -144,7 +144,7 @@ describe('ArticleAccessPolicy', () => {
 				restricted(),
 				auth(7),
 				{},
-				rule({ requires_subscription: ['pro'] }),
+				rule({ requires_subscription: true }),
 			),
 		).rejects.toMatchObject({ statusCode: 403 });
 	});
@@ -157,7 +157,7 @@ describe('ArticleAccessPolicy', () => {
 				restricted(),
 				auth(7),
 				{},
-				rule({ requires_subscription: ['pro'] }),
+				rule({ requires_subscription: true }),
 			),
 		).resolves.toBeUndefined();
 	});

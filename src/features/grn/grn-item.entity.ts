@@ -3,6 +3,7 @@ import type GrnEntity from '@/features/grn/grn.entity';
 import type ProductVariantEntity from '@/features/product/product-variant.entity';
 import { EntityAbstract } from '@/shared/abstracts/entity.abstract';
 import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator';
+import { numericTransformer } from '@/shared/transformers/numeric.transformer';
 
 const ENTITY_TABLE_NAME = 'grn_item';
 
@@ -86,6 +87,7 @@ export default class GrnItemEntity extends EntityAbstract {
 		scale: 2,
 		nullable: false,
 		comment: 'Unit cost as invoiced, in the receipt currency',
+		transformer: numericTransformer,
 	})
 	unit_cost!: number;
 
@@ -97,6 +99,7 @@ export default class GrnItemEntity extends EntityAbstract {
 		nullable: false,
 		comment:
 			'Unit cost in base currency, frozen at the receipt exchange rate',
+		transformer: numericTransformer,
 	})
 	unit_cost_base!: number;
 
@@ -106,6 +109,7 @@ export default class GrnItemEntity extends EntityAbstract {
 		nullable: false,
 		default: 0,
 		comment: 'VAT rate on the purchase, for the payable',
+		transformer: numericTransformer,
 	})
 	vat_rate!: number;
 

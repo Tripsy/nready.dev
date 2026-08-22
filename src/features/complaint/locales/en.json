@@ -1,0 +1,25 @@
+{
+	"validation": {
+		"invalid_entity_type": "Select what is being reported",
+		"invalid_entity_id": "Invalid entity ID",
+		"invalid_reason": "Select a reason for the report",
+		"invalid_description": "The description must be between 2 and 2000 characters",
+		"invalid_is_resolved": "Invalid resolved value",
+		"invalid_term": "Invalid search term"
+	},
+	"error": {
+		"not_found": "Complaint not found",
+		"already_reported": "You already reported this",
+		"not_editable": "A complaint can no longer be changed once it has been resolved",
+		"not_withdrawable": "A complaint can no longer be withdrawn once it has been resolved",
+		"not_accepted": "Reports are closed for this"
+	},
+	"success": {
+		"create": "Report submitted successfully and is awaiting review",
+		"update": "Report updated successfully",
+		"delete": "Report withdrawn successfully",
+		"restore": "Complaint restored successfully",
+		"resolve": "Complaint marked as resolved",
+		"reopen": "Complaint reopened"
+	}
+}

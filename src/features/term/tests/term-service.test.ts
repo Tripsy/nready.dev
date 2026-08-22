@@ -2,14 +2,15 @@ import { expect, jest } from '@jest/globals';
 import type TermEntity from '@/features/term/term.entity';
 import {
 	getTermEntityMock,
-	termInputPayloads,
 	termOutputPayloads,
 } from '@/features/term/term.mock';
 import type { TermQuery } from '@/features/term/term.repository';
 import { TermService } from '@/features/term/term.service';
 import type { TermValidator } from '@/features/term/term.validator';
+import { TermContentRepository } from '@/features/term/term-content.repository';
 import {
 	createMockRepository,
+	setupTransactionMock,
 	testServiceDelete,
 	testServiceFindByFilter,
 	testServiceFindById,
@@ -26,23 +27,41 @@ describe('TermService', () => {
 
 	const serviceTerm = new TermService(mockTerm.repository);
 
-	it('should create entry', async () => {
+	it('should create entry inside transaction and save content', async () => {
 		const entity = getTermEntityMock();
 		const createData = termOutputPayloads.create;
 
-		jest.spyOn(serviceTerm, 'findByValue').mockResolvedValue(null);
+		const { transaction } = setupTransactionMock(mockTerm.repository);
+
+		// No existing term carries this wording
+		mockTerm.query.first.mockResolvedValue(null);
 		mockTerm.repository.save.mockResolvedValue(entity);
+
+		const saveContent = jest
+			.spyOn(TermContentRepository, 'saveContent')
+			.mockResolvedValue(undefined);
 
 		const result = await serviceTerm.create(createData);
 
-		expect(mockTerm.repository.save).toHaveBeenCalled();
+		expect(transaction).toHaveBeenCalled();
+
+		expect(mockTerm.repository.save).toHaveBeenCalledWith({
+			type: createData.type,
+		});
+
+		expect(saveContent).toHaveBeenCalledWith(
+			expect.anything(),
+			createData.contents,
+			entity.id,
+		);
+
 		expect(result).toBe(entity);
 	});
 
-	it('should reject a duplicate on create', async () => {
-		jest.spyOn(serviceTerm, 'findByValue').mockResolvedValue(
-			getTermEntityMock(),
-		);
+	it('should reject a term whose wording is already used by another term of the same type', async () => {
+		setupTransactionMock(mockTerm.repository);
+
+		mockTerm.query.first.mockResolvedValue(getTermEntityMock());
 
 		await expect(
 			serviceTerm.create(termOutputPayloads.create),
@@ -54,19 +73,24 @@ describe('TermService', () => {
 	it('should exclude the entry being updated from the duplicate check', async () => {
 		const entity = getTermEntityMock();
 
-		const findByValue = jest
-			.spyOn(serviceTerm, 'findByValue')
-			.mockResolvedValue(null);
+		setupTransactionMock(mockTerm.repository);
 
+		mockTerm.query.first.mockResolvedValue(null);
 		mockTerm.repository.save.mockResolvedValue(entity);
 
-		await serviceTerm.updateData(entity, termOutputPayloads.update);
+		jest.spyOn(TermContentRepository, 'saveContent').mockResolvedValue(
+			undefined,
+		);
 
-		expect(findByValue).toHaveBeenCalledWith(
-			entity.type,
-			entity.language,
-			termInputPayloads.update.value,
+		await serviceTerm.updateDataWithContent(
+			entity,
+			termOutputPayloads.update,
+		);
+
+		expect(mockTerm.query.filterBy).toHaveBeenCalledWith(
+			'term.id',
 			entity.id,
+			'!=',
 		);
 	});
 

@@ -2,7 +2,7 @@
 	"name": "discount",
 	"version": "1.0.0",
 	"relativePath": "/discount",
-	"entities": ["discount"],
+	"entities": ["discount", "discount-target"],
 	"depends_on": [],
-	"required_by": ["invoice", "order", "order-shipping", "product"]
+	"required_by": ["invoice", "order", "order-shipping"]
 }
