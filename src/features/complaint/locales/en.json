@@ -11,7 +11,8 @@
 		"not_found": "Complaint not found",
 		"already_reported": "You already reported this",
 		"not_editable": "A complaint can no longer be changed once it has been resolved",
-		"not_withdrawable": "A complaint can no longer be withdrawn once it has been resolved"
+		"not_withdrawable": "A complaint can no longer be withdrawn once it has been resolved",
+		"not_accepted": "Reports are closed for this"
 	},
 	"success": {
 		"create": "Report submitted successfully and is awaiting review",

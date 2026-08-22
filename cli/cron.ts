@@ -5,6 +5,7 @@
 //  the data source dependencies
 
 import { Command } from 'commander';
+import { setupFeatureBootstrap } from '@/config/bootstrap.setup';
 import { setupListeners } from '@/config/listeners.setup';
 import archiveArticle from '@/features/article/cron-jobs/archive-article.cron';
 import expireFeaturedArticle from '@/features/article/cron-jobs/expire-featured-article.cron';
@@ -53,10 +54,13 @@ program
 		await dataSource.initialize();
 
 		/*
-		 * The scheduled runs inherit their listeners from `bootstrap.ts`; this runner has no
-		 * bootstrap, so without this the audit trail and cache purges a job emits go nowhere
-		 * and the job looks like it silently skipped them.
+		 * The scheduled runs inherit both of these from `bootstrap.ts`; this runner has no
+		 * bootstrap, so without them the audit trail and cache purges a job emits go nowhere
+		 * (the job looks like it silently skipped them), and a job writing against a
+		 * polymorphic target would find every target open because nothing registered a
+		 * resolver.
 		 */
+		await setupFeatureBootstrap();
 		await setupListeners();
 
 		console.debug(`Running ${cronName}...`);

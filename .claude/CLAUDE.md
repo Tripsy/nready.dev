@@ -45,7 +45,7 @@ context yet. Read the relevant one *before* proposing an approach in that area, 
 |---|---|---|
 | `api.md` | Express app setup, route registration, controller structure, response envelope | `*.routes.ts`, `*.controller.ts`, `app.ts`, output/param middleware |
 | `auth.md` | Token model, `res.locals.auth`, policy layer, passwords, rate limiting, social login | `account`/`user-permission` features, `*.policy.ts`, auth middleware |
-| `comment.md` | Comment status model, guest vs member writes, automatic flagging at 3 distinct reporters, thread cache | `src/features/comment/**`, `src/features/complaint/**`, `event.config.ts` |
+| `comment.md` | Comment status model, guest vs member writes, automatic flagging at 3 distinct reporters, thread cache, the target-participation registry a target closes itself with | `src/features/comment/**`, `src/features/complaint/**`, `event.config.ts`, `target-participation.config.ts` |
 | `database.md` | Entities, repository/query layer, transactions, migrations, seeds | `*.entity.ts`, `*.repository.ts`, `*.service.ts`, `*.subscriber.ts`, migrations |
 | `error-handling.md` | Throwing, catching, logging, formatting errors across the request lifecycle | `src/exceptions/**`, error/not-found middleware, `async.handler.ts` |
 | `product.md` | The product / variant / option / bundle split, availability windows, order-line arithmetic | `src/features/product/**`, `order-product.entity.ts`, `order-shipping/**` |
@@ -198,7 +198,7 @@ wired via constructor injection at the bottom of the file:
 - `*.routes.ts` — default-exports a `FeatureRoutesModule` (`basePath`, `controller`, `routes` map).
 
 Optional per-feature `locales/`, `cron-jobs/`, `database/`, `*.subscriber.ts`, `*.listener.ts`,
-`*.mock.ts`, `tests/`, `manifest.json`.
+`*.bootstrap.ts`, `*.mock.ts`, `tests/`, `manifest.json`.
 
 **A new feature owning a table gets a demo seed** — `database/<feature>.seed.ts`, registered in
 `src/database/seed/index.ts` after its parents. Treat it as part of the feature, not a follow-up:
@@ -229,6 +229,15 @@ suffix and a file is picked up automatically:
   job fn), `SCHEDULE_EXPRESSION` and `EXPECTED_RUN_TIME`. Runs are recorded to `cron_history`.
 - **Event listeners** — `src/config/listeners.setup.ts` finds `*.listener.{ts|js}` and calls each
   default export to register handlers on the shared emitter (`src/config/event.config.ts`).
+- **Feature bootstrap** — `src/config/bootstrap.setup.ts` finds `*.bootstrap.{ts|js}` (features
+  only) and calls each default export before the server listens. This is where a feature
+  *registers itself* with a shared registry so another feature can reach it by name without
+  importing it — `article.bootstrap.ts` registers what an article accepts from its readers with
+  `target-participation.config.ts`. Not for event handlers, and not for work: it is startup
+  latency on every deployment.
+
+Both of the last two run through `runFeatureModules()` (`src/config/feature-modules.setup.ts`),
+which owns the scan, the import, the "no default export" error and the one-line-per-pass logging.
 
 The dev/prod file extension is resolved by `Configuration.resolveExtension()` (`ts` in dev, `js` in
 production), so discovery works against built output too.

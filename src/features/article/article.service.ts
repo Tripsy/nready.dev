@@ -8,8 +8,12 @@ import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
 import ArticleEntity, {
+	type ArticleDetails,
+	type ArticleSettings,
 	type ArticleStatus,
 	ArticleVisibilityEnum,
+	applyArticleSettings,
+	resolveArticleSettings,
 	STATUS_TRANSITIONS,
 } from '@/features/article/article.entity';
 import { getArticleRepository } from '@/features/article/article.repository';
@@ -39,6 +43,7 @@ import {
 import { getImageRepository } from '@/features/image/image.repository';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { encryptPassword } from '@/helpers/security.helper';
+import { cacheProvider } from '@/providers/cache.provider';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
 	assertValidStatusTransition,
@@ -110,6 +115,30 @@ export class ArticleService {
 	}
 
 	/**
+	 * The read shape: `details` traded for the switches it holds, resolved against the
+	 * deployment defaults.
+	 *
+	 * Both read surfaces hand articles out this way. `settings` is a response field rather than
+	 * a column — the effective value of three keys, not the storage — so it is assembled here
+	 * instead of being set on the entity, which has no such property and would carry it
+	 * undefined everywhere else.
+	 *
+	 * `details` itself does not travel. It is free-form storage the article may hold anything
+	 * else in, the public payload is cached and served anonymously, and the dashboard edits the
+	 * switches through `settings`.
+	 */
+	private withSettings<T extends { details: ArticleDetails | null }>(
+		entry: T,
+	): Omit<T, 'details'> & { settings: ArticleSettings } {
+		const { details, ...rest } = entry;
+
+		return {
+			...rest,
+			settings: resolveArticleSettings(details),
+		};
+	}
+
+	/**
 	 * @description Used in `create` method from controller;
 	 *
 	 * `authorId` is the signed-in account, passed in rather than read from the payload: it
@@ -143,6 +172,7 @@ export class ArticleService {
 					public_at: data.public_at,
 					source_mode: data.source_mode,
 					source: data.source,
+					details: applyArticleSettings(null, data.settings ?? {}),
 					author_id: authorId,
 				});
 
@@ -182,6 +212,13 @@ export class ArticleService {
 				const repository = manager.getRepository(ArticleEntity);
 
 				Object.assign(entry, pickValuesFromObject(data, entryColumns));
+
+				if (data.settings) {
+					entry.details = applyArticleSettings(
+						entry.details,
+						data.settings,
+					);
+				}
 
 				this.assertPublishWindow(entry);
 
@@ -586,6 +623,7 @@ export class ArticleService {
 				'article.public_at',
 				'article.source_mode',
 				'article.source',
+				'article.details',
 				'article.author_id',
 				'article.created_at',
 				'article.updated_at',
@@ -707,7 +745,38 @@ export class ArticleService {
 				});
 		}
 
-		return entry;
+		// The form editing an article needs the switches it will post back, defaults included
+		return this.withSettings(entry);
+	}
+
+	/**
+	 * The switches a reader-facing write is checked against, `null` when there is no article to
+	 * write to — soft-deleted, or never there. `article.listener.ts` turns that `null` into a
+	 * refusal: nothing may be attached to a page nobody can open.
+	 *
+	 * Cached as a sibling of the public payload (`article:<id>:settings`), so the prefix clean an
+	 * edit already runs drops it along with everything else about the row. A `null` is not
+	 * cached — `CacheProvider.set` skips it — so a missing article costs one lookup per attempt.
+	 */
+	public async getSettings(id: number): Promise<ArticleSettings | null> {
+		const results = await cacheProvider.get(
+			cacheProvider.buildKey(
+				ArticleEntity.NAME,
+				id.toString(),
+				'settings',
+			),
+			async () => {
+				const entry = await this.repository
+					.createQuery()
+					.select(['article.id', 'article.details'])
+					.filterById(id)
+					.first();
+
+				return entry ? resolveArticleSettings(entry.details) : null;
+			},
+		);
+
+		return results.data as ArticleSettings | null;
 	}
 
 	/**
@@ -812,6 +881,7 @@ export class ArticleService {
 				'article.visibility',
 				'article.source_mode',
 				'article.source',
+				'article.details',
 				'article.author_id',
 				'article.created_at',
 				'article.updated_at',
@@ -873,7 +943,9 @@ export class ArticleService {
 
 		const [entryWithCover] = await this.attachCoverImages([entry]);
 
-		return entryWithCover;
+		// The switches tell the page whether to draw a rating widget, a comment form and a
+		// report link at all
+		return this.withSettings(entryWithCover);
 	}
 
 	/**

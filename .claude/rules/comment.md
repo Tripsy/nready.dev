@@ -3,6 +3,7 @@ paths:
   - "src/features/comment/**"
   - "src/features/complaint/**"
   - "src/config/event.config.ts"
+  - "src/config/target-participation.config.ts"
 ---
 
 # Comment & Complaint Protocol
@@ -197,7 +198,36 @@ still on record. `updateOwn` / `deleteOwn` are refused once `is_resolved` — th
 the decision is answered from, and the person who asked for it does not get to rewrite it
 afterwards.
 
-## 6. Thread Cache
+## 6. A Target May Close
+
+Writing against `(entity_type, entity_id)` is asked for first, through the registry in
+`src/config/target-participation.config.ts`: `CommentService.create`, `RatingService.create` and
+`ComplaintService.create` each call `isParticipationAllowed(entity_type, entity_id, <kind>)` before
+anything is stored, and answer **403** with their own `error.not_accepted` message when it is no.
+
+**A target with no resolver registered is open**, which is every one of them but `article` — so
+this changed nothing for a comment on a review or a rating on a comment, and a new target costs
+these three features nothing.
+
+The dependency runs the same way round as §3 and §5: the feature owning the target registers a
+resolver for its own rows from its `*.bootstrap.ts`, and the writing feature asks the registry,
+never the feature. `article.bootstrap.ts` resolves the three switches an article carries in
+`details` — `allow_rating` / `allow_comments` / `allow_complaints`, defaulting from
+`ARTICLE_ALLOW_*`, all on — through `ArticleService.getSettings`.
+
+Two consequences worth knowing:
+
+- **An article that cannot be resolved refuses everything.** Soft-deleted or never there answers
+  `false`, because nothing may be attached to a page no reader can open. This is stricter than
+  before, where a write against a nonexistent id was stored.
+- **The registry is empty in the `test` environment** — bootstrap skips the feature-bootstrap
+  pass there, so every target reads as open. A test covering a closed one registers its own
+  resolver.
+
+Only `create` is gated. Editing or withdrawing what is already there stays open: closing a
+discussion must not trap an author with a comment they can no longer take back.
+
+## 7. Thread Cache
 
 `CommentEntity.HAS_CACHE` is true and the cache is keyed by **target**, not by row
 (`cleanThreadCache` → `cacheClean` with `[comment, entity_type, entity_id]`): one approval changes
@@ -211,7 +241,7 @@ fixing data by hand during development.
 `CommentSubscriptionEntity.HAS_CACHE` is false, and `ComplaintEntity.HAS_CACHE` is false and must stay so: the public read is per-account (`own`), and
 a shared cache would hand one reader another's complaint.
 
-## 7. Frontend Counterpart
+## 8. Frontend Counterpart
 
 `../nready-ui` renders both through entity-agnostic components (`src/components/comment/`,
 `src/components/complaint/`) — the report widget offers a *subset* of `ComplaintReasonEnum` per

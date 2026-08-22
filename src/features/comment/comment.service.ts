@@ -4,7 +4,11 @@ import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/message.setup';
 import { requestContext } from '@/config/request.context';
 import { Configuration } from '@/config/settings.config';
-import { BadRequestError } from '@/exceptions';
+import {
+	isParticipationAllowed,
+	ParticipationEnum,
+} from '@/config/target-participation.config';
+import { BadRequestError, CustomError } from '@/exceptions';
 import type {
 	CommentEntityType,
 	CommentStatus,
@@ -121,6 +125,22 @@ export class CommentService {
 		 */
 		if (isGuest && (!data.guest_name || !data.guest_email)) {
 			throw new BadRequestError(lang('comment.error.guest_required'));
+		}
+
+		/*
+		 * Asked before anything is written: the target decides whether it still takes comments
+		 * at all, and an article whose editor closed the discussion answers no. A target with
+		 * nobody registered for it — and every target while the registry is empty — is open,
+		 * so this is a refusal only where somebody owns the switch.
+		 */
+		const isAccepted = await isParticipationAllowed(
+			data.entity_type,
+			data.entity_id,
+			ParticipationEnum.COMMENT,
+		);
+
+		if (!isAccepted) {
+			throw new CustomError(403, lang('comment.error.not_accepted'));
 		}
 
 		const parent = await this.resolveParent(data);

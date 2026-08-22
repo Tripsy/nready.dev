@@ -12,7 +12,8 @@
 		"not_found": "Rating not found",
 		"already_rated": "You already rated this",
 		"already_rated_ip": "This address already rated this",
-		"ip_unresolved": "Your rating could not be recorded because your origin address is unknown"
+		"ip_unresolved": "Your rating could not be recorded because your origin address is unknown",
+		"not_accepted": "Ratings are closed for this"
 	},
 	"success": {
 		"create": "Rating recorded successfully",

@@ -1,5 +1,9 @@
 import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/message.setup';
+import {
+	isParticipationAllowed,
+	ParticipationEnum,
+} from '@/config/target-participation.config';
 import { BadRequestError, CustomError, NotFoundError } from '@/exceptions';
 import type ComplaintEntity from '@/features/complaint/complaint.entity';
 import type { ComplaintEntityType } from '@/features/complaint/complaint.entity';
@@ -48,6 +52,21 @@ export class ComplaintService {
 		data: ValidatorOutput<ComplaintValidator, 'create'>,
 		userId: number,
 	): Promise<ComplaintEntity> {
+		/*
+		 * The target decides whether it still takes reports — an article whose editor turned
+		 * them off answers no, and one that is gone answers no for everything. A target with
+		 * no resolver registered is open, which is every one of them but `article`.
+		 */
+		const isAccepted = await isParticipationAllowed(
+			data.entity_type,
+			data.entity_id,
+			ParticipationEnum.COMPLAINT,
+		);
+
+		if (!isAccepted) {
+			throw new CustomError(403, lang('complaint.error.not_accepted'));
+		}
+
 		try {
 			const entry = await this.repository.save(
 				this.repository.create({

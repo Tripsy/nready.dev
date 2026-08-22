@@ -3,7 +3,10 @@ import type { Express } from 'express';
 import request from 'supertest';
 import { createApp } from '@/app';
 import { UnauthorizedError } from '@/exceptions';
-import { ArticleVisibilityEnum } from '@/features/article/article.entity';
+import {
+	ArticleVisibilityEnum,
+	resolveArticleSettings,
+} from '@/features/article/article.entity';
 import { getArticleEntityMock } from '@/features/article/article.mock';
 import articleRoutes from '@/features/article/article.routes';
 import { articleService } from '@/features/article/article.service';
@@ -34,13 +37,26 @@ const adminBasePath = (await articleRoutes()).basePath;
 describe(controller, () => {
 	const entity = getArticleEntityMock();
 
-	// The public surfaces answer with the cover image attached (`attachCoverImages`), so the
-	// mocked service has to return that shape rather than the bare entity.
-	const publicEntry = { ...entity, cover_image: null };
+	/*
+	 * The public surfaces answer with the cover image attached (`attachCoverImages`) and with
+	 * `details` traded for the resolved switches (`withSettings`), so the mocked service has to
+	 * return that shape rather than the bare entity.
+	 */
+	const { details: _details, ...entityRead } = entity;
+
+	const publicEntry = {
+		...entityRead,
+		cover_image: null,
+		settings: resolveArticleSettings(entity.details),
+	};
+
+	// The listing keeps the entity shape: it selects no `details` and carries no switches — a
+	// card decides nothing about whether the article takes comments.
+	const listedEntry = { ...entity, cover_image: null };
 
 	it('find should answer an unauthenticated caller', async () => {
 		jest.spyOn(articleService, 'findByFilterPublic').mockResolvedValue([
-			[publicEntry],
+			[listedEntry],
 			1,
 		]);
 

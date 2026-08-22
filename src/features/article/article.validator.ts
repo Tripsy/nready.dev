@@ -4,6 +4,7 @@ import {
 	type ArticleFeaturedStatus,
 	ArticleFeaturedStatusEnum,
 	ArticleLayoutEnum,
+	ArticleSettingEnum,
 	ArticleSourceModeEnum,
 	ArticleStatusEnum,
 	ArticleVisibilityEnum,
@@ -32,6 +33,7 @@ export const paramsUpdateList: string[] = [
 	'visibility_rule',
 	'public_at',
 	'source',
+	'settings',
 	'contents',
 	'categories',
 	'tags',
@@ -136,6 +138,28 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 					required: false,
 				},
 			).default(true),
+		})
+		.optional();
+
+	/**
+	 * Only the keys the payload names are touched — an absent key leaves the article on whatever
+	 * it had, which for an article that never overrode anything is the deployment default. The
+	 * settings ride in `details`, so `applyArticleSettings` is what turns this into stored jsonb.
+	 */
+	readonly settingsSchema = z
+		.object({
+			[ArticleSettingEnum.ALLOW_RATING]: this.validateBoolean(
+				this.getMessage('invalid_boolean'),
+				{ required: false },
+			),
+			[ArticleSettingEnum.ALLOW_COMMENTS]: this.validateBoolean(
+				this.getMessage('invalid_boolean'),
+				{ required: false },
+			),
+			[ArticleSettingEnum.ALLOW_COMPLAINTS]: this.validateBoolean(
+				this.getMessage('invalid_boolean'),
+				{ required: false },
+			),
 		})
 		.optional();
 
@@ -279,6 +303,7 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 				{ required: false },
 			),
 			source: this.sourceSchema,
+			settings: this.settingsSchema,
 			contents: this.contentsSchema
 				.array()
 				.min(1, this.getMessage('invalid_contents'))
@@ -356,6 +381,7 @@ export class ArticleValidator extends BaseValidator<typeof validatorMessages> {
 				required: false,
 			}),
 			source: this.sourceSchema,
+			settings: this.settingsSchema,
 			contents: this.contentsSchema
 				.array()
 				.refine(

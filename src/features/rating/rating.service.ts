@@ -1,5 +1,9 @@
 import { QueryFailedError } from 'typeorm';
 import { lang } from '@/config/message.setup';
+import {
+	isParticipationAllowed,
+	ParticipationEnum,
+} from '@/config/target-participation.config';
 import { CustomError, NotFoundError } from '@/exceptions';
 import type RatingEntity from '@/features/rating/rating.entity';
 import type {
@@ -66,6 +70,21 @@ export class RatingService {
 		data: ValidatorOutput<RatingValidator, 'create'>,
 		owner: RatingOwner,
 	): Promise<RatingEntity> {
+		/*
+		 * The target decides whether it still takes ratings — an article whose editor turned
+		 * them off answers no, and one that is gone answers no for everything. A target with
+		 * no resolver registered is open, which is every one of them but `article`.
+		 */
+		const isAccepted = await isParticipationAllowed(
+			data.entity_type,
+			data.entity_id,
+			ParticipationEnum.RATING,
+		);
+
+		if (!isAccepted) {
+			throw new CustomError(403, lang('rating.error.not_accepted'));
+		}
+
 		const isEmoji = data.type === RatingTypeEnum.EMOJI;
 
 		try {
