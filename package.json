@@ -8,7 +8,7 @@
 		"typescript"
 	],
 	"author": "Gabriel David",
-	"license": "GNU",
+	"license": "MIT",
 	"homepage": "https://github.com/Tripsy/nready-api#readme",
 	"bugs": {
 		"url": "https://github.com/Tripsy/nready-api/issues"

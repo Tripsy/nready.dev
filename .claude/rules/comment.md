@@ -150,6 +150,21 @@ public, and announcing it would leak what a moderator has not passed.
   is that subscriber, so a root comment never qualifies.
 - `BATCH_LIMIT` caps a run; the remainder waits for the next one.
 
+**Retention.** `clean-comment-subscription.cron.ts` runs daily (`37 04 * * *`) and hard-deletes
+subscriptions older than 60 days — nothing else bounds the table, since a row is written for every
+person who comments anywhere and only a hard-deleted target clears one. Two things about it:
+
+- **`unsubscribed` rows are purged too, and the window is what makes that safe.** Everywhere else
+  the opt-out *is* the row (§4) — `subscribe()` is insert-or-update so a later comment cannot
+  re-subscribe somebody who asked to be left alone. The purge gives that up on purpose: after 60
+  days of silence the discussion is over for that reader, and a comment they write on it after
+  that is fresh intent rather than the old opt-out being overridden. **Shortening the window
+  breaks that reasoning** — at, say, a week, the cron becomes a delayed re-subscribe for anyone
+  who opted out of a live discussion.
+- **The window runs from `created_at` and is not extended by later comments** — the conflict path
+  updates `language` and nothing else. Somebody still following a two-month-old discussion is
+  re-subscribed at `all` by their next comment.
+
 **The digest links a comment by id, never by URL.** Each entry carries
 `{{ siteUrl }}/comments/{{ comment.id }}`, which the frontend resolves to the page the comment sits
 on when the link is followed. The address is deliberately *not* stored — not on the comment, not on
