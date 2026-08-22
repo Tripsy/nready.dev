@@ -198,12 +198,16 @@ against a polymorphic target clears its own on `entityRemoved` — the **hard**-
 | `complaint.listener.ts` | complaints | a comment (its own targets) |
 | `rating.listener.ts` | ratings | a comment / an article |
 | `comment.listener.ts` | the comments on a target **and** the subscriptions to them | an article / a review |
+| `image.listener.ts` | the images filed against a target | an article / brand / category / product |
 
 The comment sweep is wired ahead of any emitter: nothing hard-deletes an article today, and a
 feature that starts to — or a new commentable target — only has to emit. There is no self-trigger
 either: `comment` announces its own removals as `entity_type: 'comment'`, which is not a member of
 `CommentEntityTypeEnum`. Subscriptions go in the same pass, because a subscriber would otherwise
 keep a live unsubscribe token for a discussion that no longer exists.
+
+`image.listener.ts` clears **rows only** — the stored file behind `path` stays on disk or in S3,
+exactly as the dashboard delete leaves it. Reaping storage is a job nothing does yet.
 
 An article leaves through `deleted_at` and can come back, so a soft delete announces nothing and
 everything attached to it stays and becomes answerable again with it.

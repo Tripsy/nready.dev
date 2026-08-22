@@ -20,6 +20,19 @@ export const ImageSectionEnum = {
 export type ImageSection =
 	(typeof ImageSectionEnum)[keyof typeof ImageSectionEnum];
 
+const IMAGE_SECTIONS: readonly string[] = Object.values(ImageSectionEnum);
+
+/**
+ * Whether this table stores anything for the named target at all.
+ *
+ * A predicate rather than a cast: a section reaches this feature as a plain table name — from the
+ * target-image registry, and from `entityRemoved` — and the same check that decides to act is the
+ * one that proves the type. Handing an unchecked string to a query would reach Postgres as an
+ * invalid enum literal.
+ */
+export const isImageSection = (section: string): section is ImageSection =>
+	IMAGE_SECTIONS.includes(section);
+
 export const ImageTypeEnum = {
 	LOGO: 'logo',
 	GALLERY: 'gallery',

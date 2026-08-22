@@ -1,6 +1,6 @@
 {
 	"name": "article",
-	"version": "2.1.0",
+	"version": "2.2.0",
 	"relativePath": "/article",
 	"entities": [
 		"article",
@@ -9,6 +9,6 @@
 		"article_tag",
 		"article_visibility_rule"
 	],
-	"depends_on": ["category", "term", "user", "subscription", "image"],
+	"depends_on": ["category", "term", "user", "subscription"],
 	"required_by": []
 }

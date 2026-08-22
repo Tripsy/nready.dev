@@ -1,8 +1,8 @@
 {
 	"name": "brand",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"relativePath": "/brand",
 	"entities": ["brand", "brand-content"],
-	"depends_on": ["image"],
+	"depends_on": [],
 	"required_by": ["product"]
 }

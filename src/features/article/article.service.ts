@@ -6,6 +6,11 @@ import {
 import dataSource from '@/config/data-source.config';
 import { eventEmitter } from '@/config/event.config';
 import { lang } from '@/config/message.setup';
+import {
+	resolveTargetImages,
+	type TargetImage,
+	TargetImageTypeEnum,
+} from '@/config/target-image.config';
 import { CustomError } from '@/exceptions';
 import ArticleEntity, {
 	type ArticleDetails,
@@ -33,14 +38,6 @@ import ArticleVisibilityRuleEntity from '@/features/article/article-visibility-r
 import CategoryEntity, {
 	CategoryTypeEnum,
 } from '@/features/category/category.entity';
-import {
-	type ImagePropertiesType,
-	ImageSectionEnum,
-	ImageStatusEnum,
-	type ImageStorage,
-	ImageTypeEnum,
-} from '@/features/image/image.entity';
-import { getImageRepository } from '@/features/image/image.repository';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
 import { encryptPassword } from '@/helpers/security.helper';
 import { cacheProvider } from '@/providers/cache.provider';
@@ -71,15 +68,14 @@ const slugConflictError = (): CustomError =>
 	new CustomError(409, lang('article.error.slug_already_exists'));
 
 /**
- * The one image a public surface shows for an article: the first of its gallery, by
- * `sort_order`. `null` when the article has none — a listing is expected to hold both.
+ * The one image a public surface shows for an article: the first of its gallery, by `sort_order`.
+ *
+ * "Cover" is this feature's word for the role, not a kind of image — the image feature knows only
+ * `logo` and `gallery`, and nothing marks a row as the cover. It is whichever gallery image comes
+ * first, which is why the type is an alias rather than a shape of its own: the payload is the
+ * registry's, the name for it is article's, and `cover_image` is what the frontend reads.
  */
-export type ArticleCoverImageType = {
-	id: number;
-	path: string;
-	storage: ImageStorage;
-	properties: ImagePropertiesType | null;
-};
+export type ArticleCoverImageType = TargetImage;
 
 export type WithCoverImage<T> = T & {
 	cover_image: ArticleCoverImageType | null;
@@ -806,13 +802,16 @@ export class ArticleService {
 	}
 
 	/**
-	 * Attaches each article's cover image — the first active gallery image, by `sort_order`.
+	 * Attaches each article's cover image, when the deployment has something to answer with.
 	 *
-	 * A separate query rather than a join: `image` is polymorphic (`section` + `entity_id`,
-	 * no foreign key to `article`), so there is no relation for the query builder to walk,
-	 * and a manual join would need a LATERAL to keep one row per article. One extra
-	 * statement per page reads better and costs a single index seek on
-	 * `IDX_image_type_id`.
+	 * Asked of the registry in `target-image.config.ts` rather than of the `image` feature, which
+	 * is optional here. The split of vocabulary is the point: this feature asks for the first
+	 * `gallery` image of an article and calls what comes back a cover; picking which one comes
+	 * first is the storing feature's rule.
+	 *
+	 * With no provider registered — a deployment without `image`, or the `test` environment, where
+	 * bootstrap does not run — every article answers `null`. The key stays present either way: a
+	 * client must not have to tell "no image" apart from "no image feature".
 	 */
 	private async attachCoverImages<T extends { id: number }>(
 		entries: T[],
@@ -821,39 +820,11 @@ export class ArticleService {
 			return [];
 		}
 
-		const images = await getImageRepository()
-			.createQuery()
-			.select([
-				'image.id',
-				'image.entity_id',
-				'image.path',
-				'image.storage',
-				'image.properties',
-				'image.sort_order',
-			])
-			.filterBy('image.section', ImageSectionEnum.ARTICLE)
-			.filterBy('image.image_type', ImageTypeEnum.GALLERY)
-			.filterBy('image.status', ImageStatusEnum.ACTIVE)
-			.filterRaw('image.entity_id IN (:...entityIds)', {
-				entityIds: entries.map((entry) => entry.id),
-			})
-			.orderBy('image.sort_order', 'ASC')
-			.all();
-
-		// Ordered ascending, so the first image seen for an article is its cover and later
-		// ones are ignored.
-		const covers = new Map<number, ArticleCoverImageType>();
-
-		for (const image of images) {
-			if (!covers.has(image.entity_id)) {
-				covers.set(image.entity_id, {
-					id: image.id,
-					path: image.path,
-					storage: image.storage,
-					properties: image.properties ?? null,
-				});
-			}
-		}
+		const covers = await resolveTargetImages(
+			ArticleEntity.NAME,
+			TargetImageTypeEnum.GALLERY,
+			entries.map((entry) => entry.id),
+		);
 
 		return entries.map((entry) => ({
 			...entry,

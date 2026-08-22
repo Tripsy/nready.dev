@@ -1,9 +1,12 @@
 import type { DeepPartial } from 'typeorm';
 import dataSource from '@/config/data-source.config';
-import { BadRequestError } from '@/exceptions';
+import type { TargetImage } from '@/config/target-image.config';
+import { BadRequestError, NotFoundError } from '@/exceptions';
 import ImageEntity, {
 	type ImageSection,
 	type ImageStatus,
+	ImageStatusEnum,
+	type ImageType,
 	ImageTypeEnum,
 	STATUS_TRANSITIONS,
 } from '@/features/image/image.entity';
@@ -148,8 +151,108 @@ export class ImageService {
 		});
 	}
 
+	/**
+	 * @description Used by `image.bootstrap.ts`, through the target-image registry
+	 *
+	 * The one image that stands for each named target: the first active image of the requested
+	 * type, by `sort_order`. A target with none is absent from the map, and the caller renders
+	 * that as `null`.
+	 *
+	 * The type is the caller's to choose — a brand wants its `logo`, an article the first of its
+	 * `gallery` — while "first active, by `sort_order`" is this table's rule and stays here.
+	 *
+	 * One statement for the whole page, and a separate statement rather than a join: `image` is
+	 * polymorphic (`section` + `entity_id`, no foreign key to anything), so there is no relation
+	 * for the query builder to walk, and a manual join would need a LATERAL to keep one row per
+	 * target. It costs a single index seek on `IDX_image_type_id`.
+	 */
+	public async getPrimaryByTargets(
+		section: ImageSection,
+		imageType: ImageType,
+		entityIds: number[],
+	): Promise<Map<number, TargetImage>> {
+		const primary = new Map<number, TargetImage>();
+
+		if (entityIds.length === 0) {
+			return primary;
+		}
+
+		const images = await this.repository
+			.createQuery()
+			.select([
+				'image.id',
+				'image.entity_id',
+				'image.path',
+				'image.storage',
+				'image.properties',
+				'image.sort_order',
+			])
+			.filterBy('image.section', section)
+			.filterBy('image.image_type', imageType)
+			.filterBy('image.status', ImageStatusEnum.ACTIVE)
+			.filterBy('image.entity_id', entityIds, 'IN')
+			.orderBy('image.sort_order', 'ASC')
+			.all();
+
+		// Ordered ascending, so the first image seen for a target is the one that stands for it
+		// and later ones are ignored.
+		for (const image of images) {
+			if (!primary.has(image.entity_id)) {
+				primary.set(image.entity_id, {
+					id: image.id,
+					path: image.path,
+					storage: image.storage,
+					properties: image.properties ?? null,
+				});
+			}
+		}
+
+		return primary;
+	}
+
 	public async delete(id: number) {
 		await this.repository.createQuery().filterById(id).delete(false);
+	}
+
+	/**
+	 * @description Used by `ImageListener`, on `entityRemoved`
+	 *
+	 * Images left pointing at targets that no longer exist. `(section, entity_id)` carries no
+	 * foreign key, so nothing removes them when the target goes — the feature that owned it
+	 * announces the removal and this clears what was filed against it. The translations follow
+	 * through `image_content.image_id`'s `ON DELETE CASCADE`.
+	 *
+	 * Hard, like every other delete on this table: there is no `deleted_at` to soft-delete into,
+	 * and a lingering row would keep answering `getPrimaryByTargets` for an id a later row may
+	 * reuse.
+	 *
+	 * Clears the rows only. The stored file behind `path` stays on disk or in S3, exactly as the
+	 * dashboard `delete` above leaves it — reaping storage is a separate job neither of them does.
+	 */
+	public async deleteByTargets(
+		section: ImageSection,
+		entityIds: number[],
+	): Promise<void> {
+		if (entityIds.length === 0) {
+			return;
+		}
+
+		try {
+			await this.repository
+				.createQuery()
+				.filterBy('image.section', section)
+				.filterBy('image.entity_id', entityIds, 'IN')
+				.delete(false, true);
+		} catch (error) {
+			/*
+			 * A target with no images is the ordinary case, and `RepositoryAbstract.delete`
+			 * reports "nothing matched" as a 404 — meaningful when a caller named one row, noise
+			 * when the caller is a cleanup sweeping ids it has no expectations about.
+			 */
+			if (!(error instanceof NotFoundError)) {
+				throw error;
+			}
+		}
 	}
 
 	public findById(id: number): Promise<ImageEntity> {
