@@ -210,6 +210,15 @@ export const GROSS_AMOUNT_EXPRESSION = (alias: string) => `
     END
 `;
 
+/**
+ * Gross amount converted to the deployment's base currency. Rows carry their own `currency` with
+ * the `exchange_rate` captured at the time of the entry, so a SUM over mixed-currency rows is
+ * only meaningful once each row is scaled by its own rate.
+ */
+export const GROSS_AMOUNT_BASE_CURRENCY_EXPRESSION = (alias: string) => `
+	(${GROSS_AMOUNT_EXPRESSION(alias)}) * CAST(${alias}.exchange_rate AS FLOAT)
+`;
+
 @Entity({
 	name: ENTITY_TABLE_NAME,
 	schema: 'public',

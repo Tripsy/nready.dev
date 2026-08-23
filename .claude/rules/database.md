@@ -305,13 +305,53 @@ Conventions for a new demo seed:
   `password_updated_at`; a seed that pre-hashes ends up double-hashing and no login will match.
   Check `<entity>.subscriber.ts` before setting a column by hand.
 
-## 6. Query Logging
+## 6. Cache Invalidation
+
+**Invalidation belongs to the service layer and the repository terminals. Never to a subscriber.**
+A TypeORM entity subscriber cannot do this job for two reasons, and both are why the `cacheClean`
+event it used to emit no longer exists:
+
+1. *It fires per row.* Saving three translations broadcasts three identical cleans, each a full
+   Redis SCAN over the same keyspace, all but the first finding nothing.
+2. *It fires inside the transaction.* A concurrent reader can slip between the clean and the
+   COMMIT, refill the cache from a snapshot about to be superseded, and leave it stale with
+   **nothing coming to correct it** until the TTL expires.
+
+Subscribers keep `logHistory` — an audit entry per row is exactly what that wants.
+
+The helpers live in `shared/abstracts/service.abstract.ts` and are all **awaited inside the
+request**, so a write is readable by whoever made it (the dashboard re-reads an entry the moment its
+form submit resolves):
+
+| Helper | For |
+|---|---|
+| `cleanEntityCache(entity, id)` | the common case — one row, keyed by id |
+| `cleanEntityCacheBy(entity, ...segments)` | a keyspace addressed by something else (`template`, read by label/language/type at render time) |
+| `cleanEntityCacheMany(entity, ids)` | many rows in **one** pass over the keyspace |
+
+Rules that follow:
+
+- **Call it after the transaction commits**, never inside one — inside is reason 2 exactly.
+- **`create` needs no clean.** A new row has no cached key.
+- **Patch the feature's `update()` wrapper, not its callers.** `updateData` and `updateStatus`
+  route through it, so one line covers them and every external caller.
+- **`RepositoryAbstract.delete/restore` clean their own affected rows**, so a caller that bypasses
+  the service — the retention crons do — is still covered. They clean *every* id the filter
+  reached, not the filter itself.
+- **Never loop `cleanEntityCache` over a bulk write.** `MATCH` takes one glob, so that is a full
+  pass over the keyspace per id; `cleanEntityCacheMany` goes wide once and filters in the client.
+- **Put the id first in a cache key** — `<entity>:<id>:<group>`, never `<entity>:<group>:<id>`.
+  The second shape is unreachable by every helper above and has silently outlived its writes.
+- **A cached read with no invalidation is a bug**, not a TTL policy. If an entity is cached, some
+  write path owns dropping it.
+
+## 7. Query Logging
 
 `data-source.config.ts` sets `logging: false` in every environment. Turn it on locally to debug a
 query, but revert it — TypeORM's query log goes to stdout unfiltered, so it carries parameter values
 (emails, tokens, password hashes) into whatever collects the container's output.
 
-## 7. Destructive Operations
+## 8. Destructive Operations
 
 Before running anything containing `DROP`, `TRUNCATE`, `ALTER`, or an `UPDATE`/`DELETE` without a
 `WHERE`, stop and confirm with the user. For a complex update, show the matching `SELECT` first so the

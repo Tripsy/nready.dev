@@ -155,6 +155,20 @@ export default class CommentEntity {
 	})
 	content!: string;
 
+	/**
+	 * When the text was last rewritten, and null for a comment nobody has touched since posting.
+	 *
+	 * A column of its own rather than a comparison against `updated_at`: that one moves for every
+	 * save on the row — a moderation decision, a pin — so reading it as "edited" would put the
+	 * marker on comments whose author never went back to them. Written only where `content`
+	 * actually changes.
+	 */
+	@Column({
+		type: 'timestamp',
+		nullable: true,
+	})
+	edited_at?: Date | null;
+
 	@Column({
 		type: 'enum',
 		enum: CommentStatusEnum,

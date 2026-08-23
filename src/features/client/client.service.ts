@@ -1,8 +1,7 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
-import type ClientEntity from '@/features/client/client.entity';
-import {
+import ClientEntity, {
 	type ClientIdentityData,
 	type ClientStatus,
 	ClientStatusEnum,
@@ -15,7 +14,10 @@ import {
 	paramsUpdateList,
 } from '@/features/client/client.validator';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
-import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import {
+	assertValidStatusTransition,
+	cleanEntityCache,
+} from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class ClientService {
@@ -109,10 +111,14 @@ export class ClientService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<ClientEntity> & { id: number },
 	): Promise<ClientEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(ClientEntity, saved.id);
+
+		return saved;
 	}
 
 	/**

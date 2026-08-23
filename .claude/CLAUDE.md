@@ -207,6 +207,14 @@ feature nobody can evaluate. Conventions (top-up, seeded PRNG, natural keys) are
 `.claude/rules/database.md` §5.4. Features that hold no table of their own — or reference data with
 a fixed canonical list, like `permission` and `template` — are the exception.
 
+**`image` is genuinely optional.** Nothing imports it: a feature wanting the picture that stands
+for one of its rows asks `target-image.config.ts` for an image of a given type (`logo` /
+`gallery`), and with the feature absent the registry answers empty. Keep it that way — a direct
+`getImageRepository()` from another feature puts the hard dependency back. Note the split of
+vocabulary: the registry and the image feature deal in image *types*, while "cover" is `article`'s
+own word for the role it casts the first gallery image in — `cover_image` is an article payload
+field, not a kind of image.
+
 Features are categorized as core and additional; further projects are started from this one and more
 additional features are expected over time.
 
@@ -233,8 +241,11 @@ suffix and a file is picked up automatically:
   only) and calls each default export before the server listens. This is where a feature
   *registers itself* with a shared registry so another feature can reach it by name without
   importing it — `article.bootstrap.ts` registers what an article accepts from its readers with
-  `target-participation.config.ts`. Not for event handlers, and not for work: it is startup
-  latency on every deployment.
+  `target-participation.config.ts`, and `image.bootstrap.ts` registers where the image standing
+  for a row comes from with `target-image.config.ts`. **The two run in opposite directions**: the
+  first is a target answering about its own rows for other features to read, the second a provider
+  others consume.
+  Not for event handlers, and not for work: it is startup latency on every deployment.
 
 Both of the last two run through `runFeatureModules()` (`src/config/feature-modules.setup.ts`),
 which owns the scan, the import, the "no default export" error and the one-line-per-pass logging.
@@ -332,7 +343,8 @@ Dates are ISO 8601 strings (not timestamps). Protected routes require `Authoriza
 ### Cross-cutting infrastructure
 
 - **`src/providers/`** — `database` (TypeORM data source), `cache` (Redis-backed;
-  `cacheProvider.buildKey(...)` + `get(key, loader)`), `logger` (Pino; `providers/logger/` holds one
+  `cacheProvider.buildKey(...)` + `get(key, loader)`; invalidation belongs to the service layer and
+  the repository terminals, never to a subscriber — see `rules/database.md` §6), `logger` (Pino; `providers/logger/` holds one
   `LogDestination` per sink — console, file, database, email, CloudWatch — selected per level by
   `log-destinations.factory.ts`, with dedicated system/cron loggers), `email` (SMTP or SES, chosen by
   `mail.provider`), `cron`.

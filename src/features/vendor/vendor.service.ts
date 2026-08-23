@@ -1,6 +1,5 @@
 import type { DeepPartial } from 'typeorm';
-import type VendorEntity from '@/features/vendor/vendor.entity';
-import {
+import VendorEntity, {
 	STATUS_TRANSITIONS,
 	type VendorStatus,
 } from '@/features/vendor/vendor.entity';
@@ -10,7 +9,10 @@ import {
 	type VendorValidator,
 } from '@/features/vendor/vendor.validator';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
-import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import {
+	assertValidStatusTransition,
+	cleanEntityCache,
+} from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class VendorService {
@@ -32,10 +34,14 @@ export class VendorService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<VendorEntity> & { id: number },
 	): Promise<VendorEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(VendorEntity, saved.id);
+
+		return saved;
 	}
 
 	/**

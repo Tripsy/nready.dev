@@ -10,10 +10,6 @@ export type LogHistoryEventPayload = {
 	data?: Record<string, string | number>;
 };
 
-export type CacheCleanEventPayload = {
-	cacheKeyArgs: string[];
-};
-
 /**
  * Rows that have just left the database for good, named the way a polymorphic target is: the table
  * they lived in and their ids.
@@ -79,7 +75,6 @@ export type UserRegisteredEventPayload = Partial<UserEntity> & {
 
 type Events = {
 	history: LogHistoryEventPayload;
-	cacheClean: CacheCleanEventPayload;
 	entityRemoved: EntityRemovedEventPayload;
 	complaintFiled: ComplaintFiledEventPayload;
 	commentPosted: CommentPostedEventPayload;

@@ -18,6 +18,7 @@ import { pickValuesFromObject } from '@/helpers/objects.helper';
 import {
 	assertValidStatusTransition,
 	cleanEntityCache,
+	cleanEntityCacheMany,
 } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
@@ -67,10 +68,14 @@ export class BrandService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<BrandEntity> & { id: number },
 	): Promise<BrandEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(BrandEntity, saved.id);
+
+		return saved;
 	}
 
 	public async updateDataWithContent(
@@ -107,7 +112,7 @@ export class BrandService {
 
 		// One clean for the whole operation, after commit — the content rows written above
 		// have no subscriber invalidating the brand's keys. See `cleanEntityCache`
-		cleanEntityCache(BrandEntity, updatedEntity.id);
+		await cleanEntityCache(BrandEntity, updatedEntity.id);
 
 		return updatedEntity;
 	}
@@ -163,9 +168,14 @@ export class BrandService {
 				return brand;
 			});
 
-			// Save all - triggers subscribers (cache invalidation + audit log)
+			// Save all - row by row, so each write is audited; the cache is dropped after
+			// the transaction commits, below
 			await brandRepository.save(updatedBrands);
 		});
+
+		// Every row moved, in one pass: a reorder rewrites the whole group, and the
+		// order a reader sees comes from these rows. See `cleanEntityCacheMany`
+		await cleanEntityCacheMany(BrandEntity, ids);
 	}
 
 	public async delete(id: number) {

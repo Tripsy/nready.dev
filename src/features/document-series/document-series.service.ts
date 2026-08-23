@@ -1,8 +1,8 @@
 import type { DeepPartial, EntityManager } from 'typeorm';
 import { lang } from '@/config/message.setup';
 import { BadRequestError, CustomError } from '@/exceptions';
-import type DocumentSeriesEntity from '@/features/document-series/document-series.entity';
 import type { DocumentType } from '@/features/document-series/document-series.entity';
+import DocumentSeriesEntity from '@/features/document-series/document-series.entity';
 import {
 	createDocumentSeriesQuery,
 	getDocumentSeriesRepository,
@@ -13,6 +13,7 @@ import {
 } from '@/features/document-series/document-series.validator';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
 import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
+import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 /**
@@ -158,10 +159,14 @@ export class DocumentSeriesService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<DocumentSeriesEntity> & { id: number },
 	): Promise<DocumentSeriesEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(DocumentSeriesEntity, saved.id);
+
+		return saved;
 	}
 
 	/**

@@ -22,6 +22,7 @@ import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
 	assertValidStatusTransition,
 	cleanEntityCache,
+	cleanEntityCacheMany,
 } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
@@ -233,7 +234,7 @@ export class CategoryService {
 		// One clean for the whole operation, after commit — the content rows written above
 		// have no subscriber invalidating the category's keys, and a contents-only update
 		// never saves the category row either. See `cleanEntityCache`
-		cleanEntityCache(CategoryEntity, updatedEntry.id);
+		await cleanEntityCache(CategoryEntity, updatedEntry.id);
 
 		if (hasMoved) {
 			/*
@@ -253,7 +254,7 @@ export class CategoryService {
 			staleIds.delete(updatedEntry.id); // Already cleaned above
 
 			for (const staleId of staleIds) {
-				cleanEntityCache(CategoryEntity, staleId);
+				await cleanEntityCache(CategoryEntity, staleId);
 			}
 		}
 
@@ -265,8 +266,11 @@ export class CategoryService {
 		newStatus: CategoryStatus,
 		forceUpdate?: boolean, // When `true` & newStatus is CategoryStatusEnum.INACTIVE the active descendants will also be marked as inactive
 	): Promise<void> {
-		await dataSource.transaction(async (manager) => {
+		const cascadedIds = await dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(CategoryEntity); // We use the manager -> `getCategoryRepository` is not bound to the transaction
+
+			// Collected inside the transaction, cleaned after it commits.
+			const cascadedIds: number[] = [];
 
 			assertValidStatusTransition(
 				STATUS_TRANSITIONS,
@@ -310,6 +314,8 @@ export class CategoryService {
 								ids: activeDescendants.map((d) => d.id),
 							})
 							.execute();
+
+						cascadedIds.push(...activeDescendants.map((d) => d.id));
 					}
 				}
 			}
@@ -325,7 +331,18 @@ export class CategoryService {
 			entry.sort_order = 0;
 
 			await repository.save(entry);
+
+			return cascadedIds;
 		});
+
+		await cleanEntityCache(CategoryEntity, entry.id);
+
+		/*
+		 * The cascade above is a bulk `UPDATE ... WHERE id IN (...)`, which loads no entities and
+		 * so has never announced itself — those descendants changed status with nothing dropping
+		 * their cached reads.
+		 */
+		await cleanEntityCacheMany(CategoryEntity, cascadedIds);
 	}
 
 	/**
@@ -381,9 +398,14 @@ export class CategoryService {
 				return category;
 			});
 
-			// Save all - triggers subscribers (cache invalidation + audit log)
+			// Save all - row by row, so each write is audited; the cache is dropped after
+			// the transaction commits, below
 			await categoryRepository.save(updatedCategories);
 		});
+
+		// Every row moved, in one pass: a reorder rewrites the whole group, and the
+		// order a reader sees comes from these rows. See `cleanEntityCacheMany`
+		await cleanEntityCacheMany(CategoryEntity, ids);
 	}
 
 	public async delete(id: number) {

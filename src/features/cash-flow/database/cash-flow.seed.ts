@@ -1,6 +1,7 @@
 import { Configuration } from '@/config/settings.config';
 import {
 	isDirectRun,
+	type Random,
 	randomInt,
 	randomPick,
 	type SeedDefinition,
@@ -24,6 +25,9 @@ import {
 } from '@/features/cash-flow/cash-flow-category.enum';
 
 const TARGET = 150;
+
+/** How many months back the rows are spread, counting the current one. */
+const MONTH_SPREAD = 6;
 
 /**
  * Only the categories `getExpectedCategoryType` actually classifies — the enum carries
@@ -63,6 +67,37 @@ const EXCHANGE_RATES: Record<Currency, number> = {
 	[CurrencyEnum.EUR]: 5.08,
 	[CurrencyEnum.USD]: 4.66,
 };
+
+/**
+ * A moment inside the month `index` falls into, spreading the rows evenly over the last
+ * `MONTH_SPREAD` months. Without this every row carries the instant the seed ran, so any
+ * month-over-month figure — the dashboard's revenue and expense trend — divides by an empty
+ * previous month and can only ever report a no-baseline +/-100%.
+ *
+ * The current month stops at today: a cash flow dated in the future is not something the app
+ * should ever be asked to render.
+ */
+function createdAtForIndex(random: Random, index: number): Date {
+	const now = new Date();
+	const monthsAgo = index % MONTH_SPREAD;
+
+	const year = now.getFullYear();
+	const month = now.getMonth() - monthsAgo;
+
+	// Day 0 of the following month is the last day of this one, which keeps a 31 from rolling
+	// over into the next month when the target month is shorter.
+	const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+	const maxDay = monthsAgo === 0 ? now.getDate() : lastDayOfMonth;
+
+	return new Date(
+		year,
+		month,
+		randomInt(random, 1, maxDay),
+		randomInt(random, 8, 19),
+		randomInt(random, 0, 59),
+		randomInt(random, 0, 59),
+	);
+}
 
 export const cashFlowSeed: SeedDefinition = {
 	name: 'cash-flow',
@@ -139,6 +174,9 @@ export const cashFlowSeed: SeedDefinition = {
 					external_reference: `SEED-CF-${sequenceLabel(index, 5)}`,
 					parent_id: null,
 					notes: null,
+					// `@CreateDateColumn` only falls back to the column default when the value
+					// is undefined, so an explicit date is kept as-is.
+					created_at: createdAtForIndex(random, index),
 				};
 			},
 		});

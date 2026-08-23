@@ -1,7 +1,7 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
-import type AddressEntity from '@/features/address/address.entity';
+import AddressEntity from '@/features/address/address.entity';
 import { getAddressRepository } from '@/features/address/address.repository';
 import {
 	type AddressValidator,
@@ -13,6 +13,7 @@ import {
 	placeService,
 } from '@/features/place/place.service';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
+import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class AddressService {
@@ -57,10 +58,14 @@ export class AddressService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<AddressEntity> & { id: number },
 	): Promise<AddressEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(AddressEntity, saved.id);
+
+		return saved;
 	}
 
 	/**

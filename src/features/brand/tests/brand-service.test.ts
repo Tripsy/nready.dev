@@ -74,7 +74,7 @@ describe('BrandService', () => {
 
 		// The submitted ids must be a complete reordering of the active set
 		// for this brand_type; `updateOrder` loads those rows and saves them
-		// via the repository so subscribers fire (cache invalidation + audit).
+		// via the repository so each write is audited, then drops their cache.
 		const activeBrands = [
 			{ id: 1, sort_order: 0 },
 			{ id: 2, sort_order: 0 },

@@ -39,20 +39,48 @@ function buildCategory(
 }
 
 /**
- * Stubs the tree repository behind `RepositoryAbstract.getTreeRepository`, which the
- * service reaches for statically — `findDescendants` is what guards reparenting and
- * deletion, so every tree test needs it to answer.
+ * Stubs the tree repository behind `RepositoryAbstract.getTreeRepository`, which the service
+ * reaches for statically. All three reads it performs have to answer, because the depth ceiling
+ * is checked on every placement and a stub missing one fails the test that placement succeeds:
+ *
+ * - `findDescendants` guards reparenting (a category cannot move under its own descendant) and
+ *   deletion. It includes the subject itself.
+ * - `findAncestors` is how `getDepth` measures the prospective parent — the returned length *is*
+ *   the depth, so one entry means a root.
+ * - `findDescendantsTree` is how `getSubtreeHeight` measures what is being moved; height comes
+ *   from `children`, so a node without any is a leaf of height 1.
+ *
+ * The defaults describe the ordinary case — placing a leaf under a root, which fits every
+ * `CATEGORY_MAX_DEPTH`. A test about the ceiling passes its own.
  */
-function mockTreeRepository(descendants: CategoryEntity[]) {
+function mockTreeRepository(
+	descendants: CategoryEntity[],
+	options: {
+		ancestors?: CategoryEntity[];
+		subtree?: CategoryEntity;
+	} = {},
+) {
 	const findDescendants = jest
 		.fn<(entity: CategoryEntity) => Promise<CategoryEntity[]>>()
 		.mockResolvedValue(descendants);
 
+	const findAncestors = jest
+		.fn<(entity: CategoryEntity) => Promise<CategoryEntity[]>>()
+		.mockResolvedValue(options.ancestors ?? [buildCategory({ id: 9 })]);
+
+	const findDescendantsTree = jest
+		.fn<(entity: CategoryEntity) => Promise<CategoryEntity>>()
+		.mockResolvedValue(
+			options.subtree ?? buildCategory({ id: 1, children: [] }),
+		);
+
 	jest.spyOn(RepositoryAbstract, 'getTreeRepository').mockReturnValue({
 		findDescendants,
+		findAncestors,
+		findDescendantsTree,
 	} as unknown as TreeRepository<CategoryEntity>);
 
-	return findDescendants;
+	return { findDescendants, findAncestors, findDescendantsTree };
 }
 
 describe('CategoryService', () => {
@@ -113,6 +141,10 @@ describe('CategoryService', () => {
 			const { transaction } = setupTransactionMock();
 			const repository = mockScopedRepository(parent, saved);
 
+			// A create is placed under the parent, so the depth ceiling is checked and the tree
+			// has to answer — the default puts the parent at the root, where a new leaf fits.
+			mockTreeRepository([]);
+
 			const saveContent = jest
 				.spyOn(CategoryContentRepository, 'saveContent')
 				.mockResolvedValue(undefined);
@@ -131,6 +163,27 @@ describe('CategoryService', () => {
 				saved.type,
 			);
 			expect(result).toBe(saved);
+		});
+
+		/*
+		 * `ARTICLE` tops out at 2 levels (`CATEGORY_MAX_DEPTH`), so a parent that is already
+		 * two deep leaves no room for a child. This is the case the tree stub exists for — a
+		 * placement is refused by measuring, not by anything on the row.
+		 */
+		it('should throw when the parent is already at the depth ceiling', async () => {
+			const createData = categoryOutputPayloads.create;
+			const parent = buildCategory({ id: 5, type: createData.type });
+
+			setupTransactionMock();
+			mockScopedRepository(parent, buildCategory());
+
+			mockTreeRepository([], {
+				ancestors: [parent, buildCategory({ id: 9 })],
+			});
+
+			await expect(serviceCategory.create(createData)).rejects.toThrow(
+				'category.error.max_depth',
+			);
 		});
 
 		it('should throw when the parent belongs to another type', async () => {
@@ -247,7 +300,7 @@ describe('CategoryService', () => {
 			);
 
 			// `findDescendants` includes the subject itself, hence both ids.
-			const findDescendants = mockTreeRepository([
+			const { findDescendants } = mockTreeRepository([
 				buildCategory({ id: 1 }),
 				buildCategory({ id: updateData.parent_id }),
 			]);
@@ -257,6 +310,33 @@ describe('CategoryService', () => {
 			).rejects.toThrow('category.error.parent_descendant');
 
 			expect(findDescendants).toHaveBeenCalledWith(entry);
+		});
+
+		/*
+		 * A move takes the whole subtree with it, so what has to fit is its height and not the
+		 * single node: a two-level subtree under a root already spans the `ARTICLE` ceiling of
+		 * 2, and the child below it would be a third.
+		 */
+		it('should measure the moved subtree against the ceiling, not just the node', async () => {
+			const entry = buildCategory({
+				id: 1,
+				parent: buildCategory({ id: 9 }),
+			});
+
+			jest.spyOn(serviceCategory, 'findById').mockResolvedValue(
+				buildCategory({ id: updateData.parent_id }),
+			);
+
+			mockTreeRepository([buildCategory({ id: 1 })], {
+				subtree: buildCategory({
+					id: 1,
+					children: [buildCategory({ id: 2, children: [] })],
+				}),
+			});
+
+			await expect(
+				serviceCategory.updateDataWithContent(entry, updateData),
+			).rejects.toThrow('category.error.max_depth');
 		});
 
 		it('should save the new parent and the contents when every guard passes', async () => {

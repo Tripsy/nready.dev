@@ -1,8 +1,8 @@
 {
 	"name": "image",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"relativePath": "/image",
 	"entities": ["image", "image-content"],
 	"depends_on": [],
-	"required_by": ["brand", "category"]
+	"required_by": []
 }

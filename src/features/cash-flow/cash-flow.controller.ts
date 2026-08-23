@@ -184,10 +184,13 @@ class CashFlowController extends BaseController {
 				res,
 			);
 
+			// The group segment goes *after* the id, so this key is swept by the
+			// `cash_flow:<id>*` pattern every write on that row cleans with. The reverse
+			// order is unreachable by it and leaves the entry stale until its TTL.
 			const cacheKey = this.cache.buildKey(
 				CashFlowEntity.NAME,
-				'operational-records',
 				data.id.toString(),
+				'operational-records',
 			);
 
 			const cacheGetResults = await this.cache.get(cacheKey, async () =>

@@ -388,14 +388,6 @@ $ pnpx tsx cli/cron.ts run cron-time-check
         - subscription-evidence
     - warehouse
     - reviews 
-3. Comment edit, remove, moderation directly in front;
-4. `stats` feature on the backend — the dashboard home widgets (expenses, revenues,
-   recent activity) call `/stats/*`, which nready-api does not serve yet
-    - show recent activity - log history
-    - show a resume of previous day (new entries): users, addresses, clients
-    - show expenses and revenues as in star-ui
-    - show errors (log data, mail queue, cron-history) from last 24 hours
-    - other stats: user activity in last 24 hours (if is relevant)
 
 # 📌 TODO - EXTRA
 

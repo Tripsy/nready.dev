@@ -6,20 +6,11 @@ import {
 	PrimaryGeneratedColumn,
 } from 'typeorm';
 import {
+	type LogDataCategory,
+	LogDataCategoryEnum,
 	type LogDataLevel,
 	LogDataLevelEnum,
 } from '@/shared/types/log-data.type';
-
-export const LogDataCategoryEnum = {
-	SYSTEM: 'system',
-	HISTORY: 'history',
-	CRON: 'cron',
-	INFO: 'info',
-	ERROR: 'error',
-} as const;
-
-export type LogDataCategory =
-	(typeof LogDataCategoryEnum)[keyof typeof LogDataCategoryEnum];
 
 const ENTITY_TABLE_NAME = 'log_data';
 

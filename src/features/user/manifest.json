@@ -14,6 +14,7 @@
 		"comment",
 		"complaint",
 		"rating",
-		"review"
+		"review",
+		"stats"
 	]
 }

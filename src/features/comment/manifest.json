@@ -4,5 +4,5 @@
 	"relativePath": "/comment",
 	"entities": ["comment", "comment_subscription"],
 	"depends_on": ["user"],
-	"required_by": []
+	"required_by": ["stats"]
 }

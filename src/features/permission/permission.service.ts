@@ -1,8 +1,9 @@
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
-import type PermissionEntity from '@/features/permission/permission.entity';
+import PermissionEntity from '@/features/permission/permission.entity';
 import { getPermissionRepository } from '@/features/permission/permission.repository';
 import type { PermissionValidator } from '@/features/permission/permission.validator';
+import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 type PermissionCreateResult = {
@@ -90,11 +91,16 @@ export class PermissionService {
 			throw new CustomError(409, lang('permission.error.already_exists'));
 		}
 
-		return this.repository.save({
+		const saved = await this.repository.save({
 			id: entry.id,
 			entity: data.entity,
 			operation: data.operation,
 		});
+
+		// This feature has no `update()` wrapper for the clean to live in.
+		await cleanEntityCache(PermissionEntity, saved.id);
+
+		return saved;
 	}
 
 	public async delete(id: number) {

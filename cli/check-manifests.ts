@@ -30,7 +30,8 @@ import {
  * here so the declaration means something. The reverse is not checked — a `required_by` entry with
  * no matching `depends_on` may legitimately record intent.
  *
- * (6) is deliberately **one-directional**: an undeclared import is an error, an unimported
+ * (6) skips tests and the feature's `database/` directory — see `isExcludedFromImportScan`. It is
+ * otherwise deliberately **one-directional**: an undeclared import is an error, an unimported
  * declaration is not. Plenty of real dependencies leave no import behind —
  * `warehouse_movement.source_type = 'order_shipping_product'` is a polymorphic reference with no
  * foreign key and no import, seed ordering is expressed in `src/database/seed/index.ts`, and
@@ -115,14 +116,29 @@ const FEATURE_IMPORT = /(?:from|import\()\s*'@\/features\/([a-z0-9-]+)\//g;
 const CYCLIC_BY_DESIGN = new Set(['user -> account']);
 
 /**
- * Test files are excluded. A test imports whatever it needs to build a fixture, and a fixture is
- * not an install-time dependency — `user`'s tests reach into `account`, which as a declaration
- * would make the graph uninstallable.
+ * Two kinds of file are excluded from the import scan, both because what they import is not what
+ * the feature needs in order to *run*:
+ *
+ * - **Tests.** A test imports whatever it needs to build a fixture, and a fixture is not an
+ *   install-time dependency — `user`'s tests reach into `account`, which as a declaration would
+ *   make the graph uninstallable.
+ * - **The feature's `database/` directory.** A demo seed populates a sibling's table so the
+ *   feature has something to point at: `rating.seed.ts` rates articles, `complaint.seed.ts`
+ *   reports comments. Declaring those would make `article` a hard install-time dependency of
+ *   `comment`, `complaint`, `image` and `rating` — none of which need an article to function, only
+ *   to be *demonstrated*. Seed ordering is already expressed in `src/database/seed/index.ts`,
+ *   which is where that relationship belongs.
+ *
+ * The cost is real and worth stating: a seed that imports a feature nobody declares will fail at
+ * `pnpm run seed` rather than at install time. That is the trade — an installable graph over a
+ * seedable one, since the graph is what other projects are built from.
  */
-function isTestFile(filePath: string): boolean {
+function isExcludedFromImportScan(filePath: string): boolean {
 	return (
 		filePath.includes(`${path.sep}tests${path.sep}`) ||
-		filePath.endsWith('.test.ts')
+		filePath.endsWith('.test.ts') ||
+		filePath.includes(`${path.sep}database${path.sep}`) ||
+		filePath.endsWith('.seed.ts')
 	);
 }
 
@@ -139,7 +155,7 @@ async function listTypeScriptFiles(directory: string): Promise<string[]> {
 
 			return entry.isFile() &&
 				entry.name.endsWith('.ts') &&
-				!isTestFile(entryPath)
+				!isExcludedFromImportScan(entryPath)
 				? [entryPath]
 				: [];
 		}),

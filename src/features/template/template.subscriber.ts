@@ -1,13 +1,19 @@
-import {
-	EventSubscriber,
-	type RemoveEvent,
-	type SoftRemoveEvent,
-	type UpdateEvent,
-} from 'typeorm';
+import { EventSubscriber } from 'typeorm';
 import TemplateEntity from '@/features/template/template.entity';
 import SubscriberAbstract from '@/shared/abstracts/subscriber.abstract';
-import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 
+/**
+ * Audit only, and entirely the base class's — the three hooks this used to override differed from
+ * it in nothing but the cache cleaning, which now lives in `TemplateService`.
+ *
+ * That move is not a straight lift: a template is read by `label`/`language`/`type` at render time,
+ * so an id-keyed clean does not reach the entry the render actually serves, and a rename has to
+ * drop the key under the *old* name as well as the new one. `TemplateService.updateData` is where
+ * that is handled and why it captures the lookup key before assigning over it.
+ *
+ * The base's extra `STATUS` entry never fires here: it is guarded on a `status` column, and a
+ * template has none.
+ */
 @EventSubscriber()
 export class TemplateSubscriber extends SubscriberAbstract<TemplateEntity> {
 	protected readonly Entity = TemplateEntity;
@@ -17,42 +23,9 @@ export class TemplateSubscriber extends SubscriberAbstract<TemplateEntity> {
 
 		this.config = {
 			afterInsert: true,
+			afterUpdate: true,
+			beforeRemove: true,
+			afterSoftRemove: true,
 		};
-	}
-
-	beforeRemove(event: RemoveEvent<TemplateEntity>) {
-		const id: number = event.entity?.id || event.databaseEntity.id;
-
-		this.cacheClean(id);
-		this.cacheClean([
-			event.databaseEntity.label,
-			event.databaseEntity.language,
-			event.databaseEntity.type,
-		]);
-
-		this.logHistory(id, LogHistoryActionEnum.REMOVED);
-	}
-
-	afterSoftRemove(event: SoftRemoveEvent<TemplateEntity>) {
-		const id: number = event.entity?.id || event.databaseEntity.id;
-
-		this.cacheClean(id);
-		this.cacheClean(event.databaseEntity.label);
-
-		this.logHistory(id, LogHistoryActionEnum.DELETED);
-	}
-
-	async afterUpdate(event: UpdateEvent<TemplateEntity>) {
-		const id: number = event.entity?.id || event.databaseEntity.id;
-
-		this.cacheClean(id);
-		this.cacheClean(event.databaseEntity.label);
-
-		this.logHistory(
-			id,
-			this.isRestore(event)
-				? LogHistoryActionEnum.RESTORED
-				: LogHistoryActionEnum.UPDATED,
-		);
 	}
 }

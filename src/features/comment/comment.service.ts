@@ -21,6 +21,7 @@ import CommentEntity, {
 import { getCommentRepository } from '@/features/comment/comment.repository';
 import type { CommentValidator } from '@/features/comment/comment.validator';
 import { createCurrentDate } from '@/helpers/date.helper';
+import { type CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
@@ -83,10 +84,14 @@ const PUBLIC_COLUMNS: string[] = [
 	'comment.is_staff',
 	'comment.created_at',
 	'comment.updated_at',
+	'comment.edited_at',
 ];
 
 export class CommentService {
-	constructor(private repository: ReturnType<typeof getCommentRepository>) {}
+	constructor(
+		private repository: ReturnType<typeof getCommentRepository>,
+		private cache: CacheProvider,
+	) {}
 
 	/**
 	 * @description Used in `create` method from the public controller
@@ -186,7 +191,7 @@ export class CommentService {
 		});
 
 		if (isPublic) {
-			this.cleanThreadCache(entry.entity_type, entry.entity_id);
+			await this.cleanThreadCache(entry.entity_type, entry.entity_id);
 		}
 
 		/*
@@ -242,14 +247,33 @@ export class CommentService {
 	}
 
 	/**
+	 * The states an author may still rewrite their own comment in — `pending`, because nobody has
+	 * read it yet, and `approved`, because with `COMMENT_AUTO_APPROVE` on that is where a member's
+	 * comment lands the moment it is written, and a rule excluding it would mean no member can
+	 * ever correct a typo.
+	 *
+	 * The three that are missing are the ones a moderator decided: `rejected`, `spam` and
+	 * `flagged`. That text is the record a decision was taken against, and letting the author
+	 * replace it would be letting them answer the complaint by changing what was complained about.
+	 * Nothing here returns a comment to the queue either — `STATUS_TRANSITIONS` has no path back to
+	 * `pending`, by design.
+	 *
+	 * The trade this accepts: an approved comment can be rewritten into something a moderator
+	 * never passed. `edited_at` is what makes that visible — the thread marks an edited comment —
+	 * and the reactive half of moderation (§3's automatic flagging, a moderator's own decision)
+	 * applies to the new text exactly as it did to the old.
+	 */
+	private static readonly OWNER_EDITABLE_STATUSES: CommentStatus[] = [
+		CommentStatusEnum.PENDING,
+		CommentStatusEnum.APPROVED,
+	];
+
+	/**
 	 * @description Used in `update` method from the public controller
 	 *
-	 * Editable only while the comment is still `pending`. Once approved the text is what a
-	 * moderator passed and what readers have seen, and an unrestricted edit is the standard way
-	 * around moderation: post something innocuous, wait for approval, rewrite it.
-	 *
-	 * Re-queueing an approved comment instead is not open either — `STATUS_TRANSITIONS` has no
-	 * path back from `approved` to `pending`, by design.
+	 * Only the text changes. Scoped to the caller's own row by the query that loads it, so a
+	 * comment somebody else owns raises the repository's 404 rather than a 403 naming a row the
+	 * caller cannot see.
 	 */
 	public async updateOwn(
 		data: ValidatorOutput<CommentValidator, 'publicUpdate'>,
@@ -261,13 +285,26 @@ export class CommentService {
 			.filterByOwner(author.user_id, author.user_ip_hash)
 			.firstOrFail();
 
-		if (entry.status !== CommentStatusEnum.PENDING) {
+		if (!CommentService.OWNER_EDITABLE_STATUSES.includes(entry.status)) {
 			throw new BadRequestError(lang('comment.error.not_editable'));
 		}
 
 		entry.content = data.content;
+		entry.edited_at = createCurrentDate();
 
-		return this.repository.save(entry);
+		const saved = await this.repository.save(entry);
+
+		/*
+		 * An approved comment is on the page, so its thread has to be dropped — this is the one
+		 * public write that used to be safe without it, back when only `pending` rows could be
+		 * edited. A pending one changes no public read, and cleaning for it would drop every
+		 * cached page of the target for nothing.
+		 */
+		if (saved.status === CommentStatusEnum.APPROVED) {
+			await this.cleanThreadCache(saved.entity_type, saved.entity_id);
+		}
+
+		return saved;
 	}
 
 	/**
@@ -340,7 +377,7 @@ export class CommentService {
 			entity_ids: removedIds,
 		});
 
-		this.cleanThreadCache(entry.entity_type, entry.entity_id);
+		await this.cleanThreadCache(entry.entity_type, entry.entity_id);
 	}
 
 	/**
@@ -403,8 +440,12 @@ export class CommentService {
 		entry: CommentEntity,
 		data: ValidatorOutput<CommentValidator, 'update'>,
 	): Promise<CommentEntity> {
-		if (data.content !== undefined) {
+		// Stamped for a moderator's rewrite as much as for the author's: the marker says the text
+		// on screen is not the text that was posted, and who changed it makes no difference to a
+		// reader. A pin or a type change is not an edit and leaves it alone.
+		if (data.content !== undefined && data.content !== entry.content) {
 			entry.content = data.content;
+			entry.edited_at = createCurrentDate();
 		}
 
 		if (data.type !== undefined) {
@@ -417,7 +458,7 @@ export class CommentService {
 
 		const saved = await this.repository.save(entry);
 
-		this.cleanThreadCache(saved.entity_type, saved.entity_id);
+		await this.cleanThreadCache(saved.entity_type, saved.entity_id);
 
 		return saved;
 	}
@@ -475,7 +516,7 @@ export class CommentService {
 			return stored;
 		});
 
-		this.cleanThreadCache(saved.entity_type, saved.entity_id);
+		await this.cleanThreadCache(saved.entity_type, saved.entity_id);
 
 		return saved;
 	}
@@ -721,6 +762,7 @@ export class CommentService {
 			is_staff: entry.is_staff,
 			created_at: entry.created_at,
 			updated_at: entry.updated_at,
+			edited_at: entry.edited_at ?? null,
 		};
 	}
 
@@ -734,19 +776,27 @@ export class CommentService {
 	 * The pattern is a prefix, so target 1 also drops targets 10 and 100. Over-invalidating costs a
 	 * refill and nothing else; the alternative is a delimiter in the key that every reader would
 	 * have to agree on.
+	 *
+	 * **Deleted inside the request, like every other clean in the codebase** (`cleanEntityCache`):
+	 * this thread is read straight back by the client that just wrote to it — every moderation
+	 * control refetches the moment its request resolves — so a clean left to a background task
+	 * would answer the write with the page it just replaced.
 	 */
-	private cleanThreadCache(
+	private async cleanThreadCache(
 		entityType: CommentEntityType,
 		entityId: number,
-	): void {
+	): Promise<void> {
 		if (!CommentEntity.HAS_CACHE) {
 			return;
 		}
 
-		eventEmitter.emit('cacheClean', {
-			cacheKeyArgs: [CommentEntity.NAME, entityType, String(entityId)],
-		});
+		await this.cache.deleteByPattern(
+			`${this.cache.buildKey(CommentEntity.NAME, entityType, String(entityId))}*`,
+		);
 	}
 }
 
-export const commentService = new CommentService(getCommentRepository());
+export const commentService = new CommentService(
+	getCommentRepository(),
+	cacheProvider,
+);

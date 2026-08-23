@@ -1,7 +1,9 @@
 import { expect, jest } from '@jest/globals';
 import ImageEntity, {
+	ImageSectionEnum,
 	type ImageStatus,
 	ImageStatusEnum,
+	ImageTypeEnum,
 } from '@/features/image/image.entity';
 import {
 	getImageEntityMock,
@@ -116,4 +118,73 @@ describe('ImageService', () => {
 	testServiceDelete<ImageEntity, ImageQuery>(mockImage.query, serviceImage, [
 		false,
 	]);
+
+	describe('getPrimaryByTargets', () => {
+		it('should keep the lowest sort_order per target', async () => {
+			const first = {
+				...getImageEntityMock(),
+				id: 10,
+				entity_id: 7,
+				sort_order: 0,
+			};
+			const later = {
+				...getImageEntityMock(),
+				id: 11,
+				entity_id: 7,
+				sort_order: 5,
+			};
+			const other = {
+				...getImageEntityMock(),
+				id: 12,
+				entity_id: 8,
+				sort_order: 2,
+			};
+
+			// The query orders `sort_order ASC`, so the service sees them in this order and the
+			// first one it meets for a target is the one that stands for it.
+			mockImage.query.all.mockResolvedValue([
+				first,
+				later,
+				other,
+			] as unknown as [ImageEntity[], number]);
+
+			const primary = await serviceImage.getPrimaryByTargets(
+				ImageSectionEnum.ARTICLE,
+				ImageTypeEnum.GALLERY,
+				[7, 8],
+			);
+
+			expect(primary.get(7)?.id).toBe(10);
+			expect(primary.get(8)?.id).toBe(12);
+			expect(primary.size).toBe(2);
+		});
+
+		it('should leave a target with no image of that type out of the map', async () => {
+			mockImage.query.all.mockResolvedValue(
+				[] as unknown as [ImageEntity[], number],
+			);
+
+			const primary = await serviceImage.getPrimaryByTargets(
+				ImageSectionEnum.ARTICLE,
+				ImageTypeEnum.GALLERY,
+				[7],
+			);
+
+			expect(primary.has(7)).toBe(false);
+		});
+
+		// An `IN ()` would be a syntax error, so the guard has to come before the query.
+		it('should not query for an empty set of ids', async () => {
+			mockImage.query.all.mockClear();
+
+			const primary = await serviceImage.getPrimaryByTargets(
+				ImageSectionEnum.ARTICLE,
+				ImageTypeEnum.GALLERY,
+				[],
+			);
+
+			expect(primary.size).toBe(0);
+			expect(mockImage.query.all).not.toHaveBeenCalled();
+		});
+	});
 });

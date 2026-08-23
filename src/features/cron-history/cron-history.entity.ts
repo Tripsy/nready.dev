@@ -18,7 +18,7 @@ const ENTITY_TABLE_NAME = 'cron_history';
 })
 export default class CronHistoryEntity {
 	static readonly NAME: string = ENTITY_TABLE_NAME;
-	static readonly HAS_CACHE: boolean = false;
+	static readonly HAS_CACHE: boolean = true;
 
 	@PrimaryGeneratedColumn({ type: 'int' })
 	id!: number;

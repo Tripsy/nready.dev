@@ -13,6 +13,10 @@ import {
 	type OrderDirection,
 	OrderDirectionEnum,
 } from '@/shared/abstracts/entity.abstract';
+import {
+	cleanEntityCacheMany,
+	type EntityWithCache,
+} from '@/shared/abstracts/service.abstract';
 
 type QueryValue = string | number | (string | number)[] | null;
 type QueryParams = Record<string, QueryValue>;
@@ -318,7 +322,7 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 			);
 		}
 
-		return dataSource.transaction(async (manager) => {
+		const ids = await dataSource.transaction(async (manager) => {
 			const results = await this.query.getMany();
 
 			if (results.length === 0) {
@@ -345,8 +349,14 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 				await Promise.all(results.map((entity) => repo.remove(entity)));
 			}
 
-			return results.length;
+			// Every row the filter reached, not the filter itself: a delete narrowed by
+			// `user_id` affects rows whose ids it never named.
+			return results.map((entity) => entity.id);
 		});
+
+		await this.cleanCache(ids);
+
+		return ids.length;
 	}
 
 	async restore(
@@ -360,7 +370,7 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 			);
 		}
 
-		return dataSource.transaction(async (manager) => {
+		const ids = await dataSource.transaction(async (manager) => {
 			const results = await this.query.withDeleted().getMany();
 
 			if (results.length === 0) {
@@ -384,8 +394,31 @@ abstract class RepositoryAbstract<TEntity extends ObjectLiteral> {
 			const repo = manager.getRepository<TEntity>(this.repository.target);
 			await repo.save(results);
 
-			return results.length;
+			return results.map((entity) => entity.id);
 		});
+
+		await this.cleanCache(ids);
+
+		return ids.length;
+	}
+
+	/**
+	 * Drops the cached entries of the rows a terminal just wrote, **after** its transaction has
+	 * committed — inside it, a concurrent reader could refill the cache from a snapshot the commit
+	 * is about to supersede, and nothing further would come along to correct it.
+	 *
+	 * The entity class is reached through `this.repository.target`, which TypeORM types as
+	 * `EntityTarget<T>` — legitimately a string or a schema, not only a class — so the statics have
+	 * to be read defensively. Failing closed is right: something without them owns no keyspace.
+	 */
+	private async cleanCache(ids: number[]): Promise<void> {
+		const target = this.repository.target as Partial<EntityWithCache>;
+
+		if (!target?.NAME || !target.HAS_CACHE) {
+			return;
+		}
+
+		await cleanEntityCacheMany({ NAME: target.NAME, HAS_CACHE: true }, ids);
 	}
 
 	// IN operator requires array

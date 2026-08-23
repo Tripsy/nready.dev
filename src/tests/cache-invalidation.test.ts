@@ -1,16 +1,19 @@
 import { expect, jest } from '@jest/globals';
+import type Redis from 'ioredis';
+import { CacheProvider, cacheProvider } from '@/providers/cache.provider';
 import {
-	type CacheCleanEventPayload,
-	eventEmitter,
-} from '@/config/event.config';
-import { cacheProvider } from '@/providers/cache.provider';
-import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
-import registerCacheListener from '@/shared/listeners/cache.listener';
+	cleanEntityCache,
+	cleanEntityCacheBy,
+	cleanEntityCacheMany,
+} from '@/shared/abstracts/service.abstract';
 
 /**
- * Cache invalidation is split across two mechanisms and this pins the contract of both: the
- * service emits one clean per operation (`cleanEntityCache`), and the listener collapses any
- * burst that still reaches it — seeds, CLI scripts, or a subscriber firing per row.
+ * Cache invalidation is owned by the service layer and the repository terminals, and this pins its
+ * contract: one delete per operation, awaited inside the request, so a client reading straight back
+ * after its own write cannot be served the entry it just replaced.
+ *
+ * The tests spy on `cacheProvider` rather than on an event, because there is no longer an event —
+ * a TypeORM subscriber cannot do this job, firing per row and from inside the transaction.
  */
 
 const CachedEntity = { NAME: 'brand', HAS_CACHE: true };
@@ -21,101 +24,234 @@ describe('cleanEntityCache', () => {
 		jest.restoreAllMocks();
 	});
 
-	function captureCleans(): string[][] {
-		const captured: string[][] = [];
+	/**
+	 * The deletes this call performs. It spies on the provider rather than on the emitter: the
+	 * clean is awaited inside the request so that a client reading straight back after its own
+	 * write cannot be served the entry it just replaced.
+	 */
+	function capturePatterns(): string[] {
+		const captured: string[] = [];
 
-		jest.spyOn(eventEmitter, 'emit').mockImplementation(((
-			event: string,
-			payload: CacheCleanEventPayload,
-		) => {
-			if (event === 'cacheClean') {
-				captured.push(payload.cacheKeyArgs);
-			}
-
-			return true;
-		}) as never);
+		jest.spyOn(cacheProvider, 'deleteByPattern').mockImplementation(
+			async (pattern: string) => {
+				captured.push(pattern);
+			},
+		);
 
 		return captured;
 	}
 
-	it('emits one clean keyed by entity name and id', () => {
-		const captured = captureCleans();
+	it('deletes one pattern keyed by entity name and id', async () => {
+		const captured = capturePatterns();
 
-		cleanEntityCache(CachedEntity, 12);
+		await cleanEntityCache(CachedEntity, 12);
 
-		expect(captured).toEqual([['brand', '12']]);
+		// Built rather than written out: `buildKey` prefixes the whole keyspace with the app
+		// name, and the pattern has to be the one the keys were stored under.
+		expect(captured).toEqual([`${cacheProvider.buildKey('brand', '12')}*`]);
 	});
 
-	it('stays silent for an entity that is not cached', () => {
-		const captured = captureCleans();
+	it('stays silent for an entity that is not cached', async () => {
+		const captured = capturePatterns();
 
-		cleanEntityCache(UncachedEntity, 12);
+		await cleanEntityCache(UncachedEntity, 12);
 
 		expect(captured).toEqual([]);
 	});
-});
 
-describe('cache listener coalescing', () => {
-	beforeEach(() => {
-		jest.restoreAllMocks();
-		eventEmitter.removeAllListeners('cacheClean');
-	});
-
-	afterAll(() => {
-		eventEmitter.removeAllListeners('cacheClean');
-	});
-
-	/** Resolves the pending delete on demand, so the in-flight window is controllable. */
-	function deferredDeleteSpy() {
-		const calls: string[] = [];
-		const resolvers: Array<() => void> = [];
+	/**
+	 * The promise has to be the delete's own. A clean that resolved before the keys were gone
+	 * would put back exactly the window awaiting it exists to close, and nothing at the call
+	 * site could tell the difference.
+	 */
+	it('resolves only once the delete has finished', async () => {
+		let finished = false;
 
 		jest.spyOn(cacheProvider, 'deleteByPattern').mockImplementation(
-			(pattern: string) => {
-				calls.push(pattern);
+			async () => {
+				await Promise.resolve();
 
-				return new Promise<void>((resolve) => {
-					resolvers.push(() => resolve());
-				});
+				finished = true;
 			},
 		);
 
-		return { calls, resolvers };
-	}
+		await cleanEntityCache(CachedEntity, 12);
 
-	it('runs a single pass for a burst of identical cleans', async () => {
-		const { calls, resolvers } = deferredDeleteSpy();
+		expect(finished).toBe(true);
+	});
+});
 
-		registerCacheListener();
-
-		// Three rows of the same parent, as TypeORM broadcasts them
-		for (let index = 0; index < 3; index++) {
-			eventEmitter.emit('cacheClean', { cacheKeyArgs: ['brand', '4'] });
-		}
-
-		expect(calls).toHaveLength(1);
-
-		// The duplicates are folded into one trailing pass rather than dropped — a later
-		// clean may concern a write the first pass already scanned past
-		resolvers[0]();
-		await new Promise((resolve) => setImmediate(resolve));
-
-		expect(calls).toHaveLength(2);
-
-		resolvers[1]();
-		await new Promise((resolve) => setImmediate(resolve));
-
-		expect(calls).toHaveLength(2);
+describe('cleanEntityCacheBy', () => {
+	beforeEach(() => {
+		jest.restoreAllMocks();
 	});
 
-	it('does not coalesce cleans for different patterns', () => {
-		const { calls } = deferredDeleteSpy();
+	/**
+	 * `template` is what this exists for: it is read by label/language/type at render time, so an
+	 * id-keyed clean never reaches the entry that lookup serves.
+	 */
+	it('builds a pattern from every segment given', async () => {
+		const captured: string[] = [];
 
-		registerCacheListener();
+		jest.spyOn(cacheProvider, 'deleteByPattern').mockImplementation(
+			async (pattern: string) => {
+				captured.push(pattern);
+			},
+		);
 
-		eventEmitter.emit('cacheClean', { cacheKeyArgs: ['brand', '4'] });
-		eventEmitter.emit('cacheClean', { cacheKeyArgs: ['brand', '5'] });
+		await cleanEntityCacheBy(
+			{ NAME: 'template', HAS_CACHE: true },
+			'privacy',
+			'en',
+			'page',
+		);
 
-		expect(calls).toHaveLength(2);
+		expect(captured).toEqual([
+			`${cacheProvider.buildKey('template', 'privacy', 'en', 'page')}*`,
+		]);
+	});
+
+	it('refuses to clean the whole entity when given no segments', async () => {
+		const deleteByPattern = jest
+			.spyOn(cacheProvider, 'deleteByPattern')
+			.mockResolvedValue();
+
+		await cleanEntityCacheBy(CachedEntity);
+
+		// Without the guard the pattern would be `brand*`, dropping every row's cache.
+		expect(deleteByPattern).not.toHaveBeenCalled();
+	});
+});
+
+describe('cleanEntityCacheMany', () => {
+	beforeEach(() => {
+		jest.restoreAllMocks();
+	});
+
+	it('keeps the narrow pattern for a single id', async () => {
+		const deleteByPattern = jest
+			.spyOn(cacheProvider, 'deleteByPattern')
+			.mockResolvedValue();
+		const deleteByIdents = jest
+			.spyOn(cacheProvider, 'deleteByIdents')
+			.mockResolvedValue();
+
+		await cleanEntityCacheMany(CachedEntity, [7]);
+
+		expect(deleteByPattern).toHaveBeenCalledWith(
+			`${cacheProvider.buildKey('brand', '7')}*`,
+		);
+		expect(deleteByIdents).not.toHaveBeenCalled();
+	});
+
+	/**
+	 * The whole point of `deleteByIdents`: `MATCH` takes one glob, so a loop here would be one
+	 * full pass over the keyspace per id — unusable for the bulk deletes the retention crons do.
+	 */
+	it('makes one pass for many ids instead of one per id', async () => {
+		const deleteByPattern = jest
+			.spyOn(cacheProvider, 'deleteByPattern')
+			.mockResolvedValue();
+		const deleteByIdents = jest
+			.spyOn(cacheProvider, 'deleteByIdents')
+			.mockResolvedValue();
+
+		await cleanEntityCacheMany(CachedEntity, [4, 5, 6]);
+
+		expect(deleteByIdents).toHaveBeenCalledTimes(1);
+		expect(deleteByIdents).toHaveBeenCalledWith('brand', ['4', '5', '6']);
+		expect(deleteByPattern).not.toHaveBeenCalled();
+	});
+
+	it('stays silent for an entity that is not cached, and for no ids', async () => {
+		const deleteByIdents = jest
+			.spyOn(cacheProvider, 'deleteByIdents')
+			.mockResolvedValue();
+
+		await cleanEntityCacheMany(UncachedEntity, [4, 5]);
+		await cleanEntityCacheMany(CachedEntity, []);
+
+		expect(deleteByIdents).not.toHaveBeenCalled();
+	});
+});
+
+describe('CacheProvider.deleteByIdents', () => {
+	/**
+	 * A stand-in for ioredis: one SCAN page, then a pipeline recording what was deleted. The real
+	 * provider is built here rather than reusing the exported singleton, which is the no-op mock
+	 * in this environment.
+	 */
+	function buildProvider(storedKeys: string[]) {
+		const deleted: string[] = [];
+		let scans = 0;
+
+		const fake = {
+			scan: async () => {
+				scans += 1;
+
+				return ['0', storedKeys];
+			},
+			pipeline: () => ({
+				del: (key: string) => {
+					deleted.push(key);
+				},
+				exec: async () => [],
+			}),
+		};
+
+		return {
+			provider: new CacheProvider(fake as unknown as Redis),
+			deleted,
+			scanCount: () => scans,
+		};
+	}
+
+	/**
+	 * The case the whole filter exists for. `4` and `40` share a prefix, so anything matching on
+	 * `startsWith` deletes a row nobody asked about — silently, and only for ids that happen to be
+	 * a prefix of another.
+	 */
+	it('matches the ident as a whole segment, not a prefix', async () => {
+		const { provider, deleted } = buildProvider([]);
+		const keys = [
+			`${provider.buildKey('brand', '4', 'read')}`,
+			`${provider.buildKey('brand', '40', 'read')}`,
+			`${provider.buildKey('brand', '5', 'read')}`,
+		];
+
+		const scoped = buildProvider(keys);
+
+		await scoped.provider.deleteByIdents('brand', ['4']);
+
+		expect(scoped.deleted).toEqual([
+			`${provider.buildKey('brand', '4', 'read')}`,
+		]);
+		expect(deleted).toEqual([]);
+	});
+
+	it('drops every ident asked for in a single pass', async () => {
+		const { provider } = buildProvider([]);
+		const scoped = buildProvider([
+			provider.buildKey('brand', '4', 'read'),
+			provider.buildKey('brand', '5', 'read'),
+			provider.buildKey('brand', '6', 'read'),
+		]);
+
+		await scoped.provider.deleteByIdents('brand', ['4', '6']);
+
+		expect(scoped.deleted).toEqual([
+			provider.buildKey('brand', '4', 'read'),
+			provider.buildKey('brand', '6', 'read'),
+		]);
+		expect(scoped.scanCount()).toBe(1);
+	});
+
+	it('matches a key that is the ident alone, with nothing after it', async () => {
+		const { provider } = buildProvider([]);
+		const scoped = buildProvider([provider.buildKey('brand', '4')]);
+
+		await scoped.provider.deleteByIdents('brand', ['4']);
+
+		expect(scoped.deleted).toEqual([provider.buildKey('brand', '4')]);
 	});
 });

@@ -6,8 +6,8 @@ import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 /**
  * A complaint accuses somebody, and what the dashboard does with it — resolve, reopen, dismiss,
  * restore — is exactly the trail a disputed moderation decision is answered from. That is what
- * `log_history` keeps, so this table is subscribed to even though `HAS_CACHE` is false and every
- * `cacheClean` below is a no-op.
+ * `log_history` keeps, and it is the only reason this table is subscribed to at all: `HAS_CACHE`
+ * is false, so there is no cache behind it either way.
  *
  * `beforeRemove` is not configured: nothing hard-deletes a complaint through the repository, and
  * the `ON DELETE CASCADE` that follows a deleted user runs inside Postgres, where no TypeORM
