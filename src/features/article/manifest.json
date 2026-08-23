@@ -10,5 +10,5 @@
 		"article_visibility_rule"
 	],
 	"depends_on": ["category", "term", "user", "subscription"],
-	"required_by": []
+	"required_by": ["stats"]
 }

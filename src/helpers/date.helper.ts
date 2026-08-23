@@ -190,3 +190,39 @@ export function dateDiff(
 		}
 	}
 }
+
+/**
+ * Get `start` and `end` dates from a month relative to the current date.
+ *
+ * The window stops at the same day-of-month as today so a month-over-month comparison puts
+ * an equal number of elapsed days on each side — comparing a partial current month against a
+ * complete previous one would read as a collapse every time.
+ *
+ * eg: if current date is 2026 July 15, then getMonthIntervalBasedOnCurrentDate(1) will return { start: Jun 1, 2026, 00:00:00, end: Jun 16, 2026, 00:00:00 }
+ * eg: if current date is 2026 May 31, then getMonthIntervalBasedOnCurrentDate(1) will return { start: April 1, 2026, 00:00:00, end: May 1, 2026, 00:00:00 }
+ *
+ * @param monthsAgo - 0 for current month, 1 for previous month, etc
+ */
+export function getMonthIntervalBasedOnCurrentDate(monthsAgo: number) {
+	const now = new Date();
+	const dayOfMonth = now.getDate();
+
+	const targetYear = now.getFullYear();
+	const targetMonth = now.getMonth() - monthsAgo;
+
+	const start = new Date(targetYear, targetMonth, 1);
+
+	// Last day that actually exists in the target month — a day-of-month of 31 has to fall back
+	// to 30 (or 28/29) rather than roll over into the following month
+	const lastDayOfTargetMonth = new Date(
+		targetYear,
+		targetMonth + 1,
+		0,
+	).getDate();
+	const cappedDay = Math.min(dayOfMonth, lastDayOfTargetMonth);
+
+	// end is exclusive: the day after the capped day, at 00:00
+	const end = new Date(targetYear, targetMonth, cappedDay + 1);
+
+	return { start, end };
+}

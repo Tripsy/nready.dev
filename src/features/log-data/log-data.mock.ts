@@ -1,12 +1,14 @@
 import type LogDataEntity from '@/features/log-data/log-data.entity';
-import { LogDataCategoryEnum } from '@/features/log-data/log-data.entity';
 import {
 	LogDataValidator,
 	OrderByEnum,
 } from '@/features/log-data/log-data.validator';
 import { createPastDate, formatDate } from '@/helpers/date.helper';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
-import { LogDataLevelEnum } from '@/shared/types/log-data.type';
+import {
+	LogDataCategoryEnum,
+	LogDataLevelEnum,
+} from '@/shared/types/log-data.type';
 
 export function getLogDataEntityMock(): LogDataEntity {
 	return {

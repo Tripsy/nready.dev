@@ -1,0 +1,16 @@
+{
+	"name": "stats",
+	"version": "1.1.0",
+	"relativePath": "/stats",
+	"entities": [],
+	"depends_on": [
+		"article",
+		"cash-flow",
+		"client",
+		"comment",
+		"complaint",
+		"log-history",
+		"user"
+	],
+	"required_by": []
+}

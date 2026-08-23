@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
-import { LogDataCategoryEnum } from '@/features/log-data/log-data.entity';
 import { OrderDirectionEnum } from '@/shared/abstracts/entity.abstract';
 import {
 	BaseValidator,
 	sharedValidatorMessages,
 } from '@/shared/abstracts/validator.abstract';
-import { LogDataLevelEnum } from '@/shared/types/log-data.type';
+import {
+	LogDataCategoryEnum,
+	LogDataLevelEnum,
+} from '@/shared/types/log-data.type';
 
 export const OrderByEnum = {
 	ID: 'id',

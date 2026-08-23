@@ -4,5 +4,5 @@
 	"relativePath": "/complaint",
 	"entities": ["complaint"],
 	"depends_on": ["user"],
-	"required_by": []
+	"required_by": ["stats"]
 }
