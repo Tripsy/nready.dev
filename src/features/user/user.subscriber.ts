@@ -56,8 +56,6 @@ export class UserSubscriber extends SubscriberAbstract<UserEntity> {
 	async afterUpdate(event: UpdateEvent<UserEntity>) {
 		const id: number = event.entity?.id || event.databaseEntity.id;
 
-		this.cacheClean(id);
-
 		this.logHistory(
 			id,
 			this.isRestore(event)

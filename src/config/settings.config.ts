@@ -75,7 +75,11 @@ function loadSettings() {
 			keyPrefix: process.env.REDIS_KEY_PREFIX || 'nready-api',
 		},
 		cache: {
-			ttl: Number(process.env.CACHE_TTL) ?? 60,
+			ttl:
+				process.env.CACHE_TTL &&
+				Number.isFinite(Number(process.env.CACHE_TTL))
+					? Number(process.env.CACHE_TTL)
+					: 60,
 		},
 		/*
 		 * Each `level*` array is the set of levels one destination accepts; an empty array

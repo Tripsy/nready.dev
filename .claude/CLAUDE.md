@@ -343,7 +343,8 @@ Dates are ISO 8601 strings (not timestamps). Protected routes require `Authoriza
 ### Cross-cutting infrastructure
 
 - **`src/providers/`** — `database` (TypeORM data source), `cache` (Redis-backed;
-  `cacheProvider.buildKey(...)` + `get(key, loader)`), `logger` (Pino; `providers/logger/` holds one
+  `cacheProvider.buildKey(...)` + `get(key, loader)`; invalidation belongs to the service layer and
+  the repository terminals, never to a subscriber — see `rules/database.md` §6), `logger` (Pino; `providers/logger/` holds one
   `LogDestination` per sink — console, file, database, email, CloudWatch — selected per level by
   `log-destinations.factory.ts`, with dedicated system/cron loggers), `email` (SMTP or SES, chosen by
   `mail.provider`), `cron`.

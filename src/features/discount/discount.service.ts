@@ -1,11 +1,12 @@
 import type { DeepPartial } from 'typeorm';
-import type DiscountEntity from '@/features/discount/discount.entity';
+import DiscountEntity from '@/features/discount/discount.entity';
 import { getDiscountRepository } from '@/features/discount/discount.repository';
 import {
 	type DiscountValidator,
 	paramsUpdateList,
 } from '@/features/discount/discount.validator';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
+import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class DiscountService {
@@ -36,10 +37,14 @@ export class DiscountService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<DiscountEntity> & { id: number },
 	): Promise<DiscountEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(DiscountEntity, saved.id);
+
+		return saved;
 	}
 
 	/**

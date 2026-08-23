@@ -13,10 +13,10 @@ export class CacheProvider {
 	constructor(private readonly cache: Redis) {}
 
 	/**
-	 * Every key is built here, so prefixing at this point covers reads, writes and the
-	 * patterns handed to `deleteByPattern` alike — including the one the cache-clean listener
-	 * assembles as `${buildKey(...args)}*`. An empty `redis.keyPrefix` drops out via the same
-	 * filter that removes empty segments, leaving keys unprefixed.
+	 * Every key is built here, so prefixing at this point covers reads, writes and the patterns
+	 * handed to `deleteByPattern` alike — the invalidation helpers assemble theirs as
+	 * `${buildKey(...args)}*`. An empty `redis.keyPrefix` drops out via the same filter that
+	 * removes empty segments, leaving keys unprefixed.
 	 */
 	buildKey(...args: string[]) {
 		return [Configuration.get('redis.keyPrefix'), ...args]
@@ -141,8 +141,9 @@ export class CacheProvider {
 		 * Redis rejects `EX 0` outright ("ERR invalid expire time in 'set' command"), and the
 		 * catch below would turn that into a silent no-op with only a log line. A resolved TTL
 		 * of 0 means caching is switched off — `get()` already reads it that way — so skip the
-		 * write rather than issue one that cannot succeed. This is reachable through the
-		 * default alone: `cache.ttl` is 0 in .env, so any caller omitting `ttl` lands here.
+		 * write rather than issue one that cannot succeed. `CACHE_TTL=0` is the supported way to
+		 * turn caching off for an environment, which is why the setting keeps an explicit 0
+		 * rather than falling back.
 		 */
 		if (resolvedTtl <= 0) {
 			return;
@@ -214,6 +215,66 @@ export class CacheProvider {
 			);
 		}
 	}
+
+	/**
+	 * Drops every key under `<namespace>:<ident>:…` for a set of idents, in a single scan.
+	 *
+	 * `MATCH` takes one glob, so N idents through `deleteByPattern` is N full passes over the
+	 * keyspace — a bulk delete of a few thousand rows would scan it a few thousand times. One
+	 * wide pass filtered in the client trades a narrower `MATCH` for a constant number of round
+	 * trips, which is the better deal past a single ident.
+	 *
+	 * The ident is matched as a whole key **segment**, not a prefix: asking for `4` must not take
+	 * `40` with it. The stored prefix is sliced off first rather than splitting the whole key,
+	 * because `redis.keyPrefix` is configurable and may itself contain a colon.
+	 */
+	async deleteByIdents(namespace: string, idents: string[]): Promise<void> {
+		if (idents.length === 0) {
+			return;
+		}
+
+		const wanted = new Set(idents);
+		const prefix = `${this.buildKey(namespace)}:`;
+
+		try {
+			let cursor = '0';
+
+			do {
+				const [nextCursor, keys] = await this.cache.scan(
+					cursor,
+					'MATCH',
+					`${prefix}*`,
+					'COUNT',
+					100,
+				);
+				cursor = nextCursor;
+
+				const matched = keys.filter((key) => {
+					const rest = key.slice(prefix.length);
+					const boundary = rest.indexOf(':');
+
+					return wanted.has(
+						boundary === -1 ? rest : rest.slice(0, boundary),
+					);
+				});
+
+				if (matched.length > 0) {
+					const pipeline = this.cache.pipeline();
+
+					matched.forEach((key) => {
+						pipeline.del(key);
+					});
+
+					await pipeline.exec();
+				}
+			} while (cursor !== '0');
+		} catch (error) {
+			getSystemLogger().error(
+				error,
+				`Error deleting cache for "${namespace}" idents: ${idents.join(', ')}`,
+			);
+		}
+	}
 }
 
 class MockCacheProvider extends CacheProvider {
@@ -248,6 +309,10 @@ class MockCacheProvider extends CacheProvider {
 	}
 
 	async deleteByPattern(_pattern: string): Promise<void> {
+		// intentionally no-op
+	}
+
+	async deleteByIdents(_namespace: string, _idents: string[]): Promise<void> {
 		// intentionally no-op
 	}
 

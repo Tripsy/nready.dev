@@ -1,13 +1,14 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
-import type CarrierEntity from '@/features/carrier/carrier.entity';
+import CarrierEntity from '@/features/carrier/carrier.entity';
 import { getCarrierRepository } from '@/features/carrier/carrier.repository';
 import {
 	type CarrierValidator,
 	paramsUpdateList,
 } from '@/features/carrier/carrier.validator';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
+import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class CarrierService {
@@ -39,10 +40,14 @@ export class CarrierService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<CarrierEntity> & { id: number },
 	): Promise<CarrierEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(CarrierEntity, saved.id);
+
+		return saved;
 	}
 
 	/**

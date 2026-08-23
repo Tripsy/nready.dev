@@ -5,8 +5,7 @@ import {
 	type AccountTokenService,
 	accountTokenService,
 } from '@/features/account/account-token.service';
-import type UserEntity from '@/features/user/user.entity';
-import {
+import UserEntity, {
 	STATUS_TRANSITIONS,
 	type UserStatus,
 } from '@/features/user/user.entity';
@@ -16,7 +15,10 @@ import {
 	type UserValidator,
 } from '@/features/user/user.validator';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
-import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import {
+	assertValidStatusTransition,
+	cleanEntityCache,
+} from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 import { UserRoleEnum } from '@/shared/types/user-role.type';
 
@@ -70,10 +72,14 @@ export class UserService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<UserEntity> & { id: number },
 	): Promise<UserEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(UserEntity, saved.id);
+
+		return saved;
 	}
 
 	/**

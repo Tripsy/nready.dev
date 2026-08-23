@@ -45,6 +45,7 @@ import RepositoryAbstract from '@/shared/abstracts/repository.abstract';
 import {
 	assertValidStatusTransition,
 	cleanEntityCache,
+	cleanEntityCacheMany,
 } from '@/shared/abstracts/service.abstract';
 import { LogHistoryActionEnum } from '@/shared/types/log-history.type';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
@@ -182,10 +183,14 @@ export class ArticleService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<ArticleEntity> & { id: number },
 	): Promise<ArticleEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(ArticleEntity, saved.id);
+
+		return saved;
 	}
 
 	public async updateDataWithContent(
@@ -240,7 +245,7 @@ export class ArticleService {
 		 * service knows this was one operation on one article, and knows when it committed.
 		 * Full reasoning on `cleanEntityCache`.
 		 */
-		cleanEntityCache(ArticleEntity, updatedEntry.id);
+		await cleanEntityCache(ArticleEntity, updatedEntry.id);
 
 		return updatedEntry;
 	}
@@ -294,9 +299,9 @@ export class ArticleService {
 	 * collide with the rows still in it, and a deadline pointing at a slot it no longer holds
 	 * reads as still-featured in the form. Re-featuring therefore starts from a clean row.
 	 *
-	 * Saved through `update` so the cache and audit subscribers fire; the explicit event on
-	 * top of the generic `updated` one is what names the slot that was given up, which the
-	 * row itself no longer records.
+	 * Saved through `update`, which drops the cache and lets the audit subscriber record the
+	 * write; the explicit event on top of the generic `updated` one is what names the slot that
+	 * was given up, which the row itself no longer records.
 	 */
 	public async expireFeatured(entry: ArticleEntity): Promise<void> {
 		const expiredStatus = entry.featured_status;
@@ -439,6 +444,14 @@ export class ArticleService {
 				.softDelete({ article_id: entry.id });
 		});
 
+		/*
+		 * Both the article and its visibility rule are cached under `article:<id>*`, and this
+		 * runs from a cron with nobody watching — a stale rule leaves a released article still
+		 * reading as gated (or the reverse) for a whole TTL, which is an access-control answer
+		 * rather than a cosmetic one.
+		 */
+		await cleanEntityCache(ArticleEntity, entry.id);
+
 		eventEmitter.emit('history', {
 			entity: ArticleEntity.NAME,
 			entity_ids: [entry.id],
@@ -471,8 +484,9 @@ export class ArticleService {
 	 * The submitted ids must be a complete reordering of that set. A subset would silently leave
 	 * the untouched rows sharing positions with the moved ones, which reads as a random order.
 	 *
-	 * Saved row by row through the repository rather than a bulk UPDATE so the subscribers fire
-	 * — same reason as the cron jobs.
+	 * Saved row by row through the repository rather than a bulk UPDATE so each write is
+	 * audited — same reason as the cron jobs. The cache is dropped for the whole group once,
+	 * after the transaction commits.
 	 */
 	public async updateOrder(
 		data: ValidatorOutput<ArticleValidator, 'orderUpdate'>,
@@ -526,6 +540,10 @@ export class ArticleService {
 
 			await repository.save(ordered);
 		});
+
+		// Every row moved, in one pass: a reorder rewrites the whole group, and the
+		// order a reader sees comes from these rows. See `cleanEntityCacheMany`
+		await cleanEntityCacheMany(ArticleEntity, data.positions);
 	}
 
 	/**
@@ -835,8 +853,8 @@ export class ArticleService {
 	/**
 	 * @description Used in `publicRead` from controller, behind the cache.
 	 *
-	 * Keyed by id rather than slug on purpose: `SubscriberAbstract.cacheClean` invalidates by
-	 * the `<entity>:<id>*` prefix, so a slug-keyed entry would survive an edit until its TTL.
+	 * Keyed by id rather than slug on purpose: `cleanEntityCache` invalidates by the
+	 * `<entity>:<id>*` prefix, so a slug-keyed entry would survive an edit until its TTL.
 	 * Resolving the slug first (`resolvePublicRef`) also keeps the publish window and the
 	 * visibility out of the cached value — both decide access and both move without the
 	 * payload changing.

@@ -75,7 +75,7 @@ class TemplateController extends BaseController {
 			'read',
 		);
 
-		const entry = await this.cache.get(cacheKey, async () =>
+		const cacheGetResults = await this.cache.get(cacheKey, async () =>
 			this.templateService.findByLabel(
 				data.label,
 				res.locals.language,
@@ -83,8 +83,8 @@ class TemplateController extends BaseController {
 			),
 		);
 
-		res.locals.output.meta(res.locals.outputder.isCached, 'isCached');
-		res.locals.output.data(entry);
+		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
+		res.locals.output.data(cacheGetResults.data);
 
 		res.json(res.locals.output);
 	});

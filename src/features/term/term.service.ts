@@ -67,10 +67,14 @@ export class TermService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<TermEntity> & { id: number },
 	): Promise<TermEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(TermEntity, saved.id);
+
+		return saved;
 	}
 
 	/**
@@ -106,7 +110,7 @@ export class TermService {
 
 		// One clean for the whole operation, after commit — the content rows written above
 		// have no subscriber invalidating the term's keys. See `cleanEntityCache`
-		cleanEntityCache(TermEntity, updatedEntity.id);
+		await cleanEntityCache(TermEntity, updatedEntity.id);
 
 		return updatedEntity;
 	}

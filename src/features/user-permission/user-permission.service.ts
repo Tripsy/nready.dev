@@ -1,8 +1,18 @@
 import { lang } from '@/config/message.setup';
+import UserEntity from '@/features/user/user.entity';
 import { getUserPermissionRepository } from '@/features/user-permission/user-permission.repository';
 import type { UserPermissionValidator } from '@/features/user-permission/user-permission.validator';
+import { cleanEntityCache } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
+/**
+ * The only cross-entity invalidation in the codebase: a permission row is never read on its own,
+ * but the caller's permission set is baked into the cached `user` entry the auth middleware reads.
+ * So every write here drops **`user:<user_id>*`**, not this table's own keys — which nothing reads.
+ *
+ * It is also the only invalidation that has to fire on *insert*: granting a permission changes an
+ * entry that already exists and is already cached.
+ */
 export class UserPermissionService {
 	constructor(
 		private repository: ReturnType<typeof getUserPermissionRepository>,
@@ -14,7 +24,7 @@ export class UserPermissionService {
 	public async create(
 		data: ValidatorOutput<UserPermissionValidator, 'create'>,
 	) {
-		return Promise.all(
+		const results = await Promise.all(
 			data.permission_ids.map(async (permission_id) => {
 				const existingUserPermission = await this.repository
 					.createQuery()
@@ -53,6 +63,12 @@ export class UserPermissionService {
 				};
 			}),
 		);
+
+		// Once for the whole grant rather than per permission — they all belong to one user,
+		// and one scan of the keyspace answers for the lot.
+		await cleanEntityCache(UserEntity, data.user_id);
+
+		return results;
 	}
 
 	public async delete(user_id: number, permission_id: number) {
@@ -61,6 +77,8 @@ export class UserPermissionService {
 			.filterBy('user_id', user_id)
 			.filterBy('permission_id', permission_id)
 			.delete(true, false, true);
+
+		await cleanEntityCache(UserEntity, user_id);
 	}
 
 	public async restore(id: number, user_id: number) {
@@ -69,6 +87,8 @@ export class UserPermissionService {
 			.filterById(id)
 			.filterBy('user_id', user_id)
 			.restore();
+
+		await cleanEntityCache(UserEntity, user_id);
 	}
 
 	public findByFilter(

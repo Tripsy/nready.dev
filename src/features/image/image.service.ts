@@ -16,6 +16,7 @@ import ImageContentRepository from '@/features/image/image-content.repository';
 import {
 	assertValidStatusTransition,
 	cleanEntityCache,
+	cleanEntityCacheMany,
 } from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
@@ -56,10 +57,14 @@ export class ImageService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<ImageEntity> & { id: number },
 	): Promise<ImageEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(ImageEntity, saved.id);
+
+		return saved;
 	}
 
 	public async updateDataWithContent(
@@ -77,7 +82,7 @@ export class ImageService {
 		// One clean for the whole operation, after commit — the content rows written above
 		// have no subscriber invalidating the image's keys, and the image row itself was not
 		// touched, so nothing else would. See `cleanEntityCache`
-		cleanEntityCache(ImageEntity, entry.id);
+		await cleanEntityCache(ImageEntity, entry.id);
 
 		return entry;
 	}
@@ -146,9 +151,14 @@ export class ImageService {
 				return image;
 			});
 
-			// Save all - triggers subscribers
+			// Save all - row by row, so each write is audited; the cache is dropped after
+			// the transaction commits, below
 			await imageRepository.save(updatedImages);
 		});
+
+		// Every row moved, in one pass: a reorder rewrites the whole group, and the
+		// order a reader sees comes from these rows. See `cleanEntityCacheMany`
+		await cleanEntityCacheMany(ImageEntity, ids);
 	}
 
 	/**

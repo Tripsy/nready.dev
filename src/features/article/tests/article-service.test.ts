@@ -1,8 +1,4 @@
 import { expect, jest } from '@jest/globals';
-import {
-	type CacheCleanEventPayload,
-	eventEmitter,
-} from '@/config/event.config';
 import type ArticleEntity from '@/features/article/article.entity';
 import {
 	type ArticleStatus,
@@ -19,6 +15,7 @@ import type { ArticleValidator } from '@/features/article/article.validator';
 import { ArticleCategoryRepository } from '@/features/article/article-category.repository';
 import { ArticleContentRepository } from '@/features/article/article-content.repository';
 import { ArticleTagRepository } from '@/features/article/article-tag.repository';
+import { cacheProvider } from '@/providers/cache.provider';
 import {
 	createMockRepository,
 	setupTransactionMock,
@@ -139,18 +136,13 @@ describe('ArticleService', () => {
 
 		stubRelationWrites();
 
-		const cleans: string[][] = [];
+		const cleans: string[] = [];
 
-		jest.spyOn(eventEmitter, 'emit').mockImplementation(((
-			event: string,
-			payload: CacheCleanEventPayload,
-		) => {
-			if (event === 'cacheClean') {
-				cleans.push(payload.cacheKeyArgs);
-			}
-
-			return true;
-		}) as never);
+		jest.spyOn(cacheProvider, 'deleteByPattern').mockImplementation(
+			async (pattern: string) => {
+				cleans.push(pattern);
+			},
+		);
 
 		// Three link changes in one call — the clean is per operation, not per row
 		await serviceArticle.updateDataWithContent(entity, {
@@ -159,7 +151,9 @@ describe('ArticleService', () => {
 			tags: [3, 4],
 		} as never);
 
-		expect(cleans).toEqual([['article', entity.id.toString()]]);
+		expect(cleans).toEqual([
+			`${cacheProvider.buildKey('article', entity.id.toString())}*`,
+		]);
 	});
 
 	testServiceUpdateStatus<ArticleEntity, ArticleStatus>(

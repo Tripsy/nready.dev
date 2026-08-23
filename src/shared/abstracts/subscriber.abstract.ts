@@ -67,27 +67,6 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 		);
 	}
 
-	cacheClean<E extends { NAME: string; HAS_CACHE: boolean }>(
-		ident: number | string | string[],
-		entity?: E,
-	) {
-		const cachedEntity = entity || this.Entity;
-
-		if (!cachedEntity.HAS_CACHE) {
-			return;
-		}
-
-		if (!ident || (Array.isArray(ident) && ident.length === 0)) {
-			return;
-		}
-
-		const identArray = Array.isArray(ident) ? ident : [ident.toString()];
-
-		eventEmitter.emit('cacheClean', {
-			cacheKeyArgs: [cachedEntity.NAME, ...identArray],
-		});
-	}
-
 	logHistory(
 		id: number,
 		action: LogHistoryAction,
@@ -134,8 +113,6 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 			return;
 		}
 
-		this.cacheClean(id);
-
 		this.logHistory(id, LogHistoryActionEnum.REMOVED);
 	}
 
@@ -155,8 +132,6 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 		if (!id) {
 			return;
 		}
-
-		this.cacheClean(id);
 
 		this.logHistory(id, LogHistoryActionEnum.DELETED);
 	}
@@ -179,8 +154,6 @@ abstract class SubscriberAbstract<T extends BaseEntity>
 		if (!id) {
 			return;
 		}
-
-		this.cacheClean(id);
 
 		this.logHistory(
 			id,

@@ -64,6 +64,16 @@ export function listDirectories(originPath: string): string[] {
 }
 
 export function listFiles(originPath: string): string[] {
+	/*
+	 * A convention-scanned folder is allowed not to exist: these are optional slots — a project
+	 * started from this boilerplate may have no shared listeners, no shared cron jobs — and
+	 * "nothing to discover" is the honest answer, not a fatal error. `statSync` throws on a
+	 * missing path, which took the whole bootstrap down the first time such a folder emptied.
+	 */
+	if (!fs.existsSync(originPath)) {
+		return [];
+	}
+
 	const stat = fs.statSync(originPath);
 
 	if (!stat.isDirectory()) {
@@ -87,7 +97,7 @@ export function getFileNameWithoutExtension(s: string): string {
 
 /**
  * Return shared files path by extension
- * ex: /shared/listeners/cache.listener.js
+ * ex: /shared/listeners/log-history.listener.js
  *
  * @param sharedFolder (ex: /shared/listeners)
  * @param extension (ex: listener.js)

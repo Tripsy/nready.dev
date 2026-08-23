@@ -36,7 +36,10 @@ import { getOperationalRecordRepository } from '@/features/cash-flow/operational
 import { clientService } from '@/features/client/client.service';
 import { vendorService } from '@/features/vendor/vendor.service';
 import { arrayHasValue, pickValuesFromObject } from '@/helpers/objects.helper';
-import { assertValidStatusTransition } from '@/shared/abstracts/service.abstract';
+import {
+	assertValidStatusTransition,
+	cleanEntityCache,
+} from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class CashFlowService {
@@ -318,10 +321,14 @@ export class CashFlowService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<CashFlowEntity> & { id: number },
 	): Promise<CashFlowEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(CashFlowEntity, saved.id);
+
+		return saved;
 	}
 
 	/**
@@ -394,7 +401,7 @@ export class CashFlowService {
 			data.operational_records,
 		);
 
-		return dataSource.transaction(async (manager) => {
+		const resultEntry = await dataSource.transaction(async (manager) => {
 			const repository = manager.getRepository(CashFlowEntity);
 
 			Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
@@ -417,6 +424,13 @@ export class CashFlowService {
 
 			return resultEntry;
 		});
+
+		// Not through `update()`, so the clean this feature's other writes inherit does not
+		// apply here. Covers the operational records written above as well: they are cached
+		// under `cash_flow:<id>:operational-records`, inside the same prefix.
+		await cleanEntityCache(CashFlowEntity, resultEntry.id);
+
+		return resultEntry;
 	}
 
 	public async updateStatus(

@@ -1,14 +1,18 @@
 import type { DeepPartial } from 'typeorm';
 import { lang } from '@/config/message.setup';
 import { CustomError } from '@/exceptions';
-import type TemplateEntity from '@/features/template/template.entity';
 import type { TemplateType } from '@/features/template/template.entity';
+import TemplateEntity from '@/features/template/template.entity';
 import { getTemplateRepository } from '@/features/template/template.repository';
 import {
 	paramsUpdateList,
 	type TemplateValidator,
 } from '@/features/template/template.validator';
 import { pickValuesFromObject } from '@/helpers/objects.helper';
+import {
+	cleanEntityCache,
+	cleanEntityCacheBy,
+} from '@/shared/abstracts/service.abstract';
 import type { ValidatorOutput } from '@/shared/types/mock.type';
 
 export class TemplateService {
@@ -43,10 +47,14 @@ export class TemplateService {
 	/**
 	 * @description Update any data
 	 */
-	public update(
+	public async update(
 		data: DeepPartial<TemplateEntity> & { id: number },
 	): Promise<TemplateEntity> {
-		return this.repository.save(data);
+		const saved = await this.repository.save(data);
+
+		await cleanEntityCache(TemplateEntity, saved.id);
+
+		return saved;
 	}
 
 	/**
@@ -67,17 +75,52 @@ export class TemplateService {
 			throw new CustomError(409, lang('template.error.already_exists'));
 		}
 
+		/*
+		 * Captured before the assign below overwrites them. A template is read by
+		 * label/language/type at render time, not by id, and an edit that renames it would
+		 * otherwise leave the *old* name serving the old body until its TTL — the row the id
+		 * clean drops is not the one that lookup reads.
+		 */
+		const previous = this.lookupKey(entry);
+
 		Object.assign(entry, pickValuesFromObject(data, paramsUpdateList));
 
-		return this.update(entry);
+		const saved = await this.update(entry);
+
+		await cleanEntityCacheBy(TemplateEntity, ...previous);
+
+		const current = this.lookupKey(saved);
+
+		// Only when the rename actually happened; otherwise this is a second scan of the
+		// keyspace for the key the line above has already dropped.
+		if (current.join(':') !== previous.join(':')) {
+			await cleanEntityCacheBy(TemplateEntity, ...current);
+		}
+
+		return saved;
+	}
+
+	/** The segments `template.controller.ts` builds its render-time cache key from. */
+	private lookupKey(entry: TemplateEntity): [string, string, string] {
+		return [entry.label, entry.language, entry.type];
 	}
 
 	public async delete(id: number) {
+		// Loaded first: the terminal drops `template:<id>*`, but the render-time lookup is
+		// keyed by label and only this row knows what that label is.
+		const entry = await this.findById(id, true);
+
 		await this.repository.createQuery().filterById(id).delete();
+
+		await cleanEntityCacheBy(TemplateEntity, ...this.lookupKey(entry));
 	}
 
 	public async restore(id: number) {
+		const entry = await this.findById(id, true);
+
 		await this.repository.createQuery().filterById(id).restore();
+
+		await cleanEntityCacheBy(TemplateEntity, ...this.lookupKey(entry));
 	}
 
 	public findById(id: number, withDeleted: boolean): Promise<TemplateEntity> {
