@@ -71,6 +71,31 @@ is the one thing that response exists to get right.
 - **`moderated_by: null` means nobody decided** — a background sweep or the threshold in §3 did.
   The column is nullable for exactly that, so never invent a user id to fill it.
 
+### What the author may still change
+
+`CommentService.OWNER_EDITABLE_STATUSES` — `pending` and `approved`. Anything a moderator decided
+(`rejected`, `spam`, `flagged`) is refused with `error.not_editable`: that text is the record a
+decision was taken against.
+
+`approved` is in the list because it has to be. With `COMMENT_AUTO_APPROVE` on — the default — a
+member's comment lands there the instant it is written, so a rule of "pending only" means no member
+can ever correct a typo. The trade is that an approved comment can be rewritten into something no
+moderator passed; `edited_at` is what makes that visible, and reactive moderation applies to the new
+text exactly as it did to the old.
+
+**`edited_at` is not `updated_at`.** `updated_at` moves for every save on the row — a status
+decision, a pin — so reading it as "edited" marks comments whose author never went back to them.
+`edited_at` is written only where `content` actually changes, on both edit paths, and the frontend
+renders the marker from it.
+
+**The author's edit drops the thread cache when the comment is approved**, and only then — a pending
+row changes no public read. This is the one public write that did not have to clean before the rule
+above widened; §7 is why it does now.
+
+Withdrawal is unrestricted by status and takes the subtree with it (§5) — a member deleting their
+own root comment removes the replies others wrote under it, the same cascade the dashboard delete
+performs.
+
 ## 3. Automatic Flagging — the one decision nobody takes
 
 An approved comment leaves the thread on its own once **three separate people** have live

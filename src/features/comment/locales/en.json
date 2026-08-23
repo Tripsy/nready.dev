@@ -19,7 +19,7 @@
 		"subscription_not_found": "This unsubscribe link is no longer valid",
 		"guest_required": "Your name and email address are required to comment",
 		"invalid_parent": "The comment you are replying to is not available",
-		"not_editable": "A comment can no longer be edited once it has been moderated",
+		"not_editable": "A comment can no longer be edited once a moderator has acted on it",
 		"ip_unresolved": "Your comment could not be recorded because your origin address is unknown",
 		"not_accepted": "Comments are closed for this"
 	},

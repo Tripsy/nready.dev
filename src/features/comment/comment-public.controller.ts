@@ -109,9 +109,12 @@ class CommentPublicController extends BaseController {
 	});
 
 	/**
-	 * Editing one's own comment, while it is still awaiting moderation. Addressed by id — unlike a
-	 * rating, an author may hold many comments on one target, so nothing shorter names the row —
-	 * and the ownership check is part of the query that loads it, not a step after.
+	 * Editing one's own comment. Addressed by id — unlike a rating, an author may hold many
+	 * comments on one target, so nothing shorter names the row — and the ownership check is part
+	 * of the query that loads it, not a step after.
+	 *
+	 * Open while the comment is `pending` or `approved`, refused once a moderator has acted on it;
+	 * `CommentService.OWNER_EDITABLE_STATUSES` carries the reasoning.
 	 */
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		const data = this.validate(
