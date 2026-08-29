@@ -104,16 +104,16 @@ function loadSettings() {
 			/*
 			 * Only what is worth keeping in the application's own database. `info` and
 			 * `warn` are the bulk of the volume and belong in CloudWatch instead, which is
-			 * cheaper per byte and expires on a retention policy — `log_data` grows on the
-			 * instance's disk and nothing prunes it.
+			 * cheaper per byte and holds the longer tail — `log_data` sits on the instance's
+			 * disk, and `clean-log-data.cron.ts` keeps only the last 30 days of it.
 			 *
 			 * `error` and `fatal` stay here on purpose: this table is queryable from the
 			 * app itself and from local tooling, which is a materially faster path to
 			 * "why did that fail" than the CloudWatch console.
 			 */
 			levelDatabase: ['error', 'fatal'] as LogDataLevel[],
-			// Only `fatal` by default: this channel was silently broken until now, and
-			// error-level volume would make it noise. Widen it here if you want it back.
+			// Only `fatal` by default: this channel mails on every match, and error-level
+			// volume would make it noise. Widen it here for a deployment that wants more.
 			levelEmail: ['fatal'] as LogDataLevel[],
 			// Not gated on environment — the destination is skipped unless a log group is
 			// configured, so setting AWS_CLOUDWATCH_LOG_GROUP is enough to try it in dev.

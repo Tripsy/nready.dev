@@ -88,7 +88,6 @@ export const imageInputPayloads = {
 			image_type: ImageTypeEnum.GALLERY,
 			status: ImageStatusEnum.ACTIVE,
 			language: 'en',
-			is_deleted: false,
 		},
 	},
 	orderUpdate: {

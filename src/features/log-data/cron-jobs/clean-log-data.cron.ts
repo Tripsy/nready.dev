@@ -5,18 +5,18 @@ export const SCHEDULE_EXPRESSION = '17 04 * * 0';
 export const EXPECTED_RUN_TIME = 10; // seconds
 
 /*
- * `log_data` had no retention at all: it only ever grew, on the instance's own volume,
- * with nothing to bound it. Everything else that accumulates already has a cleanup pass
- * (`clean-account-recovery`, `clean-account-token`, `clean-mail-queue`) — this closes the
- * gap for the one table that unauthenticated traffic can cause writes to.
+ * `log_data` sits on the instance's own volume and unauthenticated traffic can cause writes
+ * to it, so this job is the only thing bounding it — the other log destinations expire under
+ * a retention policy their host owns, this one has nothing of the sort.
  *
  * 30 days matches the other cleanup crons. An `error` or `fatal` older than that has either
  * been dealt with or is being rediscovered from scratch anyway, and CloudWatch keeps the
  * longer tail under its own retention policy.
  *
- * Runs at :17 rather than on the hour, offset from the other weekly jobs — they share a
- * database and a scheduler, and three simultaneous bulk deletes is a self-inflicted
- * latency spike.
+ * Runs at :17 inside the 04:00 cleanup block, offset from its neighbours
+ * (`clean-account-recovery` :02, `clean-comment-subscription` :37, `clean-cron-history` :47):
+ * they share a database and a scheduler, `cron-time-check` reports jobs that start in the
+ * same minute, and concurrent bulk deletes are a self-inflicted latency spike.
  */
 const cleanLogData = async () => {
 	const countRemoved = await getLogDataRepository()

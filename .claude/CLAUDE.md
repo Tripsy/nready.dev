@@ -218,11 +218,11 @@ field, not a kind of image.
 Features are categorized as core and additional; further projects are started from this one and more
 additional features are expected over time.
 
-- **core:** account, cron-history, log-data, log-history, mail-queue, permission, template, user,
-  user-permission
-- **additional:** address, article, brand, carrier, cash-flow, category, client, discount,
-  document-series, grn, image, invoice, order, order-shipping, place, product, subscription, term,
-  vendor, warehouse
+- **core:** account, cron-history, docs, log-data, log-history, mail-queue, permission, template,
+  user, user-permission
+- **additional:** address, article, brand, carrier, cash-flow, category, client, comment, complaint,
+  discount, document-series, grn, image, invoice, order, order-shipping, place, product, rating,
+  review, stats, subscription, term, vendor, warehouse
 
 ### Convention-based auto-discovery
 

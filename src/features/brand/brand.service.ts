@@ -182,7 +182,28 @@ export class BrandService {
 		await this.repository.createQuery().filterById(id).delete();
 	}
 
+	/**
+	 * The unique index on `(slug, brand_type)` is partial — `WHERE deleted_at IS NULL` — so
+	 * deleting a brand releases its slug straight away and another may take it. Restoring the
+	 * first one then collides, and without this check the collision surfaces from the database
+	 * as a masked 500 instead of the 409 `create` and `update` already answer with.
+	 *
+	 * `withoutId` excludes the row being restored, which matters when it is not actually
+	 * deleted: it would otherwise match itself and turn a no-op restore into a conflict.
+	 */
 	public async restore(id: number) {
+		const entry = await this.findById(id, true);
+
+		const existing = await this.findBySlug(
+			entry.slug,
+			entry.brand_type,
+			entry.id,
+		);
+
+		if (existing) {
+			throw new CustomError(409, lang('brand.error.already_exists'));
+		}
+
 		await this.repository.createQuery().filterById(id).restore();
 	}
 

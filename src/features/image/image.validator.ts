@@ -182,10 +182,6 @@ export class ImageValidator extends BaseValidator<typeof validatorMessages> {
 				this.getMessage('invalid_language'),
 				{ required: false },
 			),
-			is_deleted: this.validateBoolean(
-				this.getMessage('invalid_boolean'),
-				{ required: false },
-			).default(false),
 		},
 	});
 

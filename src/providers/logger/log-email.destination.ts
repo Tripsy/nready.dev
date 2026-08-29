@@ -20,9 +20,8 @@ function escapeHtml(value: string): string {
 /**
  * Emails high-severity logs to the address in `logging.logEmail`.
  *
- * Goes through `getEmailService()` so it honours `mail.provider` — the previous
- * implementation built its own nodemailer transport per log line, which meant SES
- * deployments still sent log mail over SMTP and every line paid for a new transport.
+ * Goes through `getEmailService()` rather than building a transport of its own, so log mail
+ * follows `mail.provider` like every other send and the transport is reused across lines.
  *
  * Text-only on purpose: this is an operational alert, not templated user-facing mail, so
  * it deliberately bypasses the template/queue path in `email.provider.ts`.

@@ -154,15 +154,9 @@ export const docs: Record<keyof typeof brandController, ApiInputDocumentation> =
 				description: 'Brand restored with success',
 			},
 			withAuthErrors: true,
-			withErrors: [404],
+			withErrors: [404, 409],
 			request: {
-				/*
-				 * Not dressed up as a 409: `restore` runs no slug check, unlike create and
-				 * update, so a slug re-taken while the brand was deleted reaches the unique
-				 * index and comes back as a masked 500. Documented as the hazard it is until
-				 * the service guards it.
-				 */
-				notes: 'Restoring fails if the slug has been taken again in the meantime, since it is unique per brand_type among the rows that are not deleted',
+				notes: 'Answers 409 if the slug has been taken again in the meantime, since it is unique per brand_type only among the rows that are not deleted',
 				params: {
 					id: {
 						type: 'number',

@@ -40,7 +40,6 @@ export const mailQueueInputPayloads = {
 		filter: {
 			id: 1,
 			template: 'test',
-			language: 'en',
 			status: MailQueueStatusEnum.ERROR,
 			content: 'test',
 			to: 'to@mail',

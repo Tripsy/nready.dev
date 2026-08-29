@@ -54,10 +54,6 @@ export class MailQueueValidator extends BaseValidator<
 				required: false,
 			}),
 			template: z.union([z.string(), z.number()]).optional(),
-			language: this.validateLanguage(
-				this.getMessage('invalid_language'),
-				{ required: false },
-			),
 			status: this.validateEnum(
 				MailQueueStatusEnum,
 				this.getMessage('invalid_status'),

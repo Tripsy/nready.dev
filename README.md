@@ -406,32 +406,9 @@ $ pnpx tsx cli/cron.ts run cron-time-check
        display side (`label`, `url`, `disclaimer`, `about`), so this only needs the table plus a
        nullable `source_id` FK on `article`. The jsonb then stays as the per-article override for
        one-off sources that don't deserve a row.
-4. API documentation (`done` for discounts)
-5. create CLI script which should generate something like:
-   POST /discounts HTTP/1.1
-   Host: nready-api.test:3000
-   Content-Type: application/json
-   Authorization: Bearer ****
-   Content-Length: 344
-   {
-
-        "scope": "order",
-        "reason": "flash_sale",
-        "reference": "#345",
-        "type": "percent",
-        "value": 7,
-        "rules":     {
-          "min_order_value": 101,
-          "eligible_categories": [1, 2, 5],
-          "applicable_countries": ["RO"]
-        },
-        "start_at": "2025-12-18",
-        "end_at": "2025-12-28",
-        "notes": "Lorem ipsum ..."
-   }   
-6. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
-7. cron hanging / delaying / semaphore 
-8. Revisit `discount` once `product` ships — the feature is complete except where it
+4. For reporting create separate DB table (in a new schema `reporting`). Hint: data could be updated via subscribers.
+5. cron hanging / delaying / semaphore 
+6. Revisit `discount` once `product` ships — the feature is complete except where it
    depends on products existing:
     - The dashboard target picker covers `client`, `category` and `brand` only. For the
       `product` and `variant` scopes it renders an explanatory note instead, because there
@@ -443,7 +420,7 @@ $ pnpx tsx cli/cron.ts run cron-time-check
       exercises them against real rows.
     - `DiscountLineContext` already carries `variantId`/`productId` and the resolver
       matches them; only the ways of *creating* those links are missing.
-9. Stock handling — entities exist (`warehouse`, `grn`), the behaviour does not
+7. Stock handling — entities exist (`warehouse`, `grn`), the behaviour does not
    The tables are in place and documented on themselves; what is missing is every rule that makes
    them mean anything, since none of it can live in a constraint:
    - **Confirming a GRN** writes `warehouse_movement` rows, sets `qty_remaining = qty` on each lot,
@@ -484,25 +461,25 @@ $ pnpx tsx cli/cron.ts run cron-time-check
    - dropped from scope for now: reservations (only matter once there is a fulfilment gap), serial
      numbers, stocktake documents, landing costs, and the payable a
      confirmed GRN should raise in `cash-flow`
-10. Named menus for `product_availability`
-    - the recurring windows say *when* a product can be ordered, but nothing groups them into a
-      named "lunch menu" / "brunch" a customer can be shown, and two products sharing one schedule
-      repeat it row for row
-    - would be a `menu` entity holding the schedule once, with products linked to it; the current
-      per-product windows stay as the override
-11. Document numbering — leftovers from the `document-series` feature
-    - the entity, the atomic allocation and the CRUD surface are in place; what is not:
-    - **nothing calls `documentSeriesService.allocate` yet.** `invoice`, `order`, `grn` and
-      `subscription` are still entity-only, so the wiring happens when their services are written —
-      inside the same transaction as the document insert, which is what keeps the series gapless
-    - drafts still have nowhere to reserve a number from without consuming it. That needs a
-      reservation row (series, number, expires_at) the draft can hold and either claim or release,
-      not another counter
-    - the number handed out never comes back. A canceled document leaves its number spent; a
-      credit-note-style reuse would need an explicit release path
-    - one series per document type, by design. Two concurrent invoice series (per company, per
-      branch) would mean re-keying the table and giving `allocate` something to choose with
-12. Run cron`s on a separate work / container 
+8. Named menus for `product_availability`
+   - the recurring windows say *when* a product can be ordered, but nothing groups them into a
+     named "lunch menu" / "brunch" a customer can be shown, and two products sharing one schedule
+     repeat it row for row
+   - would be a `menu` entity holding the schedule once, with products linked to it; the current
+     per-product windows stay as the override
+9. Document numbering — leftovers from the `document-series` feature
+   - the entity, the atomic allocation and the CRUD surface are in place; what is not:
+   - **nothing calls `documentSeriesService.allocate` yet.** `invoice`, `order`, `grn` and
+     `subscription` are still entity-only, so the wiring happens when their services are written —
+     inside the same transaction as the document insert, which is what keeps the series gapless
+   - drafts still have nowhere to reserve a number from without consuming it. That needs a
+     reservation row (series, number, expires_at) the draft can hold and either claim or release,
+     not another counter
+   - the number handed out never comes back. A canceled document leaves its number spent; a
+     credit-note-style reuse would need an explicit release path
+   - one series per document type, by design. Two concurrent invoice series (per company, per
+     branch) would mean re-keying the table and giving `allocate` something to choose with
+10. Run cron`s on a separate work / container 
 
 # 🔗 Dependencies
 
