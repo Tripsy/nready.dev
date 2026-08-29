@@ -1,6 +1,6 @@
 {
 	"error": {
-		"server_error": "Internal server error. Please try again later. If the problem persists, contact the administrator.",
+		"server_error": "Internal server error. If the problem persists, contact the administrator.",
 		"invalid_request": "Invalid request",
 		"check_errors": "Check errors",
 		"not_allowed": "Not allowed",
