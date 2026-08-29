@@ -151,7 +151,7 @@ async function loadRoutes(
 				? await defOrFactory()
 				: defOrFactory;
 
-		def = await setupFeatureDocumentation(def, feature);
+		def = await setupFeatureDocumentation(def, routeFilePath);
 
 		router.use(buildRoutes(def));
 

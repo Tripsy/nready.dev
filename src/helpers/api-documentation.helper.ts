@@ -1,7 +1,7 @@
+import path from 'node:path';
 import type { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import type { HttpStatusCode } from '@/exceptions';
-import { buildSrcPath } from '@/helpers/system.helper';
 import { apiDocumentationMiddleware } from '@/middleware/api-documentation.middleware';
 // The import attribute is required by Node ESM, which refuses to load a JSON module
 // without it. `moduleResolution: "bundler"` lets tsc and tsx accept the bare form, so this
@@ -276,44 +276,55 @@ export function addApiDocumentationMiddleware<C>(
 	return newRoutes;
 }
 
+export type FeatureDocumentation = {
+	/**
+	 * The entity these routes belong to, taken from the folder they live in rather than the
+	 * route file's own name. A feature directory can hold more than one route module — the
+	 * article folder ships both `article.routes.ts` and `article-public.routes.ts` — and only
+	 * the folder names a real permission entity, so this is what `GET /docs/:feature` gates on.
+	 */
+	entity: string;
+	actions: Record<string, ApiOutputDocumentation>;
+};
+
 /**
- * Generated documentation per feature, filled during route registration and read back by
- * the `docs` feature. A feature with no `<feature>.docs.ts` never gets an entry, which is
- * what makes an unknown or undocumented feature a 404 rather than an empty payload.
+ * Generated documentation per route module, filled during route registration and read back by
+ * the `docs` feature. A module with no `<module>.docs.ts` never gets an entry, which is what
+ * makes an unknown or undocumented feature a 404 rather than an empty payload.
  */
-const featureDocumentation = new Map<
-	string,
-	Record<string, ApiOutputDocumentation>
->();
+const featureDocumentation = new Map<string, FeatureDocumentation>();
 
 export function getFeatureDocumentation(
 	feature: string,
-): Record<string, ApiOutputDocumentation> | undefined {
+): FeatureDocumentation | undefined {
 	return featureDocumentation.get(feature);
 }
 
 /**
- * Loads `<feature>.docs.ts` and registers the generated output, then — in development only —
- * also attaches it to each route so a failing request echoes it back under
- * `meta.documentation` (`output-handler.middleware.ts` writes that on non-2xx only).
+ * Loads the `<module>.docs.ts` sitting beside a route file and registers the generated output,
+ * then — in development only — also attaches it to each route so a failing request echoes it
+ * back under `meta.documentation` (`output-handler.middleware.ts` writes that on non-2xx only).
+ *
+ * Resolved from the route file's own directory rather than from `features/<name>/<name>.docs`:
+ * a secondary module is named for itself but lives in its feature's folder, so
+ * `article-public.routes.ts` would otherwise send the loader to a `features/article-public/`
+ * that does not exist, and its docs would be skipped without a word.
  *
  * The registry itself is filled in every environment, because `GET /docs/:feature` serves
  * from it and is permission-gated rather than environment-gated. Cost is one dynamic import
- * per documented feature at boot; the docs modules pull in `<feature>.mock.ts` for their
+ * per documented module at boot; the docs modules pull in `<feature>.mock.ts` for their
  * samples, which carry no test-only dependencies.
  *
- * A feature without the file throws on import and is skipped — the common case, since most
+ * A module without the file throws on import and is skipped — the common case, since most
  * features are undocumented.
  */
 export async function setupFeatureDocumentation<C>(
 	module: FeatureRoutesModule<C>,
-	feature: string,
+	routeFilePath: string,
 ): Promise<FeatureRoutesModule<C>> {
-	const docsPath = buildSrcPath(
-		Configuration.get('folder.features'),
-		feature,
-		`${feature}.docs`,
-	);
+	const directory = path.dirname(routeFilePath);
+	const feature = path.basename(routeFilePath).split('.')[0];
+	const docsPath = path.join(directory, `${feature}.docs`);
 
 	try {
 		const { docs } = await import(docsPath);
@@ -324,7 +335,10 @@ export async function setupFeatureDocumentation<C>(
 
 		const docsOutput = generateDocumentation(module, docs);
 
-		featureDocumentation.set(feature, docsOutput);
+		featureDocumentation.set(feature, {
+			entity: path.basename(directory),
+			actions: docsOutput,
+		});
 
 		if (!Configuration.isEnvironment('development')) {
 			return module;

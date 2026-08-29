@@ -85,6 +85,7 @@ routes), `.claude/rules/validation.md` (validator structure, partial-update patt
 | `<feature>.controller.ts` | dashboard actions, `BaseController`, every action `asyncHandler`, authorize → validate → delegate → output |
 | `<feature>-public.controller.ts` + `-public.routes.ts` | only when the feature is reader-facing (§4) |
 | `<feature>.routes.ts` | async factory, lazy `await import` of the controller, `validateParamsWhenId` / `validateParamsWhenEnum` handlers |
+| `<feature>.docs.ts` | `Record<keyof typeof <feature>Controller, ApiInputDocumentation>` built with `helperApiInputDocumentation` — one entry per controller action, or the type fails. See §3b |
 | `locales/en.json` | `validation.*`, `error.*`, `success.*` — every `getMessage` / `lang` key used anywhere in the slice |
 | `database/<feature>.seed.ts` | required for any feature owning a table (`database.md` §5.4): top-up, natural keys, seeded `random`, `isDirectRun` block. Register it in `src/database/seed/index.ts` after its parents |
 | `manifest.json` | `name`, `version`, `relativePath`, `entities`, `depends_on`, `required_by`; `is_core` only when true |
@@ -92,6 +93,33 @@ routes), `.claude/rules/validation.md` (validator structure, partial-update patt
 Reuse before writing: check `src/helpers/*`, `src/shared/abstracts/*` and the template feature for
 anything you are about to hand-roll (`hashClientIp`, `assertValidStatusTransition`,
 `isUniqueViolation`, `numericTransformer`, `runInBackground`).
+
+## 3b. API documentation
+
+`<feature>.docs.ts` is loaded at boot by `setupFeatureDocumentation` and served by
+`GET /docs/:feature`, which the dashboard's usage-guide window renders. Two things follow from how
+it is resolved, and both bite silently:
+
+- **It is found beside its route file, and registered under that file's own name.** A second route
+  module in the same folder therefore needs its *own* docs file named for itself —
+  `article-public.routes.ts` → `article-public.docs.ts`, served as `/docs/article-public`. There is
+  no way to fold a public module's actions into the feature's docs: `generateDocumentation` looks
+  each action up in the route module it was handed.
+- **The permission gate is the containing folder, not the file name.** `article-public` documents
+  the `article` entity, so it is gated on `article` read — which is why a module named for itself
+  still reaches everyone who can read the feature.
+
+A missing or throwing docs file is skipped without a word — that is what keeps the undocumented
+majority of features working — so the only proof it loaded is a request that returns it.
+
+Write the entries from the source rather than restating it, so they cannot drift: field limits from
+`Configuration.get(...)`, allowed moves from `STATUS_TRANSITIONS`, enum lists from
+`Object.values(...)`. For the public module, omit `withBearerAuth` and `withAuthErrors` — a doc
+claiming an auth requirement the route does not have is worse than none.
+
+**A `dataSample` must be what the endpoint actually returns.** The `<feature>.mock.ts` entity mock
+types as the full entity, so it carries columns declared `select: false` that no read path ever
+sends — `user.password` is the standing example. Strip those before using the mock as a sample.
 
 ## 4. The public/dashboard split
 
@@ -103,6 +131,7 @@ files, as `rating` does:
 - `<feature>-public.routes.ts` — `basePath: '/public/<plural>'`, open, gated by *identity* instead:
   the caller is resolved from the request (`hashClientIp` + `res.locals.auth`) and every query is
   scoped to what that identity owns via a `filterByOwner` in the repository.
+- `<feature>-public.docs.ts` — its own docs file, for the reasons in §3b.
 
 **A public write never addresses a row by id.** The id is not the caller's to name — it forces an
 ownership check afterwards, and getting that check wrong lets anyone edit anyone's row. Address by
@@ -176,6 +205,12 @@ Run from inside the container (`docker exec $DOCKER_CONTAINER sh -c "cd /var/www
   what changed.
 - `pnpm run seed <feature>` against the dev database, then read a few rows back through the Postgres
   MCP tools to confirm the shape.
+- **Prove the docs registered**, since a broken `<feature>.docs.ts` is skipped silently. In
+  development they ride along on any non-2xx response, so an unauthenticated request to a route of
+  the module is enough — and it works for a public module too, where `/docs/:feature` would need a
+  session:
+  `curl -s localhost:3000/<plural>/1 | python3 -c "import sys,json; print(json.load(sys.stdin).get('meta',{}).get('documentation',{}).get('path'))"`
+  A `None` means the file threw or was never found; check its name matches the *route file*.
 - Tests only if the user asks (CLAUDE.md restriction), and scoped to the new feature.
 
 ## 7. Report
@@ -189,7 +224,9 @@ Run from inside the container (`docker exec $DOCKER_CONTAINER sh -c "cd /var/www
 - **Frontend** — new routes are a new API contract. Name the `../nready-ui` pieces that need to
   follow: the `src/services/*.service.ts`, `src/models/permission.model.ts`
   (`PermissionEntityType`), `src/models/log-history.model.ts` (the backend *table* name), and the
-  dashboard page, which `/add-dashboard-feature <feature>` builds there.
+  dashboard page, which `/add-dashboard-feature <feature>` builds there. Say which route modules
+  you documented — the dashboard renders one usage-guide tab per module, so a public one is a tab
+  the frontend would otherwise not know to add.
 - **If the feature became a comment target** (it joined `CommentEntityTypeEnum`), the frontend also
   owes a resolver in `src/config/comment-target.config.ts` — the map that turns a comment's target
   into a page URL for the permalinks in notification emails. Without it the discussion works and
