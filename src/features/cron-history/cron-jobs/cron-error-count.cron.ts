@@ -1,4 +1,5 @@
 import { Configuration } from '@/config/settings.config';
+import { CronHistoryStatusEnum } from '@/features/cron-history/cron-history.entity';
 import { getCronHistoryRepository } from '@/features/cron-history/cron-history.repository';
 import { createPastDate } from '@/helpers/date.helper';
 import { loadEmailTemplate, queueEmail } from '@/providers/email.provider';
@@ -12,7 +13,7 @@ const cronErrorCount = async () => {
 		.createQuery()
 		.select(['id'])
 		.filterByRange('start_at', createPastDate(86400)) // Last 24 hours
-		.filterBy('status', 'error');
+		.filterBy('status', CronHistoryStatusEnum.ERROR);
 
 	const errorCount = await query.count();
 

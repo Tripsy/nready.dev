@@ -1,7 +1,7 @@
 import { getLogDataRepository } from '@/features/log-data/log-data.repository';
 import { createPastDate } from '@/helpers/date.helper';
 
-export const SCHEDULE_EXPRESSION = '17 04 */7 * *';
+export const SCHEDULE_EXPRESSION = '17 04 * * 0';
 export const EXPECTED_RUN_TIME = 10; // seconds
 
 /*

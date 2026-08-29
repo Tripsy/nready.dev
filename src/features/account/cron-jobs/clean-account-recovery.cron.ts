@@ -1,7 +1,7 @@
 import { getAccountRecoveryRepository } from '@/features/account/account-recovery.repository';
 import { createPastDate } from '@/helpers/date.helper';
 
-export const SCHEDULE_EXPRESSION = '02 04 */7 * *';
+export const SCHEDULE_EXPRESSION = '02 04 * * 0';
 export const EXPECTED_RUN_TIME = 3; // seconds
 
 // Remove expired recovery tokens

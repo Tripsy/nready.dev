@@ -12,7 +12,7 @@ import expireFeaturedArticle from '@/features/article/cron-jobs/expire-featured-
 import publicRestrictedArticle from '@/features/article/cron-jobs/public-restricted-article.cron';
 import publishScheduledArticle from '@/features/article/cron-jobs/publish-scheduled-article.cron';
 import notifyCommentSubscribers from '@/features/comment/cron-jobs/notify-comment-subscribers.cron';
-import cronTimeCheck from '@/shared/cron-jobs/cron-time-check.cron';
+import cronTimeCheck from '@/features/cron-history/cron-jobs/cron-time-check.cron';
 import dataSource from '../src/config/data-source.config';
 import { getCronJobsPaths } from '../src/providers/cron.provider';
 
