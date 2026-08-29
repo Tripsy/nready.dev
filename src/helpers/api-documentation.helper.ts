@@ -276,14 +276,39 @@ export function addApiDocumentationMiddleware<C>(
 	return newRoutes;
 }
 
-export async function setupDevelopmentDocumentation<C>(
+/**
+ * Generated documentation per feature, filled during route registration and read back by
+ * the `docs` feature. A feature with no `<feature>.docs.ts` never gets an entry, which is
+ * what makes an unknown or undocumented feature a 404 rather than an empty payload.
+ */
+const featureDocumentation = new Map<
+	string,
+	Record<string, ApiOutputDocumentation>
+>();
+
+export function getFeatureDocumentation(
+	feature: string,
+): Record<string, ApiOutputDocumentation> | undefined {
+	return featureDocumentation.get(feature);
+}
+
+/**
+ * Loads `<feature>.docs.ts` and registers the generated output, then — in development only —
+ * also attaches it to each route so a failing request echoes it back under
+ * `meta.documentation` (`output-handler.middleware.ts` writes that on non-2xx only).
+ *
+ * The registry itself is filled in every environment, because `GET /docs/:feature` serves
+ * from it and is permission-gated rather than environment-gated. Cost is one dynamic import
+ * per documented feature at boot; the docs modules pull in `<feature>.mock.ts` for their
+ * samples, which carry no test-only dependencies.
+ *
+ * A feature without the file throws on import and is skipped — the common case, since most
+ * features are undocumented.
+ */
+export async function setupFeatureDocumentation<C>(
 	module: FeatureRoutesModule<C>,
 	feature: string,
 ): Promise<FeatureRoutesModule<C>> {
-	if (!Configuration.isEnvironment('development')) {
-		return module;
-	}
-
 	const docsPath = buildSrcPath(
 		Configuration.get('folder.features'),
 		feature,
@@ -298,6 +323,12 @@ export async function setupDevelopmentDocumentation<C>(
 		}
 
 		const docsOutput = generateDocumentation(module, docs);
+
+		featureDocumentation.set(feature, docsOutput);
+
+		if (!Configuration.isEnvironment('development')) {
+			return module;
+		}
 
 		return {
 			...module,

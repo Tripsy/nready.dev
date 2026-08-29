@@ -3,7 +3,7 @@ import path from 'node:path';
 import { type RequestHandler, Router } from 'express';
 import { apiRateLimiter } from '@/config/rate-limit.config';
 import { Configuration } from '@/config/settings.config';
-import { setupDevelopmentDocumentation } from '@/helpers/api-documentation.helper';
+import { setupFeatureDocumentation } from '@/helpers/api-documentation.helper';
 import { buildSrcPath, getErrorMessage } from '@/helpers/system.helper';
 import { getSystemLogger } from '@/providers/logger.provider';
 import type {
@@ -151,7 +151,7 @@ async function loadRoutes(
 				? await defOrFactory()
 				: defOrFactory;
 
-		def = await setupDevelopmentDocumentation(def, feature);
+		def = await setupFeatureDocumentation(def, feature);
 
 		router.use(buildRoutes(def));
 

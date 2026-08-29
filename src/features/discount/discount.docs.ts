@@ -34,6 +34,7 @@ export const docs: Record<
 		withAuthErrors: true,
 		withErrors: [400, 422],
 		request: {
+			notes: 'end_at must be after start_at when both are given; value must be 0-100 when type is percent',
 			body: {
 				label: { type: 'string', required: true },
 				scope: {
@@ -60,7 +61,8 @@ export const docs: Record<
 				value: {
 					type: 'number',
 					required: true,
-					condition: 'positive',
+					condition:
+						'positive, max 2 decimals; 0-100 when type is percent',
 				},
 				start_at: {
 					type: 'string',
@@ -119,7 +121,7 @@ export const docs: Record<
 					required: true,
 				},
 			},
-			notes: 'Provide at least one body parameter',
+			notes: 'Provide at least one body parameter; end_at must be after start_at when both are given; value must be 0-100 when type is percent',
 			body: {
 				label: { type: 'string', required: false },
 				scope: {
@@ -146,7 +148,8 @@ export const docs: Record<
 				value: {
 					type: 'number',
 					required: false,
-					condition: 'positive',
+					condition:
+						'positive, max 2 decimals; 0-100 when type is percent',
 				},
 				start_at: {
 					type: 'string',
