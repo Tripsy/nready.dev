@@ -19,6 +19,19 @@ export function getErrorMessage(error: unknown): string {
 }
 
 /**
+ * Whether a thrown error is a module that could not be resolved.
+ *
+ * For a `catch` around a dynamic `import()` of an optional file, where the module simply not
+ * being there is the ordinary case and anything else is a fault worth reporting. Node reports
+ * it under either code depending on the loader, so both are accepted.
+ */
+export function isModuleNotFound(error: unknown): boolean {
+	const code = (error as NodeJS.ErrnoException | undefined)?.code;
+
+	return code === 'ERR_MODULE_NOT_FOUND' || code === 'MODULE_NOT_FOUND';
+}
+
+/**
  * Check if a string is a valid IP address
  *
  * @param {string} ip - The IP address to check

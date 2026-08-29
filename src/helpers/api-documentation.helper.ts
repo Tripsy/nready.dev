@@ -2,7 +2,9 @@ import path from 'node:path';
 import type { z } from 'zod';
 import { Configuration } from '@/config/settings.config';
 import type { HttpStatusCode } from '@/exceptions';
+import { isModuleNotFound } from '@/helpers/system.helper';
 import { apiDocumentationMiddleware } from '@/middleware/api-documentation.middleware';
+import { getSystemLogger } from '@/providers/logger.provider';
 // The import attribute is required by Node ESM, which refuses to load a JSON module
 // without it. `moduleResolution: "bundler"` lets tsc and tsx accept the bare form, so this
 // only failed once the built output ran under Node.
@@ -126,6 +128,9 @@ export class ApiDocumentation {
 				break;
 			case 404:
 				description = sharedMessages.error.not_found;
+				break;
+			case 409:
+				description = sharedMessages.error.conflict;
 				break;
 			case 422:
 				description = sharedMessages.error.check_errors;
@@ -348,7 +353,24 @@ export async function setupFeatureDocumentation<C>(
 			...module,
 			routes: addApiDocumentationMiddleware(module, docsOutput),
 		};
-	} catch {
+	} catch (error) {
+		/*
+		 * A missing file is the ordinary case — most features are undocumented — so only that
+		 * one is silent. Anything else means a docs file exists and did not load, which is
+		 * otherwise indistinguishable from having none: the feature serves its routes as
+		 * usual and `GET /docs/:feature` simply answers 404.
+		 *
+		 * `generateDocumentation` is the likely thrower, and it throws for reasons worth
+		 * hearing about — a documented action with no matching route, or a status code
+		 * `convertToEntryResponseInput` has no case for.
+		 */
+		if (!isModuleNotFound(error)) {
+			getSystemLogger().warn(
+				{ err: error, feature, path: docsPath },
+				`Failed to load API documentation for "${feature}"`,
+			);
+		}
+
 		return module;
 	}
 }

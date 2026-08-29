@@ -5,6 +5,7 @@
 		"check_errors": "Check errors",
 		"not_allowed": "Not allowed",
 		"not_found": "Not found",
+		"conflict": "Conflict with an existing entry",
 		"unauthorized": "Unauthorized",
 		"db_delete_zero": "Failed to delete; No entries were found",
 		"db_delete_one": "Failed to delete just one entry; Based on filters multiple entries were found",
