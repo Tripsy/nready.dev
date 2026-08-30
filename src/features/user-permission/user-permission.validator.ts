@@ -49,10 +49,13 @@ export class UserPermissionValidator extends BaseValidator<
 		),
 	});
 
+	/** The same pair `delete` takes, so a caller revokes and restores by the same address. */
 	readonly restore = z.object({
-		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 		user_id: this.validateId(
 			this.getMessage('invalid_id', { name: 'user_id' }),
+		),
+		permission_id: this.validateId(
+			this.getMessage('invalid_id', { name: 'permission_id' }),
 		),
 	});
 

@@ -1,36 +1,34 @@
-import {
-	authDefaultRateLimiter,
-	authLoginRateLimiter,
-} from '@/config/rate-limit.config';
+import type { accountController } from '@/features/account/account.controller';
+import type { AccountPublicAction } from '@/features/account/account-public.routes';
 import type { FeatureRoutesModule } from '@/shared/types/routes.type';
+
+/**
+ * What a signed-in user does with their own account: read the session, list and end sessions,
+ * change the name, password or email, manage linked providers, delete the account.
+ *
+ * Every action requires a bearer token and none consults a permission entity — the token names
+ * the user and each write targets that user alone, so `account` never appears in a grant.
+ *
+ * The complement of `account-public.routes.ts`, derived rather than restated: an action added
+ * to the controller and to neither module fails to compile here, which is the only thing that
+ * keeps a split feature from quietly losing a route.
+ */
+export type AccountAction = Exclude<
+	keyof typeof accountController,
+	AccountPublicAction
+>;
 
 export default async () => {
 	const { accountController } = await import(
 		'@/features/account/account.controller'
 	);
 
-	const config: FeatureRoutesModule<typeof accountController> = {
+	const config: FeatureRoutesModule<
+		Pick<typeof accountController, AccountAction>
+	> = {
 		basePath: '/account',
 		controller: accountController,
 		routes: {
-			register: {
-				path: '/register',
-				method: 'post',
-				handlers: [authDefaultRateLimiter],
-			},
-			login: {
-				path: '/login',
-				method: 'post',
-				handlers: [authLoginRateLimiter],
-			},
-			// Social sign-in: the frontend runs the browser redirect and posts the
-			// resulting authorization code here. Rate-limited as a login, because that is
-			// what it is.
-			oauthLogin: {
-				path: '/oauth/:provider',
-				method: 'post',
-				handlers: [authLoginRateLimiter],
-			},
 			oauthList: {
 				path: '/oauth',
 				method: 'get',
@@ -39,35 +37,13 @@ export default async () => {
 				path: '/oauth/:provider',
 				method: 'delete',
 			},
-			removeToken: {
-				path: '/token',
-				method: 'delete',
-			},
 			logout: {
 				path: '/logout',
 				method: 'delete',
 			},
-			passwordRecover: {
-				path: '/password-recover',
-				method: 'post',
-				handlers: [authDefaultRateLimiter],
-			},
-			passwordRecoverChange: {
-				path: '/password-recover-change/:ident',
-				method: 'post',
-			},
 			passwordUpdate: {
 				path: '/password-update',
 				method: 'post',
-			},
-			emailConfirm: {
-				path: '/email-confirm/:token',
-				method: 'post',
-			},
-			emailConfirmSend: {
-				path: '/email-confirm-send',
-				method: 'post',
-				handlers: [authDefaultRateLimiter],
 			},
 			emailUpdate: {
 				path: '/email-update',

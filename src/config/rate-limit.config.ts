@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
 
-type RateLimiterType = 'api' | 'authLogin' | 'authDefault';
+export type RateLimiterType = 'api' | 'authLogin' | 'authDefault';
 
 const instances = new Map<RateLimiterType, ReturnType<typeof rateLimit>>();
 
@@ -48,6 +48,18 @@ const configs: Record<
 		message: 'shared.rate_limit.message.default',
 	},
 };
+
+/**
+ * The limiter's budget in words, for the API documentation.
+ *
+ * Read off `configs` rather than restated in the docs files, so raising a limit here also
+ * corrects what the published reference promises.
+ */
+export function describeRateLimit(type: RateLimiterType): string {
+	const { limit, windowMs } = configs[type];
+
+	return `${limit} requests per ${windowMs / 60000} minutes per IP address`;
+}
 
 export function getRateLimiter(type: RateLimiterType = 'api') {
 	const existing = instances.get(type);

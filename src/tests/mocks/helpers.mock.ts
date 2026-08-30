@@ -6,9 +6,9 @@ import {
 	type SettingsValue,
 } from '@/config/settings.config';
 
-export function mockUuid(): string {
-	return '123e4567-e89b-12d3-a456-426614174000';
-}
+// Re-exported so the tests already importing it from here keep working; it lives apart
+// because this file's jest imports must not reach a `<feature>.docs.ts`.
+export { mockUuid } from '@/tests/mocks/uuid.mock';
 
 /**
  * Overrides one setting for the duration of a test. The key is checked against the real

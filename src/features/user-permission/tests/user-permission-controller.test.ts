@@ -28,7 +28,7 @@ const controller = 'UserPermissionController';
 const basePath = (await userPermissionRoutes()).basePath;
 
 describe(`${controller} - create`, () => {
-	const route = `${basePath}/${getUserEntityMock().id}/permissions`;
+	const route = `${basePath}/${getUserEntityMock().id}`;
 
 	it('should fail if not authenticated', async () => {
 		const response = await request(app).post(route).send();
@@ -69,7 +69,7 @@ describe(`${controller} - create`, () => {
 });
 
 describe(`${controller} - delete`, () => {
-	const route = `${basePath}/${getUserEntityMock().id}/permissions/${getPermissionEntityMock().id}`;
+	const route = `${basePath}/${getUserEntityMock().id}/${getPermissionEntityMock().id}`;
 
 	it('should fail if not authenticated', async () => {
 		const response = await request(app).delete(route).send();
@@ -103,7 +103,7 @@ describe(`${controller} - delete`, () => {
 });
 
 describe(`${controller} - restore`, () => {
-	const route = `${basePath}/${getUserEntityMock().id}/permissions/${getPermissionEntityMock().id}/restore`;
+	const route = `${basePath}/${getUserEntityMock().id}/${getPermissionEntityMock().id}/restore`;
 
 	it('should fail if not authenticated', async () => {
 		const response = await request(app).patch(route).send();
@@ -137,7 +137,7 @@ describe(`${controller} - restore`, () => {
 });
 
 describe(`${controller} - find`, () => {
-	const route = `${basePath}/${getUserEntityMock().id}/permissions`;
+	const route = `${basePath}/${getUserEntityMock().id}`;
 
 	it('should return success', async () => {
 		authorizedSpy(permissionPolicy);

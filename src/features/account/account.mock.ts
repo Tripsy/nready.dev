@@ -3,7 +3,7 @@ import type AccountRecoveryEntity from '@/features/account/account-recovery.enti
 import type AccountTokenEntity from '@/features/account/account-token.entity';
 import type { AuthValidToken } from '@/features/account/account-token.service';
 import { createFutureDate, createPastDate } from '@/helpers/date.helper';
-import { mockUuid } from '@/tests/mocks/helpers.mock';
+import { mockUuid } from '@/tests/mocks/uuid.mock';
 
 export function getAccountTokenMock(): AccountTokenEntity {
 	return {

@@ -81,11 +81,18 @@ export class UserPermissionService {
 		await cleanEntityCache(UserEntity, user_id);
 	}
 
-	public async restore(id: number, user_id: number) {
+	/**
+	 * Addressed by the pair rather than by the grant row's own id, matching `delete`.
+	 *
+	 * `restore()` reads with `withDeleted()`, so a pair that is currently granted matches its
+	 * live row and is restored to the state it is already in — the call is idempotent and only
+	 * a pair with no row at all answers 404.
+	 */
+	public async restore(user_id: number, permission_id: number) {
 		await this.repository
 			.createQuery()
-			.filterById(id)
 			.filterBy('user_id', user_id)
+			.filterBy('permission_id', permission_id)
 			.restore();
 
 		await cleanEntityCache(UserEntity, user_id);

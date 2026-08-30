@@ -136,6 +136,15 @@ export class ApiDocumentation {
 				description = sharedMessages.error.check_errors;
 				content.errors = this.displayErrors();
 				break;
+			case 425:
+				description = sharedMessages.error.too_early;
+				break;
+			case 501:
+				description = sharedMessages.error.not_implemented;
+				break;
+			case 502:
+				description = sharedMessages.error.bad_gateway;
+				break;
 			case 500:
 				description = sharedMessages.error.server_error;
 				break;

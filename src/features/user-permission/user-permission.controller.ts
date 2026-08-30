@@ -54,7 +54,10 @@ class UserPermissionController extends BaseController {
 
 		const data = this.validate(this.validator.restore, req.params, res);
 
-		await this.userPermissionService.restore(data.id, data.user_id);
+		await this.userPermissionService.restore(
+			data.user_id,
+			data.permission_id,
+		);
 
 		res.locals.output.message(lang('user-permission.success.restore'));
 

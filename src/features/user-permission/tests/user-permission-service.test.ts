@@ -108,14 +108,17 @@ describe('UserPermissionService', () => {
 		);
 	});
 
-	it('should restore by user_id and id', async () => {
+	it('should restore by user_id and permission_id', async () => {
 		mockUserPermission.query.restore.mockReturnThis();
 
 		await serviceUserPermission.restore(1, 2);
 
-		expect(mockUserPermission.query.filterById).toHaveBeenCalledWith(1);
 		expect(mockUserPermission.query.filterBy).toHaveBeenCalledWith(
 			'user_id',
+			1,
+		);
+		expect(mockUserPermission.query.filterBy).toHaveBeenCalledWith(
+			'permission_id',
 			2,
 		);
 		expect(mockUserPermission.query.restore).toHaveBeenCalledWith();
