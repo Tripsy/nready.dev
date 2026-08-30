@@ -19,6 +19,12 @@ export const OrderByEnum = {
 	ID: 'id',
 } as const;
 
+/**
+ * Width of the `code` column (`varchar(3)`). Postgres rejects a longer value outright, so the
+ * cap belongs here — a value that reaches the write fails as a 500 rather than a field error.
+ */
+const CODE_MAX_CHARS = 3;
+
 const validatorMessages = [
 	...sharedValidatorMessages,
 	'invalid_name',
@@ -43,6 +49,7 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 		),
 		code: this.validateString(this.getMessage('invalid_code'), {
 			required: false,
+			maxChars: CODE_MAX_CHARS,
 		}),
 		parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 			required: false,
@@ -77,6 +84,7 @@ export class PlaceValidator extends BaseValidator<typeof validatorMessages> {
 			),
 			code: this.validateString(this.getMessage('invalid_code'), {
 				required: false,
+				maxChars: CODE_MAX_CHARS,
 			}),
 			parent_id: this.validateId(this.getMessage('invalid_parent_id'), {
 				required: false,

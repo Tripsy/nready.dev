@@ -26,6 +26,7 @@ export class VendorService {
 	): Promise<VendorEntity> {
 		const entry = {
 			name: data.name,
+			type: data.type,
 		};
 
 		return this.repository.save(entry);
