@@ -266,7 +266,7 @@ export class StatsService {
 			buildQuery(prevMonth.start, prevMonth.end),
 		]);
 
-		// `out` rows sum to a negative gross amount, so normalise to the
+		// `out` rows sum to a negative gross amount, so normalize to the
 		// displayed (positive) magnitude *before* computing the trend —
 		// otherwise the "no previous month" branch sees a negative value.
 		const sign = direction === CashFlowDirectionEnum.IN ? 1 : -1;

@@ -276,7 +276,7 @@ export class ArticleService {
 	/**
 	 * The featured window on the row as it will be saved.
 	 *
-	 * Same division of labour as `assertPublishWindow`: the validator rejects a payload that
+	 * Same division of labor as `assertPublishWindow`: the validator rejects a payload that
 	 * states an expiry with no slot, but an update setting the date alone is compared against
 	 * nothing there. After the merge both values are known, so this is the check that holds
 	 * for a partial update.
@@ -552,7 +552,7 @@ export class ArticleService {
 	 * Every `category_id` filter in this service resolves through here, so "in this category"
 	 * means the same thing to the listing, the public feed and `updateOrder`. They have to
 	 * agree: the order page lists a subtree and then posts that exact set back, and a write
-	 * that recognised only the direct links would reject its own list as incomplete.
+	 * that recognized only the direct links would reject its own list as incomplete.
 	 */
 	private async resolveCategorySubtree(
 		category_id: number,

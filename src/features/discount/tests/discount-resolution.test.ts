@@ -148,7 +148,7 @@ describe('evaluateConditions', () => {
 		).toBe(false);
 	});
 
-	it('honours hour_range against the supplied clock', () => {
+	it('honors hour_range against the supplied clock', () => {
 		const at = (hour: number) => new Date(2026, 7, 13, hour, 30);
 
 		expect(

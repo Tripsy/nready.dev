@@ -28,7 +28,7 @@ export class TermValidator extends BaseValidator<typeof validatorMessages> {
 	 * Every wording is stored lower-cased. Terms are labels reused across articles and
 	 * products, and the duplicate check in `TermService.assertNotDuplicate` compares the
 	 * stored value: without this, "Summer" and "summer" are two terms that render as the
-	 * same tag. Normalising on the way in rather than at each read keeps the column itself
+	 * same tag. Normalizing on the way in rather than at each read keeps the column itself
 	 * the single answer to what a term says.
 	 */
 	readonly contentsSchema = z.object({

@@ -60,7 +60,7 @@ describe(controller, () => {
 		);
 	});
 
-	it('find should drop a status filter instead of honouring it', async () => {
+	it('find should drop a status filter instead of honoring it', async () => {
 		const findByFilterPublic = jest
 			.spyOn(categoryService, 'findByFilterPublic')
 			.mockResolvedValue([[], 0]);

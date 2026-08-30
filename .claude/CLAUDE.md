@@ -91,6 +91,8 @@ reference both a future reader and a future session work from.
   upstream bug requires, a shape kept for data already written — because a reader has to know
   it to change the code safely
 - Note any performance implications or trade-offs
+- **Write prose in en-US** — `authorize`, `normalize`, `serialize`, `behavior`, `organization`,
+  `canceled`. This covers comments, commit messages and user-facing copy.
 
 ## Development Environment
 

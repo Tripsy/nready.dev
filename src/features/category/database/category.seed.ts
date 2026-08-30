@@ -13,7 +13,7 @@ import CategoryContentEntity from '@/features/category/category-content.entity';
 
 /**
  * A readable two-level tree rather than generated strings: categories are what the product
- * catalogue hangs off, and the names show up all over the UI. `category` itself holds no
+ * catalog hangs off, and the names show up all over the UI. `category` itself holds no
  * name — labels and slugs live in `category_content`, so the slug is the natural key here,
  * scoped by `type` exactly as the `(type, slug, language)` unique index scopes it.
  */
@@ -69,7 +69,7 @@ const categoryData: readonly CategorySeedRow[] = [
 		label: 'Monitors',
 		type: CategoryTypeEnum.PRODUCT,
 		parent_slug: 'electronics',
-		description: 'Desktop displays from office panels to colour-grade.',
+		description: 'Desktop displays from office panels to color-grade.',
 	},
 	{
 		slug: 'printers',
@@ -151,7 +151,7 @@ const categoryData: readonly CategorySeedRow[] = [
 		label: 'Reviews',
 		type: CategoryTypeEnum.ARTICLE,
 		parent_slug: 'guides',
-		description: 'Hands-on write-ups of catalogue products.',
+		description: 'Hands-on write-ups of catalog products.',
 	},
 ];
 

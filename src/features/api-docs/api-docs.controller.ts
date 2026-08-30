@@ -77,7 +77,7 @@ class ApiDocsController extends BaseController {
 	}
 
 	/**
-	 * The catalogue: one entry per documented route module, carrying enough of each action to
+	 * The catalog: one entry per documented route module, carrying enough of each action to
 	 * list its endpoints without a request per feature.
 	 */
 	public find = asyncHandler(async (_req: Request, res: Response) => {

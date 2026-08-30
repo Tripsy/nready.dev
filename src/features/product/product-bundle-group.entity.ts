@@ -23,7 +23,7 @@ const ENTITY_TABLE_NAME = 'product_bundle_group';
  * absence of an `is_required` flag. The difference is what the answers are: an option's answer is a
  * `term`, a label with a price delta and nothing behind it, while a bundle item's answer is a
  * `product_variant` — a real sellable thing with its own stock, VAT class and cost. That is why the
- * two are separate tables rather than one with a nullable column: the behaviour at checkout
+ * two are separate tables rather than one with a nullable column: the behavior at checkout
  * diverges completely.
  *
  * A bundle component that is always included needs no group at all; see

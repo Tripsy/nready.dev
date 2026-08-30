@@ -228,7 +228,7 @@ describe('AccountRecoveryService', () => {
 			expect(result).toBe(entity);
 		});
 
-		it('should honour an explicit field list', async () => {
+		it('should honor an explicit field list', async () => {
 			mockAccountRecovery.query.first.mockResolvedValue(null);
 
 			const result = await serviceAccountRecovery.findByIdent('missing', [

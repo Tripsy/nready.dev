@@ -194,7 +194,7 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 		}
 
 		/*
-		 * `password` is pulled out rather than spread: `meDetails` serialises the whole auth
+		 * `password` is pulled out rather than spread: `meDetails` serializes the whole auth
 		 * object into the `/account/me` response, so leaving it in would publish the hash.
 		 * Only the boolean survives — the frontend needs it to tell a social-only account
 		 * (no password to change, none to confirm on delete) from a normal one.

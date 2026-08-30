@@ -43,7 +43,7 @@ const TITLES: readonly string[] = [
 	'Docking stations, ranked by regret',
 	'When a mouse is worth replacing',
 	'Reading the fine print on warranties',
-	'Desk lamps and the colour of light',
+	'Desk lamps and the color of light',
 	'A chair you will still like in year three',
 	'Backups that actually get restored',
 	'Notes on refurbished hardware',
@@ -98,13 +98,13 @@ near the desk so the whole thing survives a monitor being raised.
 
 ## Light before decoration
 
-A desk lamp with adjustable colour temperature is the accessory people regret buying last and
+A desk lamp with adjustable color temperature is the accessory people regret buying last and
 should have bought first. Cool light in the morning, warm after sunset, and the screen stops
 being the brightest thing in the room.
 
 ## What to skip
 
-Wrist rests that force an angle, drawer organisers for a drawer you do not open, and any hub
+Wrist rests that force an angle, drawer organizers for a drawer you do not open, and any hub
 that draws its power from the laptop it is supposed to be charging. None of these fail
 loudly — they simply sit there, having cost money.
 

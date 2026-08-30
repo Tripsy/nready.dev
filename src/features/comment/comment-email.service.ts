@@ -3,7 +3,7 @@ import type CommentSubscriptionEntity from '@/features/comment/comment-subscript
 import { formatDate } from '@/helpers/date.helper';
 import { loadEmailTemplate, queueEmail } from '@/providers/email.provider';
 
-/** How much of a comment travels in the digest — enough to recognise, short of reprinting it. */
+/** How much of a comment travels in the digest — enough to recognize, short of reprinting it. */
 const EXCERPT_LENGTH = 240;
 
 function excerpt(content: string): string {

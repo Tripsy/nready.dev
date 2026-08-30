@@ -20,7 +20,7 @@ import DiscountTargetEntity, {
  * Links the seeded discounts to the entities they apply to.
  *
  * Lives in the seed orchestrator rather than in `discount`, so that owning the demo wiring does
- * not hand `discount` a dependency on every catalogue feature it points at. The target table
+ * not hand `discount` a dependency on every catalog feature it points at. The target table
  * itself is polymorphic and carries no foreign key, so nothing here needs the owning entities
  * except to read real ids.
  *

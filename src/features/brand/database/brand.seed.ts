@@ -93,7 +93,7 @@ export const brandSeed: SeedDefinition = {
 					description: `${name} consumer electronics and accessories.`,
 					meta: {
 						title: name,
-						description: `${name} product catalogue`,
+						description: `${name} product catalog`,
 					},
 				}),
 			);

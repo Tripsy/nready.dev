@@ -434,7 +434,7 @@ export class CommentService {
 	 *
 	 * Only the presentation of a comment is editable here — its text, what kind of contribution it
 	 * is, whether it sits at the top of the thread. The moderation decision itself moves through
-	 * `updateStatus`, which is the only place `STATUS_TRANSITIONS` is honoured.
+	 * `updateStatus`, which is the only place `STATUS_TRANSITIONS` is honored.
 	 */
 	public async updateData(
 		entry: CommentEntity,

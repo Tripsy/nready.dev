@@ -47,7 +47,7 @@ const ENTITY_TABLE_NAME = 'discount_target';
  * key it gives up:
  *
  * 1. **Direction.** A typed `category_discount` has to live in the `category` feature, which
- *    makes catalogue features depend on `discount`. Discounts are the optional thing here; a
+ *    makes catalog features depend on `discount`. Discounts are the optional thing here; a
  *    shop should be installable without them. Owning the table on this side keeps every arrow
  *    pointing at `discount` and lets it stay a leaf.
  * 2. **One query.** The resolver asks "which discounts point at any of these things" for a

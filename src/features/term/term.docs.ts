@@ -48,7 +48,7 @@ const contentsParam = {
  *
  * Every value is trimmed and lower-cased on the way in: a term is a label reused across many
  * rows, and "Summer" and "summer" rendering as two different tags is the failure that
- * normalising at the column avoids.
+ * normalizing at the column avoids.
  */
 export const docs: Record<keyof typeof termController, ApiInputDocumentation> =
 	{

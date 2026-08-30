@@ -286,12 +286,12 @@ export type FeatureDocumentation = {
 	 * The entity these routes belong to, taken from the folder they live in rather than the
 	 * route file's own name. A feature directory can hold more than one route module — the
 	 * article folder ships both `article.routes.ts` and `article-public.routes.ts` — and only
-	 * the folder names a real permission entity, so this is what groups the catalogue.
+	 * the folder names a real permission entity, so this is what groups the catalog.
 	 */
 	entity: string;
 	/**
-	 * Where the module is mounted. Carried so a catalogue can print a full endpoint without
-	 * re-reading the route files, and so `/public/...` modules are recognisable as the half
+	 * Where the module is mounted. Carried so a catalog can print a full endpoint without
+	 * re-reading the route files, and so `/public/...` modules are recognizable as the half
 	 * of the API a visitor can call.
 	 */
 	basePath: string;
@@ -317,7 +317,7 @@ export function getFeatureDocumentation(
 }
 
 /**
- * Every documented route module, sorted by name so the catalogue has a stable order across
+ * Every documented route module, sorted by name so the catalog has a stable order across
  * boots — the registry is filled in whatever order `findRouteFiles` walks the directory.
  */
 export function listFeatureDocumentation(): FeatureDocumentationEntry[] {

@@ -71,7 +71,7 @@ class RatingPublicController extends BaseController {
 	 * the row and are not editable — while the body carries the new `value` / `reaction`, so the
 	 * two are merged into the one schema that validates a rating of that type. Params are spread
 	 * last on purpose: a body naming a different target would otherwise redirect the write to a
-	 * row the path never authorised.
+	 * row the path never authorized.
 	 *
 	 * Separate from `create` rather than folded into an upsert: `create`'s 409 distinguishes the
 	 * caller's own earlier rating from one cast by somebody else behind the same address, and an

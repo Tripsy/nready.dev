@@ -13,7 +13,7 @@ export const EXPECTED_RUN_TIME = 10; // seconds
  * been dealt with or is being rediscovered from scratch anyway, and CloudWatch keeps the
  * longer tail under its own retention policy.
  *
- * Runs at :17 inside the 04:00 cleanup block, offset from its neighbours
+ * Runs at :17 inside the 04:00 cleanup block, offset from its neighbors
  * (`clean-account-recovery` :02, `clean-comment-subscription` :37, `clean-cron-history` :47):
  * they share a database and a scheduler, `cron-time-check` reports jobs that start in the
  * same minute, and concurrent bulk deletes are a self-inflicted latency spike.

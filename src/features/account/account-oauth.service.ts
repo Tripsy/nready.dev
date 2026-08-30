@@ -37,7 +37,7 @@ export class AccountOAuthService {
 	 * has to be forwarded verbatim from the client — which means it has to be checked here.
 	 *
 	 * The provider's own registered-URI list already blocks a redirect to an attacker's
-	 * host, so this is defence in depth rather than the primary control; it exists so a
+	 * host, so this is defense in depth rather than the primary control; it exists so a
 	 * misconfigured provider console cannot turn this endpoint into a code-relay.
 	 */
 	private assertAllowedRedirectUri(redirect_uri: string): void {

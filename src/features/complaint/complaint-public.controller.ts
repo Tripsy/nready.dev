@@ -56,7 +56,7 @@ class ComplaintPublicController extends BaseController {
 	/**
 	 * Amending one's own complaint. The target comes from the path and addresses the row together
 	 * with the caller; params are spread last on purpose, so a body naming a different target
-	 * cannot redirect the write to a row the path never authorised.
+	 * cannot redirect the write to a row the path never authorized.
 	 */
 	public update = asyncHandler(async (req: Request, res: Response) => {
 		const reporterId = this.resolveReporter(res);

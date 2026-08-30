@@ -15,7 +15,7 @@ export function runInBackground(
 	promise.catch((error: unknown) => {
 		/*
 		 * Wrapped in `{ err }` rather than passed as the merge object directly. Pino only
-		 * applies its error serializer to a recognised error key; a bare Error passed as
+		 * applies its error serializer to a recognized error key; a bare Error passed as
 		 * the first argument is merged as a plain object, and because Error's `message` and
 		 * `stack` are non-enumerable, the record reaches the log destinations with an empty
 		 * context — the message survives, every detail of *why* does not.

@@ -5,7 +5,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * The typed tables had to live in the feature owning the other end, which made `client`,
  * `category`, `brand` and `product` all depend on `discount` — backwards, since discounts are
- * the optional part of a catalogue. One table on the discount side reverses that, and turns the
+ * the optional part of a catalog. One table on the discount side reverses that, and turns the
  * resolver's five-query fan-out into a single indexed lookup.
  *
  * `product_discount` predates this work and is folded in with the rest. Its rows move; the
