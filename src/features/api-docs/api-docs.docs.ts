@@ -80,7 +80,7 @@ export const docs: Record<
 					type: 'string',
 					required: true,
 					format: 'kebab-case',
-					condition: 'one of the names `GET /api-docs` lists',
+					condition: 'one of the names `GET /public/api-docs` lists',
 				},
 			},
 		},

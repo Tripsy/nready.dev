@@ -6,7 +6,7 @@ export default async () => {
 	);
 
 	const config: FeatureRoutesModule<typeof apiDocsController> = {
-		basePath: '/api-docs',
+		basePath: '/public/api-docs',
 		controller: apiDocsController,
 		routes: {
 			find: {

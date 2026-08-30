@@ -337,7 +337,7 @@ export function listFeatureDocumentation(): FeatureDocumentationEntry[] {
  * `article-public.routes.ts` would otherwise send the loader to a `features/article-public/`
  * that does not exist, and its docs would be skipped without a word.
  *
- * The registry itself is filled in every environment, because `GET /api-docs/:feature` serves
+ * The registry itself is filled in every environment, because `GET /public/api-docs/:feature` serves
  * from it and is permission-gated rather than environment-gated. Cost is one dynamic import
  * per documented module at boot; the docs modules pull in `<feature>.mock.ts` for their
  * samples, which carry no test-only dependencies.
@@ -381,7 +381,7 @@ export async function setupFeatureDocumentation<C>(
 		 * A missing file is the ordinary case — most features are undocumented — so only that
 		 * one is silent. Anything else means a docs file exists and did not load, which is
 		 * otherwise indistinguishable from having none: the feature serves its routes as
-		 * usual and `GET /api-docs/:feature` simply answers 404.
+		 * usual and `GET /public/api-docs/:feature` simply answers 404.
 		 *
 		 * `generateDocumentation` is the likely thrower, and it throws for reasons worth
 		 * hearing about — a documented action with no matching route, or a status code

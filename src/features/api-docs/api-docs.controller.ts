@@ -50,11 +50,11 @@ function authorizationScope(
 /**
  * Serves the documentation generated at boot from every `<module>.docs.ts`.
  *
- * Open to anyone: this is the published API reference the public `/api-docs` pages render, so the
- * bearer-gated modules are described here too. Nothing it returns is data — only the shape of
- * a request and the sample payloads the docs files declare — and every documented endpoint
- * still enforces its own permission when called. Note that this makes `/api-docs` a visitor-facing
- * route mounted outside `/public`.
+ * Open to anyone, and mounted under `/public` with the other open modules: this is the
+ * published API reference the frontend's `/api-docs` pages render, so the bearer-gated modules
+ * are described here too. Nothing it returns is data — only the shape of a request and the
+ * sample payloads the docs files declare — and every documented endpoint still enforces its own
+ * permission when called.
  */
 class ApiDocsController extends BaseController {
 	constructor(private validator: ApiDocsValidator) {
