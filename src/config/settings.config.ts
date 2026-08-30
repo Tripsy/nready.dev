@@ -46,6 +46,15 @@ function loadSettings() {
 			url: process.env.FRONTEND_URL || 'http://nready-ui.test',
 			name: process.env.FRONTEND_APP_NAME || 'nready-ui',
 		},
+		apiDocs: {
+			/*
+			 * Whether `/public/api-docs` answers at all. Opt-in, like every other boolean
+			 * here: an environment that has not said `true` publishes nothing, so a
+			 * deployment that never heard of this setting does not start handing out the
+			 * shape of its bearer-gated endpoints.
+			 */
+			enabled: process.env.API_DOCS_ENABLED === 'true',
+		},
 		security: {
 			allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',').map((v) =>
 				v.trim(),

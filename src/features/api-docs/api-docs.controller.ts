@@ -62,10 +62,27 @@ class ApiDocsController extends BaseController {
 	}
 
 	/**
+	 * The reference is opt-in per environment. Off answers 404 rather than 403, so an
+	 * environment that does not publish its API says nothing about whether there is
+	 * anything to publish — and it reads exactly like an undocumented feature does.
+	 *
+	 * Gated here rather than at route registration: the registry is still filled at boot,
+	 * because the development-only `meta.documentation` echo on a failing request reads
+	 * from the same generated output.
+	 */
+	private assertEnabled(): void {
+		if (!Configuration.get('apiDocs.enabled')) {
+			throw new NotFoundError();
+		}
+	}
+
+	/**
 	 * The catalogue: one entry per documented route module, carrying enough of each action to
 	 * list its endpoints without a request per feature.
 	 */
 	public find = asyncHandler(async (_req: Request, res: Response) => {
+		this.assertEnabled();
+
 		const entries = listFeatureDocumentation().map((entry) => ({
 			feature: entry.feature,
 			entity: entry.entity,
@@ -89,6 +106,8 @@ class ApiDocsController extends BaseController {
 	});
 
 	public read = asyncHandler(async (req: Request, res: Response) => {
+		this.assertEnabled();
+
 		const { feature } = this.validate(this.validator.read, req.params, res);
 
 		const documentation = getFeatureDocumentation(feature);
