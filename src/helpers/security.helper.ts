@@ -62,3 +62,41 @@ export async function comparePassword(
 ): Promise<boolean> {
 	return await bcrypt.compare(password, hashedPassword);
 }
+
+/**
+ * Whether `provided` equals any entry of `accepted`, in time independent of where the
+ * first difference falls.
+ *
+ * Both sides are SHA-256'd before the comparison. That is not for secrecy — the digests
+ * are of values this process already holds — but because `timingSafeEqual` throws on
+ * operands of different lengths, and a bare length check would leak the key's length
+ * through the fast path. Digesting makes every operand 32 bytes, so the comparison itself
+ * is the only thing that runs.
+ *
+ * Every entry is compared even after a match, so the time taken does not reveal which key
+ * of the list matched.
+ *
+ * @param {string} provided - The value supplied by the caller
+ * @param {readonly string[]} accepted - The keys this deployment honors
+ * @returns {boolean} - True when one of them matches
+ */
+export function matchesAnySecret(
+	provided: string,
+	accepted: readonly string[],
+): boolean {
+	const providedDigest = crypto
+		.createHash('sha256')
+		.update(provided)
+		.digest();
+
+	return accepted.reduce((matched, candidate) => {
+		const candidateDigest = crypto
+			.createHash('sha256')
+			.update(candidate)
+			.digest();
+
+		return crypto.timingSafeEqual(providedDigest, candidateDigest)
+			? true
+			: matched;
+	}, false);
+}

@@ -10,6 +10,10 @@ import { v4 as uuid } from 'uuid';
 import { Configuration } from '@/config/settings.config';
 import { createCurrentDate } from '@/helpers/date.helper';
 import authMiddleware from '@/middleware/auth.middleware';
+import {
+	clientKeyMiddleware,
+	reportClientKeyState,
+} from '@/middleware/client-key.middleware';
 import { corsHandler } from '@/middleware/cors-handler.middleware';
 import { errorHandler } from '@/middleware/error-handler.middleware';
 import languageMiddleware from '@/middleware/language.middleware';
@@ -94,6 +98,14 @@ export async function createApp() {
 
 	// CORS handling
 	app.use(corsHandler);
+
+	/*
+	 * Client key gate. Sits directly behind CORS and ahead of the body parsers so an
+	 * unkeyed caller is refused before a 10mb body is read; `/health` and `/ready` are
+	 * exempt inside the middleware.
+	 */
+	reportClientKeyState();
+	app.use(clientKeyMiddleware);
 
 	// Compression
 	app.use(

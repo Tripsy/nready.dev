@@ -68,6 +68,20 @@ function loadSettings() {
 			 * counting again from zero.
 			 */
 			ipHashSecret: process.env.IP_HASH_SECRET || 'secret',
+			/*
+			 * Keys accepted in the `x-api-key` header of every request (`/health` and
+			 * `/ready` excepted). A list rather than one value so a key can be rotated
+			 * without a synchronized deploy: publish `old,new`, move the clients over,
+			 * then drop `old` in a second release.
+			 *
+			 * Empty disables the gate entirely, which is what a `test` run and a fresh
+			 * checkout get. `clientKeyMiddleware` warns at boot when that happens in
+			 * production, since there the empty list means the API answers anyone.
+			 */
+			clientKeys: (process.env.CLIENT_API_KEYS || '')
+				.split(',')
+				.map((v) => v.trim())
+				.filter(Boolean),
 		},
 		redis: {
 			host: process.env.REDIS_HOST || 'localhost',
