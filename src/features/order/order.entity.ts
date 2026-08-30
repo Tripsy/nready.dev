@@ -16,7 +16,7 @@ export const OrderStatusEnum = {
 	PENDING: 'pending',
 	CONFIRMED: 'confirmed',
 	COMPLETED: 'completed',
-	CANCELLED: 'cancelled',
+	CANCELLED: 'canceled',
 } as const;
 
 export type OrderStatus =

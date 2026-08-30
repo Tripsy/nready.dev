@@ -7,7 +7,7 @@ import { SoftDeleteIndex } from '@/shared/decorators/soft-delete-index.decorator
 export const SubscriptionStatusEnum = {
 	ACTIVE: 'active',
 	PAUSED: 'paused',
-	CANCELLED: 'cancelled',
+	CANCELLED: 'canceled',
 	EXPIRED: 'expired',
 } as const;
 
@@ -68,7 +68,7 @@ export default class SubscriptionEntity extends EntityAbstract {
 
 	@Column('timestamp', {
 		nullable: true,
-		comment: 'When the subscription ended (if cancelled/expired)',
+		comment: 'When the subscription ended (if canceled/expired)',
 	})
 	end_at!: Date | null;
 

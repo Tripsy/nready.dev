@@ -566,7 +566,7 @@ export class Init1786415988228 implements MigrationInterface {
 			`COMMENT ON TABLE "system"."account_recovery" IS 'Stores \`ident\` for account password recovery requests'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."grn_status_enum" AS ENUM('draft', 'confirmed', 'cancelled')`,
+			`CREATE TYPE "public"."grn_status_enum" AS ENUM('draft', 'confirmed', 'canceled')`,
 		);
 		await queryRunner.query(
 			`CREATE TABLE "grn" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "ref_code" character varying(3) NOT NULL, "ref_number" integer NOT NULL, "supplier_document_number" character varying, "status" "public"."grn_status_enum" NOT NULL DEFAULT 'draft', "received_at" TIMESTAMP NOT NULL, "confirmed_at" TIMESTAMP, "currency" character(3) NOT NULL DEFAULT 'RON', "exchange_rate" numeric(10,6) NOT NULL DEFAULT '1', "notes" text, "warehouse_id" integer NOT NULL, "vendor_id" integer NOT NULL, CONSTRAINT "PK_c8f750cac4dfd1fc623593ab3eb" PRIMARY KEY ("id")); COMMENT ON COLUMN "grn"."ref_code" IS 'Document series, e.g. NIR'; COMMENT ON COLUMN "grn"."ref_number" IS 'Sequential number within the series'; COMMENT ON COLUMN "grn"."supplier_document_number" IS 'The supplier''s own delivery note or invoice number'; COMMENT ON COLUMN "grn"."received_at" IS 'When the goods physically arrived; drives FIFO order'; COMMENT ON COLUMN "grn"."confirmed_at" IS 'When the stock actually moved'; COMMENT ON COLUMN "grn"."currency" IS 'Currency the supplier invoiced in'; COMMENT ON COLUMN "grn"."exchange_rate" IS 'Rate to the base currency (1 = same currency)'`,
@@ -593,7 +593,7 @@ export class Init1786415988228 implements MigrationInterface {
 			`COMMENT ON TABLE "grn" IS 'Goods received notes; the only way stock enters a warehouse, and the source of every FIFO lot'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."invoice_status_enum" AS ENUM('draft', 'issued', 'paid', 'overdue', 'cancelled', 'refunded')`,
+			`CREATE TYPE "public"."invoice_status_enum" AS ENUM('draft', 'issued', 'paid', 'overdue', 'canceled', 'refunded')`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "public"."invoice_type_enum" AS ENUM('charge', 'proforma', 'credit_note')`,
@@ -716,7 +716,7 @@ export class Init1786415988228 implements MigrationInterface {
 			`COMMENT ON TABLE "order_product" IS 'Stores ordered products (order line items)'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."order_status_enum" AS ENUM('draft', 'pending', 'confirmed', 'completed', 'cancelled')`,
+			`CREATE TYPE "public"."order_status_enum" AS ENUM('draft', 'pending', 'confirmed', 'completed', 'canceled')`,
 		);
 		await queryRunner.query(
 			`CREATE TYPE "public"."order_type_enum" AS ENUM('standard', 'subscription')`,
@@ -1055,10 +1055,10 @@ export class Init1786415988228 implements MigrationInterface {
 			`COMMENT ON TABLE "product_bundle_item_price" IS 'Per-currency price delta for choosing a bundle component; excludes VAT'`,
 		);
 		await queryRunner.query(
-			`CREATE TYPE "public"."subscription_status_enum" AS ENUM('active', 'paused', 'cancelled', 'expired')`,
+			`CREATE TYPE "public"."subscription_status_enum" AS ENUM('active', 'paused', 'canceled', 'expired')`,
 		);
 		await queryRunner.query(
-			`CREATE TABLE "subscription" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "order_id" integer NOT NULL, "user_id" integer, "ref_code" character varying NOT NULL, "status" "public"."subscription_status_enum" NOT NULL DEFAULT 'active', "start_at" TIMESTAMP, "end_at" TIMESTAMP, "grace_period" smallint NOT NULL DEFAULT '0', "auto_renew" boolean NOT NULL DEFAULT true, "retry_count" smallint NOT NULL, "retry_interval" smallint NOT NULL, "next_billing_at" TIMESTAMP, "notes" text, "details" jsonb, CONSTRAINT "PK_8c3e00ebd02103caa1174cd5d9d" PRIMARY KEY ("id")); COMMENT ON COLUMN "subscription"."user_id" IS 'When subscription is assigned to a user (virtual services)'; COMMENT ON COLUMN "subscription"."ref_code" IS 'Subscription reference code (e.g., S12345)'; COMMENT ON COLUMN "subscription"."start_at" IS 'When the subscription started'; COMMENT ON COLUMN "subscription"."end_at" IS 'When the subscription ended (if cancelled/expired)'; COMMENT ON COLUMN "subscription"."grace_period" IS 'Number of days offered past end at as a grace period to allow renewals'; COMMENT ON COLUMN "subscription"."auto_renew" IS 'Whether the subscription renews automatically'; COMMENT ON COLUMN "subscription"."retry_count" IS 'Max count of renewals attempts before the subscription is marked as expired'; COMMENT ON COLUMN "subscription"."retry_interval" IS 'Number of days between each renewal attempt'; COMMENT ON COLUMN "subscription"."next_billing_at" IS 'Next scheduled billing date'; COMMENT ON COLUMN "subscription"."details" IS 'Reserved column for future use'`,
+			`CREATE TABLE "subscription" ("id" SERIAL NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP DEFAULT now(), "deleted_at" TIMESTAMP, "order_id" integer NOT NULL, "user_id" integer, "ref_code" character varying NOT NULL, "status" "public"."subscription_status_enum" NOT NULL DEFAULT 'active', "start_at" TIMESTAMP, "end_at" TIMESTAMP, "grace_period" smallint NOT NULL DEFAULT '0', "auto_renew" boolean NOT NULL DEFAULT true, "retry_count" smallint NOT NULL, "retry_interval" smallint NOT NULL, "next_billing_at" TIMESTAMP, "notes" text, "details" jsonb, CONSTRAINT "PK_8c3e00ebd02103caa1174cd5d9d" PRIMARY KEY ("id")); COMMENT ON COLUMN "subscription"."user_id" IS 'When subscription is assigned to a user (virtual services)'; COMMENT ON COLUMN "subscription"."ref_code" IS 'Subscription reference code (e.g., S12345)'; COMMENT ON COLUMN "subscription"."start_at" IS 'When the subscription started'; COMMENT ON COLUMN "subscription"."end_at" IS 'When the subscription ended (if canceled/expired)'; COMMENT ON COLUMN "subscription"."grace_period" IS 'Number of days offered past end at as a grace period to allow renewals'; COMMENT ON COLUMN "subscription"."auto_renew" IS 'Whether the subscription renews automatically'; COMMENT ON COLUMN "subscription"."retry_count" IS 'Max count of renewals attempts before the subscription is marked as expired'; COMMENT ON COLUMN "subscription"."retry_interval" IS 'Number of days between each renewal attempt'; COMMENT ON COLUMN "subscription"."next_billing_at" IS 'Next scheduled billing date'; COMMENT ON COLUMN "subscription"."details" IS 'Reserved column for future use'`,
 		);
 		await queryRunner.query(
 			`CREATE UNIQUE INDEX "IDX_subscription_order_id" ON "subscription"  ("order_id") WHERE deleted_at IS NULL`,

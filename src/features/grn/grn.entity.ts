@@ -17,7 +17,7 @@ import type { StatusTransitions } from '@/shared/types/common.type';
 export const GrnStatusEnum = {
 	DRAFT: 'draft', // Being entered; nothing has moved
 	CONFIRMED: 'confirmed', // Stock is in, lots are open, cost has been averaged
-	CANCELLED: 'cancelled', // Withdrawn; if it had been confirmed, reversing movements were posted
+	CANCELLED: 'canceled', // Withdrawn; if it had been confirmed, reversing movements were posted
 } as const;
 
 export type GrnStatus = (typeof GrnStatusEnum)[keyof typeof GrnStatusEnum];
@@ -25,9 +25,9 @@ export type GrnStatus = (typeof GrnStatusEnum)[keyof typeof GrnStatusEnum];
 /**
  * Allowed status transition configuration.
  *
- * A confirmed receipt can still be cancelled, but never returns to draft: the moment it confirmed
+ * A confirmed receipt can still be canceled, but never returns to draft: the moment it confirmed
  * it wrote movements, opened lots and moved the weighted average cost, and a draft is defined by
- * having done none of that. Cancelling posts the reversals instead.
+ * having done none of that. Canceling posts the reversals instead.
  */
 export const STATUS_TRANSITIONS: StatusTransitions<GrnStatus> = {
 	[GrnStatusEnum.DRAFT]: [GrnStatusEnum.CONFIRMED, GrnStatusEnum.CANCELLED],
@@ -48,7 +48,7 @@ const ENTITY_TABLE_NAME = 'grn';
  *
  * **Stock moves only on confirmation.** A draft can be edited freely because it has changed
  * nothing. Confirming writes `warehouse_movement` rows, opens the lots and recomputes
- * `product_variant.cost_price`; cancelling a confirmed receipt posts reversing movements rather
+ * `product_variant.cost_price`; canceling a confirmed receipt posts reversing movements rather
  * than deleting anything.
  */
 @Entity({

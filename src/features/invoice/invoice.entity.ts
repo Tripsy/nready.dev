@@ -10,7 +10,7 @@ export const InvoiceStatusEnum = {
 	ISSUED: 'issued', // Invoice issued to customer
 	PAID: 'paid', // Payment received in full
 	OVERDUE: 'overdue', // Past due date, payment not received
-	CANCELLED: 'cancelled', // Invoice invalidated
+	CANCELLED: 'canceled', // Invoice invalidated
 	REFUNDED: 'refunded', // Payment returned to the customer
 } as const;
 
