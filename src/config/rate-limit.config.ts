@@ -1,9 +1,6 @@
-import type { Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import { lang } from '@/config/message.setup';
 import { Configuration } from '@/config/settings.config';
-
-const ipsAllowlist = ['192.168.0.56', '192.168.0.21'];
 
 type RateLimiterType = 'api' | 'authLogin' | 'authDefault';
 
@@ -21,12 +18,15 @@ const baseConfig = {
 	 * `emailConfirmSend` all share a single 10-per-15-minutes budget. In a suite that
 	 * counter carries across every test in the file, which makes results depend on how
 	 * many requests ran before — adding a case anywhere can push an unrelated one into a
-	 * 429. Nothing asserts rate-limiting behaviour, so there is nothing to lose by
+	 * 429. Nothing asserts rate-limiting behavior, so there is nothing to lose by
 	 * skipping it.
+	 *
+	 * `test` is the only exemption. An address allowlist would be one a caller can put
+	 * themselves on: in production `req.ip` is read from `X-Forwarded-For`, so naming a
+	 * listed address in that header switches rate limiting off for exactly the callers it
+	 * exists to catch.
 	 */
-	skip: (req: Request) =>
-		Configuration.isEnvironment('test') ||
-		ipsAllowlist.includes(req.ip || ''),
+	skip: () => Configuration.isEnvironment('test'),
 };
 
 const configs: Record<

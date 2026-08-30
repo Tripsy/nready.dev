@@ -287,8 +287,25 @@ interface IRestoreService {
 export function testServiceRestore<
 	E extends ObjectLiteral,
 	Q extends RepositoryAbstract<E>,
->(query: jest.Mocked<Q>, service: IRestoreService) {
+>(query: jest.Mocked<Q>, service: IRestoreService, entry?: E) {
 	it('should restore by id', async () => {
+		/*
+		 * A restore is not always a bare `filterById().restore()`. Where a unique index is
+		 * partial on `deleted_at IS NULL`, deleting a row frees its key for someone else, so
+		 * the service reloads the row and refuses when the key was taken meanwhile — see
+		 * `BrandService.restore`. Both halves of that are arranged here: the row exists, and
+		 * nothing else holds its key.
+		 *
+		 * Arranged in the helper rather than left to each caller because `clearMocks` resets
+		 * calls but not implementations, so otherwise this test passes or fails on whatever
+		 * earlier tests in the file happened to leave on `firstOrFail` and `first` — it read
+		 * as a brand bug while being an ordering artefact, and failed differently when run
+		 * alone. A service that checks nothing is unaffected by either line.
+		 */
+		query.firstOrFail.mockResolvedValue(
+			entry ?? ({ id: 1 } as unknown as E),
+		);
+		query.first.mockResolvedValue(null);
 		query.restore.mockReturnThis();
 
 		await service.restore(1);
