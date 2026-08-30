@@ -19,10 +19,6 @@ export default async () => {
 				method: 'get',
 				handlers: [validateParamsWhenId('id')],
 			},
-			readPage: {
-				path: '/:label/page',
-				method: 'get',
-			},
 			update: {
 				path: '/:id',
 				method: 'put',

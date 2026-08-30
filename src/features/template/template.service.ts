@@ -100,7 +100,7 @@ export class TemplateService {
 		return saved;
 	}
 
-	/** The segments `template.controller.ts` builds its render-time cache key from. */
+	/** The segments `template-public.controller.ts` builds its render-time cache key from. */
 	private lookupKey(entry: TemplateEntity): [string, string, string] {
 		return [entry.label, entry.language, entry.type];
 	}

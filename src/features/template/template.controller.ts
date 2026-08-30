@@ -1,8 +1,6 @@
 import type { Request, Response } from 'express';
 import { lang } from '@/config/message.setup';
-import TemplateEntity, {
-	TemplateTypeEnum,
-} from '@/features/template/template.entity';
+import TemplateEntity from '@/features/template/template.entity';
 import {
 	type TemplatePolicy,
 	templatePolicy,
@@ -56,31 +54,6 @@ class TemplateController extends BaseController {
 
 		const cacheGetResults = await this.cache.get(cacheKey, () =>
 			this.templateService.findById(data.id, withDeleted),
-		);
-
-		res.locals.output.meta(cacheGetResults.isCached, 'isCached');
-		res.locals.output.data(cacheGetResults.data);
-
-		res.json(res.locals.output);
-	});
-
-	public readPage = asyncHandler(async (req: Request, res: Response) => {
-		const data = this.validate(this.validator.readPage, req.params, res);
-
-		const cacheKey = this.cache.buildKey(
-			TemplateEntity.NAME,
-			data.label,
-			res.locals.language,
-			TemplateTypeEnum.PAGE,
-			'read',
-		);
-
-		const cacheGetResults = await this.cache.get(cacheKey, async () =>
-			this.templateService.findByLabel(
-				data.label,
-				res.locals.language,
-				TemplateTypeEnum.PAGE,
-			),
 		);
 
 		res.locals.output.meta(cacheGetResults.isCached, 'isCached');

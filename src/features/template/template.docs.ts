@@ -49,6 +49,9 @@ const contentParam = {
  * Every write clears two cache entries, not one — the row's own, and the label/language/type
  * lookup that a render reads. A rename clears the old lookup as well, or the previous name would
  * go on serving the previous body until its TTL.
+ *
+ * These are the dashboard routes, all bearer-gated. The one open route lives in
+ * `template-public.docs.ts`, which serves page bodies to visitors under `/public/pages`.
  */
 export const docs: Record<
 	keyof typeof templateController,
@@ -90,33 +93,6 @@ export const docs: Record<
 			params: {
 				id: {
 					type: 'number',
-					required: true,
-				},
-			},
-		},
-	}),
-	readPage: helperApiInputDocumentation({
-		description: 'Get a page template by label, for the public site',
-		success: {
-			status: 200,
-			description: 'Page template in the language of the request',
-			dataSample: {
-				...entitySample,
-				label: 'terms',
-				type: TemplateTypeEnum.PAGE,
-				content: {
-					title: 'Terms and conditions',
-					html: '<p>The terms you agree to.</p>',
-					layout: 'default',
-				},
-			},
-		},
-		withErrors: [404, 422],
-		request: {
-			notes: "The only unauthenticated route here — it is what serves `/page/<label>`. The language is the request's own and there is no fallback, so a label with no row in that language answers 404. Page content is returned exactly as stored: it is not rendered through the template engine",
-			params: {
-				label: {
-					type: 'string',
 					required: true,
 				},
 			},

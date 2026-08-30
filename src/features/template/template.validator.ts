@@ -113,7 +113,7 @@ export class TemplateValidator extends BaseValidator<typeof validatorMessages> {
 		id: this.validateId(this.getMessage('invalid_id', { name: 'id' })),
 	});
 
-	readonly readPage = z.object({
+	readonly publicRead = z.object({
 		label: this.validateString(this.getMessage('invalid_label')),
 	});
 
