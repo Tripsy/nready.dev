@@ -286,15 +286,26 @@ export type FeatureDocumentation = {
 	 * The entity these routes belong to, taken from the folder they live in rather than the
 	 * route file's own name. A feature directory can hold more than one route module — the
 	 * article folder ships both `article.routes.ts` and `article-public.routes.ts` — and only
-	 * the folder names a real permission entity, so this is what `GET /docs/:feature` gates on.
+	 * the folder names a real permission entity, so this is what groups the catalogue.
 	 */
 	entity: string;
+	/**
+	 * Where the module is mounted. Carried so a catalogue can print a full endpoint without
+	 * re-reading the route files, and so `/public/...` modules are recognisable as the half
+	 * of the API a visitor can call.
+	 */
+	basePath: string;
 	actions: Record<string, ApiOutputDocumentation>;
+};
+
+/** A registry entry with the key it is stored under — the route module's own name. */
+export type FeatureDocumentationEntry = FeatureDocumentation & {
+	feature: string;
 };
 
 /**
  * Generated documentation per route module, filled during route registration and read back by
- * the `docs` feature. A module with no `<module>.docs.ts` never gets an entry, which is what
+ * the `api-docs` feature. A module with no `<module>.docs.ts` never gets an entry, which is what
  * makes an unknown or undocumented feature a 404 rather than an empty payload.
  */
 const featureDocumentation = new Map<string, FeatureDocumentation>();
@@ -303,6 +314,17 @@ export function getFeatureDocumentation(
 	feature: string,
 ): FeatureDocumentation | undefined {
 	return featureDocumentation.get(feature);
+}
+
+/**
+ * Every documented route module, sorted by name so the catalogue has a stable order across
+ * boots — the registry is filled in whatever order `findRouteFiles` walks the directory.
+ */
+export function listFeatureDocumentation(): FeatureDocumentationEntry[] {
+	return Array.from(featureDocumentation, ([feature, documentation]) => ({
+		feature,
+		...documentation,
+	})).sort((a, b) => a.feature.localeCompare(b.feature));
 }
 
 /**
@@ -315,7 +337,7 @@ export function getFeatureDocumentation(
  * `article-public.routes.ts` would otherwise send the loader to a `features/article-public/`
  * that does not exist, and its docs would be skipped without a word.
  *
- * The registry itself is filled in every environment, because `GET /docs/:feature` serves
+ * The registry itself is filled in every environment, because `GET /api-docs/:feature` serves
  * from it and is permission-gated rather than environment-gated. Cost is one dynamic import
  * per documented module at boot; the docs modules pull in `<feature>.mock.ts` for their
  * samples, which carry no test-only dependencies.
@@ -342,6 +364,7 @@ export async function setupFeatureDocumentation<C>(
 
 		featureDocumentation.set(feature, {
 			entity: path.basename(directory),
+			basePath: module.basePath,
 			actions: docsOutput,
 		});
 
@@ -358,7 +381,7 @@ export async function setupFeatureDocumentation<C>(
 		 * A missing file is the ordinary case — most features are undocumented — so only that
 		 * one is silent. Anything else means a docs file exists and did not load, which is
 		 * otherwise indistinguishable from having none: the feature serves its routes as
-		 * usual and `GET /docs/:feature` simply answers 404.
+		 * usual and `GET /api-docs/:feature` simply answers 404.
 		 *
 		 * `generateDocumentation` is the likely thrower, and it throws for reasons worth
 		 * hearing about — a documented action with no matching route, or a status code

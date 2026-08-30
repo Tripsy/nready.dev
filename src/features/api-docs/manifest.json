@@ -1,8 +1,8 @@
 {
-	"name": "docs",
+	"name": "api-docs",
 	"version": "1.0.0",
 	"is_core": true,
-	"relativePath": "/docs",
+	"relativePath": "/api-docs",
 	"entities": [],
 	"depends_on": [],
 	"required_by": []
